@@ -1,0 +1,6 @@
+[submodule "gnu-efi-code"]
+	path = gnu-efi-code
+	url = git://git.code.sf.net/p/gnu-efi/code
+[submodule "thirdparty/gnu-efi"]
+	path = thirdparty/gnu-efi
+	url = git://git.code.sf.net/p/gnu-efi/code
