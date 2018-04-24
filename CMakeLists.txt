@@ -11,8 +11,6 @@ ELSE()
     ENDIF()
 ENDIF()
 
-MESSAGE("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
-
 # Add subproject
 ADD_SUBDIRECTORY(thirdparty)
 ADD_SUBDIRECTORY(src)
@@ -25,6 +23,8 @@ ADD_CUSTOM_COMMAND(OUTPUT firmware.iso
         #COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/src/bootloader/BOOTX64.EFI ${FIRMWARE_DIR}/BOOT/EFI
 		COMMAND rm -rf ${FIRMWARE_DIR} && mkdir ${FIRMWARE_DIR}
         COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/src/bootloader/BOOTX64.EFI ${FIRMWARE_DIR}
+		COMMAND mkdir ${FIRMWARE_DIR}/chino && mkdir ${FIRMWARE_DIR}/chino/system
+        COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/src/kernel/kernel ${FIRMWARE_DIR}/chino/system
 		COMMAND xorriso -as mkisofs -R -f -no-emul-boot -o firmware.iso iso
         DEPENDS bootloader
         COMMENT "Generating firmware.iso ...")
