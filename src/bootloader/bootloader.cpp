@@ -5,6 +5,7 @@ extern "C"
 {
 #include <efi.h>
 #include <efilib.h>
+#include <elfload.h>
 }
 #include "../kernel/kernel_iface.hpp"
 
