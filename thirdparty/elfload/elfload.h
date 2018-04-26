@@ -20,9 +20,13 @@
 #include "elfarch.h"
 #include "elf.h"
 
-#ifdef DEBUG
+#ifdef _DEBUG
+#ifdef _ELF
+#define EL_DEBUG(...) APrint(__VA_ARGS__)
+#else
 #include <stdio.h>
 #define EL_DEBUG(...) printf(__VA_ARGS__)
+#endif
 #else
 #define EL_DEBUG(...) do {} while(0)
 #endif
@@ -66,6 +70,9 @@ typedef struct el_ctx {
     Elf_Off  dynoff;
     /* Size of dynamic table (0 if not ET_DYN) */
     Elf_Addr dynsize;
+
+	/* user data */
+	void* user;
 } el_ctx;
 
 el_status el_pread(el_ctx *ctx, void *def, size_t nb, size_t offset);

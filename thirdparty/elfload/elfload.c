@@ -13,7 +13,12 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 #include "elfload.h"
+#ifdef _ELF
+#include <efi.h>
+#include <efilib.h>
+#else
 #include <string.h>
+#endif
 
 el_status el_pread(el_ctx *ctx, void *def, size_t nb, size_t offset)
 {
@@ -48,7 +53,6 @@ el_status el_init(el_ctx *ctx)
 
     if (!IS_ELF(ctx->ehdr))
         return EL_NOTELF;
-
 
     if (ctx->ehdr.e_ident[EI_CLASS] != ELFCLASS)
         return EL_WRONGBITS;
@@ -165,7 +169,8 @@ el_status el_load(el_ctx *ctx, el_alloc_cb alloc)
             return rv;
 
         /* zero mem-only portion */
-        memset(dest + ph.p_filesz, 0, ph.p_memsz - ph.p_filesz);
+
+		SetMem(dest + ph.p_filesz, ph.p_memsz - ph.p_filesz, 0);
 
         i++;
     }

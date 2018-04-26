@@ -1,13 +1,11 @@
 //
 // Kernel Entry
 //
-#include "kernel_iface.hpp"
+#include "kernel_iface.h"
 
-volatile int s[256];
-int a[256] = { 0 };
-
-extern "C" void kernel_entry(const BootParameters& params)
+extern "C" void kernel_entry(const BootParameters* params)
 {
-	s[1] = 0;
-	a[1] = 1;
+	char str[] = { 0x53, 0x53, 0x44, 0x54, 0 };
+	//params->EfiRuntimeService->ResetSystem(EFI_RESET_TYPE::EfiResetWarm, EFI_SUCCESS, 0, nullptr);
+	while (1);
 }

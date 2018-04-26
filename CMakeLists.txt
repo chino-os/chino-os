@@ -26,7 +26,7 @@ ADD_CUSTOM_COMMAND(OUTPUT firmware.iso
 		COMMAND mkdir ${FIRMWARE_DIR}/chino && mkdir ${FIRMWARE_DIR}/chino/system
         COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/src/kernel/kernel ${FIRMWARE_DIR}/chino/system
 		COMMAND xorriso -as mkisofs -R -f -no-emul-boot -o firmware.iso iso
-        DEPENDS bootloader
+        DEPENDS bootloader kernel
         COMMENT "Generating firmware.iso ...")
 
 # TODO: add flash command

@@ -1,1 +1,2 @@
-add_subdirectory(efiload)
+add_subdirectory(elfload)
+add_subdirectory(acpi)
