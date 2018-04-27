@@ -55,6 +55,8 @@ static CHAR16 *OsLoaderMemoryTypeDesc[EfiMaxMemoryType] = {
 	L"PAL_code  "
 };
 
+void SetGraphicsMode(struct BootParameters* bootParam);
+
 EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 {
 	gImageHandle = ImageHandle;
@@ -64,9 +66,9 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	EFI_FILE_IO_INTERFACE* volume;
 
 	EFI_SERIAL_IO_PROTOCOL* uart1;
-	ExitIfError(BS->LocateProtocol(&gEfiSerialIoProtocolGuid, NULL, (void**)&uart1));
-	CHAR8 str[] = "Hello\n"; UINTN size = sizeof(str);
-	ExitIfError(uart1->Write(uart1, &size, str));
+	//ExitIfError(BS->LocateProtocol(&gEfiSerialIoProtocolGuid, NULL, (void**)&uart1));
+	//CHAR8 str[] = "Hello\n"; UINTN size = sizeof(str);
+	//ExitIfError(uart1->Write(uart1, &size, str));
 	DumpACPI();
 
 	ExitIfError(BS->HandleProtocol(ImageHandle, &gEfiLoadedImageProtocolGuid, (void**)&loadedImage));
@@ -93,15 +95,18 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	ExitIfNot(el_relocate(&ctx), EL_OK, L"relocate elf failed");
 	ExitIfError(fileHandle->Close(fileHandle));
 	ExitIfError(rootFS->Close(rootFS));
-
+	
 	// Ìø×ª Kernel
 	kernel_entry_t kernelEntry = (kernel_entry_t)(ctx.ehdr.e_entry + kernelBase);
 	struct BootParameters bootParam = {};
 	ExitIfError(BS->AllocatePool(EFI_ChinoKernel_Data, ChinoKernel_StackSize, (void**)&bootParam.StackPointer));
 	bootParam.StackPointer = bootParam.StackPointer + ChinoKernel_StackSize - 1;
 	bootParam.EfiRuntimeService = RT;
-	// ÌîÐ´ Memroy Map
 
+	// ÉèÖÃÊÓÆµ
+	SetGraphicsMode(&bootParam);
+
+	// ÌîÐ´ Memroy Map
 	UINTN entries, mapKey, descriptorSize;
 	UINT32 descriptorVersion;
 	UINTN totalSize = 0;
@@ -116,4 +121,38 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	PortEnterKernel(&bootParam, kernelEntry);
 
 	return EFI_SUCCESS;
+}
+
+enum
+{
+	DESIRED_HREZ = 800,
+	DESIRED_VREZ = 600,
+	DESIRED_PIXEL_FORMAT = PixelBlueGreenRedReserved8BitPerColor
+};
+
+void SetGraphicsMode(struct BootParameters* bootParam)
+{
+	EFI_GRAPHICS_OUTPUT_PROTOCOL* gop;
+	EFI_HANDLE* handleBuffer;
+	UINTN handleCount = 0;
+	UINTN sizeOfInfo;
+	EFI_GRAPHICS_OUTPUT_MODE_INFORMATION* gopModeInfo;
+	ExitIfError(BS->LocateHandleBuffer(ByProtocol, &gEfiGraphicsOutputProtocolGuid, NULL, &handleCount, &handleBuffer));
+	ExitIfError(BS->HandleProtocol(handleBuffer[0], &gEfiGraphicsOutputProtocolGuid, (void**)&gop));
+
+	size_t modeIndex = 0;
+	for (;; modeIndex++) {
+		ExitIfError(gop->QueryMode(gop, modeIndex, &sizeOfInfo, &gopModeInfo));
+		if (gopModeInfo->HorizontalResolution == DESIRED_HREZ &&
+			gopModeInfo->VerticalResolution == DESIRED_VREZ &&
+			gopModeInfo->PixelFormat == DESIRED_PIXEL_FORMAT)
+			break;
+	}
+	ExitIfError(gop->SetMode(gop, modeIndex));
+
+	Print(L"Change Graphics Mode: %dx%d\n", DESIRED_HREZ, DESIRED_VREZ);
+	bootParam->FrameBufferBase = (uintptr_t)gop->Mode->FrameBufferBase;
+	bootParam->FrameBufferSize = (uintptr_t)gop->Mode->FrameBufferSize;
+	bootParam->FrameBufferWidth = DESIRED_HREZ;
+	bootParam->FrameBufferHeight = DESIRED_VREZ;
 }

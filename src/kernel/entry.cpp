@@ -1,11 +1,20 @@
-//
+﻿//
 // Kernel Entry
 //
 #include "kernel_iface.h"
+#include "uefigfx/BootVideo.hpp"
+
+using namespace Chino::UefiGfx;
+
+BootVideo bootVideo_;
 
 extern "C" void kernel_entry(const BootParameters* params)
 {
-	char str[] = { 0x53, 0x53, 0x44, 0x54, 0 };
-	//params->EfiRuntimeService->ResetSystem(EFI_RESET_TYPE::EfiResetWarm, EFI_SUCCESS, 0, nullptr);
+	bootVideo_.Initialize(reinterpret_cast<uint32_t*>(params->FrameBufferBase), params->FrameBufferSize, params->FrameBufferWidth, params->FrameBufferHeight);
+	bootVideo_.SetBackground(0x00222222);
+	bootVideo_.ClearScreen();
+
+	bootVideo_.MovePositionTo(20, 20);
+	bootVideo_.PutString(L"Loading ❤ Chino ...\r\n");
 	while (1);
 }

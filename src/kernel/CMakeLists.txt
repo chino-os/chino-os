@@ -8,6 +8,7 @@ SET(COMMON_FLAGS "\
 -ffunction-sections \
 -fdata-sections \
 -fstrict-volatile-bitfields \
+-fno-stack-protector		 \
 -fPIC						 \
 -ekernel_entry")
 
@@ -25,6 +26,7 @@ SET(COMMON_WARNING_FLAGS "-Wall \
 
 SET(LDFLAGS "\
 -nostartfiles           \
+-nostdlib				\
 -static                 \
 -pie					\
 -Wl,-static             \
