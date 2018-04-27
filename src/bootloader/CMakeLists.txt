@@ -39,7 +39,7 @@ SET(LDFLAGS "\
 ${GNU_EFI_LIB}/crt0-efi-${ARCH}.o")
 
 SET(CMAKE_C_FLAGS "${COMMON_FLAGS} -std=gnu11")
-SET(CMAKE_CXX_FLAGS "${COMMON_FLAGS} -std=gnu++11")
+SET(CMAKE_CXX_FLAGS "${COMMON_FLAGS} -std=gnu++17")
 SET(CMAKE_SHARED_LINKER_FLAGS ${LDFLAGS})
 
 # - Add user project to CMake project

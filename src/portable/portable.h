@@ -9,6 +9,8 @@ extern "C"
 {
 #endif
 	extern void PortEnterKernel(const struct BootParameters* params, kernel_entry_t kernelEntry);
+
+	extern void PortHaltProcessor();
 #ifdef __cplusplus
 }
 #endif
