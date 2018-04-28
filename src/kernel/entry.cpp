@@ -22,6 +22,7 @@ extern "C" void kernel_entry(const BootParameters* params)
 	bootVideo_.MovePositionTo(20, 40);
 	bootVideo_.PutString(L"Natsu chan kawai ♥\r\n");
 
+
 	processMgr_.Initialize();
 	PortHaltProcessor();
 }
