@@ -22,7 +22,7 @@ void GlyphProvider::GenerateIndexer()
 	auto index = font.Index;
 	auto bitmap = font.Bitmap;
 	auto height = font.Height;
-	for (size_t i = 0; i < i < font.Chars; i++)
+	for (size_t i = 0; i < font.Chars; i++)
 	{
 		auto code = index[i];
 		indexes[code] = bitmap + i * height;
