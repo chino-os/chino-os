@@ -13,8 +13,8 @@ static unsigned _startX = 0, _startY = 0;
 static unsigned _color = 0;
 
 BootVideo::BootVideo(uint32_t * frameBuffer, size_t bufferSize, size_t frameWidth, size_t frameHeight)
+	:glyphProvider_(GetBootFont())
 {
-	this->glyphProvider.Initialize(GetBootFont());
 	this->frameBuffer = frameBuffer;
 	this->bufferSize = bufferSize;
 	this->frameWidth = frameWidth;
@@ -35,7 +35,7 @@ void BootVideo::PutChar(wchar_t chr)
 	else
 	{
 		int cx, cy;
-		const unsigned char *glyph = glyphProvider.GetGlyph(chr);
+		const unsigned char *glyph = glyphProvider_.GetGlyph(chr);
 		auto pixel = currentFramePointer;
 
 		auto startPixel = pixel;
@@ -107,14 +107,14 @@ void _itow(uint64_t i, unsigned base, wchar_t* buf) {
 	buf[opos] = 0;
 }
 
-void _itow_s(uint64_t i, unsigned base, wchar_t* buf) {
+void _itow_s(int64_t i, unsigned base, wchar_t* buf) {
 
 	if (base > 16) return;
 	if (i < 0) {
 		*buf++ = '-';
-		i *= -1;
+		i = -i;
 	}
-	_itow(i, base, buf);
+	_itow(uint64_t(i), base, buf);
 }
 
 void BootVideo::PutFormat(const wchar_t * format, ...)

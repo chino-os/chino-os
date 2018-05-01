@@ -3,28 +3,27 @@
 
 using namespace Chino::UefiGfx;
 
-void GlyphProvider::Initialize(BitmapFont font)
+GlyphProvider::GlyphProvider(BitmapFont font)
+	:font_(font)
 {
-	this->font = font;
 	GenerateIndexer();
 }
 
 const unsigned char * GlyphProvider::GetGlyph(uint16_t chr) const noexcept
 {
-	return indexes[chr];
+	return indexes_[chr];
 }
 
 void GlyphProvider::GenerateIndexer()
 {
-	for (auto& c : indexes)
-		c = font.Bitmap;
+	std::fill(std::begin(indexes_), std::end(indexes_), font_.Bitmap);
 
-	auto index = font.Index;
-	auto bitmap = font.Bitmap;
-	auto height = font.Height;
-	for (size_t i = 0; i < font.Chars; i++)
+	auto index = font_.Index;
+	auto bitmap = font_.Bitmap;
+	auto height = font_.Height;
+	for (size_t i = 0; i < font_.Chars; i++)
 	{
 		auto code = index[i];
-		indexes[code] = bitmap + i * height;
+		indexes_[code] = bitmap + i * height;
 	}
 }

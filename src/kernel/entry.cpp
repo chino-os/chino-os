@@ -27,7 +27,7 @@ extern "C" void kernel_entry(const BootParameters* params)
 
 	g_MemoryMgr.construct();
 
-	g_BootVideo->SetBackground(0xFF222222);
+	g_BootVideo->SetBackground(0xFF151716);
 	g_BootVideo->ClearScreen();
 
 	g_BootVideo->MovePositionTo(20, 20);

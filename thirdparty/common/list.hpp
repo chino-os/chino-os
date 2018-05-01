@@ -56,6 +56,7 @@ namespace Chino
 		};
 
 		list()
+			:end_node_(reinterpret_cast<node*>(&end_node_st))
 		{
 
 		}
@@ -63,7 +64,7 @@ namespace Chino
 		~list()
 		{
 			auto cur = head_;
-			while (cur && cur == &end_node_)
+			while (cur && cur != end_node_)
 			{
 				auto next = cur->next_;
 				delete cur;
@@ -78,7 +79,7 @@ namespace Chino
 
 		iterator end() noexcept
 		{
-			return iterator(&end_node_);
+			return iterator(end_node_);
 		}
 
 		template<class ...TArgs>
@@ -86,7 +87,7 @@ namespace Chino
 		{
 			auto new_node = new node(std::forward<TArgs>(value)...);
 			new_node->prev_ = tail_;
-			new_node->next_ = &end_node_;
+			new_node->next_ = end_node_;
 			if (tail_)
 			{
 				tail_->next_ = new_node;
@@ -115,6 +116,7 @@ namespace Chino
 	private:
 		node* head_ = nullptr;
 		node* tail_ = nullptr;
-		node end_node_;
+		node* end_node_;
+		char end_node_st;
 	};
 }

@@ -5,6 +5,7 @@
 #include "BootFont.hpp"
 #include <stdint.h>
 #include <stddef.h>
+#include <array>
 
 namespace Chino
 {
@@ -13,15 +14,14 @@ namespace Chino
 		class GlyphProvider
 		{
 		public:
-			GlyphProvider() = default;
+			GlyphProvider(BitmapFont font);
 
-			void Initialize(BitmapFont font);
 			const unsigned char* GetGlyph(uint16_t chr) const noexcept;
 		private:
 			void GenerateIndexer();
 		private:
-			BitmapFont font;
-			const unsigned char* indexes[UINT16_MAX];
+			BitmapFont font_;
+			std::array<const unsigned char*, UINT16_MAX> indexes_;
 		};
 	}
 }

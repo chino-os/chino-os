@@ -3,6 +3,7 @@
 //
 #pragma once
 #include "../kernel/kernel_iface.h"
+#include <port_defines.h>
 
 #ifdef __cplusplus
 extern "C"

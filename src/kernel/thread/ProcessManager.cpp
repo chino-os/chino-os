@@ -2,6 +2,7 @@
 // Chino Thread
 //
 #include "ProcessManager.hpp"
+#include "../kdebug.hpp"
 
 using namespace Chino::Thread;
 
@@ -9,7 +10,7 @@ template<typename T>
 typename Chino::list<T>::iterator HandleToListIt(HANDLE handle)
 {
 	using iterator = typename Chino::list<T>::iterator;
-	return iterator(reinterpret_cast<T*>(handle));
+	return iterator(reinterpret_cast<typename Chino::list<T>::node*>(handle));
 }
 
 template<typename T>
@@ -23,7 +24,18 @@ ProcessManager::ProcessManager()
 
 }
 
-HANDLE ProcessManager::CreateProcess()
+HANDLE ProcessManager::CreateProcess(std::string_view name, uintptr_t entryPoint)
 {
-	return ToHandle<Process>(_processes.emplace_back());
+	return ToHandle<Process>(processes_.emplace_back(name));
+}
+
+ProcessManager::Process & ProcessManager::GetProcess(HANDLE handle)
+{
+	kassert(handle);
+	return **HandleToListIt<Process>(handle);
+}
+
+ProcessManager::Process::Process(std::string_view name)
+	:name_(name)
+{
 }

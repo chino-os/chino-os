@@ -25,7 +25,7 @@ namespace Chino
 		private:
 			void FixCurrentFramePointer();
 		private:
-			GlyphProvider glyphProvider;
+			GlyphProvider glyphProvider_;
 			uint32_t* frameBuffer, *currentFramePointer;
 			size_t bufferSize;
 			size_t frameWidth, frameHeight;
