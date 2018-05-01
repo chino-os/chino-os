@@ -22,6 +22,8 @@
 
 #ifdef _DEBUG
 #ifdef _ELF
+#include <efi.h>
+#include <efilib.h>
 #define EL_DEBUG(...) APrint(__VA_ARGS__)
 #else
 #include <stdio.h>

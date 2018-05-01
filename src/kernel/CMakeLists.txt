@@ -32,18 +32,14 @@ SET(COMMON_WARNING_FLAGS "-Wall \
 
 SET(LDFLAGS "\
 -nostartfiles           \
--nostdlib				\
 -pie					\
 -Wl,-static             \
--Wl,--start-group       \
--Wl,--whole-archive     \
--Wl,--no-whole-archive  \
--Wl,--end-group         \
+-Wl,--gc-sections		\
 -Wl,-EL")
 
 SET(CMAKE_C_FLAGS "${COMMON_FLAGS} -std=gnu11")
 SET(CMAKE_CXX_FLAGS "${COMMON_FLAGS} -std=gnu++17")
-SET(CMAKE_EXE_LINKER_FLAGS ${LDFLAGS})
+SET(CMAKE_EXE_LINKER_FLAGS "${LDFLAGS} --specs=nosys.specs")
 
 # - Add user project to CMake project
 INCLUDE_DIRECTORIES(${GNU_EFI_INC} ${GNU_EFI_INC}/${ARCH} ${PORTABLE_INC} ${COMMON_INC})

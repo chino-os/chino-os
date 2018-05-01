@@ -36,7 +36,7 @@ el_status el_applyrela(el_ctx *ctx, Elf_RelA *rel)
                 return EL_BADREL;
             }
 
-            EL_DEBUG("Applying R_AARCH64_RELATIVE reloc @%p\n", p);
+            EL_DEBUG("Applying R_AARCH64_RELATIVE reloc @%lX\n", p);
             *p = rel->r_addend + ctx->base_load_vaddr;
             break;
 

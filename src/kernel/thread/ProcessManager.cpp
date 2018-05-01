@@ -18,12 +18,12 @@ HANDLE ToHandle(typename Chino::list<T>::iterator value)
 	return reinterpret_cast<HANDLE>(value.node_);
 }
 
-void ProcessManager::Initialize()
+ProcessManager::ProcessManager()
 {
 
 }
 
 HANDLE ProcessManager::CreateProcess()
 {
-	return 0;//return ToHandle<Process>(_processes.emplace_back());
+	return ToHandle<Process>(_processes.emplace_back());
 }

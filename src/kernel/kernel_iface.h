@@ -20,6 +20,7 @@ struct BootParameters
 	uintptr_t StackPointer;
 	EFI_RUNTIME_SERVICES* EfiRuntimeService;
 	EFI_MEMORY_DESCRIPTOR* EfiMemoryDescriptor;
+	size_t EfiMemoryDescriptorSize, EfiMemoryDescriptorCount;
 
 	// Gfx
 	uintptr_t FrameBufferBase;

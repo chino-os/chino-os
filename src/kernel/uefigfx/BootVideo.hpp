@@ -3,6 +3,7 @@
 //
 #pragma once
 #include <stdint.h>
+#include "../utils.hpp"
 #include "GlyphProvider.hpp"
 
 namespace Chino
@@ -12,9 +13,8 @@ namespace Chino
 		class BootVideo
 		{
 		public:
-			BootVideo() = default;
+			BootVideo(uint32_t* frameBuffer, size_t bufferSize, size_t frameWidth, size_t frameHeight);
 
-			void Initialize(uint32_t* frameBuffer, size_t bufferSize, size_t frameWidth, size_t frameHeight);
 			void PutChar(wchar_t chr);
 			void PutString(const wchar_t* string);
 			void PutString(const wchar_t* string, size_t count);
@@ -34,3 +34,5 @@ namespace Chino
 		};
 	}
 }
+
+extern StaticHolder<Chino::UefiGfx::BootVideo> g_BootVideo;

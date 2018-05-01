@@ -16,11 +16,11 @@ namespace Chino
 			public:
 			};
 		public:
-			void Initialize();
+			ProcessManager();
 
 			HANDLE CreateProcess();
 		private:
-			//Chino::list<Process> _processes;
+			Chino::list<Process> _processes;
 		};
 	}
 }

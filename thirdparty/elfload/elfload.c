@@ -161,7 +161,7 @@ el_status el_load(el_ctx *ctx, el_alloc_cb alloc)
         if (!dest)
             return EL_ENOMEM;
 
-        EL_DEBUG("Loading seg fileoff %x, vaddr %x to %p\n",
+        EL_DEBUG("Loading seg fileoff %x, vaddr %x to %lX\n",
             ph.p_offset, ph.p_vaddr, dest);
 
         /* read loaded portion */

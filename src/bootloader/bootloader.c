@@ -56,6 +56,7 @@ static CHAR16 *OsLoaderMemoryTypeDesc[EfiMaxMemoryType] = {
 };
 
 void SetGraphicsMode(struct BootParameters* bootParam);
+extern void DumpACPI();
 
 EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 {
@@ -117,6 +118,8 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
 	ExitIfError(BS->ExitBootServices(ImageHandle, mapKey));
 	bootParam.EfiMemoryDescriptor = descriptor;
+	bootParam.EfiMemoryDescriptorSize = descriptorSize;
+	bootParam.EfiMemoryDescriptorCount = totalSize / descriptorSize;
 
 	PortEnterKernel(&bootParam, kernelEntry);
 

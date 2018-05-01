@@ -12,7 +12,7 @@ static unsigned _startX = 0, _startY = 0;
 // current color
 static unsigned _color = 0;
 
-void BootVideo::Initialize(uint32_t * frameBuffer, size_t bufferSize, size_t frameWidth, size_t frameHeight)
+BootVideo::BootVideo(uint32_t * frameBuffer, size_t bufferSize, size_t frameWidth, size_t frameHeight)
 {
 	this->glyphProvider.Initialize(GetBootFont());
 	this->frameBuffer = frameBuffer;
