@@ -39,3 +39,12 @@ ProcessManager::Process::Process(std::string_view name)
 	:name_(name)
 {
 }
+
+HANDLE ProcessManager::Process::AddThread(uintptr_t entryPoint)
+{
+	return ToHandle<Thread>(threads_.emplace_back(entryPoint));
+}
+
+ProcessManager::Thread::Thread(uintptr_t entryPoint)
+{
+}
