@@ -10,12 +10,13 @@ GET_PROPERTY(COMMON_INC GLOBAL PROPERTY COMMON_INC)
 ADD_DEFINITIONS(-DGNU_EFI_USE_MS_ABI -D_ARCH_=${ARCH})
 
 SET(COMMON_FLAGS "\
+-Os			\
+-s          \
 -fno-common \
 -ffunction-sections \
 -fdata-sections \
 -fstrict-volatile-bitfields \
 -fno-stack-protector		 \
--fPIE						 \
 -fPIC						 \
 -ekernel_entry")
 
@@ -34,9 +35,10 @@ SET(COMMON_WARNING_FLAGS "-Wall \
 SET(LDFLAGS "\
 -nostartfiles           \
 -pie					\
+-N			\
+-T ${CMAKE_CURRENT_SOURCE_DIR}/../default.lds \
 -Wl,-static             \
--Wl,--gc-sections		\
--Wl,-EL")
+-Wl,--gc-sections")
 
 SET(CMAKE_C_FLAGS "${COMMON_FLAGS} -std=gnu11")
 SET(CMAKE_CXX_FLAGS "${COMMON_FLAGS} -std=gnu++17")

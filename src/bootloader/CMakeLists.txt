@@ -9,9 +9,11 @@ GET_PROPERTY(PORTABLE_SRC_ASM GLOBAL PROPERTY PORTABLE_SRC_ASM)
 GET_PROPERTY(ACPI_INC GLOBAL PROPERTY ACPI_INC)
 
 # definitions in macros
-ADD_DEFINITIONS(-DGNU_EFI_USE_MS_ABI -D__amd64__ -D_ELF -D_ARCH_=${ARCH})
+ADD_DEFINITIONS(-DGNU_EFI_USE_MS_ABI -D__amd64__ -D_ELF -D_ARCH_=${ARCH} -D_DEBUG)
 
 SET(COMMON_FLAGS "\
+-Os				  \
+-s				  \
 -fno-stack-protector		 \
 -ffreestanding				 \
 -fshort-wchar				 \

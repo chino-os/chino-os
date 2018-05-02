@@ -88,6 +88,8 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	el_ctx ctx = { .user = fileHandle, .pread = ReadFile };
 	ExitIfNot(el_init(&ctx), EL_OK, L"Init elf failed");
 
+	Print(L"Kernel take %d bytes\n", (int)ctx.memsz);
+
 	// ╪сть Kernel
 	Elf_Addr kernelBase;
 	ExitIfError(BS->AllocatePool(EFI_ChinoKernel_Code, ctx.memsz, (void**)&kernelBase));
