@@ -20,6 +20,10 @@ extern "C" void kernel_entry(const BootParameters* params)
 	extern void __libc_fini_array(void);
 
 	g_BootVideo.construct(reinterpret_cast<uint32_t*>(params->FrameBufferBase), params->FrameBufferSize, params->FrameBufferWidth, params->FrameBufferHeight);
+	g_BootVideo->SetBackground(0xFF151716);
+	g_BootVideo->SetMargin(20);
+	g_BootVideo->ClearScreen();
+
 	Memory::InitializeHeap(*params);
 
 	atexit(__libc_fini_array);
@@ -27,16 +31,11 @@ extern "C" void kernel_entry(const BootParameters* params)
 
 	g_MemoryMgr.construct();
 
-	g_BootVideo->SetBackground(0xFF151716);
-	g_BootVideo->ClearScreen();
-
-	g_BootVideo->MovePositionTo(20, 20);
-	g_BootVideo->PutString(L"Loading Chino ♥ ...\r\n");
-	g_BootVideo->MovePositionTo(20, 40);
-	g_BootVideo->PutString(L"Natsu chan kawai ♥\r\n");
-	g_BootVideo->MovePositionTo(20, 60);
-	g_BootVideo->PutFormat(L"Free memory avaliable: %l bytes\r\n", g_MemoryMgr->GetFreeBytesRemaining());
+	g_BootVideo->PutString(L"Loading Chino ♥ ...\n");
+	g_BootVideo->PutString(L"Natsu chan kawai ♥\n");
+	g_BootVideo->PutFormat(L"Free memory avaliable: %l bytes\n", g_MemoryMgr->GetFreeBytesRemaining());
 
 	g_ProcessMgr.construct();
+	g_ProcessMgr->StartScheduler();
 	PortHaltProcessor();
 }

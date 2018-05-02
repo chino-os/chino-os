@@ -71,6 +71,21 @@ EFI_ACPI_MEMORY_MAPPED_CONFIGURATION_SPACE_ACCESS_TABLE* FindMCFG(EFI_ACPI_DESCR
 	ExitIfError(EFI_NOT_FOUND);
 }
 
+EFI_ACPI_2_0_MULTIPLE_APIC_DESCRIPTION_TABLE_HEADER* FindMADT(EFI_ACPI_DESCRIPTION_HEADER* xsdt)
+{
+	size_t entries = (xsdt->Length - sizeof(EFI_ACPI_DESCRIPTION_HEADER)) / sizeof(UINT64);
+
+	UINT64* entryBegin = (UINT64*)(xsdt + 1);
+	for (size_t i = 0; i < entries; i++)
+	{
+		EFI_ACPI_DESCRIPTION_HEADER* header = (EFI_ACPI_DESCRIPTION_HEADER*)entryBegin[i];
+		if (header->Signature == EFI_ACPI_2_0_MULTIPLE_APIC_DESCRIPTION_TABLE_SIGNATURE)
+			return (EFI_ACPI_2_0_MULTIPLE_APIC_DESCRIPTION_TABLE_HEADER*)header;
+	}
+
+	ExitIfError(EFI_NOT_FOUND);
+}
+
 PCI_TYPE00* FindPCIDevice(EFI_ACPI_MEMORY_MAPPED_ENHANCED_CONFIGURATION_SPACE_BASE_ADDRESS_ALLOCATION_STRUCTURE* mcfg, UINT8 classCode[])
 {
 	UINT64 startBus = mcfg->StartBusNumber;
@@ -124,6 +139,10 @@ void DumpACPI()
 			Print(L"%c%c%c%c ", str[0], str[1], str[2], str[3]);
 		}
 	}
+
+	EFI_ACPI_2_0_MULTIPLE_APIC_DESCRIPTION_TABLE_HEADER* madt = FindMADT(xsdtHeader);
+	Print(L"\nLocal APIC Address: %X\n", madt->LocalApicAddress);
+
 
 	EFI_ACPI_2_0_FIXED_ACPI_DESCRIPTION_TABLE* fadt = FindFADT(xsdtHeader);
 	EFI_ACPI_MEMORY_MAPPED_CONFIGURATION_SPACE_ACCESS_TABLE* mcfg = FindMCFG(xsdtHeader);

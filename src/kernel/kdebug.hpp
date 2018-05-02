@@ -8,4 +8,4 @@
 #define CHINO_WIDE_(x) CHINO_WIDE(x)
 
 #define kassert(expression) \
-if (!(expression)) { g_BootVideo->SetBackground(0xFF007ACC); g_BootVideo->ClearScreen(); g_BootVideo->MovePositionTo(20, 20); g_BootVideo->PutFormat(L"Assert Failed (%s, %d): %s\r\n", CHINO_WIDE_(__FILE__), __LINE__, CHINO_WIDE_(#expression)); while(1); }
+if (!(expression)) { g_BootVideo->SetBackground(0xFF007ACC); g_BootVideo->ClearScreen(); g_BootVideo->PutFormat(L"Oops!\n\nAssert Failed: %s\nAt: %s:%d", CHINO_WIDE_(#expression), CHINO_WIDE_(__FILE__), __LINE__); while(1); }

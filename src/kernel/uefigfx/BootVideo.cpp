@@ -12,31 +12,26 @@ static unsigned _startX = 0, _startY = 0;
 // current color
 static unsigned _color = 0;
 
-BootVideo::BootVideo(uint32_t * frameBuffer, size_t bufferSize, size_t frameWidth, size_t frameHeight)
-	:glyphProvider_(GetBootFont())
+BootVideo::BootVideo(uint32_t * frameBuffer, size_t bufferSize, size_t frameWidth, size_t frameHeight, uint32_t foreground)
+	:glyphProvider_(GetBootFont()), frameBuffer_(frameBuffer), bufferSize_(bufferSize), frameWidth_(frameWidth), frameHeight_(frameHeight), foreground_(foreground), background_(0xFF000000)
 {
-	this->frameBuffer = frameBuffer;
-	this->bufferSize = bufferSize;
-	this->frameWidth = frameWidth;
-	this->frameHeight = frameHeight;
-	this->currentX = 0;
-	this->currentY = 0;
-	this->currentFramePointer = frameBuffer;
-	this->foreground = 0x00ff99ff;
 }
 
 void BootVideo::PutChar(wchar_t chr)
 {
 	auto& font = GetBootFont();
 	if (chr == L'\r')
-		currentX = 0;
+		currentX_ = margin_;
 	else if (chr == L'\n')
-		currentY += font.Height;
+	{
+		currentX_ = margin_;
+		currentY_ += font.Height;
+	}
 	else
 	{
 		int cx, cy;
 		const unsigned char *glyph = glyphProvider_.GetGlyph(chr);
-		auto pixel = currentFramePointer;
+		auto pixel = currentFramePointer_;
 
 		auto startPixel = pixel;
 		for (cy = 0; cy < font.Height; cy++, glyph++)
@@ -45,22 +40,22 @@ void BootVideo::PutChar(wchar_t chr)
 			auto pixel = startPixel;
 			for (cx = 0; cx < font.Width; cx++)
 			{
-				*pixel++ = (line & 0x80u) ? foreground : background;
+				*pixel++ = (line & 0x80u) ? foreground_ : background_;
 				line <<= 1;
 			}
-			startPixel += frameWidth;
+			startPixel += frameWidth_;
 		}
-		currentX += font.Width;
-		if (currentX >= frameWidth)
+		currentX_ += font.Width;
+		if (currentX_ + font.Width >= frameWidth_)
 		{
-			currentX = 0;
-			currentY += font.Height;
+			currentX_ = margin_;
+			currentY_ += font.Height;
 		}
 	}
-	if (currentY + font.Height >= frameHeight)
+	if (currentY_ + font.Height >= frameHeight_)
 	{
 		ClearScreen();
-		currentY = 0;
+		currentY_ = margin_;
 	}
 	FixCurrentFramePointer();
 }
@@ -171,7 +166,7 @@ void BootVideo::PutFormat(const wchar_t * format, ...)
 			case 'x': {
 				int c = va_arg(args, int);
 				//char str[32]={0};
-				_itow_s(c, 16, str);
+				_itow((uint32_t)c, 16, str);
 				PutString(str);
 				i++;		// go to next character
 				break;
@@ -196,24 +191,20 @@ void BootVideo::PutFormat(const wchar_t * format, ...)
 
 void BootVideo::MovePositionTo(size_t x, size_t y)
 {
-	currentX = std::min(x, frameWidth - 1);
-	currentY = std::min(y, frameHeight - 1);
+	currentX_ = std::min(x + margin_, frameWidth_ - 1 - margin_);
+	currentY_ = std::min(y + margin_, frameHeight_ - 1 - margin_);
 	FixCurrentFramePointer();
 }
 
 void BootVideo::ClearScreen()
 {
-	auto end = (uint32_t*)((uint8_t*)frameBuffer + bufferSize) + 1;
-	for (auto pixel = frameBuffer; pixel < end; pixel++)
-		*pixel = background;
-}
-
-void BootVideo::SetBackground(uint32_t color)
-{
-	background = color;
+	auto end = (uint32_t*)((uint8_t*)frameBuffer_ + bufferSize_) + 1;
+	for (auto pixel = frameBuffer_; pixel < end; pixel++)
+		*pixel = background_;
+	MovePositionTo(0, 0);
 }
 
 void BootVideo::FixCurrentFramePointer()
 {
-	currentFramePointer = frameBuffer + currentY * frameWidth + currentX;
+	currentFramePointer_ = frameBuffer_ + currentY_ * frameWidth_ + currentX_;
 }
