@@ -46,7 +46,7 @@ void BootVideo::PutChar(wchar_t chr)
 			startPixel += frameWidth_;
 		}
 		currentX_ += font.Width;
-		if (currentX_ + font.Width >= frameWidth_)
+		if (currentX_ + margin_ >= frameWidth_)
 		{
 			currentX_ = margin_;
 			currentY_ += font.Height;

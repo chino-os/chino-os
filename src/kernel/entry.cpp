@@ -19,7 +19,7 @@ void Task0(uintptr_t)
 	while (1)
 	{
 		PortHaltProcessor();
-		for (size_t i = 0; i < 20000; i++);
+		for (size_t i = 0; i < 200000; i++);
 		g_BootVideo->PutChar(L'0');
 	}
 }
@@ -29,7 +29,7 @@ void Task1(uintptr_t)
 	while (1)
 	{
 		PortHaltProcessor();
-		for (size_t i = 0; i < 20000; i++);
+		for (size_t i = 0; i < 200000; i++);
 		g_BootVideo->PutChar(L'1');
 	}
 }

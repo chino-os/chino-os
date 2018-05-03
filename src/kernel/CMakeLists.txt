@@ -11,6 +11,7 @@ ADD_DEFINITIONS(-DGNU_EFI_USE_MS_ABI -D_ARCH_=${ARCH})
 
 SET(COMMON_FLAGS "\
 -Os			\
+-s			\
 -fno-common \
 -ffunction-sections \
 -fdata-sections \
@@ -30,10 +31,11 @@ SET(COMMON_WARNING_FLAGS "-Wall \
 -Wno-unused-parameter \
 -Wno-sign-compare \
 -Wno-old-style-declaration")
-# -T ${CMAKE_CURRENT_SOURCE_DIR}/../default.lds \
+
 SET(LDFLAGS "\
 -nostartfiles           \
 -pie					\
+-T ${CMAKE_CURRENT_SOURCE_DIR}/../default.lds \
 -Wl,-static")
 
 SET(CMAKE_C_FLAGS "${COMMON_FLAGS} -std=gnu11")

@@ -41,6 +41,8 @@ extern "C"
 		uint64_t rflags;
 		uint64_t rip_before;
 	} InterruptContext_Arch;
+
+#define Port_StackWidth 8
 #ifdef __cplusplus
 	static_assert(sizeof(InterruptContext_Arch) == 88, "Update size referrenced in the port.");
 }

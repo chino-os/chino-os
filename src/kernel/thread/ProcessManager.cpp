@@ -50,7 +50,7 @@ void ProcessManager::StartScheduler()
 	idleProcess_ = CreateProcess("System Idle", 0, IdleThreadMain);
 
 	PortSetupSchedulerTimer();
-	while (1);
+	PortHaltProcessor();
 }
 
 ProcessManager::thread_handle_it ProcessManager::SelectNextSwitchToThread()
@@ -62,8 +62,6 @@ ProcessManager::thread_handle_it ProcessManager::SelectNextSwitchToThread()
 		auto next = runningThread_;
 		if ((++next).good())
 			threadSwitchTo = next;
-
-		g_BootVideo->PutFormat(L"Now (%lx), Next (%lx)\n", runningThread_.node_, next.node_);
 	}
 	
 	if(!threadSwitchTo.good())
@@ -79,20 +77,16 @@ ProcessManager::thread_handle_it ProcessManager::SelectNextSwitchToThread()
 	}
 
 	kassert(threadSwitchTo.good());
-	g_BootVideo->PutFormat(L"SwitchThreadContext End: %lx\n", threadSwitchTo.node_);
 	return threadSwitchTo;
 }
 
 void ProcessManager::SwitchThreadContext(InterruptContext& context)
 {
-	g_BootVideo->PutString(L"SwitchThreadContext\n");
 	auto nextThread = SelectNextSwitchToThread();
 	if (runningThread_ != nextThread)
 	{
 		auto oldThread = runningThread_.good() ? HandleToListIt<Thread>(*runningThread_) : thread_it();
 		auto newThread = HandleToListIt<Thread>(*nextThread);
-
-		g_BootVideo->PutFormat(L"Running (%lx), New (%lx)\n", oldThread.node_, newThread.node_);
 
 		if (oldThread.good())
 			oldThread->SwitchOut(context);
@@ -100,7 +94,6 @@ void ProcessManager::SwitchThreadContext(InterruptContext& context)
 		runningThread_ = nextThread;
 		newThread->SwitchIn(context);
 	}
-	g_BootVideo->PutString(L"SwitchThreadContext No\n");
 }
 
 ProcessManager::Process & ProcessManager::GetProcess(HANDLE handle)
@@ -125,20 +118,19 @@ ProcessManager::Thread::Thread(ThreadMain_t entryPoint, uint32_t priority, uintp
 	:priority_(priority), threadContext_({})
 {
 	kassert(priority <= MAX_THREAD_PRIORITY);
-	stack_ = std::make_unique<uint8_t[]>(DEFAULT_THREAD_STACK_SIZE);
-	PortInitializeThreadContextArch(&threadContext_.arch, uintptr_t(stack_.get()), uintptr_t(entryPoint), uintptr_t(OnThreadExit), parameter);
+	auto stackSize = DEFAULT_THREAD_STACK_SIZE;
+	stack_ = std::make_unique<uint8_t[]>(stackSize);
+	auto stackPointer = uintptr_t(stack_.get()) + stackSize - Port_StackWidth;
+	PortInitializeThreadContextArch(&threadContext_.arch, stackPointer, uintptr_t(entryPoint), uintptr_t(OnThreadExit), parameter);
 }
 
 void ProcessManager::Thread::SwitchOut(InterruptContext& context)
 {
-	g_BootVideo->PutFormat(L"Switch out (%lx)\n", this);
 	PortSaveThreadContextArch(&threadContext_.arch, &context.arch);
 }
 
 void ProcessManager::Thread::SwitchIn(InterruptContext& context)
 {
-	g_BootVideo->PutFormat(L"Switch in (%lx)\n", this);
-	g_BootVideo->PutFormat(L"B RFLAGS: %lx, RIP: %lx, RSP: %lx\n", context.arch.rflags, context.arch.rip_before, context.arch.rsp_before);
 	PortRestoreThreadContextArch(&threadContext_.arch, &context.arch);
 }
 
@@ -164,10 +156,5 @@ extern "C" void Kernel_OnTimerHandler(void* interruptContext)
 	Chino::InterruptContext context;
 	context.arch = *reinterpret_cast<InterruptContext_Arch*>(interruptContext);
 
-	if (count++ % 200 == 0)
-	{
-		g_BootVideo->PutFormat(L"\nA RFLAGS: %lx, RIP: %lx, RSP: %lx\n", context.arch.rflags, context.arch.rip_before, context.arch.rsp_before);
-		g_ProcessMgr->SwitchThreadContext(context);
-	}
-	//while (1);
+	g_ProcessMgr->SwitchThreadContext(context);
 }
