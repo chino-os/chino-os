@@ -155,9 +155,23 @@ void BootVideo::PutFormat(const wchar_t * format, ...)
 				break;
 			}
 			case 'l': {
-				int64_t c = va_arg(args, int64_t);
-				_itow_s(c, 10, str);
-				PutString(str);
+				switch (format[i + 2]) {
+					case 'X':
+					case 'x': {
+						int c = va_arg(args, int64_t);
+						//char str[32]={0};
+						_itow((uint64_t)c, 16, str);
+						PutString(str);
+						i++;		// go to next character
+						break;
+					}
+					default: {
+						int64_t c = va_arg(args, int64_t);
+						_itow_s(c, 10, str);
+						PutString(str);
+						break;
+					}
+				}
 				i++;		// go to next character
 				break;
 			}

@@ -5,6 +5,7 @@
 #include "../../libchino/chino.h"
 #include "../utils.hpp"
 #include <portable.h>
+#include <list>
 #include <list.hpp>
 #include <string_view>
 #include <string>
@@ -12,6 +13,11 @@
 
 namespace Chino
 {
+	struct InterruptContext
+	{
+		InterruptContext_Arch arch;
+	};
+
 	namespace Thread
 	{
 		class ProcessManager
@@ -27,6 +33,8 @@ namespace Chino
 				Thread(ThreadMain_t entryPoint, uint32_t priority, uintptr_t parameter);
 
 				uint32_t GetPriority() const noexcept { return priority_; }
+				void SwitchOut(InterruptContext& context);
+				[[noreturn]] void SwitchIn(InterruptContext& context);
 			private:
 				ThreadContext threadContext_;
 				uint32_t priority_;
@@ -44,18 +52,23 @@ namespace Chino
 				Chino::list<Process> processes_;
 				Chino::list<Thread> threads_;
 			};
+
+			typedef Chino::list<HANDLE>::iterator thread_handle_it;
+			typedef Chino::list<Thread>::iterator thread_it;
 		public:
 			ProcessManager();
 
 			HANDLE CreateProcess(std::string_view name, uint32_t mainThreadPriority, ThreadMain_t entryPoint);
 			void StartScheduler();
+			void SwitchThreadContext(InterruptContext& context);
 		private:
 			Process & GetProcess(HANDLE handle);
 			void AddReadyThread(HANDLE handle);
+			thread_handle_it SelectNextSwitchToThread();
 		private:
 			Chino::list<Process> _processes;
 			std::array<Chino::list<HANDLE>, MAX_THREAD_PRIORITY + 1> readyThreads_;
-			HANDLE runningThread_;
+			thread_handle_it runningThread_;
 			HANDLE idleProcess_;
 		};
 	}

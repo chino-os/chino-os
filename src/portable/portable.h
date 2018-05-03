@@ -16,6 +16,8 @@ extern "C"
 	extern void PortHaltProcessor();
 
 	extern void PortInitializeThreadContextArch(ThreadContext_Arch* context, uintptr_t stackPointer, uintptr_t entryPoint, uintptr_t returnAddress, uintptr_t parameter);
+	extern void PortSaveThreadContextArch(ThreadContext_Arch* tcontext, InterruptContext_Arch* icontext);
+	extern void __attribute__((noreturn)) PortRestoreThreadContextArch(ThreadContext_Arch* tcontext, InterruptContext_Arch* icontext);
 	extern void PortSetupSchedulerTimer();
 #ifdef __cplusplus
 }

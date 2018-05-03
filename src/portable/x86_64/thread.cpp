@@ -4,7 +4,7 @@
 #include "../portable.h"
 #include <climits>
 
-#define portINITIAL_RFLAGS	0x200u
+#define portINITIAL_RFLAGS	0x206u
 #define portNUM_VECTORS		256
 
 #pragma pack(push, 1)
@@ -24,6 +24,12 @@ struct IDTEntry
 	uint16_t ISRMiddle;				/* Middle 16 bits of handler address. */
 	uint32_t ISRHigh;				/* High 32 bits of handler address. */
 	uint32_t Zero2;					/* Must be set to zero. */
+};
+
+struct GDTPointer
+{
+	uint16_t TableLimit;
+	uint64_t TableBase;
 };
 
 typedef void(*ISR_Handler_t)();
@@ -76,8 +82,10 @@ in the portYIELD_INTERRUPT definition immediately below. */
 #pragma pack(pop)
 
 alignas(32) static IDTEntry interruptDescriptorTable_[portNUM_VECTORS];
+alignas(32) static uint64_t gdtTable_[3];
 
 static void prvSetInterruptGate(uint8_t number, ISR_Handler_t handler, uint8_t flags);
+static void SetupGDT();
 static void SetupIDT();
 
 extern "C"
@@ -90,20 +98,29 @@ extern "C"
 		context->rflags = portINITIAL_RFLAGS;
 		context->rip = entryPoint;
 
+		uint32_t ulCodeSegment;
+		__asm volatile("movl %%cs, %0" : "=r" (ulCodeSegment));
+		context->cs = ulCodeSegment;
+
 		*stack-- = returnAddress;
 		context->rsp = uintptr_t(stack);
 	}
 
 	extern void vPortTimerHandler();
+	extern void vPortAPICSpuriousHandler();
 
 	void PortSetupSchedulerTimer()
 	{
+		//SetupGDT();
 		SetupIDT();
 
 		portAPIC_LVT_TIMER = portAPIC_DISABLE;
 
 		/* Install APIC timer ISR vector. */
 		prvSetInterruptGate((uint8_t)portAPIC_TIMER_INT_VECTOR, vPortTimerHandler, portIDT_FLAGS);
+
+		/* Install spurious interrupt vector. */
+		prvSetInterruptGate((uint8_t)portAPIC_SPURIOUS_INT_VECTOR, vPortAPICSpuriousHandler, portIDT_FLAGS);
 
 		/* Set the interrupt frequency. */
 		portAPIC_TMRDIV = portAPIC_DIV_16;
@@ -113,9 +130,26 @@ extern "C"
 		portAPIC_LVT_TIMER = portAPIC_TIMER_PERIODIC | portAPIC_TIMER_INT_VECTOR;
 
 		/* Enable the APIC, mapping the spurious interrupt at the same time. */
-		portAPIC_SPURIOUS_INT = portAPIC_ENABLE_BIT;
+		portAPIC_SPURIOUS_INT = portAPIC_SPURIOUS_INT_VECTOR | portAPIC_ENABLE_BIT;
 
 		PortEnableInterrupt();
+	}
+
+	void PortSaveThreadContextArch(ThreadContext_Arch* tcontext, InterruptContext_Arch* icontext)
+	{
+		tcontext->rax = icontext->rax;
+		tcontext->rbx = icontext->rbx;
+		tcontext->rcx = icontext->rcx;
+		tcontext->rdx = icontext->rdx;
+		tcontext->rbp = icontext->rbp;
+		tcontext->rdi = icontext->rdi;
+		tcontext->rsi = icontext->rsi;
+		tcontext->rsp = icontext->rsp_before;
+
+		tcontext->cs = icontext->cs;
+
+		tcontext->rflags = icontext->rflags;
+		tcontext->rip = icontext->rip_before;
 	}
 }
 
@@ -134,6 +168,60 @@ static void prvSetInterruptGate(uint8_t number, ISR_Handler_t handler, uint8_t f
 	interruptDescriptorTable_[number].Zero1 = 0;
 	interruptDescriptorTable_[number].Flags = flags;
 	interruptDescriptorTable_[number].Zero2 = 0;
+}
+
+struct GDT
+{
+	uint32_t base;
+	uint32_t limit;
+	uint32_t type;
+};
+
+#include "../kernel/kdebug.hpp"
+
+void encodeGdtEntry(uint64_t *tgdt, struct GDT source)
+{
+	auto target = reinterpret_cast<uint8_t*>(tgdt);
+	// Check the limit to make sure that it can be encoded
+	if ((source.limit > 65536) && (source.limit & 0xFFF) != 0xFFF) {
+		kassert(!"You can't do that!");
+	}
+	if (source.limit > 65536) {
+		// Adjust granularity if required
+		source.limit = source.limit >> 12;
+		target[6] = 0xC0;
+	}
+	else {
+		target[6] = 0x40;
+	}
+
+	// Encode the limit
+	target[0] = source.limit & 0xFF;
+	target[1] = (source.limit >> 8) & 0xFF;
+	target[6] |= (source.limit >> 16) & 0xF;
+
+	// Encode the base 
+	target[2] = source.base & 0xFF;
+	target[3] = (source.base >> 8) & 0xFF;
+	target[4] = (source.base >> 16) & 0xFF;
+	target[7] = (source.base >> 24) & 0xFF;
+
+	// And... Type
+	target[5] = source.type;
+}
+
+static void SetupGDT()
+{
+	GDTPointer gdt;
+	gdt.TableBase = uintptr_t(gdtTable_);
+	gdt.TableLimit = sizeof(gdtTable_) - 1;
+
+	encodeGdtEntry(gdtTable_, { .base = 0,.limit = 0,.type = 0 });
+	encodeGdtEntry(gdtTable_ + 1, { .base = 0,.limit = 0xffffffff,.type = 0x9A });
+	encodeGdtEntry(gdtTable_ + 2, { .base = 0,.limit = 0xffffffff,.type = 0x92 });
+
+	/* Set GDT in CPU. */
+	__asm volatile("lgdt %0" :: "m" (gdt));
 }
 
 static void SetupIDT()

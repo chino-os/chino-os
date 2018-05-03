@@ -11,19 +11,20 @@ GlyphProvider::GlyphProvider(BitmapFont font)
 
 const unsigned char * GlyphProvider::GetGlyph(uint16_t chr) const noexcept
 {
-	return indexes_[chr];
+	auto bitmap = font_.Bitmap;
+	auto height = font_.Height;
+	return bitmap + indexes_[chr] * height;
 }
 
 void GlyphProvider::GenerateIndexer()
 {
-	std::fill(std::begin(indexes_), std::end(indexes_), font_.Bitmap);
+	std::fill(std::begin(indexes_), std::end(indexes_), 0);
 
 	auto index = font_.Index;
-	auto bitmap = font_.Bitmap;
 	auto height = font_.Height;
-	for (size_t i = 0; i < font_.Chars; i++)
+	for (uint16_t i = 0; i < font_.Chars; i++)
 	{
 		auto code = index[i];
-		indexes_[code] = bitmap + i * height;
+		indexes_[code] = i;
 	}
 }

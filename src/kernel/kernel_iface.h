@@ -31,6 +31,8 @@ struct BootParameters
 
 typedef void(*kernel_entry_t)(const struct BootParameters* params);
 
+void Kernel_OnTimerHandler(void* interruptContext);
+
 #ifdef __cplusplus
 
 static_assert(offsetof(BootParameters, StackPointer) == 0);

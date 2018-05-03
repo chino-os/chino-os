@@ -15,7 +15,9 @@ extern "C"
 
 	void* malloc(size_t n)
 	{
-		return HeapAlloc(n);
+		auto p = HeapAlloc(n);
+		kassert(p);
+		return p;
 	}
 
 	void free(void* p)

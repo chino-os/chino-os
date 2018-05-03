@@ -42,10 +42,10 @@ namespace Chino
 				return *this;
 			}
 
-			TElem* operator*() noexcept
+			TElem& operator*() noexcept
 			{
 				assert(node_);
-				return &node_->value_;
+				return node_->value_;
 			}
 
 			TElem* operator->() noexcept
@@ -53,10 +53,24 @@ namespace Chino
 				assert(node_);
 				return &node_->value_;
 			}
+
+			bool good() const noexcept
+			{
+				return node_ != nullptr;
+			}
+
+			bool operator==(iterator it) const noexcept
+			{
+				return node_ == it.node_;
+			}
+
+			bool operator!=(iterator it) const noexcept
+			{
+				return node_ != it.node_;
+			}
 		};
 
 		list()
-			:end_node_(reinterpret_cast<node*>(&end_node_st))
 		{
 
 		}
@@ -64,7 +78,7 @@ namespace Chino
 		~list()
 		{
 			auto cur = head_;
-			while (cur && cur != end_node_)
+			while (cur)
 			{
 				auto next = cur->next_;
 				delete cur;
@@ -79,7 +93,7 @@ namespace Chino
 
 		iterator end() noexcept
 		{
-			return iterator(end_node_);
+			return iterator();
 		}
 
 		template<class ...TArgs>
@@ -87,7 +101,6 @@ namespace Chino
 		{
 			auto new_node = new node(std::forward<TArgs>(value)...);
 			new_node->prev_ = tail_;
-			new_node->next_ = end_node_;
 			if (tail_)
 			{
 				tail_->next_ = new_node;
@@ -113,10 +126,13 @@ namespace Chino
 				tail_ = node->prev_;
 			delete node;
 		}
+
+		bool empty() const noexcept
+		{
+			return head_ == nullptr;
+		}
 	private:
 		node* head_ = nullptr;
 		node* tail_ = nullptr;
-		node* end_node_;
-		char end_node_st;
 	};
 }

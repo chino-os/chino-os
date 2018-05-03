@@ -21,7 +21,7 @@ namespace Chino
 			void GenerateIndexer();
 		private:
 			BitmapFont font_;
-			std::array<const unsigned char*, UINT16_MAX> indexes_;
+			std::array<uint16_t, UINT16_MAX> indexes_;
 		};
 	}
 }
