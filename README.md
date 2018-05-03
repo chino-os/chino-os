@@ -1,8 +1,14 @@
 chino-os
 =========================================
-`chino` is a real time operating system.
+`chino` is a real time operating system written in C++.
 
-[License (MIT)](https://raw.githubusercontent.com/dotnetGame/chino-os/master/LICENSE)
+## Features
+- Multitasking
+- Dynamic linking
+
+![Screenshots](screenshots/1.png)
+
+[License (MIT)](https://raw.githubusercontent.com/chino-os/chino-os/master/LICENSE)
 -------------------------------------------------------------------------------
 	MIT License
 

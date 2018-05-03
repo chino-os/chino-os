@@ -20,7 +20,7 @@ void Task0(uintptr_t)
 	{
 		PortHaltProcessor();
 		for (size_t i = 0; i < 200000; i++);
-		g_BootVideo->PutChar(L'0');
+		g_BootVideo->PutString(L"Task0 ");
 	}
 }
 
@@ -30,7 +30,7 @@ void Task1(uintptr_t)
 	{
 		PortHaltProcessor();
 		for (size_t i = 0; i < 200000; i++);
-		g_BootVideo->PutChar(L'1');
+		g_BootVideo->PutString(L"Task1 ");
 	}
 }
 
