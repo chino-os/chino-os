@@ -8,6 +8,7 @@ extern "C"
 #endif
 #include <efi.h>
 #include <efiapi.h>
+#include <Acpi2_0.h>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -18,15 +19,30 @@ extern "C"
 struct BootParameters
 {
 	uintptr_t StackPointer;
-	EFI_RUNTIME_SERVICES* EfiRuntimeService;
-	EFI_MEMORY_DESCRIPTOR* EfiMemoryDescriptor;
-	size_t EfiMemoryDescriptorSize, EfiMemoryDescriptorCount;
+
+	// EFI
+	struct
+	{
+		EFI_RUNTIME_SERVICES* RuntimeService;
+		EFI_MEMORY_DESCRIPTOR* MemoryDescriptor;
+		size_t MemoryDescriptorSize, MemoryDescriptorCount;
+	} Efi;
 
 	// Gfx
-	uintptr_t FrameBufferBase;
-	size_t FrameBufferSize;
-	size_t FrameBufferWidth;
-	size_t FrameBufferHeight;
+	struct
+	{
+		uintptr_t Base;
+		size_t Size;
+		size_t Width;
+		size_t Height;
+	} FrameBuffer;
+
+	// ACPI
+
+	struct
+	{
+		EFI_ACPI_2_0_ROOT_SYSTEM_DESCRIPTION_POINTER* Rsdp;
+	} Acpi;
 };
 
 typedef void(*kernel_entry_t)(const struct BootParameters* params);

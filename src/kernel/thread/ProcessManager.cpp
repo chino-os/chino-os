@@ -63,8 +63,8 @@ ProcessManager::thread_handle_it ProcessManager::SelectNextSwitchToThread()
 		if ((++next).good())
 			threadSwitchTo = next;
 	}
-	
-	if(!threadSwitchTo.good())
+
+	if (!threadSwitchTo.good())
 	{
 		for (auto it = readyThreads_.rbegin(); it != readyThreads_.rend(); ++it)
 		{
@@ -143,9 +143,8 @@ static void IdleThreadMain(uintptr_t)
 {
 	while (1)
 	{
-		PortHaltProcessor();
-
-		for (size_t i = 0; i < 1000; i++);
+		for (size_t i = 0; i < 100; i++)
+			PortHaltProcessor();
 		g_BootVideo->PutChar(L'.');
 	}
 }

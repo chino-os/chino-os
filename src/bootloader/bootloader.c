@@ -3,6 +3,7 @@
 //
 #include <efi.h>
 #include <efilib.h>
+#include <Acpi2_0.h>
 #include <elfload.h>
 #include <portable.h>
 #include "../kernel/kernel_iface.h"
@@ -56,7 +57,7 @@ static CHAR16 *OsLoaderMemoryTypeDesc[EfiMaxMemoryType] = {
 };
 
 void SetGraphicsMode(struct BootParameters* bootParam);
-extern void DumpACPI();
+void SetACPIBase(struct BootParameters* bootParam);
 
 EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 {
@@ -65,12 +66,6 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
 	EFI_LOADED_IMAGE* loadedImage;
 	EFI_FILE_IO_INTERFACE* volume;
-
-	EFI_SERIAL_IO_PROTOCOL* uart1;
-	//ExitIfError(BS->LocateProtocol(&gEfiSerialIoProtocolGuid, NULL, (void**)&uart1));
-	//CHAR8 str[] = "Hello\n"; UINTN size = sizeof(str);
-	//ExitIfError(uart1->Write(uart1, &size, str));
-	DumpACPI();
 
 	ExitIfError(BS->HandleProtocol(ImageHandle, &gEfiLoadedImageProtocolGuid, (void**)&loadedImage));
 	ExitIfError(BS->HandleProtocol(loadedImage->DeviceHandle, &gEfiSimpleFileSystemProtocolGuid, (void**)&volume));
@@ -101,13 +96,16 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	
 	// 跳转 Kernel
 	kernel_entry_t kernelEntry = (kernel_entry_t)(ctx.ehdr.e_entry + kernelBase);
-	struct BootParameters bootParam = {};
+	struct BootParameters bootParam = { 0 };
 	ExitIfError(BS->AllocatePool(EFI_ChinoKernel_Data, ChinoKernel_StackSize, (void**)&bootParam.StackPointer));
 	bootParam.StackPointer = bootParam.StackPointer + ChinoKernel_StackSize - 1;
-	bootParam.EfiRuntimeService = RT;
+	bootParam.Efi.RuntimeService = RT;
 
 	// 设置视频
 	SetGraphicsMode(&bootParam);
+
+	// 设置 ACPI
+	SetACPIBase(&bootParam);
 
 	// 填写 Memroy Map
 	UINTN entries, mapKey, descriptorSize;
@@ -119,9 +117,9 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	ExitIfError(BS->GetMemoryMap(&totalSize, descriptor, &mapKey, &descriptorSize, &descriptorVersion));
 
 	ExitIfError(BS->ExitBootServices(ImageHandle, mapKey));
-	bootParam.EfiMemoryDescriptor = descriptor;
-	bootParam.EfiMemoryDescriptorSize = descriptorSize;
-	bootParam.EfiMemoryDescriptorCount = totalSize / descriptorSize;
+	bootParam.Efi.MemoryDescriptor = descriptor;
+	bootParam.Efi.MemoryDescriptorSize = descriptorSize;
+	bootParam.Efi.MemoryDescriptorCount = totalSize / descriptorSize;
 
 	PortEnterKernel(&bootParam, kernelEntry);
 
@@ -156,8 +154,35 @@ void SetGraphicsMode(struct BootParameters* bootParam)
 	ExitIfError(gop->SetMode(gop, modeIndex));
 
 	Print(L"Change Graphics Mode: %dx%d\n", DESIRED_HREZ, DESIRED_VREZ);
-	bootParam->FrameBufferBase = (uintptr_t)gop->Mode->FrameBufferBase;
-	bootParam->FrameBufferSize = (uintptr_t)gop->Mode->FrameBufferSize;
-	bootParam->FrameBufferWidth = DESIRED_HREZ;
-	bootParam->FrameBufferHeight = DESIRED_VREZ;
+	bootParam->FrameBuffer.Base = (uintptr_t)gop->Mode->FrameBufferBase;
+	bootParam->FrameBuffer.Size = (uintptr_t)gop->Mode->FrameBufferSize;
+	bootParam->FrameBuffer.Width = DESIRED_HREZ;
+	bootParam->FrameBuffer.Height = DESIRED_VREZ;
+}
+
+EFI_STATUS SearchEfiConfigurationTable(const EFI_GUID *guid_p, EFI_CONFIGURATION_TABLE **entry_pp)
+{
+	EFI_STATUS ret;
+	EFI_CONFIGURATION_TABLE *cfg_table_p = ST->ConfigurationTable;
+	EFI_CONFIGURATION_TABLE *entry_p;
+	UINTN i, count = ST->NumberOfTableEntries;
+	for (i = 0, ret = EFI_NOT_FOUND; i < count; i++) {
+		entry_p = &(cfg_table_p[i]);
+		if (0 == CompareGuid((EFI_GUID*)guid_p, &(entry_p->VendorGuid))) {
+			ret = EFI_SUCCESS;
+			*entry_pp = entry_p;
+			break;
+		}
+	}
+
+	return ret;
+}
+
+static const EFI_GUID gEfiAcpiTableGuid = ACPI_20_TABLE_GUID;
+
+void SetACPIBase(struct BootParameters* bootParam)
+{
+	EFI_CONFIGURATION_TABLE* efiRdsp;
+	ExitIfError(SearchEfiConfigurationTable(&gEfiAcpiTableGuid, &efiRdsp));
+	bootParam->Acpi.Rsdp = efiRdsp->VendorTable;
 }

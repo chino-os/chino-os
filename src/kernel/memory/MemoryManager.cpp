@@ -90,10 +90,10 @@ void Chino::Memory::InitializeHeap(const BootParameters& bootParams) noexcept
 	size_t totalRegionSize, totalHeapSize = 0;
 	size_t definedRegions = 0;
 	uintptr_t address;
-	auto pHeapRegion = bootParams.EfiMemoryDescriptor;
+	auto pHeapRegion = bootParams.Efi.MemoryDescriptor;
 
-	const auto totalRegions = bootParams.EfiMemoryDescriptorCount;
-	const auto descriptorSize = bootParams.EfiMemoryDescriptorSize;
+	const auto totalRegions = bootParams.Efi.MemoryDescriptorCount;
+	const auto descriptorSize = bootParams.Efi.MemoryDescriptorSize;
 
 	/* Can only call once! */
 	kassert(pHeapEnd_ == nullptr);
