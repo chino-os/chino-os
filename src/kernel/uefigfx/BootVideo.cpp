@@ -158,7 +158,7 @@ void BootVideo::PutFormat(const wchar_t * format, ...)
 				switch (format[i + 2]) {
 					case 'X':
 					case 'x': {
-						int c = va_arg(args, int64_t);
+						int64_t c = va_arg(args, int64_t);
 						//char str[32]={0};
 						_itow((uint64_t)c, 16, str);
 						PutString(str);

@@ -11,26 +11,41 @@ namespace Chino
 	{
 		class IDEControllerDriver : public Driver
 		{
-			enum class DeviceType
+			enum class DriveType
 			{
+				None,
 				ATA,
 				ATAPI
 			};
 
-			class Drive
+			struct Drive
 			{
-
+				DriveType Type = DriveType::None;
+				uint16_t Signature;
+				uint16_t Capabilities;
+				uint32_t CommandSets;
+				uint32_t Size;
+				char Model[41];
 			};
 
 			class Channel
 			{
 			public:
-				Channel(bool isPrimary, uint32_t bar, uint32_t barCtrl);
+				Channel(bool isPrimary, uint32_t bar, uint32_t barCtrl, uint32_t busMaster);
 
 				void Install();
 			private:
-				uint32_t channelId_, bar_, barCtrl_;
-				DeviceType deviceType_;
+				uint8_t ReadRegister(uint8_t reg);
+				void WriteRegister(uint8_t reg, uint8_t data);
+				void ReadFifo(uint8_t reg, uint32_t* buffer, size_t length);
+				void Polling();
+
+				void SelectDrive(uint8_t driveId);
+				void SendCommand(uint8_t command);
+			private:
+				uint32_t channelId_, base_, baseCtrl_, baseMaserIde_;
+				uint8_t nIEN_;
+				Drive drives_[2];
 			};
 		public:
 			DECLARE_PCI_DRIVER(IDEControllerDriver);

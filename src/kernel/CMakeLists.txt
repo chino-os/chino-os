@@ -13,7 +13,6 @@ ADD_DEFINITIONS(-DGNU_EFI_USE_MS_ABI -D_ARCH_=${ARCH})
 
 SET(COMMON_FLAGS "\
 -Os			\
--s			\
 -fno-common \
 -ffunction-sections \
 -fdata-sections \

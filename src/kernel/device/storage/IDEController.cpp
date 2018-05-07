@@ -3,6 +3,7 @@
 //
 #include "IDEController.hpp"
 #include "../../kdebug.hpp"
+#include <portable.h>
 
 using namespace Chino::Device;
 
@@ -10,20 +11,21 @@ DEFINE_PCI_DRIVER_DESC(IDEControllerDriver, 0x01, 0x01);
 
 IDEControllerDriver::IDEControllerDriver(const PCIDevice & device)
 	:ideCfg_((PCI_TYPE00*)device.GetConfigurationSpace()),
-	channels_ { 
-		{ true, ideCfg_->Device.Bar[0] , ideCfg_->Device.Bar[1] },
-		{ false, ideCfg_->Device.Bar[2] , ideCfg_->Device.Bar[3] }
-	}
+	channels_{
+		{ true, ideCfg_->Device.Bar[0] , ideCfg_->Device.Bar[1], ideCfg_->Device.Bar[4] },
+		{ false, ideCfg_->Device.Bar[2] , ideCfg_->Device.Bar[3], ideCfg_->Device.Bar[4] }
+}
 {
 	auto cfg = device.GetConfigurationSpace();
 	g_BootVideo->PutFormat(L"VendorId: %x, DeviceId: %x\n", cfg->VendorId, cfg->DeviceId);
 
-	auto ideCfg = (PCI_TYPE00*)cfg;
-	g_BootVideo->PutFormat(L"Bar0: %x\n", ideCfg->Device.Bar[0]);
-	g_BootVideo->PutFormat(L"Bar1: %x\n", ideCfg->Device.Bar[1]);
-	g_BootVideo->PutFormat(L"Bar2: %x\n", ideCfg->Device.Bar[2]);
-	g_BootVideo->PutFormat(L"Bar3: %x\n", ideCfg->Device.Bar[3]);
-	g_BootVideo->PutFormat(L"Bar4: %x\n", ideCfg->Device.Bar[4]);
+	auto ideCfg = (volatile PCI_TYPE00*)cfg;
+
+	for (int i = 0; i < 6; i++)
+	{
+		auto bar = ideCfg->Device.Bar + i;
+		g_BootVideo->PutFormat(L"Bar%d: %x\n", i, *bar);
+	}
 }
 
 bool IDEControllerDriver::IsSupported(const Chino::Device::PCIDevice& device)
@@ -37,9 +39,10 @@ void IDEControllerDriver::Install()
 		channel.Install();
 }
 
-IDEControllerDriver::Channel::Channel(bool isPrimary, uint32_t bar, uint32_t barCtrl)
-	:bar_((bar == 0 || bar == 1) ? (isPrimary ? 0x1F0 : 0x170) : bar),
-	barCtrl_((barCtrl == 0 || barCtrl == 1) ? (isPrimary ? 0x3F6 : 0x376) : bar),
+IDEControllerDriver::Channel::Channel(bool isPrimary, uint32_t bar, uint32_t barCtrl, uint32_t busMaster)
+	:base_((bar == 0 || bar == 1) ? (isPrimary ? 0x1F0 : 0x170) : bar),
+	baseCtrl_((barCtrl == 0 || barCtrl == 1) ? (isPrimary ? 0x3F6 : 0x376) : bar),
+	baseMaserIde_(isPrimary ? busMaster : busMaster + 8),
 	channelId_(isPrimary ? 0 : 1)
 {
 }
@@ -114,5 +117,158 @@ IDEControllerDriver::Channel::Channel(bool isPrimary, uint32_t bar, uint32_t bar
 
 void IDEControllerDriver::Channel::Install()
 {
+	for (uint8_t i = 0; i < 2; i++)
+	{
+		auto& drive = drives_[i];
+		bool err = false;
+		auto driveType = DriveType::ATA;
 
+		SelectDrive(i);
+		for (int i = 0; i < 4; i++)
+			ReadRegister(ATA_REG_ALTSTATUS); // Reading the Alternate Status port wastes 100ns; loop four times.
+		PortSleepMs(10);
+		g_BootVideo->PutFormat(L"Status:%x\n", ReadRegister(ATA_REG_STATUS));
+		g_BootVideo->PutString(L"A");
+		SendCommand(ATA_CMD_IDENTIFY);
+
+		if (ReadRegister(ATA_REG_STATUS) == 0) continue; // If Status = 0, No Device.
+
+		while (1) {
+			auto status = ReadRegister(ATA_REG_STATUS);
+			if ((status & ATA_SR_ERR)) { err = true; break; } // If Err, Device is not ATA.
+			if (!(status & ATA_SR_BSY) && (status & ATA_SR_DRQ)) break; // Everything is right.
+		}
+
+		if (err)
+		{
+			auto cl = ReadRegister(ATA_REG_LBA1);
+			auto ch = ReadRegister(ATA_REG_LBA2);
+
+			if (cl == 0x14 && ch == 0xEB)
+				driveType = DriveType::ATAPI;
+			else if (cl == 0x69 && ch == 0x96)
+				driveType = DriveType::ATAPI;
+			else
+				continue; // Unknown Type (may not be a device).
+
+			g_BootVideo->PutString(L"B");
+			SendCommand(ATA_CMD_IDENTIFY_PACKET);
+		}
+
+		std::array<uint32_t, 128> buffer;
+		g_BootVideo->PutString(L"C");
+		ReadFifo(ATA_REG_DATA, buffer.data(), buffer.size());
+
+		auto pBuffer = uintptr_t(buffer.data());
+		drive.Type = driveType;
+		drive.Signature = *reinterpret_cast<uint16_t*>(pBuffer + ATA_IDENT_DEVICETYPE);
+		drive.Capabilities = *reinterpret_cast<uint16_t*>(pBuffer + ATA_IDENT_CAPABILITIES);
+		drive.CommandSets = *reinterpret_cast<uint32_t*>(pBuffer + ATA_IDENT_COMMANDSETS);
+
+		if (drive.CommandSets & (1 << 26))
+			// Device uses 48-Bit Addressing:
+			drive.Size = *reinterpret_cast<uint32_t*>(pBuffer + ATA_IDENT_MAX_LBA_EXT);
+		else
+			// Device uses CHS or 28-bit Addressing:
+			drive.Size = *reinterpret_cast<uint32_t*>(pBuffer + ATA_IDENT_MAX_LBA);
+
+		for (size_t i = 0; i < 40; i += 2)
+		{
+			drive.Model[i] = *reinterpret_cast<char*>(pBuffer + ATA_IDENT_MODEL + i);
+			drive.Model[i + 1] = *reinterpret_cast<char*>(pBuffer + ATA_IDENT_MODEL + i);
+		}
+		drive.Model[40] = 0;
+
+		g_BootVideo->PutString(L"D");
+		static wchar_t* typeStr[] = { L"None", L"ATA", L"ATAPI" };
+		std::array<wchar_t, 41> model;
+		std::copy(std::begin(drive.Model), std::end(drive.Model), model.begin());
+
+		g_BootVideo->PutFormat(L"Detect Drive %d: %s, Size: %d bytes, Model: %s\n", i, typeStr[(size_t)drive.Type], drive.Size, model.data());
+		g_BootVideo->PutFormat(L"%lx\n", pBuffer);
+	}
+}
+
+uint8_t IDEControllerDriver::Channel::ReadRegister(uint8_t reg)
+{
+	uint8_t result;
+	if (reg > 0x07 && reg < 0x0C)
+		WriteRegister(ATA_REG_CONTROL, 0x80 | nIEN_);
+	if (reg < 0x08)
+		result = PortIOReadUInt8(base_ + reg - 0x00);
+	else if (reg < 0x0C)
+		result = PortIOReadUInt8(base_ + reg - 0x06);
+	else if (reg < 0x0E)
+		result = PortIOReadUInt8(baseCtrl_ + reg - 0x0A);
+	else if (reg < 0x16)
+		result = PortIOReadUInt8(baseMaserIde_ + reg - 0x0E);
+	if (reg > 0x07 && reg < 0x0C)
+		WriteRegister(ATA_REG_CONTROL, nIEN_);
+	return result;
+}
+
+void IDEControllerDriver::Channel::WriteRegister(uint8_t reg, uint8_t data)
+{
+	if (reg > 0x07 && reg < 0x0C)
+		WriteRegister(ATA_REG_CONTROL, 0x80 | nIEN_);
+	if (reg < 0x08)
+		PortIOWriteUInt8(base_ + reg - 0x00, data);
+	else if (reg < 0x0C)
+		PortIOWriteUInt8(base_ + reg - 0x06, data);
+	else if (reg < 0x0E)
+		PortIOWriteUInt8(baseCtrl_ + reg - 0x0A, data);
+	else if (reg < 0x16)
+		PortIOWriteUInt8(baseMaserIde_ + reg - 0x0E, data);
+	if (reg > 0x07 && reg < 0x0C)
+		WriteRegister(ATA_REG_CONTROL, nIEN_);
+}
+
+void IDEControllerDriver::Channel::SelectDrive(uint8_t driveId)
+{
+	WriteRegister(ATA_REG_HDDEVSEL, 0xA0 | (driveId << 4));
+	Polling();
+}
+
+void IDEControllerDriver::Channel::SendCommand(uint8_t command)
+{
+	WriteRegister(ATA_REG_COMMAND, command);
+	Polling();
+}
+
+void IDEControllerDriver::Channel::ReadFifo(uint8_t reg, uint32_t* buffer, size_t length)
+{
+	if (reg > 0x07 && reg < 0x0C)
+		WriteRegister(ATA_REG_CONTROL, 0x80 | nIEN_);
+
+	if (reg < 0x08)
+		PortIOReadUInt32String(base_ + reg - 0x00, buffer, length);
+	else if (reg < 0x0C)
+		PortIOReadUInt32String(base_ + reg - 0x06, buffer, length);
+	else if (reg < 0x0E)
+		PortIOReadUInt32String(baseCtrl_ + reg - 0x0A, buffer, length);
+	else if (reg < 0x16)
+		PortIOReadUInt32String(baseMaserIde_ + reg - 0x0E, buffer, length);
+
+	if (reg > 0x07 && reg < 0x0C)
+		WriteRegister(ATA_REG_CONTROL, nIEN_);
+}
+
+void IDEControllerDriver::Channel::Polling()
+{
+	// (I) Delay 400 nanosecond for BSY to be set:
+	// -------------------------------------------------
+	for (int i = 0; i < 4; i++)
+		ReadRegister(ATA_REG_ALTSTATUS); // Reading the Alternate Status port wastes 100ns; loop four times.
+
+	size_t i = 0;
+	// (II) Wait for BSY to be cleared:
+	// -------------------------------------------------
+	while (ReadRegister(ATA_REG_STATUS) & ATA_SR_BSY)
+	{
+		if (i++ == 10000)
+		{
+			i = 0;
+			g_BootVideo->PutFormat(L"Status: %x\n", (int)ReadRegister(ATA_REG_STATUS));
+		}
+	}
 }

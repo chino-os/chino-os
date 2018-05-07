@@ -3,6 +3,7 @@
 //
 #include "Pci.hpp"
 #include "../storage/IDEController.hpp"
+#include "../storage/Ahci.hpp"
 
 using namespace Chino::Device;
 
@@ -10,6 +11,7 @@ using namespace Chino::Device;
 
 const PCIDriverDescriptor* Chino::Device::g_PCIDrivers[] =
 {
-	REF_PCI_DRIVER_DESC(IDEControllerDriver),
+	//REF_PCI_DRIVER_DESC(IDEControllerDriver),
+	REF_PCI_DRIVER_DESC(AhciDriver),
 	nullptr
 };

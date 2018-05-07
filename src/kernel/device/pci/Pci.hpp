@@ -47,9 +47,9 @@ namespace Chino
 
 			std::unique_ptr<Driver> TryLoadDriver();
 
-			PCI_DEVICE_INDEPENDENT_REGION* GetConfigurationSpace() const noexcept { return config_; }
+			volatile PCI_DEVICE_INDEPENDENT_REGION* GetConfigurationSpace() const noexcept { return config_; }
 		private:
-			PCI_DEVICE_INDEPENDENT_REGION * config_;
+			volatile PCI_DEVICE_INDEPENDENT_REGION * config_;
 		};
 
 		extern const PCIDriverDescriptor* g_PCIDrivers[];

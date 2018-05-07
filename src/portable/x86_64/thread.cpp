@@ -151,6 +151,12 @@ extern "C"
 		tcontext->rflags = icontext->rflags;
 		tcontext->rip = icontext->rip_before;
 	}
+
+	void PortSleepMs(uint32_t ms)
+	{
+		auto count = configCPU_CLOCK_HZ / 1000 * ms;
+		for (size_t i = 0; i < count; i++);
+	}
 }
 
 static void prvSetInterruptGate(uint8_t number, ISR_Handler_t handler, uint8_t flags)
