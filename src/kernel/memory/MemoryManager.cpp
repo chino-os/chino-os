@@ -181,6 +181,7 @@ void* Chino::Memory::HeapAlloc(size_t wantedSize) noexcept
 {
 	BlockLink_t *pBlock, *pPreviousBlock, *pNewBlockLink;
 	void *pReturn = nullptr;
+	uintptr_t alignOffset = 0;
 
 	/* The heap must be initialised before the first call to
 	prvPortMalloc(). */
@@ -286,6 +287,21 @@ void* Chino::Memory::HeapAlloc(size_t wantedSize) noexcept
 	return pReturn;
 }
 
+void* Chino::Memory::HeapAlignedAlloc(size_t wantedSize, size_t alignment) noexcept
+{
+	auto offset = alignment - 1 + sizeof(void*);
+	auto pHead = HeapAlloc(wantedSize + offset);
+	if (pHead)
+	{
+		auto pReturn = (uintptr_t(pHead) + offset) & ~(alignment - 1);
+		auto pLink = reinterpret_cast<void**>(pReturn - sizeof(void*));
+		*pLink = pHead;
+		return reinterpret_cast<void*>(pReturn);
+	}
+
+	return nullptr;
+}
+
 void Chino::Memory::HeapFree(void* ptr) noexcept
 {
 	auto puc = uintptr_t(ptr);
@@ -322,6 +338,16 @@ void Chino::Memory::HeapFree(void* ptr) noexcept
 				//(void)xTaskResumeAll();
 			}
 		}
+	}
+}
+
+void Chino::Memory::HeapAlignedFree(void* ptr) noexcept
+{
+	if (ptr)
+	{
+		auto puc = uintptr_t(ptr);
+		auto pLink = reinterpret_cast<void**>(puc - sizeof(void*));
+		HeapFree(*pLink);
 	}
 }
 

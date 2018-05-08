@@ -98,7 +98,7 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	kernel_entry_t kernelEntry = (kernel_entry_t)(ctx.ehdr.e_entry + kernelBase);
 	struct BootParameters bootParam = { 0 };
 	ExitIfError(BS->AllocatePool(EFI_ChinoKernel_Data, ChinoKernel_StackSize, (void**)&bootParam.StackPointer));
-	bootParam.StackPointer = bootParam.StackPointer + ChinoKernel_StackSize - 1;
+	bootParam.StackPointer = bootParam.StackPointer + ChinoKernel_StackSize;
 	bootParam.Efi.RuntimeService = RT;
 
 	// …Ë÷√ ”∆µ

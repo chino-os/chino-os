@@ -120,7 +120,7 @@ ProcessManager::Thread::Thread(ThreadMain_t entryPoint, uint32_t priority, uintp
 	kassert(priority <= MAX_THREAD_PRIORITY);
 	auto stackSize = DEFAULT_THREAD_STACK_SIZE;
 	stack_ = std::make_unique<uint8_t[]>(stackSize);
-	auto stackPointer = uintptr_t(stack_.get()) + stackSize - Port_StackWidth;
+	auto stackPointer = uintptr_t(stack_.get()) + stackSize;
 	PortInitializeThreadContextArch(&threadContext_.arch, stackPointer, uintptr_t(entryPoint), uintptr_t(OnThreadExit), parameter);
 }
 

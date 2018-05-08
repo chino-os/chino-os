@@ -3,6 +3,7 @@
 //
 #pragma once
 #include "Driver.hpp"
+#include "storage/Drive.hpp"
 #include "../utils.hpp"
 #include <vector>
 #include <memory>
@@ -18,8 +19,12 @@ namespace Chino
 
 			void InstallDevices(const BootParameters& bootParams);
 			void InstallDriver(std::unique_ptr<Driver>&& driver);
+
+			void RegisterDrive(DriveDevice& drive);
+		private:
 		private:
 			std::vector<std::unique_ptr<Driver>> drivers_;
+			std::vector<std::reference_wrapper<DriveDevice>> drives_;
 		};
 	}
 }
