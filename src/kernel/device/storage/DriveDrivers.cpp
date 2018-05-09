@@ -2,7 +2,7 @@
 // Kernel Device
 //
 #include "Drive.hpp"
-#include "filesystem/PartitionMgr.hpp"
+#include "volume/PartitionMgr.hpp"
 
 using namespace Chino::Device;
 

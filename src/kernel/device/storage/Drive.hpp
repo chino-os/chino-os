@@ -10,11 +10,11 @@
 
 #define DECLARE_DRIVE_DRIVER(Type) \
 static const Chino::Device::DriveDriverDescriptor Descriptor; \
-static std::unique_ptr<Chino::Device::Driver> Activate(const Chino::Device::DriveDevice& device); \
-static bool IsSupported(const Chino::Device::DriveDevice& device);
+static std::unique_ptr<Chino::Device::Driver> Activate(Chino::Device::DriveDevice& device); \
+static bool IsSupported(Chino::Device::DriveDevice& device);
 
 #define DEFINE_DRIVE_DRIVER_DESC(Type) \
-std::unique_ptr<Chino::Device::Driver> Type::Activate(const Chino::Device::DriveDevice& device) \
+std::unique_ptr<Chino::Device::Driver> Type::Activate(Chino::Device::DriveDevice& device) \
 { return std::make_unique<Type>(device); } \
 const Chino::Device::DriveDriverDescriptor Type::Descriptor = { Type::Activate, Type::IsSupported };
 
@@ -23,8 +23,8 @@ namespace Chino
 	namespace Device
 	{
 		class DriveDevice;
-		typedef std::unique_ptr<Driver>(*DriveDriverActivator_t)(const DriveDevice& device);
-		typedef bool(*DriveDriverIsSupported_t)(const DriveDevice& device);
+		typedef std::unique_ptr<Driver>(*DriveDriverActivator_t)(DriveDevice& device);
+		typedef bool(*DriveDriverIsSupported_t)(DriveDevice& device);
 
 		struct DriveDriverDescriptor
 		{
