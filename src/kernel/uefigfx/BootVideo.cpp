@@ -72,6 +72,18 @@ void BootVideo::PutString(const wchar_t * string, size_t count)
 		PutChar(*string++);
 }
 
+void BootVideo::PutString(const char * string)
+{
+	while (*string)
+		PutChar(*string++);
+}
+
+void BootVideo::PutString(const char * string, size_t count)
+{
+	for (size_t i = 0; i < count; i++)
+		PutChar(*string++);
+}
+
 wchar_t tbuf[64];
 wchar_t bchars[] = { L'0',L'1',L'2',L'3',L'4',L'5',L'6',L'7',L'8',L'9',L'A',L'B',L'C',L'D',L'E',L'F' };
 wchar_t str[64] = { 0 };
@@ -171,6 +183,97 @@ void BootVideo::PutFormat(const wchar_t * format, ...)
 						PutString(str);
 						break;
 					}
+				}
+				i++;		// go to next character
+				break;
+			}
+					  /*** display in hex ***/
+			case 'X':
+			case 'x': {
+				int c = va_arg(args, int);
+				//char str[32]={0};
+				_itow((uint32_t)c, 16, str);
+				PutString(str);
+				i++;		// go to next character
+				break;
+			}
+
+			default:
+				va_end(args);
+				return;
+			}
+
+			break;
+
+		default:
+			PutChar(format[i]);
+			break;
+		}
+
+	}
+
+	va_end(args);
+}
+
+void BootVideo::PutFormat(const char * format, ...)
+{
+	if (!format)return;
+
+	va_list		args;
+	va_start(args, format);
+
+	for (size_t i = 0; format[i]; i++) {
+
+		switch (format[i]) {
+
+		case L'%':
+
+			switch (format[i + 1]) {
+
+				/*** characters ***/
+			case L'c': {
+				char c = va_arg(args, int);
+				PutChar(c);
+				i++;		// go to next character
+				break;
+			}
+
+					   /*** address of ***/
+			case 's': {
+				char* c = (char*)va_arg(args, char*);
+				//char str[32]={0};
+				//itoa(c, 16, str);
+				PutString(c);
+				i++;		// go to next character
+				break;
+			}
+
+					  /*** integers ***/
+			case 'd':
+			case 'i': {
+				int c = va_arg(args, int);
+				_itow_s(c, 10, str);
+				PutString(str);
+				i++;		// go to next character
+				break;
+			}
+			case 'l': {
+				switch (format[i + 2]) {
+				case 'X':
+				case 'x': {
+					int64_t c = va_arg(args, int64_t);
+					//char str[32]={0};
+					_itow((uint64_t)c, 16, str);
+					PutString(str);
+					i++;		// go to next character
+					break;
+				}
+				default: {
+					int64_t c = va_arg(args, int64_t);
+					_itow_s(c, 10, str);
+					PutString(str);
+					break;
+				}
 				}
 				i++;		// go to next character
 				break;

@@ -19,6 +19,9 @@ namespace Chino
 			void PutString(const wchar_t* string);
 			void PutString(const wchar_t* string, size_t count);
 			void PutFormat(const wchar_t* format, ...);
+			void PutString(const char* string);
+			void PutString(const char* string, size_t count);
+			void PutFormat(const char* format, ...);
 			void MovePositionTo(size_t x, size_t y);
 			void ClearScreen();
 			void SetForeground(uint32_t color) { foreground_ = color; }
