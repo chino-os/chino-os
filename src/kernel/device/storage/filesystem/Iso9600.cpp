@@ -173,16 +173,20 @@ void Iso9600FileSystem::ForEachDirectoryEntry(uint32_t lba, std::function<bool(c
 struct Iso9600File : public FileSystemFile
 {
 	size_t DataLBA;
+
+	using FileSystemFile::FileSystemFile;
 };
 
-std::unique_ptr<FileSystemFile> Iso9600FileSystem::TryOpenFile(const FilePath& filePath)
+std::unique_ptr<FileSystemFile> Iso9600FileSystem::TryOpenFile(const Path& filePath)
 {
-	//for (auto& comp : filePath)
-	//{
-	//	g_BootVideo->PutFormat("%s ", comp.c_str());
-	//}
-	/*
-	auto cntPathComp = "";
+	for (auto comp : filePath)
+	{
+		std::string str(comp);
+		g_BootVideo->PutFormat("C: %s ", str.c_str());
+	}
+	g_BootVideo->PutChar('\n');
+	
+	auto cntPathComp = filePath.begin();
 	auto fileNameComp = --filePath.end();
 	std::optional<uint32_t> pathLBA;
 	uint16_t parentNumber = 1;
@@ -193,10 +197,10 @@ std::unique_ptr<FileSystemFile> Iso9600FileSystem::TryOpenFile(const FilePath& f
 		if (entry.ParentNumber < parentNumber) return false;
 		if (entry.ParentNumber > parentNumber) return true;
 
-		auto cmp = strnicmp((char*)entry.Identifier, cntPathComp.c_str(), std::min(size_t(entry.IdentifierLength), cntPathComp.size()));
+		auto cmp = strncasecmp((char*)entry.Identifier, (*cntPathComp).data(), std::min(size_t(entry.IdentifierLength), (*cntPathComp).size()));
 		if (cmp > 0) return true;
 
-		if (cmp == 0 && cntPathComp.size() == entry.IdentifierLength)
+		if (cmp == 0 && (*cntPathComp).size() == entry.IdentifierLength)
 		{
 			if (++cntPathComp == fileNameComp)
 			{
@@ -212,14 +216,21 @@ std::unique_ptr<FileSystemFile> Iso9600FileSystem::TryOpenFile(const FilePath& f
 	});
 
 	if (!pathLBA) return nullptr;
-
+	
 	std::optional<DirectoryEntry> fileEntry;
 	ForEachDirectoryEntry(pathLBA.value(), [&, this](const DirectoryEntry& entry)
 	{
-		auto cmp = strnicmp((char*)entry.IdentifierAndSystemUse, fileNameComp.c_str(), std::min(size_t(entry.IdentifierLength), fileNameComp.size()));
+		auto idLen = size_t(entry.IdentifierLength);
+		if ((entry.FileFlags & 2) == 0) // Is a file
+		{
+			idLen -= 2;
+			if (!filePath.Extension().size()) idLen--;
+		}
+
+		auto cmp = strncasecmp((char*)entry.IdentifierAndSystemUse, (*fileNameComp).data(), std::min(size_t(entry.IdentifierLength), (*fileNameComp).size()));
 		if (cmp > 0) return true;
 
-		if (cmp == 0 && fileNameComp.size() == entry.IdentifierLength)
+		if (cmp == 0 && (*fileNameComp).size() == idLen)
 		{
 			if ((entry.FileFlags & 2) == 0) // Is a file
 				fileEntry = entry;
@@ -230,10 +241,13 @@ std::unique_ptr<FileSystemFile> Iso9600FileSystem::TryOpenFile(const FilePath& f
 	});
 
 	if (!fileEntry) return nullptr;
+
 	auto& entry = fileEntry.value();
-	return std::make_unique<Iso9600File>();
-	*/
-	return nullptr;
+	auto file = std::make_unique<Iso9600File>(*this);
+	file->DataLBA = fileEntry.value().ExtentLBA;
+	file->DataLength = fileEntry.value().DataLength;
+	
+	return std::move(file);
 }
 
 void Iso9600FileSystem::ReadFile(FileSystemFile& file, uint8_t* buffer, size_t blockOffset, size_t numBlocks)

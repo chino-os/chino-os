@@ -24,10 +24,11 @@ void FileManager::DumpFileSystems()
 HANDLE FileManager::OpenFile(std::string_view fileName)
 {
 	kassert(fileName.compare(0, 7, "/dev/fs") == 0);
-	std::string dev(fileName.substr(4, fileName.find_first_of('/', 5) - 4));
+	std::string dev(fileName.substr(5, fileName.find_first_of('/', 5) - 5));
 	auto fs = fsPathMap_.PathMap.find(dev);
 	if (fs == fsPathMap_.PathMap.end()) return 0;
-	auto file = fs->second.get().TryOpenFile(fileName.substr(fileName.find_first_of('/', 5)));
+	std::string devRelPath(fileName.substr(fileName.find_first_of('/', 5)));
+	auto file = fs->second.get().TryOpenFile(devRelPath);
 	if (file)
 	{
 		HANDLE handle;
@@ -68,5 +69,5 @@ size_t FileManager::GetFileSize(HANDLE file)
 
 void FileManager::ReadFile(HANDLE file, uint8_t* buffer, size_t offset, size_t length)
 {
-
+	
 }

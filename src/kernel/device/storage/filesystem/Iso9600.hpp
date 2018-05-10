@@ -51,7 +51,7 @@ namespace Chino
 
 			virtual void Install() override;
 
-			virtual std::unique_ptr<FileSystemFile> TryOpenFile(const FilePath& filePath);
+			virtual std::unique_ptr<FileSystemFile> TryOpenFile(const Path& filePath);
 			virtual void ReadFile(FileSystemFile& file, uint8_t* buffer, size_t blockOffset, size_t numBlocks);
 		private:
 			void ForEachPathTable(std::function<bool(const PathEntry&)> callback);

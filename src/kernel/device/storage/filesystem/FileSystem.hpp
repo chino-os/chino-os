@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <memory>
-#include <string_view>
+#include "path.hpp"
 
 namespace Chino
 {
@@ -18,16 +18,16 @@ namespace Chino
 		{
 			FileSystem& FS;
 
-			size_t NumBlocks;
 			size_t DataLength;
-		};
 
-		using FilePath = std::string_view;
+			FileSystemFile(FileSystem& fs)
+				:FS(fs) {}
+		};
 
 		class FileSystem
 		{
 		public:
-			virtual std::unique_ptr<FileSystemFile> TryOpenFile(const FilePath& filePath) = 0;
+			virtual std::unique_ptr<FileSystemFile> TryOpenFile(const Path& filePath) = 0;
 			virtual void ReadFile(FileSystemFile& file, uint8_t* buffer, size_t blockOffset, size_t numBlocks) = 0;
 
 			size_t BlockSize;
