@@ -72,8 +72,6 @@ void AcpiDriver::Install()
 	auto xsdt = reinterpret_cast<EFI_ACPI_DESCRIPTION_HEADER*>(rsdp_->XsdtAddress);
 	auto mcfg = FindMCFG(xsdt);
 
-	g_BootVideo->PutFormat(L"PCI Config Address: %lx\n", mcfg->Configuration.BaseAddress);
-
 	UINT64 startBus = mcfg->Configuration.StartBusNumber;
 	UINT64 endBus = mcfg->Configuration.EndBusNumber;
 	for (size_t bus = 0; bus <= endBus; bus++)

@@ -39,9 +39,10 @@ private:
 class BufferedBinaryReader
 {
 public:
-	BufferedBinaryReader(uint8_t* buffer, std::function<size_t(uint8_t*)> onLoad);
+	BufferedBinaryReader(uint8_t* buffer, std::function<size_t(uint8_t*)> onLoad, size_t bufferSize = 0, size_t bufferRead = 0);
 
 	void ReadBytes(uint8_t* buffer, size_t size);
+	size_t AbandonBuffer() noexcept;
 private:
 	void Load();
 private:

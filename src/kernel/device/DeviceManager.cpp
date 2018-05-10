@@ -2,6 +2,7 @@
 // Kernel Device
 //
 #include "DeviceManager.hpp"
+#include "../kdebug.hpp"
 
 #include "acpi/Acpi.hpp"
 #include "storage/Drive.hpp"
@@ -32,4 +33,19 @@ void DeviceMananger::RegisterDrive(DriveDevice & drive)
 	auto driver = drive.TryLoadDriver();
 	if (driver)
 		g_DeviceMgr->InstallDriver(std::move(driver));
+}
+
+void DeviceMananger::DumpDevices()
+{
+	g_BootVideo->PutString("====== Dump Devices ======\n");
+	int i = 0;
+	for (auto& dev : drives_)
+	{
+		g_BootVideo->PutFormat("Drive%d: Max LBA: %d, Block Size: %d\n", i++, (int)dev.get().MaxLBA, (int)dev.get().BlockSize);
+	}
+}
+
+DriveDevice& DeviceMananger::GetDrive(size_t index) const
+{
+	return drives_[index].get();
 }

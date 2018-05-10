@@ -45,7 +45,7 @@ void AhciDriver::Install()
 	hbaMemory_.reset(g_MemoryMgr->HeapAlignedAlloc(TotalSize, 1024));
 	std::memset(hbaMemory_.get(), 0, TotalSize);
 
-	g_BootVideo->PutFormat(L"ABar: %lx, PI: %x, Slots: %d, Base: %lx\n", hba_, hba_->PI, cmdSlotsCount_, hbaMemory_.get());
+	//g_BootVideo->PutFormat(L"ABar: %lx, PI: %x, Slots: %d, Base: %lx\n", hba_, hba_->PI, cmdSlotsCount_, hbaMemory_.get());
 
 	auto pi = hba_->PI;
 	for (size_t i = 0; i < AHCI_MAX_PORTS; i++)
@@ -149,7 +149,7 @@ AhciDriver::HbaCmdList * AhciDriver::Port::TryGetFreeCommandSlot(size_t& id) con
 
 void AhciDriver::Port::Read(uint64_t lba, size_t count, uint8_t * buffer)
 {
-	kassert(lba <= UINT32_MAX);
+	kassert(lba <= MaxLBA);
 	std::array<uint8_t, 16> acmd{ 0 };
 	acmd[0] = SCSI_CMD_READ12;
 	acmd[2] = (lba >> 24) & 0xFF;		// most sig. byte of LBA

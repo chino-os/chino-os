@@ -8,6 +8,7 @@
 #include "thread/ProcessManager.hpp"
 #include "memory/MemoryManager.hpp"
 #include "device/DeviceManager.hpp"
+#include "file/FileManager.hpp"
 
 using namespace Chino;
 
@@ -15,6 +16,7 @@ StaticHolder<UefiGfx::BootVideo> g_BootVideo;
 StaticHolder<Thread::ProcessManager> g_ProcessMgr;
 StaticHolder<Memory::MemoryManager> g_MemoryMgr;
 StaticHolder<Device::DeviceMananger> g_DeviceMgr;
+StaticHolder<File::FileManager> g_FileMgr;
 
 void Task0(uintptr_t)
 {
@@ -59,15 +61,20 @@ extern "C" void kernel_entry(const BootParameters* pParams)
 
 	g_ProcessMgr.construct();
 	g_DeviceMgr.construct();
+	g_FileMgr.construct();
 
 	g_DeviceMgr->InstallDevices(params);
 
-	g_BootVideo->PutString(L"Natsu chan kawai ♥\n");
-	g_BootVideo->PutFormat(L"Free memory avaliable: %l bytes\n", g_MemoryMgr->GetFreeBytesRemaining());
-
-
+	g_DeviceMgr->DumpDevices();
+	g_FileMgr->DumpFileSystems();
 	//g_ProcessMgr->CreateProcess("Task 0", 1, Task0);
 	//g_ProcessMgr->CreateProcess("Task 1", 1, Task1);
+
+	g_BootVideo->PutString(L"\nChino is successfully loaded ♥\n");
+	g_BootVideo->PutFormat(L"Free memory avaliable: %l bytes\n", g_MemoryMgr->GetFreeBytesRemaining());
+
+	auto file = g_FileMgr->OpenFile("/dev/fs0/chino/system/kernel");
+	g_BootVideo->PutFormat(L"Kernel File: %lx\n", file);
 
 	g_ProcessMgr->StartScheduler();
 	PortHaltProcessor();

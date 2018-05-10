@@ -4,8 +4,8 @@
 #include "utils.hpp"
 #include "kdebug.hpp"
 
-BufferedBinaryReader::BufferedBinaryReader(uint8_t* buffer, std::function<size_t(uint8_t*)> onLoad)
-	:buffer_(buffer), bufferSize_(0), bufferRead_(0), onLoad_(std::move(onLoad))
+BufferedBinaryReader::BufferedBinaryReader(uint8_t* buffer, std::function<size_t(uint8_t*)> onLoad, size_t bufferSize, size_t bufferRead)
+	:buffer_(buffer), bufferSize_(bufferSize), bufferRead_(bufferRead), onLoad_(std::move(onLoad))
 {
 }
 
@@ -34,4 +34,11 @@ void BufferedBinaryReader::Load()
 	bufferSize_ = onLoad_(buffer_);
 	bufferRead_ = 0;
 	assert(bufferSize_);
+}
+
+size_t BufferedBinaryReader::AbandonBuffer() noexcept
+{
+	auto notRead = bufferSize_ - bufferRead_;
+	bufferSize_ = bufferRead_ = 0;
+	return notRead;
 }

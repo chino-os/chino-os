@@ -2,11 +2,12 @@
 // Kernel Device
 //
 #include "Iso9600.hpp"
-#include "../../DeviceManager.hpp"
+#include "../../../file/FileManager.hpp"
 #include "../../../kdebug.hpp"
 #include <portable.h>
 #include <cstring>
 #include <unordered_map>
+#include <optional>
 
 using namespace Chino::Device;
 
@@ -20,6 +21,7 @@ struct PartitionTableDetector
 Iso9600FileSystem::Iso9600FileSystem(Partition& partition)
 	:partition_(partition)
 {
+	Name = "ISO 9600";
 }
 
 bool Iso9600FileSystem::IsSupported(Chino::Device::Partition& device)
@@ -55,7 +57,7 @@ void Iso9600FileSystem::Install()
 		partition_.Read(i, 1, buffer.get());
 		auto type = buffer[0];
 
-		g_BootVideo->PutFormat(L"Volume(%d): Type: %s\n", (int)i, GetType(type));
+		//g_BootVideo->PutFormat(L"Volume(%d): Type: %s\n", (int)i, GetType(type));
 		if (type == 255)break;
 
 		if (type == 1)
@@ -63,9 +65,12 @@ void Iso9600FileSystem::Install()
 			primVolFound = true;
 			pathTableLBA_ = *reinterpret_cast<const uint32_t*>(buffer.get() + 140);
 			pathTableSize_ = *reinterpret_cast<const uint32_t*>(buffer.get() + 132);
-			g_BootVideo->PutFormat(L"Path Table: LBA: %d, Size: %d\n", pathTableLBA_, pathTableSize_);
+			BlockSize = *reinterpret_cast<const uint16_t*>(buffer.get() + 128);
+			//g_BootVideo->PutFormat(L"Path Table: LBA: %d, Size: %d; BlockSize: %d\n", pathTableLBA_, pathTableSize_, (int)BlockSize);
 		}
 	}
+
+	kassert(BlockSize == partition_.BlockSize);
 
 	struct entry
 	{
@@ -85,12 +90,24 @@ void Iso9600FileSystem::Install()
 		else
 			name = paths[entry.ParentNumber].name + "/" + std::string((char*)(entry.Identifier), entry.IdentifierLength);
 
+		//g_BootVideo->PutFormat("<DIR>  %s\n", name.c_str());
+
+		ForEachDirectoryEntry(entry.ExtentLBA, [&, this](const DirectoryEntry& dEntry)
+		{
+			if ((dEntry.FileFlags & 0b10) == 0)
+			{
+				auto ename = name + "/" + std::string((char*)(dEntry.IdentifierAndSystemUse), dEntry.IdentifierLength - 2);
+				//g_BootVideo->PutFormat("<FILE> %s\n", ename.c_str());
+			}
+			return false;
+		});
+
 		paths[id] = { name, entry.ParentNumber };
 		id++;
-
-		g_BootVideo->PutFormat("Path: %s\n", name.c_str());
 		return false;
 	});
+
+	g_FileMgr->RegisterFileSystems(*this);
 }
 
 void Iso9600FileSystem::ForEachPathTable(std::function<bool(const PathEntry&)> callback)
@@ -99,7 +116,7 @@ void Iso9600FileSystem::ForEachPathTable(std::function<bool(const PathEntry&)> c
 	auto buffer = std::make_unique<uint8_t[]>(partition_.BlockSize);
 
 	BufferedBinaryReader br(buffer.get(), [&, this](uint8_t* buffer) {
-		this->partition_.Read(startLba, 1, buffer);
+		this->partition_.Read(startLba++, 1, buffer);
 		return this->partition_.BlockSize;
 	});
 
@@ -117,4 +134,110 @@ void Iso9600FileSystem::ForEachPathTable(std::function<bool(const PathEntry&)> c
 
 		i += 8 + idLen;
 	}
+}
+
+void Iso9600FileSystem::ForEachDirectoryEntry(uint32_t lba, std::function<bool(const DirectoryEntry&)> callback)
+{
+	auto buffer = std::make_unique<uint8_t[]>(partition_.BlockSize);
+	partition_.Read(lba, 1, buffer.get());
+	auto theDir = reinterpret_cast<DirectoryEntry*>(buffer.get());
+	auto tableSize = theDir->DataLength;
+	kassert(lba == theDir->ExtentLBA);
+
+	BufferedBinaryReader br(buffer.get(), [&, this](uint8_t* buffer) {
+		this->partition_.Read(lba++, 1, buffer);
+		return this->partition_.BlockSize;
+	}, partition_.BlockSize, 0);
+
+	for (size_t i = 0; i < tableSize;)
+	{
+		DirectoryEntry entry{};
+		auto head = reinterpret_cast<uint8_t*>(&entry);
+
+		br.ReadBytes(head, 1);
+		head += 1;
+		if (entry.Length == 0)
+		{
+			i += 1 + br.AbandonBuffer();
+		}
+		else
+		{
+			br.ReadBytes(head, entry.Length - 1);
+			if (callback(entry)) break;
+
+			i += entry.Length;
+		}
+	}
+}
+
+struct Iso9600File : public FileSystemFile
+{
+	size_t DataLBA;
+};
+
+std::unique_ptr<FileSystemFile> Iso9600FileSystem::TryOpenFile(const FilePath& filePath)
+{
+	//for (auto& comp : filePath)
+	//{
+	//	g_BootVideo->PutFormat("%s ", comp.c_str());
+	//}
+	/*
+	auto cntPathComp = "";
+	auto fileNameComp = --filePath.end();
+	std::optional<uint32_t> pathLBA;
+	uint16_t parentNumber = 1;
+	uint16_t pathNumber = 0;
+	ForEachPathTable([&, this](const PathEntry& entry)
+	{
+		pathNumber++;
+		if (entry.ParentNumber < parentNumber) return false;
+		if (entry.ParentNumber > parentNumber) return true;
+
+		auto cmp = strnicmp((char*)entry.Identifier, cntPathComp.c_str(), std::min(size_t(entry.IdentifierLength), cntPathComp.size()));
+		if (cmp > 0) return true;
+
+		if (cmp == 0 && cntPathComp.size() == entry.IdentifierLength)
+		{
+			if (++cntPathComp == fileNameComp)
+			{
+				pathLBA = entry.ExtentLBA;
+				return true;
+			}
+
+			parentNumber = pathNumber;
+			return false;
+		}
+
+		return false;
+	});
+
+	if (!pathLBA) return nullptr;
+
+	std::optional<DirectoryEntry> fileEntry;
+	ForEachDirectoryEntry(pathLBA.value(), [&, this](const DirectoryEntry& entry)
+	{
+		auto cmp = strnicmp((char*)entry.IdentifierAndSystemUse, fileNameComp.c_str(), std::min(size_t(entry.IdentifierLength), fileNameComp.size()));
+		if (cmp > 0) return true;
+
+		if (cmp == 0 && fileNameComp.size() == entry.IdentifierLength)
+		{
+			if ((entry.FileFlags & 2) == 0) // Is a file
+				fileEntry = entry;
+			return true;
+		}
+
+		return false;
+	});
+
+	if (!fileEntry) return nullptr;
+	auto& entry = fileEntry.value();
+	return std::make_unique<Iso9600File>();
+	*/
+	return nullptr;
+}
+
+void Iso9600FileSystem::ReadFile(FileSystemFile& file, uint8_t* buffer, size_t blockOffset, size_t numBlocks)
+{
+	auto theFile = static_cast<Iso9600File&>(file);
+	partition_.Read(theFile.DataLBA + blockOffset, numBlocks, buffer);
 }
