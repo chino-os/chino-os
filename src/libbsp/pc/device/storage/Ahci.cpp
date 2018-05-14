@@ -2,10 +2,8 @@
 // Kernel Device
 //
 #include "Ahci.hpp"
-#include "../../kdebug.hpp"
-#include <portable.h>
-#include "../../memory/MemoryManager.hpp"
-#include "../DeviceManager.hpp"
+#include <kernel/kdebug.hpp>
+#include <kernel/device/DeviceManager.hpp>
 #include <cstring>
 
 using namespace Chino::Device;

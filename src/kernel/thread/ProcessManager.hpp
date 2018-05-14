@@ -4,9 +4,9 @@
 #pragma once
 #include "../../libchino/chino.h"
 #include "../utils.hpp"
-#include <portable.h>
+#include <libarch/arch.h>
 #include <list>
-#include <list.hpp>
+#include <common/list.hpp>
 #include <string_view>
 #include <string>
 #include <array>

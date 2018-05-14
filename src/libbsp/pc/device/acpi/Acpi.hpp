@@ -5,9 +5,9 @@
 extern "C"
 {
 #include <efibind.h>
-#include <Acpi2_0.h>
+#include <acpi/Acpi2_0.h>
 }
-#include "../Driver.hpp"
+#include <kernel/device/Driver.hpp>
 #include "../pci/Pci.hpp"
 #include <vector>
 

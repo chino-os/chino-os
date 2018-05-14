@@ -3,21 +3,19 @@
 //
 #include "DeviceManager.hpp"
 #include "../kdebug.hpp"
-
-#include "acpi/Acpi.hpp"
+#include <libbsp/bsp.hpp>
 #include "storage/Drive.hpp"
 
 using namespace Chino::Device;
 
 DeviceMananger::DeviceMananger()
 {
-
 }
 
 void DeviceMananger::InstallDevices(const BootParameters& bootParams)
 {
 	// ACPI
-	InstallDriver(std::make_unique<AcpiDriver>(bootParams));
+	InstallDriver(InstallRootDriver(bootParams));
 }
 
 void DeviceMananger::InstallDriver(std::unique_ptr<Driver>&& driver)

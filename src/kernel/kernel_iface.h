@@ -2,13 +2,21 @@
 // Kernel Interface
 //
 #pragma once
+#ifdef __INTELLISENSE__
+#ifndef _ARCH_
+#define _ARCH_ x86_64
+#define __amd64__ 1
+#define _BOARD_ pc
+#endif
+#endif
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 #include <efi.h>
 #include <efiapi.h>
-#include <Acpi2_0.h>
+#include <acpi/Acpi2_0.h>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -53,4 +61,14 @@ void Kernel_OnTimerHandler(void* interruptContext);
 
 static_assert(offsetof(BootParameters, StackPointer) == 0);
 }
+#endif
+
+#ifndef MAKEPATH
+
+#define IDENT(x) x
+#define XSTR(x) #x
+#define STR(x) XSTR(x)
+#define MAKEPATH(x,y) STR(IDENT(x)IDENT(y))
+#define MAKEPATH3(x,y,z) STR(IDENT(x)IDENT(y)IDENT(z))
+
 #endif

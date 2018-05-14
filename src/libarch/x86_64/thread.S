@@ -1,25 +1,29 @@
 #define REGBYTES 8
 #define InterruptStructSize 88
 
-.global PortEnableInterrupt
-.global PortDisableInterrupt
-.global PortRestoreThreadContextArch
-.global vPortTimerHandler
-.global vPortAPICSpuriousHandler
+.global ArchHaltProcessor
+.global ArchEnableInterrupt
+.global ArchDisableInterrupt
+.global ArchRestoreThreadContextArch
+.global ArchTimerHandler
+.global ArchAPICSpuriousHandler
 
-PortEnableInterrupt:
+ArchHaltProcessor:
+	hlt
+
+ArchEnableInterrupt:
 	sti
 	ret
 
-PortDisableInterrupt:
+ArchDisableInterrupt:
 	cli
 	ret
 	
 .align 8
-vPortAPICSpuriousHandler:
+ArchAPICSpuriousHandler:
 	iretq
 
-PortRestoreThreadContextArch:
+ArchRestoreThreadContextArch:
 	mov 1 * REGBYTES(%rdi),	%rbx
 	mov 2 * REGBYTES(%rdi),	%rcx
 	mov 3 * REGBYTES(%rdi),	%rdx
@@ -42,7 +46,7 @@ PortRestoreThreadContextArch:
 	iretq
 	
 .align 8
-vPortTimerHandler:
+ArchTimerHandler:
 	sub $InterruptStructSize, %rsp
 	mov %rax, 0 * REGBYTES(%rsp)
 	mov %rbx, 1 * REGBYTES(%rsp)

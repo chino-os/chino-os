@@ -4,7 +4,6 @@
 #include "Iso9600.hpp"
 #include "../../../file/FileManager.hpp"
 #include "../../../kdebug.hpp"
-#include <portable.h>
 #include <cstring>
 #include <unordered_map>
 #include <optional>

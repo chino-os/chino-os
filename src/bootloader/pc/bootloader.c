@@ -1,12 +1,11 @@
 //
 // Chino Bootloader
 //
+#include <kernel/kernel_iface.h>
 #include <efi.h>
 #include <efilib.h>
-#include <Acpi2_0.h>
-#include <elfload.h>
-#include <portable.h>
-#include "../kernel/kernel_iface.h"
+#include <acpi/Acpi2_0.h>
+#include <elfload/elfload.h>
 
 static CHAR16 KernelFilePath[] = L"CHINO\\SYSTEM\\KERNEL";
 static EFI_HANDLE gImageHandle;
@@ -121,7 +120,7 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	bootParam.Efi.MemoryDescriptorSize = descriptorSize;
 	bootParam.Efi.MemoryDescriptorCount = totalSize / descriptorSize;
 
-	PortEnterKernel(&bootParam, kernelEntry);
+	BSPEnterKernel(&bootParam, kernelEntry);
 
 	return EFI_SUCCESS;
 }

@@ -3,7 +3,6 @@
 //
 #include "PartitionMgr.hpp"
 #include "../../DeviceManager.hpp"
-#include <portable.h>
 #include <cstring>
 
 using namespace Chino::Device;

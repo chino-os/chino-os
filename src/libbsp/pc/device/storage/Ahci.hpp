@@ -4,8 +4,8 @@
 #pragma once
 
 #include "../pci/Pci.hpp"
-#include "Drive.hpp"
-#include "../../memory/MemoryManager.hpp"
+#include <kernel/device/storage/Drive.hpp>
+#include <kernel/memory/MemoryManager.hpp>
 
 namespace Chino
 {

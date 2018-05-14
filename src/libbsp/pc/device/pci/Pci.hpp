@@ -10,7 +10,7 @@ extern "C"
 #include <pci22.h>
 }
 
-#include "../Driver.hpp"
+#include <kernel/device/Driver.hpp>
 #include <cstddef>
 #include <memory>
 #include <array>

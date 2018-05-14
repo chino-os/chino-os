@@ -2,8 +2,8 @@
 // Kernel Device
 //
 #include "IDEController.hpp"
-#include "../../kdebug.hpp"
-#include <portable.h>
+#include <kernel/kdebug.hpp>
+#include <libarch/arch.h>
 
 using namespace Chino::Device;
 
@@ -126,7 +126,7 @@ void IDEControllerDriver::Channel::Install()
 		SelectDrive(i);
 		for (int i = 0; i < 4; i++)
 			ReadRegister(ATA_REG_ALTSTATUS); // Reading the Alternate Status port wastes 100ns; loop four times.
-		PortSleepMs(10);
+		ArchSleepMs(10);
 		g_BootVideo->PutFormat(L"Status:%x\n", ReadRegister(ATA_REG_STATUS));
 		g_BootVideo->PutString(L"A");
 		SendCommand(ATA_CMD_IDENTIFY);
@@ -195,13 +195,13 @@ uint8_t IDEControllerDriver::Channel::ReadRegister(uint8_t reg)
 	if (reg > 0x07 && reg < 0x0C)
 		WriteRegister(ATA_REG_CONTROL, 0x80 | nIEN_);
 	if (reg < 0x08)
-		result = PortIOReadUInt8(base_ + reg - 0x00);
+		result = ArchIOReadUInt8(base_ + reg - 0x00);
 	else if (reg < 0x0C)
-		result = PortIOReadUInt8(base_ + reg - 0x06);
+		result = ArchIOReadUInt8(base_ + reg - 0x06);
 	else if (reg < 0x0E)
-		result = PortIOReadUInt8(baseCtrl_ + reg - 0x0A);
+		result = ArchIOReadUInt8(baseCtrl_ + reg - 0x0A);
 	else if (reg < 0x16)
-		result = PortIOReadUInt8(baseMaserIde_ + reg - 0x0E);
+		result = ArchIOReadUInt8(baseMaserIde_ + reg - 0x0E);
 	if (reg > 0x07 && reg < 0x0C)
 		WriteRegister(ATA_REG_CONTROL, nIEN_);
 	return result;
@@ -212,13 +212,13 @@ void IDEControllerDriver::Channel::WriteRegister(uint8_t reg, uint8_t data)
 	if (reg > 0x07 && reg < 0x0C)
 		WriteRegister(ATA_REG_CONTROL, 0x80 | nIEN_);
 	if (reg < 0x08)
-		PortIOWriteUInt8(base_ + reg - 0x00, data);
+		ArchIOWriteUInt8(base_ + reg - 0x00, data);
 	else if (reg < 0x0C)
-		PortIOWriteUInt8(base_ + reg - 0x06, data);
+		ArchIOWriteUInt8(base_ + reg - 0x06, data);
 	else if (reg < 0x0E)
-		PortIOWriteUInt8(baseCtrl_ + reg - 0x0A, data);
+		ArchIOWriteUInt8(baseCtrl_ + reg - 0x0A, data);
 	else if (reg < 0x16)
-		PortIOWriteUInt8(baseMaserIde_ + reg - 0x0E, data);
+		ArchIOWriteUInt8(baseMaserIde_ + reg - 0x0E, data);
 	if (reg > 0x07 && reg < 0x0C)
 		WriteRegister(ATA_REG_CONTROL, nIEN_);
 }
@@ -241,13 +241,13 @@ void IDEControllerDriver::Channel::ReadFifo(uint8_t reg, uint32_t* buffer, size_
 		WriteRegister(ATA_REG_CONTROL, 0x80 | nIEN_);
 
 	if (reg < 0x08)
-		PortIOReadUInt32String(base_ + reg - 0x00, buffer, length);
+		ArchIOReadUInt32String(base_ + reg - 0x00, buffer, length);
 	else if (reg < 0x0C)
-		PortIOReadUInt32String(base_ + reg - 0x06, buffer, length);
+		ArchIOReadUInt32String(base_ + reg - 0x06, buffer, length);
 	else if (reg < 0x0E)
-		PortIOReadUInt32String(baseCtrl_ + reg - 0x0A, buffer, length);
+		ArchIOReadUInt32String(baseCtrl_ + reg - 0x0A, buffer, length);
 	else if (reg < 0x16)
-		PortIOReadUInt32String(baseMaserIde_ + reg - 0x0E, buffer, length);
+		ArchIOReadUInt32String(baseMaserIde_ + reg - 0x0E, buffer, length);
 
 	if (reg > 0x07 && reg < 0x0C)
 		WriteRegister(ATA_REG_CONTROL, nIEN_);

@@ -1,18 +1,24 @@
 //
 // Kernel Device
 //
+#include <libbsp/bsp.hpp>
 #include "Acpi.hpp"
-#include "../../kdebug.hpp"
-#include "../DeviceManager.hpp"
+#include <kernel/kdebug.hpp>
+#include <kernel/device/DeviceManager.hpp>
 
 extern "C"
 {
 #include <efilink.h>
 #include <pci22.h>
-#include <MemoryMappedConfigurationSpaceAccessTable.h>
+#include <acpi/MemoryMappedConfigurationSpaceAccessTable.h>
 }
 
 using namespace Chino::Device;
+
+std::unique_ptr<Driver> Chino::Device::InstallRootDriver(const BootParameters& bootParams)
+{
+	return std::make_unique<AcpiDriver>(bootParams);
+}
 
 AcpiDriver::AcpiDriver(const BootParameters& bootParams)
 	:rsdp_(bootParams.Acpi.Rsdp)

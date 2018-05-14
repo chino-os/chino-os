@@ -49,8 +49,8 @@ void ProcessManager::StartScheduler()
 	kassert(!idleProcess_);
 	idleProcess_ = CreateProcess("System Idle", 0, IdleThreadMain);
 
-	PortSetupSchedulerTimer();
-	PortHaltProcessor();
+	ArchSetupSchedulerTimer();
+	ArchHaltProcessor();
 }
 
 ProcessManager::thread_handle_it ProcessManager::SelectNextSwitchToThread()
@@ -121,17 +121,17 @@ ProcessManager::Thread::Thread(ThreadMain_t entryPoint, uint32_t priority, uintp
 	auto stackSize = DEFAULT_THREAD_STACK_SIZE;
 	stack_ = std::make_unique<uint8_t[]>(stackSize);
 	auto stackPointer = uintptr_t(stack_.get()) + stackSize;
-	PortInitializeThreadContextArch(&threadContext_.arch, stackPointer, uintptr_t(entryPoint), uintptr_t(OnThreadExit), parameter);
+	ArchInitializeThreadContextArch(&threadContext_.arch, stackPointer, uintptr_t(entryPoint), uintptr_t(OnThreadExit), parameter);
 }
 
 void ProcessManager::Thread::SwitchOut(InterruptContext& context)
 {
-	PortSaveThreadContextArch(&threadContext_.arch, &context.arch);
+	ArchSaveThreadContextArch(&threadContext_.arch, &context.arch);
 }
 
 void ProcessManager::Thread::SwitchIn(InterruptContext& context)
 {
-	PortRestoreThreadContextArch(&threadContext_.arch, &context.arch);
+	ArchRestoreThreadContextArch(&threadContext_.arch, &context.arch);
 }
 
 static void OnThreadExit()
@@ -144,7 +144,7 @@ static void IdleThreadMain(uintptr_t)
 	while (1)
 	{
 		for (size_t i = 0; i < 100; i++)
-			PortHaltProcessor();
+			ArchHaltProcessor();
 		g_BootVideo->PutChar(L'.');
 	}
 }

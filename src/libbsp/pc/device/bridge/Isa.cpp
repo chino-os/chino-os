@@ -2,7 +2,7 @@
 // Kernel Device
 //
 #include "Isa.hpp"
-#include "../../kdebug.hpp"
+#include <kernel/kdebug.hpp>
 
 using namespace Chino::Device;
 

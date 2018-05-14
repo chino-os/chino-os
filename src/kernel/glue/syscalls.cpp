@@ -6,14 +6,14 @@
 #include <sys/time.h>
 #include <stdio.h>
 #include "../kdebug.hpp"
-#include <portable.h>
+#include <libarch/arch.h>
 
 extern "C"
 {
 	void _exit(int)
 	{
-		//kassert(!"Kernel exit");
-		PortHaltProcessor();
+		kassert(!"Kernel exit");
+		//PortHaltProcessor();
 	}
 
 	int close(int file)

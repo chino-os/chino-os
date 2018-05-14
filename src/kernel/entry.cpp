@@ -1,9 +1,9 @@
 ﻿//
 // Kernel Entry
 //
-#include <portable.h>
 #include "utils.hpp"
 #include "kernel_iface.h"
+#include <libarch/arch.h>
 #include "uefigfx/BootVideo.hpp"
 #include "thread/ProcessManager.hpp"
 #include "memory/MemoryManager.hpp"
@@ -22,7 +22,7 @@ void Task0(uintptr_t)
 {
 	while (1)
 	{
-		PortHaltProcessor();
+		ArchHaltProcessor();
 		for (size_t i = 0; i < 200000; i++);
 		g_BootVideo->PutString(L"Task0 ");
 	}
@@ -32,7 +32,7 @@ void Task1(uintptr_t)
 {
 	while (1)
 	{
-		PortHaltProcessor();
+		ArchHaltProcessor();
 		for (size_t i = 0; i < 200000; i++);
 		g_BootVideo->PutString(L"Task1 ");
 	}
@@ -77,5 +77,5 @@ extern "C" void kernel_entry(const BootParameters* pParams)
 	g_BootVideo->PutFormat(L"Kernel File: %lx\n", file);
 
 	g_ProcessMgr->StartScheduler();
-	PortHaltProcessor();
+	ArchHaltProcessor();
 }

@@ -7,4 +7,4 @@ cmake .. -DCMAKE_SYSTEM_NAME=Generic -DCMAKE_C_COMPILER=$TOOLCHAIN/bin/$ARCH-unk
  -DCMAKE_AR=$TOOLCHAIN/bin/$ARCH-unknown-chino-ar \
  -DCMAKE_C_FLAGS="--specs=nosys.specs" \
  -DCMAKE_CXX_FLAGS="--specs=nosys.specs" \
- -DARCH=$ARCH -DGNU_EFI_LIB=/usr/local/lib -DGNU_EFI_INC=/usr/local/include/efi
+ -DARCH=$ARCH -DBOARD=pc -DGNU_EFI_LIB=/usr/local/lib -DGNU_EFI_INC=/usr/local/include/efi

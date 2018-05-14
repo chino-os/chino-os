@@ -1,7 +1,7 @@
 //
-// Chino Arch Port
+// Chino Arch Arch
 //
-#include "../portable.h"
+#include "../arch.h"
 #include <climits>
 
 #define portINITIAL_RFLAGS	0x206u
@@ -90,7 +90,7 @@ static void SetupIDT();
 
 extern "C"
 {
-	void PortInitializeThreadContextArch(ThreadContext_Arch* context, uintptr_t stackPointer, uintptr_t entryPoint, uintptr_t returnAddress, uintptr_t parameter)
+	void ArchInitializeThreadContextArch(ThreadContext_Arch* context, uintptr_t stackPointer, uintptr_t entryPoint, uintptr_t returnAddress, uintptr_t parameter)
 	{
 		auto stack = reinterpret_cast<uint64_t*>(stackPointer);
 
@@ -106,10 +106,10 @@ extern "C"
 		context->rsp = uintptr_t(stack);
 	}
 
-	extern void vPortTimerHandler();
-	extern void vPortAPICSpuriousHandler();
+	extern void ArchTimerHandler();
+	extern void ArchAPICSpuriousHandler();
 
-	void PortSetupSchedulerTimer()
+	void ArchSetupSchedulerTimer()
 	{
 		//SetupGDT();
 		SetupIDT();
@@ -117,10 +117,10 @@ extern "C"
 		portAPIC_LVT_TIMER = portAPIC_DISABLE;
 
 		/* Install APIC timer ISR vector. */
-		prvSetInterruptGate((uint8_t)portAPIC_TIMER_INT_VECTOR, vPortTimerHandler, portIDT_FLAGS);
+		prvSetInterruptGate((uint8_t)portAPIC_TIMER_INT_VECTOR, ArchTimerHandler, portIDT_FLAGS);
 
 		/* Install spurious interrupt vector. */
-		prvSetInterruptGate((uint8_t)portAPIC_SPURIOUS_INT_VECTOR, vPortAPICSpuriousHandler, portIDT_FLAGS);
+		prvSetInterruptGate((uint8_t)portAPIC_SPURIOUS_INT_VECTOR, ArchAPICSpuriousHandler, portIDT_FLAGS);
 
 		/* Set the interrupt frequency. */
 		portAPIC_TMRDIV = portAPIC_DIV_16;
@@ -132,10 +132,10 @@ extern "C"
 		/* Enable the APIC, mapping the spurious interrupt at the same time. */
 		portAPIC_SPURIOUS_INT = portAPIC_SPURIOUS_INT_VECTOR | portAPIC_ENABLE_BIT;
 
-		PortEnableInterrupt();
+		ArchEnableInterrupt();
 	}
 
-	void PortSaveThreadContextArch(ThreadContext_Arch* tcontext, InterruptContext_Arch* icontext)
+	void ArchSaveThreadContextArch(ThreadContext_Arch* tcontext, InterruptContext_Arch* icontext)
 	{
 		tcontext->rax = icontext->rax;
 		tcontext->rbx = icontext->rbx;
@@ -152,7 +152,7 @@ extern "C"
 		tcontext->rip = icontext->rip_before;
 	}
 
-	void PortSleepMs(uint32_t ms)
+	void ArchSleepMs(uint32_t ms)
 	{
 		auto count = configCPU_CLOCK_HZ / 1000 * ms;
 		for (size_t i = 0; i < count; i++);
@@ -183,7 +183,7 @@ struct GDT
 	uint32_t type;
 };
 
-#include "../kernel/kdebug.hpp"
+#include <kernel/kdebug.hpp>
 
 void encodeGdtEntry(uint64_t *tgdt, struct GDT source)
 {
