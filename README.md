@@ -1,15 +1,46 @@
 chino-os
-=========================================
-`chino` is a real time operating system written in C++.
+===
+![Screenshots](screenshots/1.png)
+
+## Introduction
+
+`chino` is a real time operating system written in C++, which is designed for the [IoT](https://en.wikipedia.org/wiki/Internet_of_things).
 
 ## Features
 - Multitasking
 - Dynamic linking
+- Supports x86_64 architecture
 
-![Screenshots](screenshots/1.png)
+## Build
 
-[License (MIT)](https://raw.githubusercontent.com/chino-os/chino-os/master/LICENSE)
--------------------------------------------------------------------------------
+1. Downloads [chino-gnu-toolchain-preview1.tar.gz](https://github.com/chino-os/chino-gnu-toolchain/releases/download/preview1/chino-gnu-toolchain-preview1.tar.gz) and extracts to `/opt/` directory.
+```bash
+wget https://github.com/chino-os/chino-gnu-toolchain/releases/download/preview1/chino-gnu-toolchain-preview1.tar.gz
+sudo tar xvzf chino-gnu-toolchain-preview1.tar.gz /opt/
+```
+2. Installs dependencies
+```bash
+git clone git://git.code.sf.net/p/gnu-efi/code gnu-efi-code
+cd gnu-efi-code
+make && sudo make install
+sudo apt install xorriso cmake -y
+```
+3. Clones source and builds.
+```bash
+git clone https://github.com/chino-os/chino-os.git
+mkdir build && cd build
+../build.sh x86_64
+make firmware
+```
+
+## Run
+1. Downloads [VirtualBox](https://www.virtualbox.org/wiki/Downloads) and runs.
+2. `File` -> `Import Application`, imports `Chino.ova` which is in `chino-os/vms/` directory.
+3. `Settings` -> `storage`, chooses the `empty` device and imports the `firmware.iso` just generated in the `build` directory.
+4. `Start`.
+
+## [License (MIT)](https://raw.githubusercontent.com/chino-os/chino-os/master/LICENSE)
+
 	MIT License
 
 	Copyright (c) 2018 chino-os
