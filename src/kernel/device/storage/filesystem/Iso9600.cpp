@@ -178,13 +178,6 @@ struct Iso9600File : public FileSystemFile
 
 std::unique_ptr<FileSystemFile> Iso9600FileSystem::TryOpenFile(const Path& filePath)
 {
-	for (auto comp : filePath)
-	{
-		std::string str(comp);
-		g_Logger->PutFormat("C: %s ", str.c_str());
-	}
-	g_Logger->PutChar('\n');
-	
 	auto cntPathComp = filePath.begin();
 	auto fileNameComp = --filePath.end();
 	std::optional<uint32_t> pathLBA;
