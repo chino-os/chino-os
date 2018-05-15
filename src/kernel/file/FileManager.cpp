@@ -14,10 +14,10 @@ void FileManager::RegisterFileSystems(Device::FileSystem& fileSystem)
 
 void FileManager::DumpFileSystems()
 {
-	g_BootVideo->PutString("====== Dump File Systems ======\n");
+	g_Logger->PutString("====== Dump File Systems ======\n");
 	for (auto& dev : fsPathMap_.PathMap)
 	{
-		g_BootVideo->PutFormat("/dev/%s: Format: %s, Block Size: %d\n", dev.first.c_str(), dev.second.get().Name.c_str(), (int)dev.second.get().BlockSize);
+		g_Logger->PutFormat("/dev/%s: Format: %s, Block Size: %d\n", dev.first.c_str(), dev.second.get().Name.c_str(), (int)dev.second.get().BlockSize);
 	}
 }
 

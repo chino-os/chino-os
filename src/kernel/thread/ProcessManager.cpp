@@ -145,7 +145,7 @@ static void IdleThreadMain(uintptr_t)
 	{
 		for (size_t i = 0; i < 100; i++)
 			ArchHaltProcessor();
-		g_BootVideo->PutChar(L'.');
+		g_Logger->PutChar(L'.');
 	}
 }
 

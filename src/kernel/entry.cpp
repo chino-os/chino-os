@@ -4,15 +4,15 @@
 #include "utils.hpp"
 #include "kernel_iface.h"
 #include <libarch/arch.h>
-#include "uefigfx/BootVideo.hpp"
 #include "thread/ProcessManager.hpp"
 #include "memory/MemoryManager.hpp"
 #include "device/DeviceManager.hpp"
 #include "file/FileManager.hpp"
+#include "diagnostic/KernelLogger.hpp"
 
 using namespace Chino;
 
-StaticHolder<UefiGfx::BootVideo> g_BootVideo;
+StaticHolder<Diagnostic::KernelLogger> g_Logger;
 StaticHolder<Thread::ProcessManager> g_ProcessMgr;
 StaticHolder<Memory::MemoryManager> g_MemoryMgr;
 StaticHolder<Device::DeviceMananger> g_DeviceMgr;
@@ -24,7 +24,7 @@ void Task0(uintptr_t)
 	{
 		ArchHaltProcessor();
 		for (size_t i = 0; i < 200000; i++);
-		g_BootVideo->PutString(L"Task0 ");
+		g_Logger->PutString(L"Task0 ");
 	}
 }
 
@@ -34,7 +34,7 @@ void Task1(uintptr_t)
 	{
 		ArchHaltProcessor();
 		for (size_t i = 0; i < 200000; i++);
-		g_BootVideo->PutString(L"Task1 ");
+		g_Logger->PutString(L"Task1 ");
 	}
 }
 
@@ -42,13 +42,10 @@ extern "C" void kernel_entry(const BootParameters* pParams)
 {
 	const BootParameters params = *pParams;
 
+	g_Logger.construct(params);
+
 	extern void __libc_init_array(void);
 	extern void __libc_fini_array(void);
-
-	g_BootVideo.construct(reinterpret_cast<uint32_t*>(params.FrameBuffer.Base), params.FrameBuffer.Size, params.FrameBuffer.Width, params.FrameBuffer.Height);
-	g_BootVideo->SetBackground(0xFF151716);
-	g_BootVideo->SetMargin(20);
-	g_BootVideo->ClearScreen();
 
 	Memory::InitializeHeap(params);
 
@@ -57,7 +54,7 @@ extern "C" void kernel_entry(const BootParameters* pParams)
 
 	g_MemoryMgr.construct();
 
-	g_BootVideo->PutString(L"Loading Chino ♥ ...\n");
+	g_Logger->PutString(L"Loading Chino ♥ ...\n");
 
 	g_ProcessMgr.construct();
 	g_DeviceMgr.construct();
@@ -70,11 +67,11 @@ extern "C" void kernel_entry(const BootParameters* pParams)
 	//g_ProcessMgr->CreateProcess("Task 0", 1, Task0);
 	//g_ProcessMgr->CreateProcess("Task 1", 1, Task1);
 
-	g_BootVideo->PutString(L"\nChino is successfully loaded ♥\n");
-	g_BootVideo->PutFormat(L"Free memory avaliable: %l bytes\n", g_MemoryMgr->GetFreeBytesRemaining());
+	g_Logger->PutString(L"\nChino is successfully loaded ♥\n");
+	g_Logger->PutFormat(L"Free memory avaliable: %l bytes\n", g_MemoryMgr->GetFreeBytesRemaining());
 
 	auto file = g_FileMgr->OpenFile("/dev/fs0/chino/system/kernel");
-	g_BootVideo->PutFormat(L"Kernel File: %lx\n", file);
+	g_Logger->PutFormat(L"Kernel File: %lx\n", file);
 
 	g_ProcessMgr->StartScheduler();
 	ArchHaltProcessor();

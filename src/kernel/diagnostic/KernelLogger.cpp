@@ -1,84 +1,43 @@
-#include "BootVideo.hpp"
+//
+// Kernel Diagnostic
+//
+#include "KernelLogger.hpp"
+#include <libbsp/bsp.hpp>
+#include <libarch/arch.h>
 #include <stdarg.h>
 #include <algorithm>
 
-using namespace Chino::UefiGfx;
+using namespace Chino::Diagnostic;
 
-// these vectors together act as a corner of a bounding rect
-// This allows GotoXY() to reposition all the text that follows it
-static unsigned int _xPos = 0, _yPos = 0;
-static unsigned _startX = 0, _startY = 0;
-
-// current color
-static unsigned _color = 0;
-
-BootVideo::BootVideo(uint32_t * frameBuffer, size_t bufferSize, size_t frameWidth, size_t frameHeight, uint32_t foreground)
-	:glyphProvider_(GetBootFont()), frameBuffer_(frameBuffer), bufferSize_(bufferSize), frameWidth_(frameWidth), frameHeight_(frameHeight), foreground_(foreground), background_(0xFF000000)
+KernelLogger::KernelLogger(const BootParameters& bootParams)
 {
+	BSPInitializeDebug(bootParams);
 }
 
-void BootVideo::PutChar(wchar_t chr)
+void KernelLogger::PutChar(wchar_t chr)
 {
-	auto& font = GetBootFont();
-	if (chr == L'\r')
-		currentX_ = margin_;
-	else if (chr == L'\n')
-	{
-		currentX_ = margin_;
-		currentY_ += font.Height;
-	}
-	else
-	{
-		int cx, cy;
-		const unsigned char *glyph = glyphProvider_.GetGlyph(chr);
-		auto pixel = currentFramePointer_;
-
-		auto startPixel = pixel;
-		for (cy = 0; cy < font.Height; cy++, glyph++)
-		{
-			unsigned char line = *glyph;
-			auto pixel = startPixel;
-			for (cx = 0; cx < font.Width; cx++)
-			{
-				*pixel++ = (line & 0x80u) ? foreground_ : background_;
-				line <<= 1;
-			}
-			startPixel += frameWidth_;
-		}
-		currentX_ += font.Width;
-		if (currentX_ + margin_ >= frameWidth_)
-		{
-			currentX_ = margin_;
-			currentY_ += font.Height;
-		}
-	}
-	if (currentY_ + font.Height >= frameHeight_)
-	{
-		ClearScreen();
-		currentY_ = margin_;
-	}
-	FixCurrentFramePointer();
+	BSPDebugPutChar(chr);
 }
 
-void BootVideo::PutString(const wchar_t * string)
+void KernelLogger::PutString(const wchar_t * string)
 {
 	while (*string)
 		PutChar(*string++);
 }
 
-void BootVideo::PutString(const wchar_t * string, size_t count)
+void KernelLogger::PutString(const wchar_t * string, size_t count)
 {
 	for (size_t i = 0; i < count; i++)
 		PutChar(*string++);
 }
 
-void BootVideo::PutString(const char * string)
+void KernelLogger::PutString(const char * string)
 {
 	while (*string)
 		PutChar(*string++);
 }
 
-void BootVideo::PutString(const char * string, size_t count)
+void KernelLogger::PutString(const char * string, size_t count)
 {
 	for (size_t i = 0; i < count; i++)
 		PutChar(*string++);
@@ -124,7 +83,7 @@ void _itow_s(int64_t i, unsigned base, wchar_t* buf) {
 	_itow(uint64_t(i), base, buf);
 }
 
-void BootVideo::PutFormat(const wchar_t * format, ...)
+void KernelLogger::PutFormat(const wchar_t * format, ...)
 {
 	if (!format)return;
 
@@ -168,21 +127,21 @@ void BootVideo::PutFormat(const wchar_t * format, ...)
 			}
 			case 'l': {
 				switch (format[i + 2]) {
-					case 'X':
-					case 'x': {
-						int64_t c = va_arg(args, int64_t);
-						//char str[32]={0};
-						_itow((uint64_t)c, 16, str);
-						PutString(str);
-						i++;		// go to next character
-						break;
-					}
-					default: {
-						int64_t c = va_arg(args, int64_t);
-						_itow_s(c, 10, str);
-						PutString(str);
-						break;
-					}
+				case 'X':
+				case 'x': {
+					int64_t c = va_arg(args, int64_t);
+					//char str[32]={0};
+					_itow((uint64_t)c, 16, str);
+					PutString(str);
+					i++;		// go to next character
+					break;
+				}
+				default: {
+					int64_t c = va_arg(args, int64_t);
+					_itow_s(c, 10, str);
+					PutString(str);
+					break;
+				}
 				}
 				i++;		// go to next character
 				break;
@@ -215,7 +174,7 @@ void BootVideo::PutFormat(const wchar_t * format, ...)
 	va_end(args);
 }
 
-void BootVideo::PutFormat(const char * format, ...)
+void KernelLogger::PutFormat(const char * format, ...)
 {
 	if (!format)return;
 
@@ -306,22 +265,19 @@ void BootVideo::PutFormat(const char * format, ...)
 	va_end(args);
 }
 
-void BootVideo::MovePositionTo(size_t x, size_t y)
+void KernelLogger::Clear()
 {
-	currentX_ = std::min(x + margin_, frameWidth_ - 1 - margin_);
-	currentY_ = std::min(y + margin_, frameHeight_ - 1 - margin_);
-	FixCurrentFramePointer();
+	BSPDebugClearScreen();
 }
 
-void BootVideo::ClearScreen()
+void KernelLogger::BlueScreen()
 {
-	auto end = (uint32_t*)((uint8_t*)frameBuffer_ + bufferSize_) + 1;
-	for (auto pixel = frameBuffer_; pixel < end; pixel++)
-		*pixel = background_;
-	MovePositionTo(0, 0);
+	BSPDebugBlueScreen();
 }
 
-void BootVideo::FixCurrentFramePointer()
+void KernelLogger::FailFast(const char* file, size_t line)
 {
-	currentFramePointer_ = frameBuffer_ + currentY_ * frameWidth_ + currentX_;
+	PutFormat("Oops!\n\nAssert Failed: %s\nAt: %s:%d", file, (int)line);
+	ArchDisableInterrupt();
+	ArchHaltProcessor();
 }

@@ -112,7 +112,7 @@ void AhciDriver::Port::Install(size_t id, AhciDriver* host, volatile HbaPort * h
 	UpdateCapacity();
 
 	static wchar_t* strs[] = { L"None", L"SATA", L"SEMB", L"PM", L"SATAPI" };
-	g_BootVideo->PutFormat(L"Port(%d): Type: %s, Max LBA: %d, Block Size: %d\n", (int)id, strs[(int)driveType_], (int)MaxLBA, (int)BlockSize);
+	g_Logger->PutFormat(L"Port(%d): Type: %s, Max LBA: %d, Block Size: %d\n", (int)id, strs[(int)driveType_], (int)MaxLBA, (int)BlockSize);
 
 	g_DeviceMgr->RegisterDrive(*this);
 }

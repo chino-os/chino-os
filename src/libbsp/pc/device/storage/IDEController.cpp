@@ -17,14 +17,14 @@ IDEControllerDriver::IDEControllerDriver(const PCIDevice & device)
 }
 {
 	auto cfg = device.GetConfigurationSpace();
-	g_BootVideo->PutFormat(L"VendorId: %x, DeviceId: %x\n", cfg->VendorId, cfg->DeviceId);
+	g_Logger->PutFormat(L"VendorId: %x, DeviceId: %x\n", cfg->VendorId, cfg->DeviceId);
 
 	auto ideCfg = (volatile PCI_TYPE00*)cfg;
 
 	for (int i = 0; i < 6; i++)
 	{
 		auto bar = ideCfg->Device.Bar + i;
-		g_BootVideo->PutFormat(L"Bar%d: %x\n", i, *bar);
+		g_Logger->PutFormat(L"Bar%d: %x\n", i, *bar);
 	}
 }
 
@@ -127,8 +127,8 @@ void IDEControllerDriver::Channel::Install()
 		for (int i = 0; i < 4; i++)
 			ReadRegister(ATA_REG_ALTSTATUS); // Reading the Alternate Status port wastes 100ns; loop four times.
 		ArchSleepMs(10);
-		g_BootVideo->PutFormat(L"Status:%x\n", ReadRegister(ATA_REG_STATUS));
-		g_BootVideo->PutString(L"A");
+		g_Logger->PutFormat(L"Status:%x\n", ReadRegister(ATA_REG_STATUS));
+		g_Logger->PutString(L"A");
 		SendCommand(ATA_CMD_IDENTIFY);
 
 		if (ReadRegister(ATA_REG_STATUS) == 0) continue; // If Status = 0, No Device.
@@ -151,12 +151,12 @@ void IDEControllerDriver::Channel::Install()
 			else
 				continue; // Unknown Type (may not be a device).
 
-			g_BootVideo->PutString(L"B");
+			g_Logger->PutString(L"B");
 			SendCommand(ATA_CMD_IDENTIFY_PACKET);
 		}
 
 		std::array<uint32_t, 128> buffer;
-		g_BootVideo->PutString(L"C");
+		g_Logger->PutString(L"C");
 		ReadFifo(ATA_REG_DATA, buffer.data(), buffer.size());
 
 		auto pBuffer = uintptr_t(buffer.data());
@@ -179,13 +179,13 @@ void IDEControllerDriver::Channel::Install()
 		}
 		drive.Model[40] = 0;
 
-		g_BootVideo->PutString(L"D");
+		g_Logger->PutString(L"D");
 		static wchar_t* typeStr[] = { L"None", L"ATA", L"ATAPI" };
 		std::array<wchar_t, 41> model;
 		std::copy(std::begin(drive.Model), std::end(drive.Model), model.begin());
 
-		g_BootVideo->PutFormat(L"Detect Drive %d: %s, Size: %d bytes, Model: %s\n", i, typeStr[(size_t)drive.Type], drive.Size, model.data());
-		g_BootVideo->PutFormat(L"%lx\n", pBuffer);
+		g_Logger->PutFormat(L"Detect Drive %d: %s, Size: %d bytes, Model: %s\n", i, typeStr[(size_t)drive.Type], drive.Size, model.data());
+		g_Logger->PutFormat(L"%lx\n", pBuffer);
 	}
 }
 
@@ -268,7 +268,7 @@ void IDEControllerDriver::Channel::Polling()
 		if (i++ == 10000)
 		{
 			i = 0;
-			g_BootVideo->PutFormat(L"Status: %x\n", (int)ReadRegister(ATA_REG_STATUS));
+			g_Logger->PutFormat(L"Status: %x\n", (int)ReadRegister(ATA_REG_STATUS));
 		}
 	}
 }

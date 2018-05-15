@@ -3,7 +3,7 @@
 //
 #pragma once
 #include <stdint.h>
-#include "../utils.hpp"
+#include <kernel/utils.hpp>
 #include "GlyphProvider.hpp"
 
 namespace Chino
@@ -16,12 +16,6 @@ namespace Chino
 			BootVideo(uint32_t* frameBuffer, size_t bufferSize, size_t frameWidth, size_t frameHeight, uint32_t foreground = 0x00ff99ff);
 
 			void PutChar(wchar_t chr);
-			void PutString(const wchar_t* string);
-			void PutString(const wchar_t* string, size_t count);
-			void PutFormat(const wchar_t* format, ...);
-			void PutString(const char* string);
-			void PutString(const char* string, size_t count);
-			void PutFormat(const char* format, ...);
 			void MovePositionTo(size_t x, size_t y);
 			void ClearScreen();
 			void SetForeground(uint32_t color) { foreground_ = color; }

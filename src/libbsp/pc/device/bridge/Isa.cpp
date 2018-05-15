@@ -27,5 +27,5 @@ struct LPC_EN
 void IsaDriver::Install()
 {
 	auto lpcEn = (volatile LPC_EN*)(uintptr_t(isaCfg_) + 0x82);
-	g_BootVideo->PutFormat("LPC_EN: %x\n", *reinterpret_cast<volatile uint16_t*>(lpcEn));
+	g_Logger->PutFormat("LPC_EN: %x\n", *reinterpret_cast<volatile uint16_t*>(lpcEn));
 }

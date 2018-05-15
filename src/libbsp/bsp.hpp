@@ -10,6 +10,14 @@ namespace Chino
 {
 	namespace Device
 	{
-		extern std::unique_ptr<Driver> InstallRootDriver(const BootParameters& bootParams);
+		std::unique_ptr<Driver> BSPInstallRootDriver(const BootParameters& bootParams);
+	}
+
+	namespace Diagnostic
+	{
+		void BSPInitializeDebug(const BootParameters& bootParams);
+		void BSPDebugPutChar(wchar_t chr);
+		void BSPDebugBlueScreen();
+		void BSPDebugClearScreen();
 	}
 }

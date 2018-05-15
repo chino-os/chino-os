@@ -56,7 +56,7 @@ void Iso9600FileSystem::Install()
 		partition_.Read(i, 1, buffer.get());
 		auto type = buffer[0];
 
-		//g_BootVideo->PutFormat(L"Volume(%d): Type: %s\n", (int)i, GetType(type));
+		//g_Logger->PutFormat(L"Volume(%d): Type: %s\n", (int)i, GetType(type));
 		if (type == 255)break;
 
 		if (type == 1)
@@ -65,7 +65,7 @@ void Iso9600FileSystem::Install()
 			pathTableLBA_ = *reinterpret_cast<const uint32_t*>(buffer.get() + 140);
 			pathTableSize_ = *reinterpret_cast<const uint32_t*>(buffer.get() + 132);
 			BlockSize = *reinterpret_cast<const uint16_t*>(buffer.get() + 128);
-			//g_BootVideo->PutFormat(L"Path Table: LBA: %d, Size: %d; BlockSize: %d\n", pathTableLBA_, pathTableSize_, (int)BlockSize);
+			//g_Logger->PutFormat(L"Path Table: LBA: %d, Size: %d; BlockSize: %d\n", pathTableLBA_, pathTableSize_, (int)BlockSize);
 		}
 	}
 
@@ -89,14 +89,14 @@ void Iso9600FileSystem::Install()
 		else
 			name = paths[entry.ParentNumber].name + "/" + std::string((char*)(entry.Identifier), entry.IdentifierLength);
 
-		//g_BootVideo->PutFormat("<DIR>  %s\n", name.c_str());
+		//g_Logger->PutFormat("<DIR>  %s\n", name.c_str());
 
 		ForEachDirectoryEntry(entry.ExtentLBA, [&, this](const DirectoryEntry& dEntry)
 		{
 			if ((dEntry.FileFlags & 0b10) == 0)
 			{
 				auto ename = name + "/" + std::string((char*)(dEntry.IdentifierAndSystemUse), dEntry.IdentifierLength - 2);
-				//g_BootVideo->PutFormat("<FILE> %s\n", ename.c_str());
+				//g_Logger->PutFormat("<FILE> %s\n", ename.c_str());
 			}
 			return false;
 		});
@@ -181,9 +181,9 @@ std::unique_ptr<FileSystemFile> Iso9600FileSystem::TryOpenFile(const Path& fileP
 	for (auto comp : filePath)
 	{
 		std::string str(comp);
-		g_BootVideo->PutFormat("C: %s ", str.c_str());
+		g_Logger->PutFormat("C: %s ", str.c_str());
 	}
-	g_BootVideo->PutChar('\n');
+	g_Logger->PutChar('\n');
 	
 	auto cntPathComp = filePath.begin();
 	auto fileNameComp = --filePath.end();

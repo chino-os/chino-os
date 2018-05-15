@@ -15,7 +15,7 @@ DeviceMananger::DeviceMananger()
 void DeviceMananger::InstallDevices(const BootParameters& bootParams)
 {
 	// ACPI
-	InstallDriver(InstallRootDriver(bootParams));
+	InstallDriver(BSPInstallRootDriver(bootParams));
 }
 
 void DeviceMananger::InstallDriver(std::unique_ptr<Driver>&& driver)
@@ -35,11 +35,11 @@ void DeviceMananger::RegisterDrive(DriveDevice & drive)
 
 void DeviceMananger::DumpDevices()
 {
-	g_BootVideo->PutString("====== Dump Devices ======\n");
+	g_Logger->PutString("====== Dump Devices ======\n");
 	int i = 0;
 	for (auto& dev : drives_)
 	{
-		g_BootVideo->PutFormat("Drive%d: Max LBA: %d, Block Size: %d\n", i++, (int)dev.get().MaxLBA, (int)dev.get().BlockSize);
+		g_Logger->PutFormat("Drive%d: Max LBA: %d, Block Size: %d\n", i++, (int)dev.get().MaxLBA, (int)dev.get().BlockSize);
 	}
 }
 

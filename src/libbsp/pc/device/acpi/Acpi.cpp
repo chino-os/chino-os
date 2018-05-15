@@ -15,7 +15,7 @@ extern "C"
 
 using namespace Chino::Device;
 
-std::unique_ptr<Driver> Chino::Device::InstallRootDriver(const BootParameters& bootParams)
+std::unique_ptr<Driver> Chino::Device::BSPInstallRootDriver(const BootParameters& bootParams)
 {
 	return std::make_unique<AcpiDriver>(bootParams);
 }
