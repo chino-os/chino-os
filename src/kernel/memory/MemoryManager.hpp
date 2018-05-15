@@ -10,27 +10,23 @@ namespace Chino
 {
 	namespace Memory
 	{
-		void InitializeHeap(const BootParameters& bootParams) noexcept;
-		void* HeapAlloc(size_t wantedSize) noexcept;
-		void* HeapAlignedAlloc(size_t wantedSize, size_t alignment) noexcept;
-		void HeapFree(void* ptr) noexcept;
-		void HeapAlignedFree(void* ptr) noexcept;
-
 		template<class T>
 		struct aligned_heap_delete
 		{
-			void operator()(T* ptr) const noexcept { Memory::HeapAlignedFree(ptr); }
+			void operator()(T* ptr) const noexcept;
 		};
 
 		class MemoryManager
 		{
 		public:
+			static void InitializeHeap(const BootParameters& bootParams) noexcept;
+
 			size_t GetFreeBytesRemaining() const noexcept;
 
-			void* HeapAlloc(size_t wantedSize) noexcept { return Memory::HeapAlloc(wantedSize); }
-			void* HeapAlignedAlloc(size_t wantedSize, size_t alignment) noexcept { return Memory::HeapAlignedAlloc(wantedSize, alignment); }
-			void HeapFree(void* ptr) noexcept { Memory::HeapFree(ptr); }
-			void HeapAlignedFree(void* ptr) noexcept { Memory::HeapAlignedFree(ptr); }
+			void* HeapAlloc(size_t wantedSize) noexcept;
+			void* HeapAlignedAlloc(size_t wantedSize, size_t alignment) noexcept;
+			void HeapFree(void* ptr) noexcept;
+			void HeapAlignedFree(void* ptr) noexcept;
 		};
 	}
 
@@ -39,3 +35,9 @@ namespace Chino
 }
 
 extern StaticHolder<Chino::Memory::MemoryManager> g_MemoryMgr;
+
+template<class T>
+void Chino::Memory::aligned_heap_delete<T>::operator()(T* ptr) const noexcept
+{
+	g_MemoryMgr->HeapAlignedFree(ptr);
+}

@@ -40,14 +40,14 @@ void Task1(uintptr_t)
 
 extern "C" void kernel_entry(const BootParameters* pParams)
 {
-	const BootParameters params = *pParams;
+	const auto& params = *pParams;
 
 	g_Logger.construct(params);
 
 	extern void __libc_init_array(void);
 	extern void __libc_fini_array(void);
 
-	Memory::InitializeHeap(params);
+	Memory::MemoryManager::InitializeHeap(params);
 
 	atexit(__libc_fini_array);
 	__libc_init_array();

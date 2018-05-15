@@ -3,6 +3,7 @@
 //
 #include <kernel/utils.hpp>
 #include <libbsp/bsp.hpp>
+#include "../bsp_defines.hpp"
 #include "BootVideo.hpp"
 
 using namespace Chino;

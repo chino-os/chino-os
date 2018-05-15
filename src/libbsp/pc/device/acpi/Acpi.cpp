@@ -2,6 +2,7 @@
 // Kernel Device
 //
 #include <libbsp/bsp.hpp>
+#include "../../bsp_defines.hpp"
 #include "Acpi.hpp"
 #include <kernel/kdebug.hpp>
 #include <kernel/device/DeviceManager.hpp>

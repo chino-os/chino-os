@@ -8,6 +8,14 @@
 
 namespace Chino
 {
+	namespace Memory
+	{
+		void BSPInitializeHeap(const BootParameters& bootParams) noexcept;
+		void* BSPHeapAlloc(size_t wantedSize) noexcept;
+		void BSPHeapFree(void* ptr) noexcept;
+		size_t BSPGetFreeBytesRemaining();
+	}
+
 	namespace Device
 	{
 		std::unique_ptr<Driver> BSPInstallRootDriver(const BootParameters& bootParams);

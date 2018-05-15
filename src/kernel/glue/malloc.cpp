@@ -15,14 +15,14 @@ extern "C"
 
 	void* malloc(size_t n)
 	{
-		auto p = HeapAlloc(n);
+		auto p = g_MemoryMgr->HeapAlloc(n);
 		kassert(p);
 		return p;
 	}
 
 	void free(void* p)
 	{
-		HeapFree(p);
+		g_MemoryMgr->HeapFree(p);
 	}
 
 	void* realloc(void* p, size_t n)
