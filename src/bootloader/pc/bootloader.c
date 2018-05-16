@@ -121,7 +121,7 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	bootParam.Efi.MemoryDescriptorSize = descriptorSize;
 	bootParam.Efi.MemoryDescriptorCount = totalSize / descriptorSize;
 
-	BSPEnterKernel(&bootParam, kernelEntry);
+	kernelEntry(&bootParam);
 
 	return EFI_SUCCESS;
 }

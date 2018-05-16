@@ -29,7 +29,7 @@ sudo apt install xorriso cmake -y
 ```bash
 git clone https://github.com/chino-os/chino-os.git
 mkdir build && cd build
-../build.sh x86_64
+../build.sh x86_64 pc
 make firmware
 ```
 

@@ -8,12 +8,17 @@
 
 namespace Chino
 {
+	void BSPCallKernelEntry(const BootParameters& params, kernel_entry_t entry) noexcept;
+
 	namespace Memory
 	{
-		void BSPInitializeHeap(const BootParameters& bootParams) noexcept;
-		void* BSPHeapAlloc(size_t wantedSize) noexcept;
-		void BSPHeapFree(void* ptr) noexcept;
-		size_t BSPGetFreeBytesRemaining();
+		struct HeapRegionDesc
+		{
+			uintptr_t StartAddress;
+			size_t SizeInBytes;
+		};
+
+		bool BSPEnumHeapRegion(const BootParameters& bootParams, size_t index, HeapRegionDesc& desc);
 	}
 
 	namespace Device

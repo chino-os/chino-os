@@ -9,6 +9,7 @@
 #include "device/DeviceManager.hpp"
 #include "file/FileManager.hpp"
 #include "diagnostic/KernelLogger.hpp"
+#include <libbsp/bsp.hpp>
 
 using namespace Chino;
 
@@ -40,8 +41,7 @@ void Task1(uintptr_t)
 
 extern "C" void kernel_entry(const BootParameters* pParams)
 {
-	const auto& params = *pParams;
-
+	auto& params = *pParams;
 	g_Logger.construct(params);
 
 	extern void __libc_init_array(void);
@@ -76,4 +76,9 @@ extern "C" void kernel_entry(const BootParameters* pParams)
 
 	g_ProcessMgr->StartScheduler();
 	ArchHaltProcessor();
+}
+
+extern "C" void kernel_entry_thunk(const BootParameters* pParams)
+{
+	BSPCallKernelEntry(*pParams, kernel_entry);
 }

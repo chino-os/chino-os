@@ -279,5 +279,6 @@ void KernelLogger::FailFast(const char* file, size_t line)
 {
 	PutFormat("Oops!\n\nAssert Failed: %s\nAt: %s:%d", file, (int)line);
 	ArchDisableInterrupt();
-	ArchHaltProcessor();
+	while (1)
+		ArchHaltProcessor();
 }

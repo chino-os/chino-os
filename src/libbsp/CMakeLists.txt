@@ -7,7 +7,7 @@ SET(COMMON_FLAGS "\
 -fstrict-volatile-bitfields \
 -fno-stack-protector		 \
 -fPIC						 \
--ekernel_entry")
+-ekernel_entry_thunk")
 
 SET(COMMON_WARNING_FLAGS "-Wall \
 -Werror=all \
