@@ -39,7 +39,7 @@ void Task1(uintptr_t)
 	}
 }
 
-extern "C" void kernel_entry(const BootParameters* pParams)
+extern "C" void Kernel_Main(const BootParameters* pParams)
 {
 	auto& params = *pParams;
 	g_Logger.construct(params);
@@ -76,9 +76,4 @@ extern "C" void kernel_entry(const BootParameters* pParams)
 
 	g_ProcessMgr->StartScheduler();
 	ArchHaltProcessor();
-}
-
-extern "C" void kernel_entry_thunk(const BootParameters* pParams)
-{
-	BSPCallKernelEntry(*pParams, kernel_entry);
 }

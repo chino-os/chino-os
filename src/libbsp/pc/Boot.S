@@ -1,5 +1,5 @@
-.global BSPEnterKernel
+.global BSPKernelEntry
 
-BSPEnterKernel:
+BSPKernelEntry:
 	mov		0x0(%rdi), %rsp
-	jmp		*%rsi
+	jmp		Kernel_Main

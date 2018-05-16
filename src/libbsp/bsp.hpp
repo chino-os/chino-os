@@ -8,8 +8,6 @@
 
 namespace Chino
 {
-	void BSPCallKernelEntry(const BootParameters& params, kernel_entry_t entry) noexcept;
-
 	namespace Memory
 	{
 		struct HeapRegionDesc

@@ -7,6 +7,7 @@
 #define _ARCH_ x86_64
 #define __amd64__ 1
 #define _BOARD_ pc
+#define __attribute__(x)
 #endif
 #endif
 
@@ -19,8 +20,7 @@ extern "C"
 
 struct BootParameters;
 
-typedef void(*kernel_entry_t)(const struct BootParameters* params);
-
+void Kernel_Main(const struct BootParameters* pParams);
 void Kernel_OnTimerHandler(void* interruptContext);
 
 #ifdef __cplusplus

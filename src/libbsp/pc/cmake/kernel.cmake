@@ -1,0 +1,1 @@
+SET(BOARD_LDFLAGS "-pie")

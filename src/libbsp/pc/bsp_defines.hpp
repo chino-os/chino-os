@@ -45,6 +45,9 @@ struct BootParameters
 	} Acpi;
 };
 
+typedef void(*kernel_entry_t)(const struct BootParameters* pParams);
+extern void BSPKernelEntry(const struct BootParameters* pParams);
+
 #ifdef __cplusplus
 
 static_assert(offsetof(BootParameters, StackPointer) == 0);

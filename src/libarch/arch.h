@@ -9,8 +9,6 @@
 extern "C"
 {
 #endif
-	extern void ArchEnterKernel(const struct BootParameters* params, kernel_entry_t kernelEntry);
-
 	extern void ArchEnableInterrupt();
 	extern void ArchDisableInterrupt();
 	extern void ArchHaltProcessor();
