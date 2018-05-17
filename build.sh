@@ -20,6 +20,7 @@ esac
 
 cmake .. -DCMAKE_SYSTEM_NAME=Generic -DCMAKE_C_COMPILER=$TOOLCHAIN/bin/$TUPLE0-unknown-chino-gcc -DCMAKE_CXX_COMPILER=$TOOLCHAIN/bin/$TUPLE0-unknown-chino-g++ \
  -DCMAKE_LINKER=$TOOLCHAIN/bin/$TUPLE0-unknown-chino-ld -DCMAKE_NM=$TOOLCHAIN/bin/$TUPLE0-unknown-chino-nm -DCMAKE_OBJCOPY=/usr/bin/objcopy \
+ -DCMAKE_ARCH_OBJCOPY=$TOOLCHAIN/bin/$TUPLE0-unknown-chino-objcopy \
  -DCMAKE_OBJDUMP=$TOOLCHAIN/bin/$TUPLE0-unknown-chino-objdump -DCMAKE_RANLIB=$TOOLCHAIN/bin/$TUPLE0-unknown-chino-ranlib -DCMAKE_STRIP=$TOOLCHAIN/bin/$TUPLE0-unknown-chino-strip \
  -DCMAKE_AR=$TOOLCHAIN/bin/$TUPLE0-unknown-chino-ar \
  -DCMAKE_C_FLAGS="--specs=nosys.specs" \

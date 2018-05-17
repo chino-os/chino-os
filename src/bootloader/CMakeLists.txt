@@ -5,8 +5,7 @@ SET(COMMON_FLAGS "\
 -fno-stack-protector		 \
 -ffreestanding				 \
 -fshort-wchar				 \
--fPIC						 \
--mno-red-zone")
+-fPIC")
 
 SET(COMMON_WARNING_FLAGS "-Wall \
 -Werror=all \
@@ -29,8 +28,8 @@ SET(LDFLAGS "\
 -L ${GNU_EFI_LIB}   \
 ${GNU_EFI_LIB}/crt0-efi-${ARCH}.o")
 
-SET(CMAKE_C_FLAGS "${COMMON_FLAGS} -std=gnu11")
-SET(CMAKE_CXX_FLAGS "${COMMON_FLAGS} -std=gnu++17")
+SET(CMAKE_C_FLAGS "${COMMON_FLAGS} ${BOARD_C_FLAGS} -std=gnu11")
+SET(CMAKE_CXX_FLAGS "${COMMON_FLAGS} ${BOARD_CXX_FLAGS} -std=gnu++17")
 SET(CMAKE_SHARED_LINKER_FLAGS ${LDFLAGS})
 
 # - Add user project to CMake project

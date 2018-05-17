@@ -10,6 +10,16 @@
 
 extern "C"
 {
+	int _close(int file) __attribute__((alias("close")));
+	int _fstat(int file, struct stat *st) __attribute__((alias("fstat")));
+	int _getpid() __attribute__((alias("getpid")));
+	int _isatty(int file) __attribute__((alias("isatty")));
+	int _kill(int pid, int sig) __attribute__((alias("kill")));
+	int _lseek(int file, int ptr, int dir) __attribute__((alias("lseek")));
+	int _open(const char *name, int flags, ...) __attribute__((alias("open")));
+	int _read(int file, char *ptr, int len) __attribute__((alias("read")));
+	int _write(int file, char *ptr, int len) __attribute__((alias("write")));
+
 	void _exit(int)
 	{
 		kassert(!"Kernel exit");

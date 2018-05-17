@@ -20,8 +20,11 @@ void DeviceMananger::InstallDevices(const BootParameters& bootParams)
 
 void DeviceMananger::InstallDriver(std::unique_ptr<Driver>&& driver)
 {
-	driver->Install();
-	drivers_.emplace_back(std::move(driver));
+	if (driver)
+	{
+		driver->Install();
+		drivers_.emplace_back(std::move(driver));
+	}
 }
 
 void DeviceMananger::RegisterDrive(DriveDevice & drive)

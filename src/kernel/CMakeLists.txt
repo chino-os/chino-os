@@ -3,7 +3,6 @@ INCLUDE(${BOARD_CMAKE_DIR}/kernel.cmake)
 SET(COMMON_FLAGS "\
 -Os			\
 -fno-common \
--fexceptions \
 -ffunction-sections \
 -fdata-sections \
 -fstrict-volatile-bitfields \

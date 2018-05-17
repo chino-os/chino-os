@@ -30,6 +30,13 @@ ADD_CUSTOM_COMMAND(OUTPUT firmware.iso
         DEPENDS bootloader kernel
         COMMENT "Generating firmware.iso ...")
 
+ADD_CUSTOM_COMMAND(OUTPUT kernel.hex
+		COMMAND rm -f kernel.hex
+		COMMAND ${CMAKE_ARCH_OBJCOPY} -O ihex ${CMAKE_CURRENT_BINARY_DIR}/src/kernel/kernel kernel.hex
+        DEPENDS kernel
+        COMMENT "Generating kernel.hex ...")
+
 # TODO: add flash command
 
 ADD_CUSTOM_TARGET(firmware DEPENDS firmware.iso)
+ADD_CUSTOM_TARGET(hex DEPENDS kernel.hex)
