@@ -39,13 +39,16 @@ void Task1(uintptr_t)
 	}
 }
 
+extern "C"
+{
+	extern void __libc_init_array(void);
+	extern void __libc_fini_array(void);
+}
+
 extern "C" void Kernel_Main(const BootParameters* pParams)
 {
 	auto& params = *pParams;
 	g_Logger.construct(params);
-
-	extern void __libc_init_array(void);
-	extern void __libc_fini_array(void);
 
 	Memory::MemoryManager::InitializeHeap(params);
 
@@ -65,15 +68,15 @@ extern "C" void Kernel_Main(const BootParameters* pParams)
 	g_DeviceMgr->DumpDevices();
 	g_FileMgr->DumpFileSystems();
 
-	g_ProcessMgr->CreateProcess("Task 0", 1, Task0);
-	g_ProcessMgr->CreateProcess("Task 1", 1, Task1);
+	//g_ProcessMgr->CreateProcess("Task 0", 1, Task0);
+	//g_ProcessMgr->CreateProcess("Task 1", 1, Task1);
 
 	g_Logger->PutString(L"\nChino is successfully loaded ♥\n");
-	g_Logger->PutFormat(L"Free memory avaliable: %l bytes\n", g_MemoryMgr->GetFreeBytesRemaining());
+	g_Logger->PutFormat(L"Free memory avaliable: %z bytes\n", g_MemoryMgr->GetFreeBytesRemaining());
 
-	auto file = g_FileMgr->OpenFile("/dev/fs0/chino/system/kernel");
-	g_Logger->PutFormat(L"Opened /dev/fs0/chino/system/kernel, Size: %l bytes\n", g_FileMgr->GetFileSize(file));
-
-	g_ProcessMgr->StartScheduler();
+	//auto file = g_FileMgr->OpenFile("/dev/fs0/chino/system/kernel");
+	//g_Logger->PutFormat(L"Opened /dev/fs0/chino/system/kernel, Size: %l bytes\n", g_FileMgr->GetFileSize(file));
+	//
+	//g_ProcessMgr->StartScheduler();
 	ArchHaltProcessor();
 }

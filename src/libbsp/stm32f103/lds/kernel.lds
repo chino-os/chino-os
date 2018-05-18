@@ -1,186 +1,139 @@
 /*
- * The MEMORY command describes the location and size of blocks of memory
- * in the target. You can use it to describe which memory regions may be
- * used by the linker, and which memory regions it must avoid.
+ * linker script for STM32F10x with GNU ld
+ * bernard.xiong 2009-10-14
  */
+
+/* Program Entry, set to mark it as "used" and avoid gc */
 MEMORY
 {
-  /*
-   * Boot ROM under AXI. All readonly data save to here.
-   */
-  rom (rxai!w) : ORIGIN = 0x08000000, LENGTH = (256 * 1024)
-  /*
-   * Memory with CPU cache.
-   */
-  ram (wxa!ri) : ORIGIN = 0x20000000, LENGTH = (48 * 1024)
+    CODE (rx) : ORIGIN = 0x08000000, LENGTH = 256k /* 256KB flash */
+    DATA (rw) : ORIGIN = 0x20000000, LENGTH =  48k /* 48K sram */
 }
+ENTRY(Reset_Handler)
+_system_stack_size = 0x400;
+_ram_end = ORIGIN(DATA) + LENGTH(DATA);
 
-PROVIDE( _rom_start  = ORIGIN(rom) );
-PROVIDE( _rom_end    = ORIGIN(rom) + LENGTH(rom) );
-PROVIDE( _ram_start  = ORIGIN(ram) );
-PROVIDE( _ram_end    = ORIGIN(ram) + LENGTH(ram) );
-PROVIDE( _stack_size = (1 * 1024) );
-
-/*
- * The OUTPUT_ARCH command specifies the machine architecture where the
- * argument is one of the names used in the MAIX library.
- */
-OUTPUT_ARCH( "arm" )
-
-/*
- * The linker only pays attention to the PHDRS command when generating
- * an ELF output file. In other cases, the linker will simply ignore PHDRS.
- */
-PHDRS
-{
-  rom      PT_LOAD;
-  ram_init PT_LOAD;
-  ram      PT_NULL;
-}
-
-/*
- * This is where we specify how the input sections map to output
- * sections.
- */
 SECTIONS
 {
-  .ARM.vectortable :
-  {
-    *(.ARM.vectortable)
-  } >rom AT>rom :rom
-  
-  . = ALIGN(4);
+    .text :
+    {
+        . = ALIGN(4);
+        _stext = .;
+        KEEP(*(.isr_vector))            /* Startup code */
+        . = ALIGN(4);
+        *(.text)                        /* remaining code */
+        *(.text.*)                      /* remaining code */
+		*(.ARM.extab.text.*)
+        *(.glue_7)
+        *(.glue_7t)
+        *(.gnu.linkonce.t*)
 
-  /* Program code segment, also known as a text segment */
-  .text :
-  {
-    PROVIDE( _text = ABSOLUTE(.) );
-    /* Initialization code segment */
-    KEEP( *(.init.header) )
-    KEEP( *(.init.configstring) )
-    KEEP( *(.init.static_data) )
-    *(.text.unlikely .text.unlikely.*)
-    *(.text.startup .text.startup.*)
-    /* Normal code segment */
-    *(.text .text.*)
-    *(.gnu.linkonce.t.*)
-    *(.ARM.extab.text.*)
-    . = ALIGN(4);
-    PROVIDE( _etext = ABSOLUTE(.) );
+        . = ALIGN(4);
+        _etext = .;
+    } > CODE = 0
+	
+    /* Read-only data segment */
+    .rodata :
+    {
+      *(.rdata)
+      *(.rodata .rodata.*)
+      *(.gnu.linkonce.r.*)
+    } > CODE = 0
 
-  } >rom AT>rom :rom
+    /* .ARM.exidx is sorted, so has to go in its own output section.  */
+    __exidx_start = .;
+    .ARM.exidx :
+    {
+        *(.ARM.exidx* .gnu.linkonce.armexidx.*)
 
-  __exidx_start = .;
-  __exidx_end = .;
-       
-  .ARM.exidx : {
-      __exidx_start = .;
-      *(.ARM.exidx* .gnu.linkonce.armexidx.*)
-      __exidx_end = .;
-  } >rom AT>rom :rom
+        /* This is used by the startup in order to initialize the .data secion */
+        _sidata = .;
+    } > CODE
+    __exidx_end = .;
 
-  /* Read-only data segment */
-  .rodata :
-  {
-    *(.rdata)
-    *(.rodata .rodata.*)
-    *(.gnu.linkonce.r.*)
-  } >rom AT>rom :rom
+    /* .data section which is used for initialized data */
 
-  . = ALIGN(4);
+    .data : AT (_sidata)
+    {
+        . = ALIGN(4);
+        /* This is used by the startup in order to initialize the .data secion */
+        _sdata = . ;
 
-  .lalign :
-  {
-    . = ALIGN(8);
-    PROVIDE( _data_lma = . );
-  } >rom AT>rom :rom
+        *(.data)
+        *(.data.*)
+        *(.gnu.linkonce.d*)
+		
+        *(.got)
+        *(.got.plt)
+        *(.init_array)
 
-  .dalign :
-  {
-    . = ALIGN(4);
-    PROVIDE( _data = . );
-  } >ram AT>rom :ram_init
+        . = ALIGN(4);
+        /* This is used by the startup in order to initialize the .data secion */
+        _edata = . ;
+    } >DATA
 
-  . = ALIGN(4);
+    .stack : 
+    {
+        . = . + _system_stack_size;
+        . = ALIGN(4);
+        _estack = .;
+    } >DATA
 
-  /* .data, .sdata and .srodata segment */
-  .data :
-  {
-    /* Writable data segment (.data segment) */
-    *(.data .data.*)
-    *(.gnu.linkonce.d.*)
-    /* Have _gp point to middle of sdata/sbss to maximize displacement range */
-    . = ALIGN(8);
-    PROVIDE( _gp = ABSOLUTE(.) + 0x800);
-    /* Writable small data segment (.sdata segment) */
-    *(.sdata .sdata.*)
-    *(.gnu.linkonce.s.*)
-    /* Read-only small data segment (.srodata segment) */
-    . = ALIGN(8);
-    *(.srodata.cst16)
-    *(.srodata.cst8)
-    *(.srodata.cst4)
-    *(.srodata.cst2)
-    *(.srodata .srodata.*)
-    /* Align _edata to cache line size */
-    . = ALIGN(64);
-    PROVIDE( _edata = ABSOLUTE(.) );
-  } >ram AT>rom :ram_init
+    __bss_start = .;
+    .bss :
+    {
+        . = ALIGN(4);
+        /* This is used by the startup in order to initialize the .bss secion */
+        _sbss = .;
 
-  /* .bss and .sbss segment */
-  .bss :
-  {
-    PROVIDE( _bss = ABSOLUTE(.) );
-    /* Writable uninitialized small data segment (.sbss segment)*/
-    *(.sbss .sbss.*)
-    *(.gnu.linkonce.sb.*)
-    *(.scommon)
-    /* Uninitialized writeable data section (.bss segment)*/
-    *(.bss .bss.*)
-    *(.gnu.linkonce.b.*)
-    *(COMMON)
+        *(.bss)
+        *(.bss.*)
+        *(COMMON)
 
-    . = ALIGN(4);
-    PROVIDE( _ebss = ABSOLUTE(.) );
-  } >ram AT>ram :ram
+        . = ALIGN(4);
+        /* This is used by the startup in order to initialize the .bss secion */
+        _ebss = . ;
+        
+        *(.bss.init)
+    } > DATA
+    __bss_end = .;
 
-  PROVIDE( _tls_data = ABSOLUTE(.) );
-  /*
-   * Thread Local Storage (TLS) are per-thread global variables.
-   * Compilers such as GCC provide a __thread keyword to mark global
-   * variables as per-thread. Support is required in the program loader
-   * and thread creator.
-   */
+    _end = .;
 
-  /* Thread-local data segment, .tdata (initialized tls). */
-  .tdata :
-  {
-    KEEP( *(.tdata.begin) )
-    *(.tdata .tdata.*)
-    *(.gnu.linkonce.td.*)
-    KEEP( *(.tdata.end) )
-  } >ram AT>ram :ram
+	PROVIDE( _heap_start = ABSOLUTE(.) );
+	PROVIDE( _heap_end = _ram_end );
 
-  /* Thread-local bss segment, .tbss (zero-initialized tls). */
-  .tbss :
-  {
-    *(.tbss .tbss.*)
-    *(.gnu.linkonce.tb.*)
-    KEEP( *(.tbss.end) )
-  } >ram AT>ram :ram
-
-  /*
-   * End of uninitalized data segement
-   *
-   * Actually the stack needs 16B alignment, and it won't hurt to also slightly
-   * increase the alignment to 32 or even 64 (cache line size).
-   *
-   * Align _heap_start to cache line size
-   */
-  . = ALIGN(64);
-  PROVIDE( _end = ABSOLUTE(.) );
-  PROVIDE( _stack_top = ABSOLUTE(.) + _stack_size );
-  PROVIDE( _heap_start = _stack_top );
-  /* Heap end is at the end of memory, the memory size can set in kconfig */
-  PROVIDE( _heap_size = _ram_end - _heap_start );
+    /* Stabs debugging sections.  */
+    .stab          0 : { *(.stab) }
+    .stabstr       0 : { *(.stabstr) }
+    .stab.excl     0 : { *(.stab.excl) }
+    .stab.exclstr  0 : { *(.stab.exclstr) }
+    .stab.index    0 : { *(.stab.index) }
+    .stab.indexstr 0 : { *(.stab.indexstr) }
+    .comment       0 : { *(.comment) }
+    /* DWARF debug sections.
+     * Symbols in the DWARF debugging sections are relative to the beginning
+     * of the section so we begin them at 0.  */
+    /* DWARF 1 */
+    .debug          0 : { *(.debug) }
+    .line           0 : { *(.line) }
+    /* GNU DWARF 1 extensions */
+    .debug_srcinfo  0 : { *(.debug_srcinfo) }
+    .debug_sfnames  0 : { *(.debug_sfnames) }
+    /* DWARF 1.1 and DWARF 2 */
+    .debug_aranges  0 : { *(.debug_aranges) }
+    .debug_pubnames 0 : { *(.debug_pubnames) }
+    /* DWARF 2 */
+    .debug_info     0 : { *(.debug_info .gnu.linkonce.wi.*) }
+    .debug_abbrev   0 : { *(.debug_abbrev) }
+    .debug_line     0 : { *(.debug_line) }
+    .debug_frame    0 : { *(.debug_frame) }
+    .debug_str      0 : { *(.debug_str) }
+    .debug_loc      0 : { *(.debug_loc) }
+    .debug_macinfo  0 : { *(.debug_macinfo) }
+    /* SGI/MIPS DWARF 2 extensions */
+    .debug_weaknames 0 : { *(.debug_weaknames) }
+    .debug_funcnames 0 : { *(.debug_funcnames) }
+    .debug_typenames 0 : { *(.debug_typenames) }
+    .debug_varnames  0 : { *(.debug_varnames) }
 }

@@ -146,6 +146,27 @@ void KernelLogger::PutFormat(const wchar_t * format, ...)
 				i++;		// go to next character
 				break;
 			}
+
+			case 'z': {
+				switch (format[i + 2]) {
+				case 'X':
+				case 'x': {
+					size_t c = va_arg(args, size_t);
+					_itow((uint64_t)c, 16, str);
+					PutString(str);
+					i++;		// go to next character
+					break;
+				}
+				default: {
+					size_t c = va_arg(args, size_t);
+					_itow_s(c, 10, str);
+					PutString(str);
+					break;
+				}
+				}
+				i++;		// go to next character
+				break;
+			}
 					  /*** display in hex ***/
 			case 'X':
 			case 'x': {

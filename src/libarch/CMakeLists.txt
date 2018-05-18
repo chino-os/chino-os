@@ -1,3 +1,5 @@
+INCLUDE(${BOARD_CMAKE_DIR}/libarch.cmake)
+
 SET(COMMON_FLAGS "\
 -Os			\
 -fno-common \
@@ -6,7 +8,6 @@ SET(COMMON_FLAGS "\
 -fdata-sections \
 -fstrict-volatile-bitfields \
 -fno-stack-protector		 \
--fPIC						 \
 -ekernel_entry")
 
 SET(COMMON_WARNING_FLAGS "-Wall \
@@ -23,12 +24,11 @@ SET(COMMON_WARNING_FLAGS "-Wall \
 
 SET(LDFLAGS "\
 -nostartfiles           \
--pie					\
 -Wl,-static")
 
-SET(CMAKE_C_FLAGS "${COMMON_FLAGS} -std=gnu11")
-SET(CMAKE_CXX_FLAGS "${COMMON_FLAGS} -std=gnu++17")
-SET(CMAKE_EXE_LINKER_FLAGS "${LDFLAGS}")
+SET(CMAKE_C_FLAGS "${COMMON_FLAGS} ${BOARD_C_FLAGS} -std=gnu11")
+SET(CMAKE_CXX_FLAGS "${COMMON_FLAGS} ${BOARD_CXX_FLAGS} -std=gnu++17")
+SET(CMAKE_EXE_LINKER_FLAGS "${LDFLAGS} ${BOARD_LDFLAGS}")
 
 # - Add user project to CMake project
 INCLUDE_DIRECTORIES(${GNU_EFI_INC} ${GNU_EFI_INC}/${ARCH} ${COMMON_INC})

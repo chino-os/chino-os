@@ -6,9 +6,7 @@ SET(COMMON_FLAGS "\
 -ffunction-sections \
 -fdata-sections \
 -fstrict-volatile-bitfields \
--fno-stack-protector		 \
--fPIC						 \
--eBSPKernelEntry")
+-fno-stack-protector")
 
 SET(COMMON_WARNING_FLAGS "-Wall \
 -Werror=all \
@@ -27,8 +25,8 @@ SET(LDFLAGS "\
 -T ${BOARD_LDS_DIR}/kernel.lds \
 -Wl,-static")
 
-SET(CMAKE_C_FLAGS "${COMMON_FLAGS} -std=gnu11")
-SET(CMAKE_CXX_FLAGS "${COMMON_FLAGS} -std=gnu++17")
+SET(CMAKE_C_FLAGS "${COMMON_FLAGS} ${BOARD_C_FLAGS} -std=gnu11")
+SET(CMAKE_CXX_FLAGS "${COMMON_FLAGS} ${BOARD_CXX_FLAGS} -std=gnu++17")
 SET(CMAKE_EXE_LINKER_FLAGS "${LDFLAGS} ${BOARD_LDFLAGS}")
 
 # - Add user project to CMake project
