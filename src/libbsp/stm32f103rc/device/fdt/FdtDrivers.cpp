@@ -2,6 +2,7 @@
 // Kernel Device
 //
 #include "Fdt.hpp"
+#include "../serial/Usart.hpp"
 
 using namespace Chino::Device;
 
@@ -9,5 +10,6 @@ using namespace Chino::Device;
 
 const FDTDriverDescriptor* Chino::Device::g_FDTDrivers[] =
 {
+	REF_FDT_DRIVER_DESC(UsartDriver),
 	nullptr
 };

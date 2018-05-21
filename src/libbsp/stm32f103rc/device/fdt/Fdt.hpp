@@ -10,14 +10,24 @@
 #include <string_view>
 
 #define DECLARE_FDT_DRIVER(Type) \
+Type(const Chino::Device::FDTDevice& device); \
 static const Chino::Device::FDTDriverDescriptor Descriptor; \
 static std::unique_ptr<Chino::Device::Driver> Activate(const Chino::Device::FDTDevice& device); \
 static bool IsSupported(const Chino::Device::FDTDevice& device);
 
-#define DEFINE_PCI_DRIVER_DESC(Type, ClassCode, SubClass) \
+#define DEFINE_FDT_DRIVER_DESC(Type) \
 std::unique_ptr<Chino::Device::Driver> Type::Activate(const Chino::Device::FDTDevice& device) \
 { return std::make_unique<Type>(device); } \
 const Chino::Device::FDTDriverDescriptor Type::Descriptor = { Type::Activate, Type::IsSupported };
+
+#define DEFINE_FDT_DRIVER_DESC_1(Type, DeviceType, Compatible) \
+std::unique_ptr<Chino::Device::Driver> Type::Activate(const Chino::Device::FDTDevice& device) \
+{ return std::make_unique<Type>(device); } \
+const Chino::Device::FDTDriverDescriptor Type::Descriptor = { Type::Activate, Type::IsSupported }; \
+bool UsartDriver::IsSupported(const Chino::Device::FDTDevice& device) \
+{ \
+return device.HasDeviceType(DeviceType) && device.HasCompatible(Compatible); \
+}
 
 namespace Chino
 {
@@ -37,6 +47,9 @@ namespace Chino
 		{
 		public:
 			FDTDevice(const void* fdt, int node, int depth);
+
+			bool HasDeviceType(std::string_view deviceType) const noexcept;
+			bool HasCompatible(std::string_view compatible) const noexcept;
 
 			std::unique_ptr<Driver> TryLoadDriver();
 		private:

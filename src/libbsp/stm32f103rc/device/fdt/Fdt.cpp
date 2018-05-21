@@ -25,6 +25,22 @@ FDTDevice::FDTDevice(const void* fdt, int node, int depth)
 #endif
 }
 
+bool FDTDevice::HasDeviceType(std::string_view deviceType) const noexcept
+{
+	auto prop = fdt_get_property(fdt_, node_, "device_type", NULL);
+	if (prop)
+		return deviceType.compare(prop->data) == 0;
+	return false;
+}
+
+bool FDTDevice::HasCompatible(std::string_view compatible) const noexcept
+{
+	auto prop = fdt_get_property(fdt_, node_, "compatible", NULL);
+	if (prop)
+		return compatible.compare(prop->data) == 0;
+	return false;
+}
+
 std::unique_ptr<Driver> FDTDevice::TryLoadDriver()
 {
 	auto head = g_FDTDrivers;

@@ -155,7 +155,8 @@ extern "C"
 	void ArchSleepMs(uint32_t ms)
 	{
 		auto count = configCPU_CLOCK_HZ / 1000 * ms;
-		for (size_t i = 0; i < count; i++);
+		volatile int a;
+		for (size_t i = 0; i < count; i++) a++;
 	}
 }
 

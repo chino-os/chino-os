@@ -50,7 +50,8 @@ void ProcessManager::StartScheduler()
 	idleProcess_ = CreateProcess("System Idle", 0, IdleThreadMain);
 
 	ArchSetupSchedulerTimer();
-	ArchHaltProcessor();
+	while (1)
+		ArchHaltProcessor();
 }
 
 ProcessManager::thread_handle_it ProcessManager::SelectNextSwitchToThread()
