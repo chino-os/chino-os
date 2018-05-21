@@ -10,6 +10,7 @@
 
 ArchHaltProcessor:
 	wfi
+	mov pc, lr
 
 ArchEnableInterrupt:
 	mov pc, lr

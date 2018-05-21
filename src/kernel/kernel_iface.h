@@ -8,6 +8,7 @@
 #define __amd64__ 1
 #define _BOARD_ pc
 #define __attribute__(x)
+#define _HAS_CXX17 1
 #endif
 #endif
 

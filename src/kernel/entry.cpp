@@ -78,5 +78,6 @@ extern "C" void Kernel_Main(const BootParameters* pParams)
 	//g_Logger->PutFormat(L"Opened /dev/fs0/chino/system/kernel, Size: %l bytes\n", g_FileMgr->GetFileSize(file));
 	//
 	//g_ProcessMgr->StartScheduler();
-	ArchHaltProcessor();
+	while (1)
+		ArchHaltProcessor();
 }

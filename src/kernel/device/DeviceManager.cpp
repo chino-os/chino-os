@@ -14,7 +14,7 @@ DeviceMananger::DeviceMananger()
 
 void DeviceMananger::InstallDevices(const BootParameters& bootParams)
 {
-	// ACPI
+	// Root
 	InstallDriver(BSPInstallRootDriver(bootParams));
 }
 

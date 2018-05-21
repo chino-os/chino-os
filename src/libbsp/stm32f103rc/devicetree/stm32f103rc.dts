@@ -1,0 +1,19 @@
+/dts-v1/;
+
+/ {
+    model = "st,stm32f103";
+    compatible = "arm,armv7-m";
+
+    cpus {
+	    CPU0: cpu@0 {
+	        device_type = "cpu";
+	    };
+	};
+	
+	soc {
+	    usart1: serial@0x40013800 {
+	        device_type = "serial";
+	        compatible = "st,stm32f103-usart";
+	    };
+	};
+};

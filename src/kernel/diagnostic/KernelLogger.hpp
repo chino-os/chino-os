@@ -21,6 +21,7 @@ namespace Chino
 			void PutString(const char* string);
 			void PutString(const char* string, size_t count);
 			void PutFormat(const char* format, ...);
+			void DumpHex(const char* data, size_t count);
 
 			void Clear();
 			void BlueScreen();

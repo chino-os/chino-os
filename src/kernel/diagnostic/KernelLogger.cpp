@@ -258,6 +258,28 @@ void KernelLogger::PutFormat(const char * format, ...)
 				i++;		// go to next character
 				break;
 			}
+
+			case 'z': {
+				switch (format[i + 2]) {
+				case 'X':
+				case 'x': {
+					size_t c = va_arg(args, size_t);
+					//char str[32]={0};
+					_itow((uint64_t)c, 16, str);
+					PutString(str);
+					i++;		// go to next character
+					break;
+				}
+				default: {
+					size_t c = va_arg(args, size_t);
+					_itow(c, 10, str);
+					PutString(str);
+					break;
+				}
+				}
+				i++;		// go to next character
+				break;
+			}
 					  /*** display in hex ***/
 			case 'X':
 			case 'x': {
@@ -302,4 +324,19 @@ void KernelLogger::FailFast(const char* file, size_t line)
 	ArchDisableInterrupt();
 	while (1)
 		ArchHaltProcessor();
+}
+
+void KernelLogger::DumpHex(const char* data, size_t count)
+{
+	for (size_t i = 0; i < count; i++)
+	{
+		if (data[i] == 0)
+			PutString("00 ");
+		else
+		{
+			if (data[i] < 0x10)
+				PutChar('0');
+			PutFormat("%x ", data[i]);
+		}
+	}
 }
