@@ -23,6 +23,7 @@ void Task0(uintptr_t)
 {
 	while (1)
 	{
+		ArchSleepMs(100);
 		g_Logger->PutString(L"I am task 0.\n");
 	}
 }
@@ -31,6 +32,7 @@ void Task1(uintptr_t)
 {
 	while (1)
 	{
+		ArchSleepMs(100);
 		g_Logger->PutString(L"I am task 1.\n");
 	}
 }

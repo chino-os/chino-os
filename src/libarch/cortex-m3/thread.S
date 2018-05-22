@@ -32,7 +32,6 @@ ArchDisableInterrupt:
 
 ArchRestoreThreadContextArch:
 	ldr		sp,		[r1, #17 * REGBYTES]
-	isb
 	ldr		lr,		[r1, #18 * REGBYTES]
 	ldr		r2,		[r0, #13 * REGBYTES] @sp
 	msr		psp,	r2
@@ -53,7 +52,6 @@ ArchRestoreThreadContextArch:
 	ldr		r3,		[r0, #16 * REGBYTES]
 	str		r3,		[r2, #7 * REGBYTES]
 	orr		lr, lr,	#0x04
-	isb
 	cpsie	i
 	bx lr
 	

@@ -83,14 +83,18 @@ extern "C"
 
 	void SysTick_Handler()
 	{
-		/* The SysTick runs at the lowest interrupt priority, so when this interrupt
-		executes all interrupts must be unmasked.  There is therefore no need to
-		save and then restore the interrupt mask value as its value is already
-		known. */
-		ArchDisableInterrupt();
+		static uint32_t i = 0;
+		if (i++ % 100 == 0)
 		{
-			portNVIC_INT_CTRL_REG |= portNVIC_PENDSVSET_BIT;
+			/* The SysTick runs at the lowest interrupt priority, so when this interrupt
+			executes all interrupts must be unmasked.  There is therefore no need to
+			save and then restore the interrupt mask value as its value is already
+			known. */
+			ArchDisableInterrupt();
+			{
+				portNVIC_INT_CTRL_REG |= portNVIC_PENDSVSET_BIT;
+			}
+			ArchEnableInterrupt();
 		}
-		ArchEnableInterrupt();
 	}
 }
