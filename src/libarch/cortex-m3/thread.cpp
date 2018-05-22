@@ -44,11 +44,11 @@ extern "C"
 	void ArchInitializeThreadContextArch(ThreadContext_Arch* context, uintptr_t stackPointer, uintptr_t entryPoint, uintptr_t returnAddress, uintptr_t parameter)
 	{
 		context->r[0] = parameter;
-		context->lr = returnAddress;
+		context->sp = stackPointer - sizeof(uint32_t) * 8;
 
-		context->sp = stackPointer;
-		context->psr = portINITIAL_XPSR;
+		context->lr = returnAddress;
 		context->pc = entryPoint;
+		context->psr = portINITIAL_XPSR;
 	}
 
 	void ArchSetupSchedulerTimer()
@@ -68,10 +68,10 @@ extern "C"
 	void ArchSaveThreadContextArch(ThreadContext_Arch* tcontext, InterruptContext_Arch* icontext)
 	{
 		memcpy(&tcontext->r, icontext->r, sizeof(icontext->r));
+		tcontext->sp = icontext->sp_before;
+		tcontext->lr = icontext->lr_before;
 		tcontext->pc = icontext->pc_before;
 		tcontext->psr = icontext->psr_before;
-		tcontext->lr = icontext->lr_before;
-		tcontext->sp = icontext->sp_before;
 	}
 
 	void ArchSleepMs(uint32_t ms)
@@ -80,7 +80,7 @@ extern "C"
 		volatile int a;
 		for (size_t i = 0; i < count; i++) a++;
 	}
-	
+
 	void SysTick_Handler()
 	{
 		/* The SysTick runs at the lowest interrupt priority, so when this interrupt
@@ -92,10 +92,5 @@ extern "C"
 			portNVIC_INT_CTRL_REG |= portNVIC_PENDSVSET_BIT;
 		}
 		ArchEnableInterrupt();
-	}
-
-	void PendSV_Handler()
-	{
-		g_Logger->PutChar('.');
 	}
 }

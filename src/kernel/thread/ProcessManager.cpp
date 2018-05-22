@@ -132,7 +132,15 @@ void ProcessManager::Thread::SwitchOut(InterruptContext& context)
 
 void ProcessManager::Thread::SwitchIn(InterruptContext& context)
 {
+	//g_Logger->PutFormat(L"[I] LR: %x, PC: %x, PSR: %x, PSP: %x, SP: %x\n", context.arch.lr_before, context.arch.pc_before, context.arch.psr_before, context.arch.sp_before, context.arch.sp);
+	//g_Logger->PutFormat(L"[I] LR: %x, PC: %x, PSR: %x, SP: %x\n", threadContext_.arch.lr, threadContext_.arch.pc, threadContext_.arch.psr, threadContext_.arch.sp);
+#if 0
+	g_Logger->PutFormat(L"LR: %x, PC: %x, PSR: %x, ISRSP: %x, ISRLR: %x\n", context.arch.lr_before, context.arch.pc_before, context.arch.psr_before, context.arch.sp, context.arch.lr);
+	g_Logger->PutFormat(L"LR: %x, PC: %x, PSR: %x, SP: %x\n", threadContext_.arch.lr, threadContext_.arch.pc, threadContext_.arch.psr, threadContext_.arch.sp);
+#else
+	//g_Logger->PutChar('.');
 	ArchRestoreThreadContextArch(&threadContext_.arch, &context.arch);
+#endif
 }
 
 static void OnThreadExit()
@@ -156,5 +164,9 @@ extern "C" void Kernel_OnTimerHandler(void* interruptContext)
 	Chino::InterruptContext context;
 	context.arch = *reinterpret_cast<InterruptContext_Arch*>(interruptContext);
 
+#if 0
+	g_Logger->PutFormat(L"LR: %x, PC: %x, PSR: %x, ISRSP: %x, ISRLR: %x\n", context.arch.lr_before, context.arch.pc_before, context.arch.psr_before, context.arch.sp, context.arch.lr);
+#else
 	g_ProcessMgr->SwitchThreadContext(context);
+#endif
 }
