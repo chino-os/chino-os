@@ -43,12 +43,30 @@ extern "C"
 
 	void ArchInitializeThreadContextArch(ThreadContext_Arch* context, uintptr_t stackPointer, uintptr_t entryPoint, uintptr_t returnAddress, uintptr_t parameter)
 	{
-		context->r[0] = parameter;
-		context->sp = stackPointer - sizeof(uint32_t) * 8;
+		auto stack = reinterpret_cast<uint32_t*>(stackPointer);
 
-		context->lr = returnAddress;
-		context->pc = entryPoint;
-		context->psr = portINITIAL_XPSR;
+		//  ________
+		// |  xPSR  |
+		// |   PC   |
+		// |   LR   |
+		// |   R12  |
+		// |   R3   |
+		// |   R2   |
+		// |   R1   |
+		// |   R0   |
+		//  --------
+
+		--stack;
+		*--stack = portINITIAL_XPSR;
+		*--stack = entryPoint;
+		*--stack = returnAddress;
+		--stack;
+		--stack;
+		--stack;
+		--stack;
+		*--stack = parameter;
+
+		context->sp = uintptr_t(stack);
 	}
 
 	void ArchSetupSchedulerTimer()
@@ -65,15 +83,6 @@ extern "C"
 		portNVIC_SYSTICK_CTRL_REG = (portNVIC_SYSTICK_CLK_BIT | portNVIC_SYSTICK_INT_BIT | portNVIC_SYSTICK_ENABLE_BIT);
 	}
 
-	void ArchSaveThreadContextArch(ThreadContext_Arch* tcontext, InterruptContext_Arch* icontext)
-	{
-		memcpy(&tcontext->r, icontext->r, sizeof(icontext->r));
-		tcontext->sp = icontext->sp_before;
-		tcontext->lr = icontext->lr_before;
-		tcontext->pc = icontext->pc_before;
-		tcontext->psr = icontext->psr_before;
-	}
-
 	void ArchSleepMs(uint32_t ms)
 	{
 		auto count = configCPU_CLOCK_HZ / 1000 * ms;
@@ -83,18 +92,14 @@ extern "C"
 
 	void SysTick_Handler()
 	{
-		static uint32_t i = 0;
-		if (i++ % 100 == 0)
+		/* The SysTick runs at the lowest interrupt priority, so when this interrupt
+		executes all interrupts must be unmasked.  There is therefore no need to
+		save and then restore the interrupt mask value as its value is already
+		known. */
+		ArchDisableInterrupt();
 		{
-			/* The SysTick runs at the lowest interrupt priority, so when this interrupt
-			executes all interrupts must be unmasked.  There is therefore no need to
-			save and then restore the interrupt mask value as its value is already
-			known. */
-			ArchDisableInterrupt();
-			{
-				portNVIC_INT_CTRL_REG |= portNVIC_PENDSVSET_BIT;
-			}
-			ArchEnableInterrupt();
+			portNVIC_INT_CTRL_REG |= portNVIC_PENDSVSET_BIT;
 		}
+		ArchEnableInterrupt();
 	}
 }

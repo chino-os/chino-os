@@ -91,7 +91,7 @@ ThreadContext_Arch& ProcessManager::SwitchThreadContext()
 	runningThread_ = nextThread;
 	auto& arch = HandleToListIt<Thread>(*nextThread)->GetContext();
 #if 0
-	g_Logger->PutFormat("RSP: %lx\n", arch.rsp);
+	g_Logger->PutFormat("PSP: %x\n", arch.sp);
 #endif
 	return arch;
 }

@@ -4,9 +4,9 @@
 #pragma once
 #ifdef __INTELLISENSE__
 #ifndef _ARCH_
-#define _ARCH_ x86_64
+#define _ARCH_ cortex-m3
 #define __amd64__ 1
-#define _BOARD_ pc
+#define _BOARD_ stm32f103rc
 #define __attribute__(x)
 #define _HAS_CXX17 1
 #endif

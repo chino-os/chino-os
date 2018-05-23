@@ -10,26 +10,18 @@ extern "C"
 #endif
 	typedef struct
 	{
-		uint32_t r[13];
+		uint32_t r4;
+		uint32_t r5;
+		uint32_t r6;
+		uint32_t r7;
+		uint32_t r8;
+		uint32_t r9;
+		uint32_t r10;
+		uint32_t r11;
 		uint32_t sp;
-		uint32_t lr;
-		uint32_t pc;
-		uint32_t psr;
 	} ThreadContext_Arch;
 
-	typedef struct
-	{
-		uint32_t r[13];
-		uint32_t sp_before;
-		uint32_t lr_before;
-		uint32_t pc_before;
-		uint32_t psr_before;
-		uint32_t sp;
-		uint32_t lr;
-	} InterruptContext_Arch;
-
-#define Port_StackWidth 8
+#define Port_StackWidth 4
 #ifdef __cplusplus
-	static_assert(sizeof(InterruptContext_Arch) == 76, "Update size referrenced in the port.");
 }
 #endif
