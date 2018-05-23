@@ -2,9 +2,9 @@
 // Chino Thread
 //
 #pragma once
+#include <libarch/arch.h>
 #include "../../libchino/chino.h"
 #include "../utils.hpp"
-#include <libarch/arch.h>
 #include <list>
 #include <common/list.hpp>
 #include <string_view>
@@ -13,30 +13,19 @@
 
 namespace Chino
 {
-	struct InterruptContext
-	{
-		InterruptContext_Arch arch;
-	};
-
 	namespace Thread
 	{
 		class ProcessManager
 		{
-			struct ThreadContext
-			{
-				ThreadContext_Arch arch;
-			};
-
 			class Thread
 			{
 			public:
 				Thread(ThreadMain_t entryPoint, uint32_t priority, uintptr_t parameter);
 
 				uint32_t GetPriority() const noexcept { return priority_; }
-				void SwitchOut(InterruptContext& context);
-				[[noreturn]] void SwitchIn(InterruptContext& context);
+				ThreadContext_Arch& GetContext() noexcept { return threadContext_; }
 			private:
-				ThreadContext threadContext_;
+				ThreadContext_Arch threadContext_;
 				uint32_t priority_;
 				std::unique_ptr<uint8_t[]> stack_;
 			};
@@ -60,7 +49,7 @@ namespace Chino
 
 			HANDLE CreateProcess(std::string_view name, uint32_t mainThreadPriority, ThreadMain_t entryPoint);
 			void StartScheduler();
-			void SwitchThreadContext(InterruptContext& context);
+			ThreadContext_Arch& SwitchThreadContext();
 		private:
 			Process & GetProcess(HANDLE handle);
 			void AddReadyThread(HANDLE handle);

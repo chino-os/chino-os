@@ -4,9 +4,9 @@
 #pragma once
 #ifdef __INTELLISENSE__
 #ifndef _ARCH_
-#define _ARCH_ cortex-m3
+#define _ARCH_ x86_64
 #define __amd64__ 1
-#define _BOARD_ stm32f103rc
+#define _BOARD_ pc
 #define __attribute__(x)
 #define _HAS_CXX17 1
 #endif
@@ -22,7 +22,9 @@ extern "C"
 struct BootParameters;
 
 void Kernel_Main(const struct BootParameters* pParams);
-void Kernel_OnTimerHandler(void* interruptContext);
+void Kernel_SwitchThreadContext();
+
+extern uintptr_t g_CurrentThreadContext;
 
 #ifdef __cplusplus
 }

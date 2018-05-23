@@ -76,7 +76,7 @@ in the portYIELD_INTERRUPT definition immediately below. */
 #define portIDT_FLAGS					( 0x8E )
 #define portAPIC_SPURIOUS_INT_VECTOR 	( 0xff )
 
-#define configCPU_CLOCK_HZ 75000000
+#define configCPU_CLOCK_HZ 1000000000
 #define configTICK_RATE_HZ 10
 
 #pragma pack(pop)
@@ -98,11 +98,12 @@ extern "C"
 		context->rflags = portINITIAL_RFLAGS;
 		context->rip = entryPoint;
 
-		uint32_t ulCodeSegment;
-		__asm volatile("movl %%cs, %0" : "=r" (ulCodeSegment));
-		context->cs = ulCodeSegment;
+		uint32_t cs;
+		__asm volatile("movl %%cs, %0" : "=r" (cs));
+		context->cs = cs;
 
-		*stack-- = returnAddress;
+		--stack;
+		*--stack = returnAddress;
 		context->rsp = uintptr_t(stack);
 	}
 
@@ -133,23 +134,6 @@ extern "C"
 		portAPIC_SPURIOUS_INT = portAPIC_SPURIOUS_INT_VECTOR | portAPIC_ENABLE_BIT;
 
 		ArchEnableInterrupt();
-	}
-
-	void ArchSaveThreadContextArch(ThreadContext_Arch* tcontext, InterruptContext_Arch* icontext)
-	{
-		tcontext->rax = icontext->rax;
-		tcontext->rbx = icontext->rbx;
-		tcontext->rcx = icontext->rcx;
-		tcontext->rdx = icontext->rdx;
-		tcontext->rbp = icontext->rbp;
-		tcontext->rdi = icontext->rdi;
-		tcontext->rsi = icontext->rsi;
-		tcontext->rsp = icontext->rsp_before;
-
-		tcontext->cs = icontext->cs;
-
-		tcontext->rflags = icontext->rflags;
-		tcontext->rip = icontext->rip_before;
 	}
 
 	void ArchSleepMs(uint32_t ms)

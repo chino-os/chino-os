@@ -4,6 +4,11 @@
 #include "ProcessManager.hpp"
 #include "../kdebug.hpp"
 
+extern "C"
+{
+	uintptr_t g_CurrentThreadContext = 0;
+}
+
 using namespace Chino::Thread;
 
 static void OnThreadExit();
@@ -50,8 +55,7 @@ void ProcessManager::StartScheduler()
 	idleProcess_ = CreateProcess("System Idle", 0, IdleThreadMain);
 
 	ArchSetupSchedulerTimer();
-	while (1)
-		ArchHaltProcessor();
+	ArchHaltProcessor();
 }
 
 ProcessManager::thread_handle_it ProcessManager::SelectNextSwitchToThread()
@@ -81,20 +85,15 @@ ProcessManager::thread_handle_it ProcessManager::SelectNextSwitchToThread()
 	return threadSwitchTo;
 }
 
-void ProcessManager::SwitchThreadContext(InterruptContext& context)
+ThreadContext_Arch& ProcessManager::SwitchThreadContext()
 {
 	auto nextThread = SelectNextSwitchToThread();
-	if (runningThread_ != nextThread)
-	{
-		auto oldThread = runningThread_.good() ? HandleToListIt<Thread>(*runningThread_) : thread_it();
-		auto newThread = HandleToListIt<Thread>(*nextThread);
-
-		if (oldThread.good())
-			oldThread->SwitchOut(context);
-
-		runningThread_ = nextThread;
-		newThread->SwitchIn(context);
-	}
+	runningThread_ = nextThread;
+	auto& arch = HandleToListIt<Thread>(*nextThread)->GetContext();
+#if 0
+	g_Logger->PutFormat("RSP: %lx\n", arch.rsp);
+#endif
+	return arch;
 }
 
 ProcessManager::Process & ProcessManager::GetProcess(HANDLE handle)
@@ -122,25 +121,7 @@ ProcessManager::Thread::Thread(ThreadMain_t entryPoint, uint32_t priority, uintp
 	auto stackSize = DEFAULT_THREAD_STACK_SIZE;
 	stack_ = std::make_unique<uint8_t[]>(stackSize);
 	auto stackPointer = uintptr_t(stack_.get()) + stackSize;
-	ArchInitializeThreadContextArch(&threadContext_.arch, stackPointer, uintptr_t(entryPoint), uintptr_t(OnThreadExit), parameter);
-}
-
-void ProcessManager::Thread::SwitchOut(InterruptContext& context)
-{
-	ArchSaveThreadContextArch(&threadContext_.arch, &context.arch);
-}
-
-void ProcessManager::Thread::SwitchIn(InterruptContext& context)
-{
-	//g_Logger->PutFormat(L"[I] LR: %x, PC: %x, PSR: %x, PSP: %x, SP: %x\n", context.arch.lr_before, context.arch.pc_before, context.arch.psr_before, context.arch.sp_before, context.arch.sp);
-	//g_Logger->PutFormat(L"[I] LR: %x, PC: %x, PSR: %x, SP: %x\n", threadContext_.arch.lr, threadContext_.arch.pc, threadContext_.arch.psr, threadContext_.arch.sp);
-#if 0
-	g_Logger->PutFormat(L"LR: %x, PC: %x, PSR: %x, ISRSP: %x, ISRLR: %x\n", context.arch.lr_before, context.arch.pc_before, context.arch.psr_before, context.arch.sp, context.arch.lr);
-	g_Logger->PutFormat(L"LR: %x, PC: %x, PSR: %x, SP: %x\n", threadContext_.arch.lr, threadContext_.arch.pc, threadContext_.arch.psr, threadContext_.arch.sp);
-#else
-	//g_Logger->PutChar('.');
-	ArchRestoreThreadContextArch(&threadContext_.arch, &context.arch);
-#endif
+	ArchInitializeThreadContextArch(&threadContext_, stackPointer, uintptr_t(entryPoint), uintptr_t(OnThreadExit), parameter);
 }
 
 static void OnThreadExit()
@@ -158,15 +139,7 @@ static void IdleThreadMain(uintptr_t)
 	}
 }
 
-extern "C" void Kernel_OnTimerHandler(void* interruptContext)
+extern "C" void Kernel_SwitchThreadContext()
 {
-	static uint64_t count = 0;
-	Chino::InterruptContext context;
-	context.arch = *reinterpret_cast<InterruptContext_Arch*>(interruptContext);
-
-#if 0
-	g_Logger->PutFormat(L"LR: %x, PC: %x, PSR: %x, ISRSP: %x, ISRLR: %x\n", context.arch.lr_before, context.arch.pc_before, context.arch.psr_before, context.arch.sp, context.arch.lr);
-#else
-	g_ProcessMgr->SwitchThreadContext(context);
-#endif
+	g_CurrentThreadContext = uintptr_t(&g_ProcessMgr->SwitchThreadContext());
 }

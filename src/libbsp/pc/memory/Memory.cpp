@@ -40,9 +40,10 @@ bool Chino::Memory::BSPEnumHeapRegion(const BootParameters& bootParams, size_t i
 				return true;
 			}
 
-			pHeapRegion = NextMemoryDescriptor(pHeapRegion, descriptorSize);
 			cntIndx++;
 		}
+
+		pHeapRegion = NextMemoryDescriptor(pHeapRegion, descriptorSize);
 	}
 
 	return false;
