@@ -14,54 +14,40 @@ using namespace Chino::Thread;
 static void OnThreadExit();
 static void IdleThreadMain(uintptr_t);
 
-template<typename T>
-typename Chino::list<T>::iterator HandleToListIt(HANDLE handle)
-{
-	using iterator = typename Chino::list<T>::iterator;
-	return iterator(reinterpret_cast<typename Chino::list<T>::node*>(handle));
-}
-
-template<typename T>
-HANDLE ToHandle(typename Chino::list<T>::iterator value)
-{
-	return reinterpret_cast<HANDLE>(value.node_);
-}
-
 ProcessManager::ProcessManager()
-	:runningThread_(0), idleProcess_(0)
+	:runningThread_(0), idleProcess_(nullptr)
 {
 
 }
 
-HANDLE ProcessManager::CreateProcess(std::string_view name, uint32_t mainThreadPriority, ThreadMain_t entryPoint)
+Process& ProcessManager::CreateProcess(std::string_view name, uint32_t mainThreadPriority, ThreadMain_t entryPoint)
 {
-	auto it = _processes.emplace_back(name);
+	auto it = _processes.emplace_back(MakeObject<Process>(name));
 	it->AddThread(entryPoint, mainThreadPriority, 0);
-	return ToHandle<Process>(it);
+	return *it;
 }
 
-void ProcessManager::AddReadyThread(HANDLE handle)
+void ProcessManager::AddReadyThread(Thread& thread)
 {
-	auto it = HandleToListIt<Thread>(handle);
-	auto priority = it->GetPriority();
+	auto priority = thread.GetPriority();
 	kassert(priority < readyThreads_.size());
-	readyThreads_[priority].emplace_back(handle);
+	readyThreads_[priority].emplace_back(&thread);
 	kassert(!readyThreads_[priority].empty());
 }
 
 void ProcessManager::StartScheduler()
 {
 	kassert(!idleProcess_);
-	idleProcess_ = CreateProcess("System Idle", 0, IdleThreadMain);
+	idleProcess_.Reset(&CreateProcess("System Idle", 0, IdleThreadMain));
 
 	ArchSetupSchedulerTimer();
 	ArchHaltProcessor();
 }
 
-ProcessManager::thread_handle_it ProcessManager::SelectNextSwitchToThread()
+ProcessManager::thread_it ProcessManager::SelectNextSwitchToThread()
 {
 	// Round robin in threads of same priority
-	thread_handle_it threadSwitchTo;
+	thread_it threadSwitchTo;
 	if (runningThread_.good())
 	{
 		auto next = runningThread_;
@@ -89,32 +75,26 @@ ThreadContext_Arch& ProcessManager::SwitchThreadContext()
 {
 	auto nextThread = SelectNextSwitchToThread();
 	runningThread_ = nextThread;
-	auto& arch = HandleToListIt<Thread>(*nextThread)->GetContext();
+	auto& arch = (*nextThread)->GetContext();
 #if 0
 	g_Logger->PutFormat("PSP: %x\n", arch.sp);
 #endif
 	return arch;
 }
 
-ProcessManager::Process & ProcessManager::GetProcess(HANDLE handle)
-{
-	kassert(handle);
-	return *HandleToListIt<Process>(handle);
-}
-
-ProcessManager::Process::Process(std::string_view name)
+Process::Process(std::string_view name)
 	:name_(name)
 {
 }
 
-HANDLE ProcessManager::Process::AddThread(ThreadMain_t entryPoint, uint32_t priority, uintptr_t parameter)
+Thread& Process::AddThread(ThreadMain_t entryPoint, uint32_t priority, uintptr_t parameter)
 {
-	auto handle = ToHandle<Thread>(threads_.emplace_back(entryPoint, priority, parameter));
-	g_ProcessMgr->AddReadyThread(handle);
-	return handle;
+	auto& thread = *threads_.emplace_back(MakeObject<Thread>(entryPoint, priority, parameter));
+	g_ProcessMgr->AddReadyThread(thread);
+	return thread;
 }
 
-ProcessManager::Thread::Thread(ThreadMain_t entryPoint, uint32_t priority, uintptr_t parameter)
+Thread::Thread(ThreadMain_t entryPoint, uint32_t priority, uintptr_t parameter)
 	:priority_(priority), threadContext_({})
 {
 	kassert(priority <= MAX_THREAD_PRIORITY);

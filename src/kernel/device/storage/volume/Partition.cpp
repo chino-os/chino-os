@@ -4,15 +4,16 @@
 #include "Partition.hpp"
 #include "../../../kdebug.hpp"
 
+using namespace Chino;
 using namespace Chino::Device;
 
 Partition::Partition(DriveDevice& drive, size_t startLBA)
-	:drive_(drive), startLBA_(startLBA), MaxLBA(drive.MaxLBA), BlockSize(drive.BlockSize)
+	:drive_(&drive), startLBA_(startLBA), MaxLBA(drive.MaxLBA), BlockSize(drive.BlockSize)
 {
 
 }
 
-std::unique_ptr<Driver> Partition::TryLoadDriver()
+ObjectPtr<Driver> Partition::TryLoadDriver()
 {
 	auto head = g_PartitionDrivers;
 	auto cnt = *head;
@@ -28,8 +29,13 @@ std::unique_ptr<Driver> Partition::TryLoadDriver()
 	return nullptr;
 }
 
+DeviceType Partition::GetType() const noexcept
+{
+	return DeviceType::Partition;
+}
+
 void Partition::Read(uint64_t lba, size_t count, uint8_t* buffer)
 {
 	lba += startLBA_;
-	drive_.Read(lba, count, buffer);
+	drive_->Read(lba, count, buffer);
 }

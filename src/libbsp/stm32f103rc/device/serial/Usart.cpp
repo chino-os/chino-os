@@ -9,11 +9,14 @@ using namespace Chino::Device;
 DEFINE_FDT_DRIVER_DESC_1(UsartDriver, "serial", "st,stm32f103-usart");
 
 UsartDriver::UsartDriver(const FDTDevice& device)
+	:device_(device)
 {
 
 }
 
 void UsartDriver::Install()
 {
-	g_Logger->PutString("Usart\n");
+	//auto regProp = device_.GetPropertyOrInherited("reg");
+	//kassert(regProp.has_value());
+	//regAddr_ = regProp->GetUInt32(0);
 }

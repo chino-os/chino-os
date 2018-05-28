@@ -14,11 +14,12 @@ extern "C"
 #include <acpi/MemoryMappedConfigurationSpaceAccessTable.h>
 }
 
+using namespace Chino;
 using namespace Chino::Device;
 
-std::unique_ptr<Driver> Chino::Device::BSPInstallRootDriver(const BootParameters& bootParams)
+ObjectPtr<Driver> Chino::Device::BSPInstallRootDriver(const BootParameters& bootParams)
 {
-	return std::make_unique<AcpiDriver>(bootParams);
+	return MakeObject<AcpiDriver>(bootParams);
 }
 
 AcpiDriver::AcpiDriver(const BootParameters& bootParams)

@@ -21,7 +21,7 @@ namespace Chino
 
 	namespace Device
 	{
-		std::unique_ptr<Driver> BSPInstallRootDriver(const BootParameters& bootParams);
+		ObjectPtr<Driver> BSPInstallRootDriver(const BootParameters& bootParams);
 	}
 
 	namespace Diagnostic

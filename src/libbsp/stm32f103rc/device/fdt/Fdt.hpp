@@ -3,26 +3,27 @@
 //
 #pragma once
 
-#include <kernel/device/Driver.hpp>
+#include <kernel/device/Device.hpp>
 #include <cstddef>
 #include <memory>
 #include <array>
 #include <string_view>
+#include <optional>
 
 #define DECLARE_FDT_DRIVER(Type) \
 Type(const Chino::Device::FDTDevice& device); \
 static const Chino::Device::FDTDriverDescriptor Descriptor; \
-static std::unique_ptr<Chino::Device::Driver> Activate(const Chino::Device::FDTDevice& device); \
+static Chino::ObjectPtr<Chino::Device::Driver> Activate(const Chino::Device::FDTDevice& device); \
 static bool IsSupported(const Chino::Device::FDTDevice& device);
 
 #define DEFINE_FDT_DRIVER_DESC(Type) \
-std::unique_ptr<Chino::Device::Driver> Type::Activate(const Chino::Device::FDTDevice& device) \
-{ return std::make_unique<Type>(device); } \
+Chino::ObjectPtr<Chino::Device::Driver> Type::Activate(const Chino::Device::FDTDevice& device) \
+{ return Chino::MakeObject<Type>(device); } \
 const Chino::Device::FDTDriverDescriptor Type::Descriptor = { Type::Activate, Type::IsSupported };
 
 #define DEFINE_FDT_DRIVER_DESC_1(Type, DeviceType, Compatible) \
-std::unique_ptr<Chino::Device::Driver> Type::Activate(const Chino::Device::FDTDevice& device) \
-{ return std::make_unique<Type>(device); } \
+Chino::ObjectPtr<Chino::Device::Driver> Type::Activate(const Chino::Device::FDTDevice& device) \
+{ return Chino::MakeObject<Type>(device); } \
 const Chino::Device::FDTDriverDescriptor Type::Descriptor = { Type::Activate, Type::IsSupported }; \
 bool UsartDriver::IsSupported(const Chino::Device::FDTDevice& device) \
 { \
@@ -34,7 +35,7 @@ namespace Chino
 	namespace Device
 	{
 		class FDTDevice;
-		typedef std::unique_ptr<Driver>(*PFDTDriverActivator_t)(const FDTDevice& device);
+		typedef Chino::ObjectPtr<Driver>(*PFDTDriverActivator_t)(const FDTDevice& device);
 		typedef bool(*FDTDriverIsSupported_t)(const FDTDevice& device);
 
 		struct FDTDriverDescriptor
@@ -43,7 +44,16 @@ namespace Chino
 			FDTDriverIsSupported_t IsSupported;
 		};
 
-		class FDTDevice
+		struct FDTProperty
+		{
+			uint32_t nameOffset;
+			const void* data;
+			size_t length;
+
+			uint32_t GetUInt32(size_t index) const noexcept;
+		};
+
+		class FDTDevice : public Device
 		{
 		public:
 			FDTDevice(const void* fdt, int node, int depth);
@@ -51,7 +61,11 @@ namespace Chino
 			bool HasDeviceType(std::string_view deviceType) const noexcept;
 			bool HasCompatible(std::string_view compatible) const noexcept;
 
-			std::unique_ptr<Driver> TryLoadDriver();
+			std::optional<FDTProperty> GetProperty(std::string_view name) const noexcept;
+			std::optional<FDTProperty> GetPropertyOrInherited(std::string_view name) const noexcept;
+
+			virtual ObjectPtr<Driver> TryLoadDriver() override;
+			virtual DeviceType GetType() const noexcept override;
 		private:
 			const void* fdt_;
 			int node_;

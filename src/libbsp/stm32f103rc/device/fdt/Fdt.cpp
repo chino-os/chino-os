@@ -41,7 +41,7 @@ bool FDTDevice::HasCompatible(std::string_view compatible) const noexcept
 	return false;
 }
 
-std::unique_ptr<Driver> FDTDevice::TryLoadDriver()
+Chino::ObjectPtr<Driver> FDTDevice::TryLoadDriver()
 {
 	auto head = g_FDTDrivers;
 	auto cnt = *head;
@@ -55,4 +55,38 @@ std::unique_ptr<Driver> FDTDevice::TryLoadDriver()
 	}
 
 	return nullptr;
+}
+
+DeviceType FDTDevice::GetType() const noexcept
+{
+	return DeviceType::Other;
+}
+
+std::optional<FDTProperty> FDTDevice::GetProperty(std::string_view name) const noexcept
+{
+	auto prop = fdt_get_property_namelen(fdt_, node_, name.data(), name.length(), NULL);
+	if (prop)
+		return FDTProperty { prop->nameoff, prop->data, prop->len };
+	return {};
+}
+
+std::optional<FDTProperty> FDTDevice::GetPropertyOrInherited(std::string_view name) const noexcept
+{
+	int cntNode = node_;
+
+	while (cntNode > 0)
+	{
+		auto prop = fdt_get_property_namelen(fdt_, cntNode, name.data(), name.length(), NULL);
+		if (prop)
+			return FDTProperty { prop->nameoff, prop->data, prop->len };
+		cntNode = fdt_parent_offset(fdt_, cntNode);
+	}
+
+	return {};
+}
+
+uint32_t FDTProperty::GetUInt32(size_t index) const noexcept
+{
+	auto uiData = reinterpret_cast<const fdt32_t*>(data);
+	return fdt32_to_cpu(uiData[index]);
 }

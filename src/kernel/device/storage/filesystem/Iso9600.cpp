@@ -2,12 +2,12 @@
 // Kernel Device
 //
 #include "Iso9600.hpp"
-#include "../../../file/FileManager.hpp"
 #include "../../../kdebug.hpp"
 #include <cstring>
 #include <unordered_map>
 #include <optional>
 
+using namespace Chino;
 using namespace Chino::Device;
 
 DEFINE_PARTITION_DRIVER_DESC(Iso9600FileSystem);
@@ -105,8 +105,6 @@ void Iso9600FileSystem::Install()
 		id++;
 		return false;
 	});
-
-	g_FileMgr->RegisterFileSystems(*this);
 }
 
 void Iso9600FileSystem::ForEachPathTable(std::function<bool(const PathEntry&)> callback)
@@ -176,7 +174,7 @@ struct Iso9600File : public FileSystemFile
 	using FileSystemFile::FileSystemFile;
 };
 
-std::unique_ptr<FileSystemFile> Iso9600FileSystem::TryOpenFile(const Path& filePath)
+ObjectPtr<FileSystemFile> Iso9600FileSystem::TryOpenFile(const Path& filePath)
 {
 	auto cntPathComp = filePath.begin();
 	auto fileNameComp = --filePath.end();
@@ -235,7 +233,7 @@ std::unique_ptr<FileSystemFile> Iso9600FileSystem::TryOpenFile(const Path& fileP
 	if (!fileEntry) return nullptr;
 
 	auto& entry = fileEntry.value();
-	auto file = std::make_unique<Iso9600File>(*this);
+	auto file = MakeObject<Iso9600File>(*this);
 	file->DataLBA = fileEntry.value().ExtentLBA;
 	file->DataLength = fileEntry.value().DataLength;
 	
@@ -244,6 +242,6 @@ std::unique_ptr<FileSystemFile> Iso9600FileSystem::TryOpenFile(const Path& fileP
 
 void Iso9600FileSystem::ReadFile(FileSystemFile& file, uint8_t* buffer, size_t blockOffset, size_t numBlocks)
 {
-	auto theFile = static_cast<Iso9600File&>(file);
+	auto& theFile = static_cast<Iso9600File&>(file);
 	partition_.Read(theFile.DataLBA + blockOffset, numBlocks, buffer);
 }

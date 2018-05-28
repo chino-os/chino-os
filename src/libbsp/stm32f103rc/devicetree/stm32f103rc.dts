@@ -14,6 +14,7 @@
 	    usart1: serial@0x40013800 {
 	        device_type = "serial";
 	        compatible = "st,stm32f103-usart";
+			reg = <0x40013800 0x400>;
 	    };
 	};
 };

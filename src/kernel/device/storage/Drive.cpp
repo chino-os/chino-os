@@ -4,9 +4,15 @@
 #include "Drive.hpp"
 #include "../../kdebug.hpp"
 
+using namespace Chino;
 using namespace Chino::Device;
 
-std::unique_ptr<Driver> DriveDevice::TryLoadDriver()
+DeviceType DriveDevice::GetType() const noexcept
+{
+	return DeviceType::Drive;
+}
+
+ObjectPtr<Driver> DriveDevice::TryLoadDriver()
 {
 	auto head = g_DriveDrivers;
 	auto cnt = *head;

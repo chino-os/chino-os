@@ -7,7 +7,7 @@
 #include "thread/ProcessManager.hpp"
 #include "memory/MemoryManager.hpp"
 #include "device/DeviceManager.hpp"
-#include "file/FileManager.hpp"
+//#include "file/FileManager.hpp"
 #include "diagnostic/KernelLogger.hpp"
 #include <libbsp/bsp.hpp>
 
@@ -17,7 +17,7 @@ StaticHolder<Diagnostic::KernelLogger> g_Logger;
 StaticHolder<Thread::ProcessManager> g_ProcessMgr;
 StaticHolder<Memory::MemoryManager> g_MemoryMgr;
 StaticHolder<Device::DeviceMananger> g_DeviceMgr;
-StaticHolder<File::FileManager> g_FileMgr;
+//StaticHolder<File::FileManager> g_FileMgr;
 
 void Task0(uintptr_t)
 {
@@ -59,12 +59,12 @@ extern "C" void Kernel_Main(const BootParameters* pParams)
 
 	g_ProcessMgr.construct();
 	g_DeviceMgr.construct();
-	g_FileMgr.construct();
+	//g_FileMgr.construct();
 
 	g_DeviceMgr->InstallDevices(params);
 
 	g_DeviceMgr->DumpDevices();
-	g_FileMgr->DumpFileSystems();
+	//g_FileMgr->DumpFileSystems();
 
 	g_ProcessMgr->CreateProcess("Task 0", 1, Task0);
 	g_ProcessMgr->CreateProcess("Task 1", 1, Task1);

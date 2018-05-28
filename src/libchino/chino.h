@@ -10,10 +10,6 @@ extern "C"
 {
 #endif
 
-/* Common */
-
-typedef uintptr_t HANDLE;
-
 /* Thread */
 
 #define MAX_THREAD_PRIORITY 5u

@@ -4,7 +4,6 @@
 #include "DeviceManager.hpp"
 #include "../kdebug.hpp"
 #include <libbsp/bsp.hpp>
-#include "storage/Drive.hpp"
 
 using namespace Chino::Device;
 
@@ -15,38 +14,32 @@ DeviceMananger::DeviceMananger()
 void DeviceMananger::InstallDevices(const BootParameters& bootParams)
 {
 	// Root
-	InstallDriver(BSPInstallRootDriver(bootParams));
+	auto root = BSPInstallRootDriver(bootParams);
+	if (root)
+		InstallDriver(*root);
 }
 
-void DeviceMananger::InstallDriver(std::unique_ptr<Driver>&& driver)
+void DeviceMananger::InstallDriver(Driver& driver)
 {
-	if (driver)
-	{
-		driver->Install();
-		drivers_.emplace_back(std::move(driver));
-	}
+	driver.Install();
+	drivers_.emplace_back(&driver);
 }
 
-void DeviceMananger::RegisterDrive(DriveDevice & drive)
+void DeviceMananger::InstallDevice(Device& drive)
 {
-	drives_.emplace_back(drive);
+	devices_.emplace_back(&drive);
 
 	auto driver = drive.TryLoadDriver();
 	if (driver)
-		g_DeviceMgr->InstallDriver(std::move(driver));
+		InstallDriver(*driver);
 }
 
 void DeviceMananger::DumpDevices()
 {
-	g_Logger->PutString("====== Dump Devices ======\n");
-	int i = 0;
-	for (auto& dev : drives_)
-	{
-		g_Logger->PutFormat("Drive%d: Max LBA: %d, Block Size: %d\n", i++, (int)dev.get().MaxLBA, (int)dev.get().BlockSize);
-	}
-}
-
-DriveDevice& DeviceMananger::GetDrive(size_t index) const
-{
-	return drives_[index].get();
+	//g_Logger->PutString("====== Dump Devices ======\n");
+	//int i = 0;
+	//for (auto& dev : drives_)
+	//{
+	//	g_Logger->PutFormat("Drive%d: Max LBA: %d, Block Size: %d\n", i++, (int)dev->MaxLBA, (int)dev->BlockSize);
+	//}
 }

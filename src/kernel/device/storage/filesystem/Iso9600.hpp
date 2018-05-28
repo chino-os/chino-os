@@ -10,7 +10,7 @@ namespace Chino
 {
 	namespace Device
 	{
-		class Iso9600FileSystem : public Driver, public FileSystem
+		class Iso9600FileSystem : public FileSystem
 		{
 #pragma pack(push, 1)
 			struct PathEntry
@@ -51,7 +51,7 @@ namespace Chino
 
 			virtual void Install() override;
 
-			virtual std::unique_ptr<FileSystemFile> TryOpenFile(const Path& filePath);
+			virtual ObjectPtr<FileSystemFile> TryOpenFile(const Path& filePath);
 			virtual void ReadFile(FileSystemFile& file, uint8_t* buffer, size_t blockOffset, size_t numBlocks);
 		private:
 			void ForEachPathTable(std::function<bool(const PathEntry&)> callback);

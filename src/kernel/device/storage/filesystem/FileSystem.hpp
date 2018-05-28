@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <memory>
 #include "path.hpp"
+#include "../Drive.hpp"
 
 namespace Chino
 {
@@ -14,7 +15,7 @@ namespace Chino
 	{
 		class FileSystem;
 
-		struct FileSystemFile
+		struct FileSystemFile : public Object
 		{
 			FileSystem& FS;
 
@@ -24,10 +25,10 @@ namespace Chino
 				:FS(fs) {}
 		};
 
-		class FileSystem
+		class FileSystem : public Driver
 		{
 		public:
-			virtual std::unique_ptr<FileSystemFile> TryOpenFile(const Path& filePath) = 0;
+			virtual ObjectPtr<FileSystemFile> TryOpenFile(const Path& filePath) = 0;
 			virtual void ReadFile(FileSystemFile& file, uint8_t* buffer, size_t blockOffset, size_t numBlocks) = 0;
 
 			size_t BlockSize;

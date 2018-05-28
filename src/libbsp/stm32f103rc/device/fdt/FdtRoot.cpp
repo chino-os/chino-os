@@ -10,6 +10,7 @@
 
 INCBIN(_fdt, "../../devicetree/stm32f103rc.dtb");
 
+using namespace Chino;
 using namespace Chino::Device;
 
 class FdtRootDriver : public Driver
@@ -25,15 +26,15 @@ public:
 
 		for (auto& device : fdtDevices_)
 		{
-			auto driver = device.TryLoadDriver();
+			auto driver = device->TryLoadDriver();
 			if (driver)
-				g_DeviceMgr->InstallDriver(std::move(driver));
+				g_DeviceMgr->InstallDriver(*driver);
 		}
 	}
 private:
 	void ForeachNode(const void* fdt, int node, int depth)
 	{
-		fdtDevices_.emplace_back(fdt, node, depth);
+		fdtDevices_.emplace_back(MakeObject<FDTDevice>(fdt, node, depth));
 		int subnode;
 		fdt_for_each_subnode(subnode, fdt, node)
 		{
@@ -41,10 +42,10 @@ private:
 		}
 	}
 private:
-	std::vector<FDTDevice> fdtDevices_;
+	std::vector<ObjectPtr<FDTDevice>> fdtDevices_;
 };
 
-std::unique_ptr<Driver> Chino::Device::BSPInstallRootDriver(const BootParameters& bootParams)
+Chino::ObjectPtr<Driver> Chino::Device::BSPInstallRootDriver(const BootParameters& bootParams)
 {
-	return std::make_unique<FdtRootDriver>();
+	return MakeObject<FdtRootDriver>();
 }

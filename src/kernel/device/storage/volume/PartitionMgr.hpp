@@ -5,7 +5,7 @@
 
 #include "../Drive.hpp"
 #include "Partition.hpp"
-#include <list>
+#include <vector>
 
 namespace Chino
 {
@@ -20,10 +20,10 @@ namespace Chino
 
 			virtual void Install() override;
 		private:
-			void InstallPartition(Partition&& partition);
+			void InstallPartition(Partition& partition);
 		private:
-			DriveDevice & drive_;
-			std::list<Partition> partitions_;
+			ObjectPtr<DriveDevice> drive_;
+			std::vector<ObjectPtr<Partition>> partitions_;
 		};
 	}
 }
