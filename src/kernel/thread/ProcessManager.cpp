@@ -2,6 +2,7 @@
 // Chino Thread
 //
 #include "ProcessManager.hpp"
+#include <libbsp/bsp.hpp>
 #include "../kdebug.hpp"
 
 extern "C"
@@ -40,7 +41,7 @@ void ProcessManager::StartScheduler()
 	kassert(!idleProcess_);
 	idleProcess_.Reset(&CreateProcess("System Idle", 0, IdleThreadMain));
 
-	ArchSetupSchedulerTimer();
+	BSPSetupSchedulerTimer();
 	ArchHaltProcessor();
 }
 

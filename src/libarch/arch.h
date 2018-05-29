@@ -14,8 +14,6 @@ extern "C"
 	extern void ArchHaltProcessor();
 
 	extern void ArchInitializeThreadContextArch(ThreadContext_Arch* context, uintptr_t stackPointer, uintptr_t entryPoint, uintptr_t returnAddress, uintptr_t parameter);
-	extern void ArchSetupSchedulerTimer();
-	extern void ArchSleepMs(uint32_t ms);
 #ifdef __cplusplus
 }
 #endif
