@@ -25,7 +25,7 @@ namespace Chino
 
 			void Clear();
 			void BlueScreen();
-			[[noreturn]] void FailFast(const char* file, size_t line);
+			[[noreturn]] void FailFast(const char* message, const char* file, size_t line);
 		};
 	}
 }

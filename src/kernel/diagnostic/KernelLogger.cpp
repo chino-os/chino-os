@@ -318,9 +318,9 @@ void KernelLogger::BlueScreen()
 	BSPDebugBlueScreen();
 }
 
-void KernelLogger::FailFast(const char* file, size_t line)
+void KernelLogger::FailFast(const char* message, const char* file, size_t line)
 {
-	PutFormat("Oops!\n\nAssert Failed: %s\nAt: %s:%d", file, (int)line);
+	PutFormat("Oops!\n\nAssert Failed: %s\nAt: %s:%z", message, file, line);
 	ArchDisableInterrupt();
 	while (1)
 		ArchHaltProcessor();

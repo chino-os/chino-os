@@ -1,8 +1,8 @@
 ﻿//
 // Kernel Entry
 //
-#include "utils.hpp"
 #include "kernel_iface.h"
+#include "utils.hpp"
 #include <libarch/arch.h>
 #include "thread/ProcessManager.hpp"
 #include "memory/MemoryManager.hpp"

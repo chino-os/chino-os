@@ -16,7 +16,8 @@ UsartDriver::UsartDriver(const FDTDevice& device)
 
 void UsartDriver::Install()
 {
-	//auto regProp = device_.GetPropertyOrInherited("reg");
-	//kassert(regProp.has_value());
-	//regAddr_ = regProp->GetUInt32(0);
+	auto regProp = device_.GetProperty("reg");
+	kassert(regProp.has_value());
+	regAddr_ = regProp->GetUInt32(0);
+	g_Logger->PutFormat("reg: %x", regAddr_);
 }
