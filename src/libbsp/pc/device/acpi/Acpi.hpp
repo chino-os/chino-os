@@ -25,7 +25,7 @@ namespace Chino
 		private:
 			RSDP_t * rsdp_;
 
-			std::vector<PCIDevice> pciDevices_;
+			std::vector<Chino::ObjectPtr<PCIDevice>> pciDevices_;
 		};
 	}
 }

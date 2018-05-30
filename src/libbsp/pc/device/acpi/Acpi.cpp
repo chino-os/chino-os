@@ -95,15 +95,15 @@ void AcpiDriver::Install()
 				PCI_DEVICE_INDEPENDENT_REGION* header = (PCI_DEVICE_INDEPENDENT_REGION*)address;
 				if (header->VendorId == 0xFFFF) continue;
 
-				pciDevices_.emplace_back(bus, dev, func, header);
+				pciDevices_.emplace_back(MakeObject<PCIDevice>(bus, dev, func, header));
 			}
 		}
 	}
 
 	for (auto& device : pciDevices_)
 	{
-		auto driver = device.TryLoadDriver();
+		auto driver = device->TryLoadDriver();
 		if (driver)
-			g_DeviceMgr->InstallDriver(std::move(driver));
+			g_DeviceMgr->InstallDriver(*driver);
 	}
 }

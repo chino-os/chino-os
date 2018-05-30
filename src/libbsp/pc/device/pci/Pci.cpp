@@ -12,7 +12,7 @@ PCIDevice::PCIDevice(size_t bus, size_t device, size_t function, PCI_DEVICE_INDE
 	//g_Logger->PutFormat(L"Bus(%d)/Dev(%d)/Func(%d): Class(0x%x, 0x%x, 0x%x)\n", (int)bus, (int)device, (int)function, (int)configuration->ClassCode[2], (int)configuration->ClassCode[1], (int)configuration->ClassCode[0]);
 }
 
-std::unique_ptr<Driver> PCIDevice::TryLoadDriver()
+Chino::ObjectPtr<Driver> PCIDevice::TryLoadDriver()
 {
 	auto head = g_PCIDrivers;
 	auto cnt = *head;

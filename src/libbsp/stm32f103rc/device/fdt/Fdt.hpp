@@ -25,7 +25,7 @@ const Chino::Device::FDTDriverDescriptor Type::Descriptor = { Type::Activate, Ty
 Chino::ObjectPtr<Chino::Device::Driver> Type::Activate(const Chino::Device::FDTDevice& device) \
 { return Chino::MakeObject<Type>(device); } \
 const Chino::Device::FDTDriverDescriptor Type::Descriptor = { Type::Activate, Type::IsSupported }; \
-bool UsartDriver::IsSupported(const Chino::Device::FDTDevice& device) \
+bool Type::IsSupported(const Chino::Device::FDTDevice& device) \
 { \
 return device.HasDeviceType(DeviceType) && device.HasCompatible(Compatible); \
 }

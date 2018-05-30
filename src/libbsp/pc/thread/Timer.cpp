@@ -3,6 +3,8 @@
 //
 #include "../bsp_defines.hpp"
 #include <libbsp/bsp.hpp>
+#include <libarch/arch.h>
+#include <climits>
 
 using namespace Chino::Thread;
 

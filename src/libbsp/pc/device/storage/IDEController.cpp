@@ -4,8 +4,10 @@
 #include "IDEController.hpp"
 #include <kernel/kdebug.hpp>
 #include <libarch/arch.h>
+#include <libbsp/bsp.hpp>
 
 using namespace Chino::Device;
+using namespace Chino::Thread;
 
 DEFINE_PCI_DRIVER_DESC(IDEControllerDriver, 0x01, 0x01);
 
@@ -126,7 +128,7 @@ void IDEControllerDriver::Channel::Install()
 		SelectDrive(i);
 		for (int i = 0; i < 4; i++)
 			ReadRegister(ATA_REG_ALTSTATUS); // Reading the Alternate Status port wastes 100ns; loop four times.
-		ArchSleepMs(10);
+		BSPSleepMs(10);
 		g_Logger->PutFormat(L"Status:%x\n", ReadRegister(ATA_REG_STATUS));
 		g_Logger->PutString(L"A");
 		SendCommand(ATA_CMD_IDENTIFY);

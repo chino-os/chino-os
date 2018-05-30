@@ -20,8 +20,9 @@ namespace Chino
 		class Device : public Object
 		{
 		public:
-			virtual ObjectPtr<Driver> TryLoadDriver() = 0;
-			virtual DeviceType GetType() const noexcept = 0;
+			virtual void SetIsEnabled(bool enabled);
+			virtual ObjectPtr<Driver> TryLoadDriver();
+			virtual DeviceType GetType() const noexcept;
 		};
 	}
 }

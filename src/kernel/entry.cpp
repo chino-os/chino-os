@@ -9,13 +9,15 @@
 #include "device/DeviceManager.hpp"
 //#include "file/FileManager.hpp"
 #include "diagnostic/KernelLogger.hpp"
+#include "object/ObjectManager.hpp"
 #include <libbsp/bsp.hpp>
 
 using namespace Chino;
 
 StaticHolder<Diagnostic::KernelLogger> g_Logger;
-StaticHolder<Thread::ProcessManager> g_ProcessMgr;
 StaticHolder<Memory::MemoryManager> g_MemoryMgr;
+StaticHolder<Chino::ObjectManager> g_ObjectMgr;
+StaticHolder<Thread::ProcessManager> g_ProcessMgr;
 StaticHolder<Device::DeviceMananger> g_DeviceMgr;
 //StaticHolder<File::FileManager> g_FileMgr;
 
@@ -57,6 +59,7 @@ extern "C" void Kernel_Main(const BootParameters* pParams)
 
 	g_Logger->PutString(L"Loading Chino ♥ ...\n");
 
+	g_ObjectMgr.construct();
 	g_ProcessMgr.construct();
 	g_DeviceMgr.construct();
 	//g_FileMgr.construct();

@@ -2,6 +2,7 @@
 // Kernel Object
 //
 #pragma once
+#include "../kernel_iface.h"
 #include <atomic>
 #include <type_traits>
 #include <utility>
@@ -80,6 +81,12 @@ namespace Chino
 				obj_ = obj;
 				AddRef();
 			}
+		}
+
+		template<class U>
+		ObjectPtr<U> As() const noexcept
+		{
+			return ObjectPtr<U>(static_cast<U*>(obj_));
 		}
 
 		T* Get() const noexcept { return obj_; }
