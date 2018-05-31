@@ -53,7 +53,7 @@ namespace Chino
 			uint32_t GetUInt32(size_t index) const noexcept;
 		};
 
-		class FDTDevice : public Device
+		class FDTDevice : public Device, public ExclusiveObjectAccess
 		{
 		public:
 			FDTDevice(const void* fdt, int node, int depth);

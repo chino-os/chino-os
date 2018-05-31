@@ -9,7 +9,41 @@
 
 namespace Chino
 {
-	class Object
+	enum ObjectAccess
+	{
+		OA_Read = 0x01,
+		OA_Write = 0x02,
+		OA_Execute = 0x04,
+		OA_ReadWrite = OA_Read | OA_Write
+	};
+
+	struct ObjectAccessContext
+	{
+		ObjectAccess AccessRight;
+		uintptr_t Token;
+	};
+
+	struct IObjectAccess
+	{
+		virtual void Open(ObjectAccessContext& context) = 0;
+		virtual void Close(ObjectAccessContext& context) = 0;
+	};
+
+	struct ExclusiveObjectAccess : public virtual IObjectAccess
+	{
+		virtual void Open(ObjectAccessContext& context) override;
+		virtual void Close(ObjectAccessContext& context) override;
+	private:
+		std::atomic<bool> used_;
+	};
+
+	struct FreeObjectAccess : public virtual IObjectAccess
+	{
+		virtual void Open(ObjectAccessContext& context) override;
+		virtual void Close(ObjectAccessContext& context) override;
+	};
+
+	class Object : public virtual IObjectAccess
 	{
 	public:
 		Object();

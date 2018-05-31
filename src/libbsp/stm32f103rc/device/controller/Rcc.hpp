@@ -9,10 +9,17 @@ namespace Chino
 {
 	namespace Device
 	{
-		class RccDevice : public Device
+		enum class RccPeriph
+		{
+			USART1
+		};
+
+		class RccDevice : public Device, public FreeObjectAccess
 		{
 		public:
 			RccDevice(const FDTDevice& fdt);
+
+			void SetPeriphClockIsEnabled(RccPeriph periph, bool enable);
 		private:
 			uintptr_t regAddr_;
 		};

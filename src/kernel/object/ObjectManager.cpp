@@ -21,9 +21,9 @@ Directory & ObjectManager::GetDirectory(WellKnownDirectory wellKnown) noexcept
 {
 	switch (wellKnown)
 	{
-	case WellKnownDirectory::Root:
+	case WKD_Root:
 		return *root_;
-	case WellKnownDirectory::Device:
+	case WKD_Device:
 		return *device_;
 	default:
 		kassert(!"Invalid directory.");

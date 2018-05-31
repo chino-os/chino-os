@@ -16,9 +16,9 @@ using namespace Chino;
 
 StaticHolder<Diagnostic::KernelLogger> g_Logger;
 StaticHolder<Memory::MemoryManager> g_MemoryMgr;
-StaticHolder<Chino::ObjectManager> g_ObjectMgr;
 StaticHolder<Thread::ProcessManager> g_ProcessMgr;
 StaticHolder<Device::DeviceMananger> g_DeviceMgr;
+StaticHolder<ObjectManager> g_ObjectMgr;
 //StaticHolder<File::FileManager> g_FileMgr;
 
 void Task0(uintptr_t)

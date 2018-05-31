@@ -34,6 +34,8 @@ typedef volatile struct
 	uint32_t CSR;
 } RCC_TypeDef;
 
+#define rcc ((RCC_TypeDef*)regAddr_)
+
 RccDriver::RccDriver(const FDTDevice& device)
 	:device_(device)
 {
@@ -51,5 +53,26 @@ RccDevice::RccDevice(const FDTDevice & fdt)
 	kassert(regProp.has_value());
 	regAddr_ = regProp->GetUInt32(0);
 
-	g_ObjectMgr->GetDirectory(WellKnownDirectory::Device).AddItem("rcc", *this);
+	g_ObjectMgr->GetDirectory(WKD_Device).AddItem("rcc", *this);
+}
+
+void RccDevice::SetPeriphClockIsEnabled(RccPeriph periph, bool enable)
+{
+	volatile uint32_t* enReg;
+	uint32_t mask;
+	switch (periph)
+	{
+	case RccPeriph::USART1:
+		enReg = &rcc->APB2ENR;
+		mask = 0x00004000;
+		break;
+	default:
+		kassert(!"invalid rcc periph.");
+		break;
+	}
+
+	if (enable)
+		*enReg |= mask;
+	else
+		*enReg &= ~mask;
 }

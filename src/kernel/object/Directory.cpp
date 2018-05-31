@@ -11,7 +11,10 @@ void Directory::AddItem(std::string_view name, Object & obj)
 	items_.emplace(name, &obj);
 }
 
-ObjectPtr<Object> Directory::GetItem(std::string_view name)
+ObjectAccessor<Object> Directory::Open(std::string_view name, ObjectAccess access)
 {
-	return items_.at(std::string(name));
+	ObjectAccessContext context{ access };
+	auto obj = items_.at(std::string(name));
+	obj->Open(context);
+	return { std::move(context), std::move(obj) };
 }

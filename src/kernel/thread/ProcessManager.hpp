@@ -16,7 +16,7 @@ namespace Chino
 {
 	namespace Thread
 	{
-		class Thread : public Object
+		class Thread : public Object, public FreeObjectAccess
 		{
 		public:
 			Thread(ThreadMain_t entryPoint, uint32_t priority, uintptr_t parameter);
@@ -29,7 +29,7 @@ namespace Chino
 			std::unique_ptr<uint8_t[]> stack_;
 		};
 
-		class Process : public Object
+		class Process : public Object, public FreeObjectAccess
 		{
 		public:
 			Process(std::string_view name);

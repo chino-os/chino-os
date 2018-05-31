@@ -7,10 +7,10 @@
 
 namespace Chino
 {
-	enum class WellKnownDirectory
+	enum WellKnownDirectory
 	{
-		Root,
-		Device
+		WKD_Root,
+		WKD_Device
 	};
 
 	class ObjectManager
@@ -27,3 +27,4 @@ namespace Chino
 }
 
 extern StaticHolder<Chino::ObjectManager> g_ObjectMgr;
+

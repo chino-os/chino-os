@@ -33,7 +33,7 @@ namespace Chino
 			PartitionDriverIsSupported_t IsSupported;
 		};
 
-		class Partition : public Device
+		class Partition : public Device, public ExclusiveObjectAccess
 		{
 		public:
 			Partition(DriveDevice& drive, size_t startLBA);

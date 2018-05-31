@@ -15,7 +15,7 @@ namespace Chino
 	{
 		class FileSystem;
 
-		struct FileSystemFile : public Object
+		struct FileSystemFile : public Object, public ExclusiveObjectAccess
 		{
 			FileSystem& FS;
 

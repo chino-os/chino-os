@@ -9,7 +9,7 @@ namespace Chino
 {
 	namespace Device
 	{
-		class Driver : public Object
+		class Driver : public Object, public ExclusiveObjectAccess
 		{
 		public:
 			virtual void Install() = 0;
