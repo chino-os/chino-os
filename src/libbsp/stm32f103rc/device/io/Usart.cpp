@@ -6,6 +6,7 @@
 #include <kernel/device/io/Serial.hpp>
 #include <kernel/object/ObjectManager.hpp>
 #include "../controller/Rcc.hpp"
+#include "../controller/Port.hpp"
 
 using namespace Chino;
 using namespace Chino::Device;
@@ -18,7 +19,7 @@ UsartDriver::UsartDriver(const FDTDevice& device)
 
 }
 
-class UsartSerial : public Serial
+class UsartSerial : public Serial, public ExclusiveObjectAccess
 {
 	typedef struct
 	{
@@ -45,15 +46,29 @@ public:
 		usart_ = reinterpret_cast<decltype(usart_)>(regProp->GetUInt32(0));
 	}
 
-	virtual void SetIsEnabled(bool enable) override
+	virtual void Start() override
 	{
-		auto rcc = g_ObjectMgr->GetDirectory(WKD_Device).Open("rcc", OA_Read | OA_Write).MoveAs<RccDevice>();
+		SetIsEnabled(true);
+	}
+
+	virtual void Stop() override
+	{
+		SetIsEnabled(false);
+		portPinTx_.reset();
+		portPinRx_.reset();
+	}
+private:
+	void SetIsEnabled(bool enable)
+	{
+		auto rcc = g_ObjectMgr->GetDirectory(WKD_Device).Open("Rcc", OA_Read | OA_Write).MoveAs<RccDevice>();
 		rcc->SetPeriphClockIsEnabled(RccPeriph::USART1, enable);
 	}
 private:
 	volatile USART_TypeDef* usart_;
+	std::optional<ObjectAccessor<PortPin>> portPinTx_, portPinRx_;
 };
 
 void UsartDriver::Install()
 {
+	
 }

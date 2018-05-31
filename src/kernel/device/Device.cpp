@@ -14,7 +14,3 @@ DeviceType Device::GetType() const noexcept
 {
 	return DeviceType::Other;
 }
-
-void Device::SetIsEnabled(bool enabled)
-{
-}

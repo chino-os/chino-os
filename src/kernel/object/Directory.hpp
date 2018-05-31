@@ -25,7 +25,16 @@ namespace Chino
 		~ObjectAccessor()
 		{
 			if (obj_.Get())
+				std::move(obj_)->Close(context_);
+			context_ = {};
+		}
+
+		ObjectAccessor& operator=(ObjectAccessor&& other) noexcept
+		{
+			if (obj_.Get())
 				obj_->Close(context_);
+			obj_ = std::move(other.obj_);
+			context_ = std::move(other.context_);
 		}
 
 		T* operator->() const noexcept
@@ -34,9 +43,11 @@ namespace Chino
 		}
 
 		template<class U>
-		ObjectAccessor<U> MoveAs() noexcept
+		ObjectAccessor<U> MoveAs()
 		{
-			return { std::move(context_), std::move(obj_).template As<U>() };
+			auto obj = obj_.template As<U>();
+			obj_.Reset();
+			return { std::move(context_), std::move(obj) };
 		}
 	private:
 		friend class Directory;

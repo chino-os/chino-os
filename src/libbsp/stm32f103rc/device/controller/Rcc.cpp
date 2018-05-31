@@ -53,7 +53,7 @@ RccDevice::RccDevice(const FDTDevice & fdt)
 	kassert(regProp.has_value());
 	regAddr_ = regProp->GetUInt32(0);
 
-	g_ObjectMgr->GetDirectory(WKD_Device).AddItem("rcc", *this);
+	g_ObjectMgr->GetDirectory(WKD_Device).AddItem("Rcc", *this);
 }
 
 void RccDevice::SetPeriphClockIsEnabled(RccPeriph periph, bool enable)

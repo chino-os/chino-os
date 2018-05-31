@@ -7,6 +7,7 @@
 #include <type_traits>
 #include <utility>
 #include <enum_flags.hpp>
+#include "../kdebug.hpp"
 
 namespace Chino
 {
@@ -124,9 +125,11 @@ namespace Chino
 		}
 
 		template<class U>
-		ObjectPtr<U> As() const noexcept
+		ObjectPtr<U> As() const
 		{
-			return ObjectPtr<U>(static_cast<U*>(obj_));
+			auto ptr = static_cast<U*>(obj_);
+			kassert(!obj_ || (ptr && obj_));
+			return ObjectPtr<U>(ptr);
 		}
 
 		T* Get() const noexcept { return obj_; }

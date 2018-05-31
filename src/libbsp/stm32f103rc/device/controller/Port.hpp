@@ -12,49 +12,58 @@ namespace Chino
 	{
 		enum class PortPins
 		{
-			Pin0 = 0x0001,
-			Pin1 = 0x0002,
-			Pin2 = 0x0004,
-			Pin3 = 0x0008,
-			Pin4 = 0x0010,
-			Pin5 = 0x0020,
-			Pin6 = 0x0040,
-			Pin7 = 0x0080,
-			Pin8 = 0x0100,
-			Pin9 = 0x0200,
-			Pin10 = 0x0400,
-			Pin11 = 0x0800,
-			Pin12 = 0x1000,
-			Pin13 = 0x2000,
-			Pin14 = 0x4000,
-			Pin15 = 0x8000
+			Pin0,
+			Pin1,
+			Pin2,
+			Pin3,
+			Pin4,
+			Pin5,
+			Pin6,
+			Pin7,
+			Pin8,
+			Pin9,
+			Pin10,
+			Pin11,
+			Pin12,
+			Pin13,
+			Pin14,
+			Pin15
 		};
 
-		class PortDevice;
+		enum class PortInputMode
+		{
+			Analog = 0,
+			Floating = 1,
+			PullUpDown = 2
+		};
 
-		class PortPin : NonCopyable
+		enum class PortOutputMode
+		{
+			PushPull = 0,
+			OpenDrain = 1,
+			AF_PushPull = 2,
+			AF_OpenDrain = 3
+		};
+
+		enum class PortSpeed
+		{
+			PS_10MHz = 1,
+			PS_2MHz = 2,
+			PS_50MHz = 1
+		};
+
+		class PortPin : public Device, public ExclusiveObjectAccess
 		{
 		private:
 			friend class PortDevice;
 
-			PortPin(PortDevice& port, PortPins pin);
+			PortPin(size_t portIndex, uintptr_t portRegAddr, PortPins pin);
+
+			void SetMode(PortInputMode mode);
+			void SetMode(PortOutputMode mode, PortSpeed speed);
 		private:
-			ObjectPtr<PortDevice> port_;
+			uintptr_t portRegAddr_;
 			PortPins pin_;
-		};
-
-		class PortDevice : public Device
-		{
-		public:
-			PortDevice(const FDTDevice& fdt);
-
-			PortPin OpenPin(PortPins pin);
-		private:
-			friend class PortPin;
-
-			void Close(PortPins pin);
-		private:
-			uintptr_t regAddr_;
 		};
 	}
 }
