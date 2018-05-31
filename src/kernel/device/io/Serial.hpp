@@ -14,11 +14,11 @@ namespace Chino
 		class Serial : public Device
 		{
 		public:
-			virtual void Open() = 0;
-			virtual void Close() = 0;
+			virtual void Start() = 0;
+			virtual void Stop() = 0;
 
-			virtual size_t Read(uint8_t* buffer, size_t count) = 0;
-			virtual size_t Write(const uint8_t* buffer, size_t count) = 0;
+			virtual size_t Read(ObjectAccessContext& context, uint8_t* buffer, size_t count) = 0;
+			virtual size_t Write(ObjectAccessContext& context, const uint8_t* buffer, size_t count) = 0;
 		};
 	}
 }

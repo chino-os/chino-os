@@ -35,17 +35,26 @@ void ExclusiveObjectAccess::Open(ObjectAccessContext& context)
 {
 	bool exp = false;
 	kassert(!used_.compare_exchange_strong(exp, true, std::memory_order_relaxed));
+	context.AccessToken = context.AccessAcquired;
 }
 
 void ExclusiveObjectAccess::Close(ObjectAccessContext& context)
 {
 	used_.store(false, std::memory_order_relaxed);
+	context.AccessToken = OA_None;
 }
 
 void FreeObjectAccess::Open(ObjectAccessContext& context)
 {
+	context.AccessToken = context.AccessAcquired;
 }
 
 void FreeObjectAccess::Close(ObjectAccessContext& context)
 {
+	context.AccessToken = OA_None;
+}
+
+void Chino::ValidateAccess(ObjectAccessContext& context, ObjectAccess accessRequried)
+{
+	kassert((context.AccessToken & accessRequried) == accessRequried);
 }

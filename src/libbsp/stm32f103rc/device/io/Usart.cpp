@@ -47,18 +47,8 @@ public:
 
 	virtual void SetIsEnabled(bool enable) override
 	{
-		auto rcc = g_ObjectMgr->GetDirectory(WKD_Device).Open("rcc", OA_ReadWrite).MoveAs<RccDevice>();
+		auto rcc = g_ObjectMgr->GetDirectory(WKD_Device).Open("rcc", OA_Read | OA_Write).MoveAs<RccDevice>();
 		rcc->SetPeriphClockIsEnabled(RccPeriph::USART1, enable);
-	}
-
-	virtual void Open() override
-	{
-
-	}
-
-	virtual void Close() override
-	{
-
 	}
 private:
 	volatile USART_TypeDef* usart_;

@@ -6,21 +6,27 @@
 #include <atomic>
 #include <type_traits>
 #include <utility>
+#include <enum_flags.hpp>
 
 namespace Chino
 {
-	enum ObjectAccess
+	enum ObjectAccess : size_t
 	{
+		OA_None = 0,
 		OA_Read = 0x01,
 		OA_Write = 0x02,
-		OA_Execute = 0x04,
-		OA_ReadWrite = OA_Read | OA_Write
+		OA_Execute = 0x04
 	};
+
+	MAKE_ENUM_CLASS_BITMASK_TYPE(ObjectAccess);
 
 	struct ObjectAccessContext
 	{
-		ObjectAccess AccessRight;
-		uintptr_t Token;
+		union
+		{
+			ObjectAccess AccessToken;
+			ObjectAccess AccessAcquired;
+		};
 	};
 
 	struct IObjectAccess
@@ -172,4 +178,6 @@ namespace Chino
 	{
 		return ObjectPtr<T>(std::in_place, std::forward<Args>(args)...);
 	}
+
+	void ValidateAccess(ObjectAccessContext& context, ObjectAccess accessRequried);
 }
