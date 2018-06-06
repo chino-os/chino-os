@@ -33,7 +33,7 @@ set(CMAKE_CXX_LINK_EXECUTABLE
 
 SET(LDFLAGS "\
 -nostartfiles           \
--eBSPKernelEntry \
+-T ${BOARD_LDS_DIR}/kernel.lds \
 -Wl,-static")
 
 SET(CMAKE_EXE_LINKER_FLAGS "${LDFLAGS} ${BOARD_LDFLAGS}")
