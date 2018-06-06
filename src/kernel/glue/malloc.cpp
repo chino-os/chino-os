@@ -11,8 +11,6 @@ using namespace Chino::Memory;
 
 extern "C"
 {
-	void * __dso_handle = 0;
-
 	void* malloc(size_t n)
 	{
 		auto p = g_MemoryMgr->HeapAlloc(n);

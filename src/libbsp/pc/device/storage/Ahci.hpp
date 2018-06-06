@@ -309,7 +309,7 @@ namespace Chino
 				SATAPI
 			};
 
-			class Port : public DriveDevice
+			class Port : public DriveDevice, public ExclusiveObjectAccess
 			{
 			public:
 				Port();

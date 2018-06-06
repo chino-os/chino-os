@@ -12,10 +12,10 @@ static CHAR16 KernelFilePath[] = L"CHINO\\SYSTEM\\KERNEL";
 static EFI_HANDLE gImageHandle;
 
 #define ExitIfError(status) \
-{ EFI_STATUS s = status; if (EFI_ERROR(s)) { Print(L"Error (%s:%d): %d\n", __func__, __LINE__, (int)s); BS->Exit(gImageHandle, s, 0, NULL); } }
+{ EFI_STATUS s = status; if (EFI_ERROR(s)) { Print(L"Error (%s:%d): %d\n", __FILE__, __LINE__, (int)s); BS->Exit(gImageHandle, s, 0, NULL); } }
 
 #define ExitIfNot(value, expected, tag) \
-{ int s = value; if (s != expected) { Print(L"Error %s (%s:%d): value %d, expected: %d\n", tag, __func__, __LINE__, (int)s, (int)expected); BS->Exit(gImageHandle, -1, 0, NULL); } }
+{ int s = value; if (s != expected) { Print(L"Error %s (%s:%d): value %d, expected: %d\n", tag, __FILE__, __LINE__, (int)s, (int)expected); BS->Exit(gImageHandle, -1, 0, NULL); } }
 
 bool ReadFile(struct el_ctx *ctx, void *dest, size_t nb, size_t offset)
 {

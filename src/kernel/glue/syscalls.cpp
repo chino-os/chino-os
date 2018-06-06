@@ -56,6 +56,7 @@ extern "C"
 
 	int kill(int pid, int sig)
 	{
+		g_Logger->PutString("kill\n");
 		errno = ENOSYS;
 		return -1;
 	}

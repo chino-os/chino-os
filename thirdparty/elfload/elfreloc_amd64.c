@@ -18,6 +18,7 @@
 #if defined(__amd64__)
 
 #define R_AMD64_NONE     0
+#define R_AMD64_GLOB_DAT 6
 #define R_AMD64_RELATIVE 8
 
 el_status el_applyrela(el_ctx *ctx, Elf_RelA *rel)
@@ -27,6 +28,7 @@ el_status el_applyrela(el_ctx *ctx, Elf_RelA *rel)
 
     switch (type) {
         case R_AMD64_NONE: break;
+		case R_AMD64_GLOB_DAT: break;
         case R_AMD64_RELATIVE:
             EL_DEBUG("Applying R_AMD64_RELATIVE reloc @%lX\n", p);
             *p = rel->r_addend + ctx->base_load_vaddr;
