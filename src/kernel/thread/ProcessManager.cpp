@@ -13,7 +13,7 @@ extern "C"
 using namespace Chino::Thread;
 
 static void OnThreadExit();
-static void IdleThreadMain(uintptr_t);
+static void IdleThreadMain();
 
 ProcessManager::ProcessManager()
 	:runningThread_(0), idleProcess_(nullptr)
@@ -21,10 +21,10 @@ ProcessManager::ProcessManager()
 
 }
 
-Process& ProcessManager::CreateProcess(std::string_view name, uint32_t mainThreadPriority, ThreadMain_t entryPoint)
+Process& ProcessManager::CreateProcess(std::string_view name, uint32_t mainThreadPriority, std::function<void()> threadMain)
 {
 	auto it = _processes.emplace_back(MakeObject<Process>(name));
-	it->AddThread(entryPoint, mainThreadPriority, 0);
+	it->AddThread(std::move(threadMain), mainThreadPriority);
 	return *it;
 }
 
@@ -88,21 +88,27 @@ Process::Process(std::string_view name)
 {
 }
 
-Thread& Process::AddThread(ThreadMain_t entryPoint, uint32_t priority, uintptr_t parameter)
+Thread& Process::AddThread(std::function<void()> threadMain, uint32_t priority)
 {
-	auto& thread = *threads_.emplace_back(MakeObject<Thread>(entryPoint, priority, parameter));
+	auto& thread = *threads_.emplace_back(MakeObject<Thread>(std::move(threadMain), priority));
 	g_ProcessMgr->AddReadyThread(thread);
 	return thread;
 }
 
-Thread::Thread(ThreadMain_t entryPoint, uint32_t priority, uintptr_t parameter)
-	:priority_(priority), threadContext_({})
+Thread::Thread(std::function<void()> threadMain, uint32_t priority)
+	:priority_(priority), threadContext_({}), threadMain_(std::move(threadMain))
 {
-	kassert(priority <= MAX_THREAD_PRIORITY);
+	kassert(threadMain_ && priority <= MAX_THREAD_PRIORITY);
 	auto stackSize = DEFAULT_THREAD_STACK_SIZE;
 	stack_ = std::make_unique<uint8_t[]>(stackSize);
 	auto stackPointer = uintptr_t(stack_.get()) + stackSize;
-	ArchInitializeThreadContextArch(&threadContext_, stackPointer, uintptr_t(entryPoint), uintptr_t(OnThreadExit), parameter);
+	ArchInitializeThreadContextArch(&threadContext_, stackPointer, uintptr_t(ThreadMainThunk), uintptr_t(OnThreadExit), uintptr_t(this));
+}
+
+void Thread::ThreadMainThunk(Thread* thread)
+{
+	kassert(thread && thread->threadMain_);
+	thread->threadMain_();
 }
 
 static void OnThreadExit()
@@ -110,7 +116,7 @@ static void OnThreadExit()
 	kassert(!"Exit unexpected.");
 }
 
-static void IdleThreadMain(uintptr_t)
+static void IdleThreadMain()
 {
 	while (1)
 	{

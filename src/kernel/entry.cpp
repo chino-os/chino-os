@@ -10,6 +10,7 @@
 #include "diagnostic/KernelLogger.hpp"
 #include "object/ObjectManager.hpp"
 #include <libbsp/bsp.hpp>
+#include "system/Startup.hpp"
 
 using namespace Chino;
 
@@ -18,24 +19,6 @@ StaticHolder<Memory::MemoryManager> g_MemoryMgr;
 StaticHolder<Thread::ProcessManager> g_ProcessMgr;
 StaticHolder<Device::DeviceMananger> g_DeviceMgr;
 StaticHolder<ObjectManager> g_ObjectMgr;
-
-void Task0(uintptr_t)
-{
-	while (1)
-	{
-		Thread::BSPSleepMs(1000);
-		g_Logger->PutString(L"I am task 0.\n");
-	}
-}
-
-void Task1(uintptr_t)
-{
-	while (1)
-	{
-		Thread::BSPSleepMs(1000);
-		g_Logger->PutString(L"I am task 1.\n");
-	}
-}
 
 extern "C"
 {
@@ -63,20 +46,9 @@ extern "C" void Kernel_Main(const BootParameters* pParams)
 	g_ProcessMgr.construct();
 	g_DeviceMgr.construct();
 
-	g_DeviceMgr->InstallDevices(params);
-
-	g_DeviceMgr->DumpDevices();
-
-	g_ProcessMgr->CreateProcess("Task 0", 1, Task0);
-	g_ProcessMgr->CreateProcess("Task 1", 1, Task1);
-
-	g_Logger->PutString(L"\nChino is successfully loaded ♥\n");
-	g_Logger->PutFormat(L"Free memory avaliable: %z bytes\n", g_MemoryMgr->GetFreeBytesRemaining());
-
-	//auto file = g_FileMgr->OpenFile("/dev/fs0/chino/system/kernel");
-	//g_Logger->PutFormat(L"Opened /dev/fs0/chino/system/kernel, Size: %l bytes\n", g_FileMgr->GetFileSize(file));
-	//
+	g_ProcessMgr->CreateProcess("System", 0, [&] {SystemStartup(params); });
 	g_ProcessMgr->StartScheduler();
+
 	while (1)
 		ArchHaltProcessor();
 }

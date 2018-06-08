@@ -19,11 +19,14 @@ namespace Chino
 		class Thread : public Object, public FreeObjectAccess
 		{
 		public:
-			Thread(ThreadMain_t entryPoint, uint32_t priority, uintptr_t parameter);
+			Thread(std::function<void()> threadMain, uint32_t priority);
 
 			uint32_t GetPriority() const noexcept { return priority_; }
 			ThreadContext_Arch& GetContext() noexcept { return threadContext_; }
 		private:
+			static void ThreadMainThunk(Thread* thread);
+		private:
+			std::function<void()> threadMain_;
 			ThreadContext_Arch threadContext_;
 			uint32_t priority_;
 			std::unique_ptr<uint8_t[]> stack_;
@@ -34,7 +37,7 @@ namespace Chino
 		public:
 			Process(std::string_view name);
 
-			Thread& AddThread(ThreadMain_t entryPoint, uint32_t priority, uintptr_t parameter);
+			Thread& AddThread(std::function<void()> threadMain, uint32_t priority);
 		private:
 			std::string name_;
 			std::vector<ObjectPtr<Thread>> threads_;
@@ -46,7 +49,7 @@ namespace Chino
 		public:
 			ProcessManager();
 
-			Process& CreateProcess(std::string_view name, uint32_t mainThreadPriority, ThreadMain_t entryPoint);
+			Process& CreateProcess(std::string_view name, uint32_t mainThreadPriority, std::function<void()> threadMain);
 			void AddReadyThread(Thread& thread);
 			void StartScheduler();
 			ThreadContext_Arch& SwitchThreadContext();
