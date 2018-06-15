@@ -8,6 +8,10 @@
 #include "../kdebug.hpp"
 #include <libarch/arch.h>
 
+#define STDIN_FILENO    0       /* standard input file descriptor */
+#define STDOUT_FILENO   1       /* standard output file descriptor */
+#define STDERR_FILENO   2       /* standard error file descriptor */
+
 extern "C"
 {
 	int _close(int file) __attribute__((alias("close")));
@@ -89,9 +93,19 @@ extern "C"
 
 	int write(int file, char *ptr, int len)
 	{
+		if (file == STDOUT_FILENO || file == STDERR_FILENO)
+		{
+			g_Logger->PutString(ptr, len);
+			return len;
+		}
+
 		errno = ENOSYS;
 		return -1;
 	}
 
-	int gettimeofday(struct timeval *__restrict p, void *__restrict tz);
+	int gettimeofday(struct timeval *__restrict p, void *__restrict tz)
+	{
+		errno = ENOSYS;
+		return -1;
+	}
 }

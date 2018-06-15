@@ -25,8 +25,14 @@ extern "C"
 
 	void* realloc(void* p, size_t n)
 	{
-		kassert(!"Not Implemented");
-		return nullptr;
+		auto np = malloc(n);
+		if (p)
+		{
+			memcpy(np, p, n);
+			free(p);
+		}
+
+		return np;
 	}
 
 	void* calloc(size_t num, size_t size)
