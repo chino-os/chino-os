@@ -24,7 +24,6 @@ extern "C"
 {
 	extern void __libc_init_array(void);
 	extern void __libc_fini_array(void);
-	extern void _init_signal(void);
 }
 
 extern "C" void Kernel_Main(const BootParameters* pParams)
@@ -38,7 +37,6 @@ extern "C" void Kernel_Main(const BootParameters* pParams)
 
 	atexit(__libc_fini_array);
 	__libc_init_array();
-	_init_signal();
 
 	g_MemoryMgr.construct();
 

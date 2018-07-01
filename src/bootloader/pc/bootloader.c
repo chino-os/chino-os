@@ -87,15 +87,18 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
 	// ¼ÓÔØ Kernel
 	Elf_Addr kernelBase;
-	ExitIfError(BS->AllocatePool(EFI_ChinoKernel_Code, ctx.memsz, (void**)&kernelBase));
-	ctx.base_load_vaddr = ctx.base_load_paddr = kernelBase;
+	ExitIfError(BS->AllocatePool(EFI_ChinoKernel_Code, 4 * 1024 * 1024, (void**)&kernelBase));
+
+	Print(L"Kernel base %x\n", (int)kernelBase);
+	ctx.base_load_paddr = kernelBase;
+	ctx.base_load_vaddr = 0;
 	ExitIfNot(el_load(&ctx, alloccb), EL_OK, L"load elf failed");
 	ExitIfNot(el_relocate(&ctx), EL_OK, L"relocate elf failed");
 	ExitIfError(fileHandle->Close(fileHandle));
 	ExitIfError(rootFS->Close(rootFS));
 	
 	// Ìø×ª Kernel
-	kernel_entry_t kernelEntry = (kernel_entry_t)(ctx.ehdr.e_entry + kernelBase);
+	kernel_entry_t kernelEntry = (kernel_entry_t)(ctx.ehdr.e_entry);
 	struct BootParameters bootParam = { 0 };
 	ExitIfError(BS->AllocatePool(EFI_ChinoKernel_Data, ChinoKernel_StackSize, (void**)&bootParam.StackPointer));
 	bootParam.StackPointer = bootParam.StackPointer + ChinoKernel_StackSize;

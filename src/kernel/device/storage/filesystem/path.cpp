@@ -191,7 +191,7 @@ namespace Chino
 			}
 			if (file.front() == Separator)
 			{
-				path_.append(file, 1);
+				path_.append(file, 1, string_type::npos);
 			}
 			else
 			{

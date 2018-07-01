@@ -28,7 +28,7 @@ bool Iso9600FileSystem::IsSupported(Chino::Device::Partition& device)
 	return true;
 }
 
-static wchar_t* types[] = {
+static const wchar_t* types[] = {
 	L"Boot Record",
 	L"Primary Volume Descriptor",
 	L"Supplementary Volume Descriptor",
@@ -37,7 +37,7 @@ static wchar_t* types[] = {
 	L"Volume Descriptor Set Terminator"
 };
 
-static wchar_t* GetType(uint8_t type)
+static const wchar_t* GetType(uint8_t type)
 {
 	if (type < 4)
 		return types[type];

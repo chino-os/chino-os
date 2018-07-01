@@ -13,6 +13,9 @@ riscv64)
 cortex-m3)
 	TUPLE0=arm
 	;;
+nios2)
+	TUPLE0=nios2
+	;;
 *)
 	echo "Unknown arch: $ARCH"
 	exit 1
@@ -23,6 +26,4 @@ cmake .. -DCMAKE_SYSTEM_NAME=Generic -DCMAKE_C_COMPILER=$TOOLCHAIN/bin/$TUPLE0-u
  -DCMAKE_ARCH_OBJCOPY=$TOOLCHAIN/bin/$TUPLE0-unknown-chino-objcopy \
  -DCMAKE_OBJDUMP=$TOOLCHAIN/bin/$TUPLE0-unknown-chino-objdump -DCMAKE_RANLIB=$TOOLCHAIN/bin/$TUPLE0-unknown-chino-ranlib -DCMAKE_STRIP=$TOOLCHAIN/bin/$TUPLE0-unknown-chino-strip \
  -DCMAKE_AR=$TOOLCHAIN/bin/$TUPLE0-unknown-chino-ar \
- -DCMAKE_C_FLAGS="--specs=nosys.specs" \
- -DCMAKE_CXX_FLAGS="--specs=nosys.specs" \
  -DARCH=$ARCH -DBOARD=$BOARD -DGNU_EFI_LIB=/usr/local/lib -DGNU_EFI_INC=/usr/local/include/efi
