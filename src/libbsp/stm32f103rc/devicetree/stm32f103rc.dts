@@ -25,5 +25,17 @@
 	        compatible = "st,stm32f103-usart";
 			reg = <0x40013800 0x400>;
 	    };
+
+		portA: port@0x40010800 {
+			device_type = "port";
+			compatible = "st,stm32f103-port";
+			reg = <0x40010800 0x400>;
+		};
+
+		portB: port@0x40010C00 {
+			device_type = "port";
+			compatible = "st,stm32f103-port";
+			reg = <0x40010C00 0x400>;
+		};
 	};
 };

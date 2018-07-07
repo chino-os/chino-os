@@ -22,6 +22,11 @@ namespace Chino
 
 		}
 
+		ObjectAccessor(ObjectAccessContext&& context, ObjectPtr<T>&& obj) noexcept
+			:context_(std::move(context)), obj_(std::move(obj))
+		{
+		}
+
 		~ObjectAccessor()
 		{
 			if (obj_.Get())
@@ -48,15 +53,6 @@ namespace Chino
 			auto obj = obj_.template As<U>();
 			obj_.Reset();
 			return { std::move(context_), std::move(obj) };
-		}
-	private:
-		friend class Directory;
-		template<class U>
-		friend class ObjectAccessor;
-
-		ObjectAccessor(ObjectAccessContext&& context, ObjectPtr<T>&& obj) noexcept
-			:context_(std::move(context)), obj_(std::move(obj))
-		{
 		}
 	private:
 		ObjectAccessContext context_;

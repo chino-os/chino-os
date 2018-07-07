@@ -46,12 +46,12 @@ public:
 		usart_ = reinterpret_cast<decltype(usart_)>(regProp->GetUInt32(0));
 	}
 
-	virtual void Start() override
+	virtual void OnFirstOpen() override
 	{
 		SetIsEnabled(true);
 	}
 
-	virtual void Stop() override
+	virtual void OnLastClose() override
 	{
 		SetIsEnabled(false);
 		portPinTx_.reset();
@@ -60,7 +60,7 @@ public:
 private:
 	void SetIsEnabled(bool enable)
 	{
-		auto rcc = g_ObjectMgr->GetDirectory(WKD_Device).Open("Rcc", OA_Read | OA_Write).MoveAs<RccDevice>();
+		auto rcc = g_ObjectMgr->GetDirectory(WKD_Device).Open("rcc1", OA_Read | OA_Write).MoveAs<RccDevice>();
 		rcc->SetPeriphClockIsEnabled(RccPeriph::USART1, enable);
 	}
 private:

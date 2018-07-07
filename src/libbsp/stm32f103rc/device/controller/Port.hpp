@@ -5,6 +5,7 @@
 
 #include "../fdt/Fdt.hpp"
 #include <noncopyable.hpp>
+#include <kernel/object/Directory.hpp>
 
 namespace Chino
 {
@@ -52,18 +53,48 @@ namespace Chino
 			PS_50MHz = 1
 		};
 
+		class PortDevice;
+
 		class PortPin : public Device, public ExclusiveObjectAccess
 		{
-		private:
-			friend class PortDevice;
-
-			PortPin(size_t portIndex, uintptr_t portRegAddr, PortPins pin);
+		public:
+			PortPin(ObjectAccessor<PortDevice>&& port, PortPins pin);
 
 			void SetMode(PortInputMode mode);
 			void SetMode(PortOutputMode mode, PortSpeed speed);
+		protected:
+			virtual void OnLastClose() override;
 		private:
-			uintptr_t portRegAddr_;
+			ObjectAccessor<PortDevice> port_;
 			PortPins pin_;
+		};
+
+		class PortDevice : public Device, public FreeObjectAccess
+		{
+		public:
+			PortDevice(const FDTDevice & fdt);
+
+			ObjectAccessor<PortPin> OpenPin(PortPins pin);
+		private:
+			friend class PortPin;
+
+			void ClosePin(PortPins pin) noexcept;
+			void MarkPinUsed(PortPins pin, bool used) noexcept;
+			void ValidateExclusiveUsePin(PortPins pin);
+		private:
+			uintptr_t regAddr_;
+			uint32_t usedPins_;
+		};
+
+		class PortDriver : public Driver
+		{
+		public:
+			DECLARE_FDT_DRIVER(PortDriver);
+
+			virtual void Install() override;
+		private:
+			const FDTDevice& device_;
+			uintptr_t regAddr_;
 		};
 	}
 }

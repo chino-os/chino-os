@@ -40,6 +40,9 @@ namespace Chino
 	{
 		virtual void Open(ObjectAccessContext& context) override;
 		virtual void Close(ObjectAccessContext& context) override;
+	protected:
+		virtual void OnFirstOpen();
+		virtual void OnLastClose();
 	private:
 		std::atomic<bool> used_;
 	};
@@ -146,6 +149,13 @@ namespace Chino
 
 		template<class U, typename = std::enable_if_t<std::is_convertible_v<U, T>>>
 		ObjectPtr& operator=(ObjectPtr<U>&& other) noexcept
+		{
+			Reset(other.obj_);
+			other.obj_ = nullptr;
+			return *this;
+		}
+
+		ObjectPtr& operator=(ObjectPtr&& other) noexcept
 		{
 			Reset(other.obj_);
 			other.obj_ = nullptr;

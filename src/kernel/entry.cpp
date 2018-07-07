@@ -34,7 +34,6 @@ extern "C" void Kernel_Main(const BootParameters* pParams)
 	Memory::MemoryManager::InitializeHeap(params);
 
 	g_Logger->PutString(L"Loading Chino ♥ ...\n");
-
 	atexit(__libc_fini_array);
 	__libc_init_array();
 
@@ -44,9 +43,13 @@ extern "C" void Kernel_Main(const BootParameters* pParams)
 	g_ProcessMgr.construct();
 	g_DeviceMgr.construct();
 
+#if 1
 	g_ProcessMgr->CreateProcess("System", 0, [&] {SystemStartup(params); });
 	g_ProcessMgr->StartScheduler();
 
 	while (1)
 		ArchHaltProcessor();
+#else
+	while (1);
+#endif
 }

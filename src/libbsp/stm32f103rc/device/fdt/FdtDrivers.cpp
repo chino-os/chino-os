@@ -4,6 +4,7 @@
 #include "Fdt.hpp"
 #include "../io/Usart.hpp"
 #include "../controller/Rcc.hpp"
+#include "../controller/Port.hpp"
 
 using namespace Chino::Device;
 
@@ -11,7 +12,8 @@ using namespace Chino::Device;
 
 const FDTDriverDescriptor* Chino::Device::g_FDTDrivers[] =
 {
-	REF_FDT_DRIVER_DESC(UsartDriver),
 	REF_FDT_DRIVER_DESC(RccDriver),
+	REF_FDT_DRIVER_DESC(PortDriver),
+	REF_FDT_DRIVER_DESC(UsartDriver),
 	nullptr
 };

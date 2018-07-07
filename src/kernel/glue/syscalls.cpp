@@ -23,6 +23,7 @@ extern "C"
 	int _open(const char *name, int flags, ...) __attribute__((alias("open")));
 	int _read(int file, char *ptr, int len) __attribute__((alias("read")));
 	int _write(int file, char *ptr, int len) __attribute__((alias("write")));
+	int _gettimeofday(struct timeval *__restrict p, void *__restrict tz) __attribute__((alias("gettimeofday")));
 
 	void _exit(int)
 	{

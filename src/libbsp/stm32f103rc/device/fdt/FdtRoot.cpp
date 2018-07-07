@@ -19,12 +19,13 @@ public:
 	virtual void Install() override
 	{
 		g_Logger->PutFormat("fdt: %z\n", g_fdtSize);
+		std::vector<ObjectPtr<FDTDevice>> fdtDevices;
 		int depth = 0;
 		auto first_node = fdt_next_node(g_fdtData, -1, &depth);
 		if (first_node >= 0)
-			ForeachNode(g_fdtData, first_node, depth);
+			ForeachNode(fdtDevices, g_fdtData, first_node, depth);
 
-		for (auto& device : fdtDevices_)
+		for (auto& device : fdtDevices)
 		{
 			auto driver = device->TryLoadDriver();
 			if (driver)
@@ -32,17 +33,15 @@ public:
 		}
 	}
 private:
-	void ForeachNode(const void* fdt, int node, int depth)
+	void ForeachNode(std::vector<ObjectPtr<FDTDevice>>& fdtDevices, const void* fdt, int node, int depth)
 	{
-		fdtDevices_.emplace_back(MakeObject<FDTDevice>(fdt, node, depth));
+		fdtDevices.emplace_back(MakeObject<FDTDevice>(fdt, node, depth));
 		int subnode;
 		fdt_for_each_subnode(subnode, fdt, node)
 		{
-			ForeachNode(fdt, subnode, fdt_node_depth(fdt, subnode));
+			ForeachNode(fdtDevices, fdt, subnode, fdt_node_depth(fdt, subnode));
 		}
 	}
-private:
-	std::vector<ObjectPtr<FDTDevice>> fdtDevices_;
 };
 
 Chino::ObjectPtr<Driver> Chino::Device::BSPInstallRootDriver(const BootParameters& bootParams)

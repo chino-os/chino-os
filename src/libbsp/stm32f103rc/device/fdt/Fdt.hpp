@@ -61,6 +61,8 @@ namespace Chino
 			bool HasDeviceType(std::string_view deviceType) const noexcept;
 			bool HasCompatible(std::string_view compatible) const noexcept;
 
+			std::string_view GetName() const noexcept;
+
 			std::optional<FDTProperty> GetProperty(std::string_view name) const noexcept;
 			std::optional<FDTProperty> GetPropertyOrInherited(std::string_view name) const noexcept;
 

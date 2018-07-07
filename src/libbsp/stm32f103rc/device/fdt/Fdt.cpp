@@ -85,6 +85,13 @@ std::optional<FDTProperty> FDTDevice::GetPropertyOrInherited(std::string_view na
 	return {};
 }
 
+std::string_view FDTDevice::GetName() const noexcept
+{
+	int len;
+	auto name = fdt_get_name(fdt_, node_, &len);
+	return { name, size_t(len) };
+}
+
 uint32_t FDTProperty::GetUInt32(size_t index) const noexcept
 {
 	auto uiData = reinterpret_cast<const fdt32_t*>(data);
