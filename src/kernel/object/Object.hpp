@@ -8,6 +8,7 @@
 #include <utility>
 #include <enum_flags.hpp>
 #include "../kdebug.hpp"
+#include "noncopyable.hpp"
 
 namespace Chino
 {
@@ -36,8 +37,11 @@ namespace Chino
 		virtual void Close(ObjectAccessContext& context) = 0;
 	};
 
-	struct ExclusiveObjectAccess : public virtual IObjectAccess
+	class ExclusiveObjectAccess : public virtual IObjectAccess
 	{
+	public:
+		ExclusiveObjectAccess();
+
 		virtual void Open(ObjectAccessContext& context) override;
 		virtual void Close(ObjectAccessContext& context) override;
 	protected:
@@ -47,10 +51,18 @@ namespace Chino
 		std::atomic<bool> used_;
 	};
 
-	struct FreeObjectAccess : public virtual IObjectAccess
+	class FreeObjectAccess: public virtual IObjectAccess
 	{
+	public:
+		FreeObjectAccess();
+
 		virtual void Open(ObjectAccessContext& context) override;
 		virtual void Close(ObjectAccessContext& context) override;
+	protected:
+		virtual void OnFirstOpen();
+		virtual void OnLastClose();
+	private:
+		std::atomic<long> useCount_;
 	};
 
 	class Object : public virtual IObjectAccess
@@ -193,4 +205,64 @@ namespace Chino
 	}
 
 	void ValidateAccess(ObjectAccessContext& context, ObjectAccess accessRequried);
+
+	template<class T>
+	class ObjectAccessor : NonCopyable
+	{
+	public:
+		template<class U>
+		ObjectAccessor(ObjectAccessor<U>&& other)
+			:context_(std::move(other.context_)), obj_(std::move(other.obj_))
+		{
+
+		}
+
+		ObjectAccessor(ObjectAccessContext&& context, ObjectPtr<T>&& obj) noexcept
+			:context_(std::move(context)), obj_(std::move(obj))
+		{
+		}
+
+		~ObjectAccessor()
+		{
+			if (obj_.Get())
+				std::move(obj_)->Close(context_);
+			context_ = {};
+		}
+
+		ObjectAccessor& operator=(ObjectAccessor&& other) noexcept
+		{
+			if (obj_.Get())
+				obj_->Close(context_);
+			obj_ = std::move(other.obj_);
+			context_ = std::move(other.context_);
+		}
+
+		T* operator->() const noexcept
+		{
+			return obj_.Get();
+		}
+
+		template<class U>
+		ObjectAccessor<U> MoveAs()
+		{
+			auto obj = obj_.template As<U>();
+			obj_.Reset();
+			return { std::move(context_), std::move(obj) };
+		}
+	private:
+		template<class U>
+		friend class ObjectAccessor;
+
+		ObjectAccessContext context_;
+		ObjectPtr<T> obj_;
+	};
+
+	template<typename T>
+	ObjectAccessor<T> MakeAccessor(ObjectPtr<T> obj, ObjectAccess access)
+	{
+		ObjectAccessContext context;
+		context.AccessAcquired = OA_Read | OA_Write;
+		obj->Open(context);
+		return { std::move(context), std::move(obj) };
+	}
 }

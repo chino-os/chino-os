@@ -5,7 +5,6 @@
 
 #include "../fdt/Fdt.hpp"
 #include <noncopyable.hpp>
-#include <kernel/object/Directory.hpp>
 
 namespace Chino
 {
@@ -33,24 +32,25 @@ namespace Chino
 
 		enum class PortInputMode
 		{
-			Analog = 0,
-			Floating = 1,
-			PullUpDown = 2
+			Analog,
+			Floating,
+			PullUp,
+			PullDown
 		};
 
 		enum class PortOutputMode
 		{
-			PushPull = 0,
-			OpenDrain = 1,
-			AF_PushPull = 2,
-			AF_OpenDrain = 3
+			PushPull,
+			OpenDrain,
+			AF_PushPull,
+			AF_OpenDrain
 		};
 
-		enum class PortSpeed
+		enum class PortOutputSpeed
 		{
-			PS_10MHz = 1,
-			PS_2MHz = 2,
-			PS_50MHz = 1
+			PS_10MHz = 0b01,
+			PS_2MHz = 0b10,
+			PS_50MHz = 0b11
 		};
 
 		class PortDevice;
@@ -61,29 +61,38 @@ namespace Chino
 			PortPin(ObjectAccessor<PortDevice>&& port, PortPins pin);
 
 			void SetMode(PortInputMode mode);
-			void SetMode(PortOutputMode mode, PortSpeed speed);
+			void SetMode(PortOutputMode mode, PortOutputSpeed speed);
 		protected:
 			virtual void OnLastClose() override;
 		private:
-			ObjectAccessor<PortDevice> port_;
+			ObjectAccessor<PortDevice> portDevice_;
 			PortPins pin_;
 		};
 
 		class PortDevice : public Device, public FreeObjectAccess
 		{
 		public:
+			static constexpr size_t PinCount = 16;
+
 			PortDevice(const FDTDevice & fdt);
 
 			ObjectAccessor<PortPin> OpenPin(PortPins pin);
+		protected:
+			virtual void OnFirstOpen() override;
+			virtual void OnLastClose() override;
 		private:
 			friend class PortPin;
 
 			void ClosePin(PortPins pin) noexcept;
 			void MarkPinUsed(PortPins pin, bool used) noexcept;
 			void ValidateExclusiveUsePin(PortPins pin);
+
+			void SetMode(PortPins pin, PortInputMode mode);
+			void SetMode(PortPins pin, PortOutputMode mode, PortOutputSpeed speed);
 		private:
 			uintptr_t regAddr_;
 			uint32_t usedPins_;
+			uint32_t portIdx_;
 		};
 
 		class PortDriver : public Driver

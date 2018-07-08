@@ -48,20 +48,14 @@ public:
 
 	virtual void OnFirstOpen() override
 	{
-		SetIsEnabled(true);
+		RccDevice::Rcc1SetPeriphClockIsEnabled(RccPeriph::USART1, true);
 	}
 
 	virtual void OnLastClose() override
 	{
-		SetIsEnabled(false);
+		RccDevice::Rcc1SetPeriphClockIsEnabled(RccPeriph::USART1, false);
 		portPinTx_.reset();
 		portPinRx_.reset();
-	}
-private:
-	void SetIsEnabled(bool enable)
-	{
-		auto rcc = g_ObjectMgr->GetDirectory(WKD_Device).Open("rcc1", OA_Read | OA_Write).MoveAs<RccDevice>();
-		rcc->SetPeriphClockIsEnabled(RccPeriph::USART1, enable);
 	}
 private:
 	volatile USART_TypeDef* usart_;

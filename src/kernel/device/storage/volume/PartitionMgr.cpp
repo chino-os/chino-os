@@ -27,14 +27,14 @@ bool ParitionManager::IsSupported(Chino::Device::DriveDevice& device)
 void ParitionManager::Install()
 {
 	// only support 1 partition now
-	InstallPartition(*MakeObject<Partition>(*drive_, 0));
+	InstallPartition(MakeObject<Partition>(*drive_, 0));
 }
 
-void ParitionManager::InstallPartition(Partition& partition)
+void ParitionManager::InstallPartition(ObjectPtr<Partition> partition)
 {
-	auto& ref = partitions_.emplace_back(&partition);
+	auto& ref = partitions_.emplace_back(partition);
 
 	auto driver = ref->TryLoadDriver();
 	if (driver)
-		g_DeviceMgr->InstallDriver(*driver);
+		g_DeviceMgr->InstallDriver(driver);
 }

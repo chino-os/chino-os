@@ -182,7 +182,7 @@ RccDriver::RccDriver(const FDTDevice& device)
 
 void RccDriver::Install()
 {
-	g_DeviceMgr->InstallDevice(*MakeObject<RccDevice>(device_));
+	g_DeviceMgr->InstallDevice(MakeObject<RccDevice>(device_));
 }
 
 RccDevice::RccDevice(const FDTDevice & fdt)
@@ -202,8 +202,35 @@ void RccDevice::SetPeriphClockIsEnabled(RccPeriph periph, bool enable)
 	case RccPeriph::USART1:
 		rcc->APB2ENR.USART1EN = value;
 		break;
+	case RccPeriph::PortA:
+		rcc->APB2ENR.IOPAEN = value;
+		break;
+	case RccPeriph::PortB:
+		rcc->APB2ENR.IOPBEN = value;
+		break;
+	case RccPeriph::PortC:
+		rcc->APB2ENR.IOPCEN = value;
+		break;
+	case RccPeriph::PortD:
+		rcc->APB2ENR.IOPDEN = value;
+		break;
+	case RccPeriph::PortE:
+		rcc->APB2ENR.IOPEEN = value;
+		break;
+	case RccPeriph::PortF:
+		rcc->APB2ENR.IOPFEN = value;
+		break;
+	case RccPeriph::PortG:
+		rcc->APB2ENR.IOPGEN = value;
+		break;
 	default:
 		kassert(!"invalid rcc periph.");
 		break;
 	}
+}
+
+void RccDevice::Rcc1SetPeriphClockIsEnabled(RccPeriph periph, bool enable)
+{
+	auto rcc1 = g_ObjectMgr->GetDirectory(WKD_Device).Open("rcc1", OA_Read | OA_Write).MoveAs<RccDevice>();
+	rcc1->SetPeriphClockIsEnabled(periph, enable);
 }

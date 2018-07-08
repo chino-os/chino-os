@@ -18,8 +18,8 @@ namespace Chino
 			DeviceMananger();
 
 			void InstallDevices(const BootParameters& bootParams);
-			void InstallDevice(Device& drive);
-			void InstallDriver(Driver& driver);
+			void InstallDevice(ObjectPtr<Device> drive);
+			void InstallDriver(ObjectPtr<Driver> driver);
 
 			void DumpDevices();
 		private:

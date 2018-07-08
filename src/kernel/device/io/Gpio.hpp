@@ -17,18 +17,28 @@ namespace Chino
 			High
 		};
 
+		enum class GpioPinDriveMode
+		{
+			Input,
+			InputPullDown,
+			InputPullUp,
+			Output
+		};
+
 		class GpioPin : public Device
 		{
 		public:
-			virtual GpioPinValue Read() const = 0;
+			virtual GpioPinValue Read() = 0;
 			virtual void Write(GpioPinValue value) = 0;
+
+			virtual void SetDriveMode(GpioPinDriveMode driveMode) = 0;
 		};
 
 		class GpioController : public Device
 		{
 		public:
 			virtual size_t GetPinCount() const = 0;
-			virtual ObjectPtr<GpioPin> GetPin(size_t index) = 0;
+			virtual ObjectAccessor<GpioPin> OpenPin(size_t index, ObjectAccess access) = 0;
 		};
 	}
 }

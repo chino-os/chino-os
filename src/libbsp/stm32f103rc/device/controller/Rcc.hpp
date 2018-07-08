@@ -11,7 +11,14 @@ namespace Chino
 	{
 		enum class RccPeriph
 		{
-			USART1
+			USART1,
+			PortA,
+			PortB,
+			PortC,
+			PortD,
+			PortE,
+			PortF,
+			PortG
 		};
 
 		class RccDevice : public Device, public FreeObjectAccess
@@ -20,6 +27,8 @@ namespace Chino
 			RccDevice(const FDTDevice& fdt);
 
 			void SetPeriphClockIsEnabled(RccPeriph periph, bool enable);
+
+			static void Rcc1SetPeriphClockIsEnabled(RccPeriph periph, bool enable);
 		private:
 			uintptr_t regAddr_;
 		};

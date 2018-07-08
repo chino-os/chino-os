@@ -51,6 +51,7 @@ namespace Chino
 			size_t length;
 
 			uint32_t GetUInt32(size_t index) const noexcept;
+			std::string_view GetString() const noexcept;
 		};
 
 		class FDTDevice : public Device, public ExclusiveObjectAccess

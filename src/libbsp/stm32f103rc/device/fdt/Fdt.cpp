@@ -97,3 +97,8 @@ uint32_t FDTProperty::GetUInt32(size_t index) const noexcept
 	auto uiData = reinterpret_cast<const fdt32_t*>(data);
 	return fdt32_to_cpu(uiData[index]);
 }
+
+std::string_view FDTProperty::GetString() const noexcept
+{
+	return reinterpret_cast<const char*>(data);
+}

@@ -5,60 +5,9 @@
 #include "Object.hpp"
 #include <unordered_map>
 #include <string_view>
-#include "noncopyable.hpp"
 
 namespace Chino
 {
-	class Directory;
-
-	template<class T>
-	class ObjectAccessor : NonCopyable
-	{
-	public:
-		template<class U>
-		ObjectAccessor(ObjectAccessor<U>&& other)
-			:context_(std::move(other.context_)), obj_(std::move(other.obj_))
-		{
-
-		}
-
-		ObjectAccessor(ObjectAccessContext&& context, ObjectPtr<T>&& obj) noexcept
-			:context_(std::move(context)), obj_(std::move(obj))
-		{
-		}
-
-		~ObjectAccessor()
-		{
-			if (obj_.Get())
-				std::move(obj_)->Close(context_);
-			context_ = {};
-		}
-
-		ObjectAccessor& operator=(ObjectAccessor&& other) noexcept
-		{
-			if (obj_.Get())
-				obj_->Close(context_);
-			obj_ = std::move(other.obj_);
-			context_ = std::move(other.context_);
-		}
-
-		T* operator->() const noexcept
-		{
-			return obj_.Get();
-		}
-
-		template<class U>
-		ObjectAccessor<U> MoveAs()
-		{
-			auto obj = obj_.template As<U>();
-			obj_.Reset();
-			return { std::move(context_), std::move(obj) };
-		}
-	private:
-		ObjectAccessContext context_;
-		ObjectPtr<T> obj_;
-	};
-
 	class Directory : public Object, public FreeObjectAccess
 	{
 	public:

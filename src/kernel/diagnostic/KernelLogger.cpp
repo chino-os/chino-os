@@ -37,10 +37,10 @@ void KernelLogger::PutString(const char * string)
 		PutChar(*string++);
 }
 
-void KernelLogger::PutString(const char * string, size_t count)
+void KernelLogger::PutString(std::string_view string)
 {
-	for (size_t i = 0; i < count; i++)
-		PutChar(*string++);
+	for(auto c : string)
+		PutChar(c);
 }
 
 wchar_t tbuf[64];

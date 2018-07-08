@@ -16,22 +16,22 @@ void DeviceMananger::InstallDevices(const BootParameters& bootParams)
 	// Root
 	auto root = BSPInstallRootDriver(bootParams);
 	if (root)
-		InstallDriver(*root);
+		InstallDriver(root);
 }
 
-void DeviceMananger::InstallDriver(Driver& driver)
+void DeviceMananger::InstallDriver(ObjectPtr<Driver> driver)
 {
-	driver.Install();
-	drivers_.emplace_back(&driver);
+	driver->Install();
+	drivers_.emplace_back(std::move(driver));
 }
 
-void DeviceMananger::InstallDevice(Device& drive)
+void DeviceMananger::InstallDevice(ObjectPtr<Device> drive)
 {
-	devices_.emplace_back(&drive);
+	devices_.emplace_back(drive);
 
-	auto driver = drive.TryLoadDriver();
+	auto driver = drive->TryLoadDriver();
 	if (driver)
-		InstallDriver(*driver);
+		InstallDriver(std::move(driver));
 }
 
 void DeviceMananger::DumpDevices()

@@ -26,11 +26,7 @@ public:
 			ForeachNode(fdtDevices, g_fdtData, first_node, depth);
 
 		for (auto& device : fdtDevices)
-		{
-			auto driver = device->TryLoadDriver();
-			if (driver)
-				g_DeviceMgr->InstallDriver(*driver);
-		}
+			g_DeviceMgr->InstallDevice(device);
 	}
 private:
 	void ForeachNode(std::vector<ObjectPtr<FDTDevice>>& fdtDevices, const void* fdt, int node, int depth)

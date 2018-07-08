@@ -14,28 +14,40 @@
 		#address-cells = <1>;
 		#size-cells = <1>;
 
-	    rcc1: rcc@0x40021000 {
+	    rcc1: rcc1 {
 	        device_type = "rcc";
 	        compatible = "st,stm32f103-rcc";
 			reg = <0x40021000 0x400>;
 	    };
 
-	    usart1: serial@0x40013800 {
+	    usart1: usart1 {
 	        device_type = "serial";
 	        compatible = "st,stm32f103-usart";
 			reg = <0x40013800 0x400>;
 	    };
 
-		portA: port@0x40010800 {
+		portA: portA {
 			device_type = "port";
 			compatible = "st,stm32f103-port";
 			reg = <0x40010800 0x400>;
 		};
 
-		portB: port@0x40010C00 {
+		portB: portB {
 			device_type = "port";
 			compatible = "st,stm32f103-port";
 			reg = <0x40010C00 0x400>;
+		};
+
+		portC: portC {
+			device_type = "port";
+			compatible = "st,stm32f103-port";
+			reg = <0x40011000 0x400>;
+		};
+
+		gpio0: gpio0 {
+			device_type = "gpio";
+			compatible = "st,stm32f103-gpio";
+			port = "portC";
 		};
 	};
 };

@@ -20,7 +20,7 @@ namespace Chino
 
 			virtual void Install() override;
 		private:
-			void InstallPartition(Partition& partition);
+			void InstallPartition(ObjectPtr<Partition> partition);
 		private:
 			ObjectPtr<DriveDevice> drive_;
 			std::vector<ObjectPtr<Partition>> partitions_;

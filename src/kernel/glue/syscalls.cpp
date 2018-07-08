@@ -96,7 +96,7 @@ extern "C"
 	{
 		if (file == STDOUT_FILENO || file == STDERR_FILENO)
 		{
-			g_Logger->PutString(ptr, len);
+			g_Logger->PutString({ ptr, size_t(len) });
 			return len;
 		}
 

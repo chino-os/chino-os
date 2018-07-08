@@ -14,7 +14,9 @@ void Directory::AddItem(std::string_view name, Object & obj)
 ObjectAccessor<Object> Directory::Open(std::string_view name, ObjectAccess access)
 {
 	ObjectAccessContext context{ access };
-	auto obj = items_.at(std::string(name));
+	auto it = items_.find(std::string(name));
+	kassert(it != items_.end());
+	auto obj = it->second;
 	obj->Open(context);
 	return { std::move(context), std::move(obj) };
 }

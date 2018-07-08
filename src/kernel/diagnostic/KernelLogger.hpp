@@ -2,8 +2,9 @@
 // Kernel Diagnostic
 //
 #pragma once
-#include "../utils.hpp"
 #include "../kernel_iface.h"
+#include "../utils.hpp"
+#include <string_view>
 
 namespace Chino
 {
@@ -19,7 +20,7 @@ namespace Chino
 			void PutString(const wchar_t* string, size_t count);
 			void PutFormat(const wchar_t* format, ...);
 			void PutString(const char* string);
-			void PutString(const char* string, size_t count);
+			void PutString(std::string_view string);
 			void PutFormat(const char* format, ...);
 			void DumpHex(const char* data, size_t count);
 
