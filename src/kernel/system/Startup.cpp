@@ -25,9 +25,23 @@ void Chino::SystemStartup(const BootParameters& params)
 	//auto file = g_FileMgr->OpenFile("/dev/fs0/chino/system/kernel");
 	//g_Logger->PutFormat(L"Opened /dev/fs0/chino/system/kernel, Size: %l bytes\n", g_FileMgr->GetFileSize(file));
 	//
-	auto gpio = g_ObjectMgr->GetDirectory(WKD_Device).Open("gpio0", OA_Read | OA_Write).MoveAs<GpioController>();
-	auto pin0 = gpio->OpenPin(0, OA_Read | OA_Write);
+	auto access = OA_Read | OA_Write;
+	auto gpio = g_ObjectMgr->GetDirectory(WKD_Device).Open("gpio0", access).MoveAs<GpioController>();
+	auto pin0 = gpio->OpenPin(0, access);
 	pin0->SetDriveMode(GpioPinDriveMode::Output);
+
+	while (true)
+	{
+		pin0->Write(GpioPinValue::Low);
+
+		for (size_t i = 0; i < 100; i++)
+			ArchHaltProcessor();
+
+		pin0->Write(GpioPinValue::High);
+
+		for (size_t i = 0; i < 100; i++)
+			ArchHaltProcessor();
+	}
 
 	while (1)
 		ArchHaltProcessor();

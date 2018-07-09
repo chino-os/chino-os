@@ -20,10 +20,13 @@
 			reg = <0x40021000 0x400>;
 	    };
 
-	    usart1: usart1 {
+	    usart2: usart2 {
 	        device_type = "serial";
 	        compatible = "st,stm32f103-usart";
 			reg = <0x40013800 0x400>;
+			port = "portA";
+			tx_pin = <2>;
+			rx_pin = <3>;
 	    };
 
 		portA: portA {

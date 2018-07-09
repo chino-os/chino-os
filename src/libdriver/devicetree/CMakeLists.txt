@@ -42,7 +42,8 @@ SET_SOURCE_FILES_PROPERTIES(${DRIVER_SRC_ASM} PROPERTIES COMPILE_FLAGS "-x assem
 ADD_CUSTOM_COMMAND(OUTPUT devicetree.o
 		COMMAND dtc -O dtb -o devicetree.dtb ${DEVICE_TREE_PATH}.dts
 		COMMAND ${CMAKE_LINKER} -r -b binary -o devicetree.o devicetree.dtb
-        COMMENT "Compiling Device Tree ...")
+        COMMENT "Compiling Device Tree ..."
+		DEPENDS ${DEVICE_TREE_PATH}.dts)
 
 ADD_LIBRARY(driver STATIC ${DRIVER_SRC} ${DRIVER_SRC_ASM} devicetree.o)
 

@@ -54,11 +54,32 @@ struct port_idr
 	}
 };
 
+struct port_bsrr
+{
+	uint32_t Value;
+
+	void Set(PortPins pin) volatile
+	{
+		auto idx = static_cast<uint32_t>(pin);
+		Value = 1 << idx;
+	}
+
+	void Reset(PortPins pin) volatile
+	{
+		auto idx = static_cast<uint32_t>(pin);
+		Value = 1 << (idx + 16);
+	}
+};
+
 typedef volatile struct
 {
 	port_cr CRL;		//!< Port configuration register low
 	port_cr CRH;		//!< Port configuration register high
 	port_idr IDR;		//!< Port input data register
+	uint32_t ODR;		//!< Port output data register
+	port_bsrr BSRR;		//!< Port bit set/reset register 
+	uint32_t BRR;		//!< Port bit reset register 
+	uint32_t LCKR;		//!< Port configuration lock register
 } Port_TypeDef;
 
 #define port reinterpret_cast<Port_TypeDef*>(regAddr_)
@@ -129,6 +150,7 @@ void PortDevice::SetMode(PortPins pin, PortInputMode mode)
 	auto offset = static_cast<uint32_t>(pin);
 	auto useLow = offset < 8;
 	offset = useLow ? offset : offset - 8;
+	std::optional<bool> set;
 
 	port_cfg cfg;
 	switch (mode)
@@ -141,9 +163,11 @@ void PortDevice::SetMode(PortPins pin, PortInputMode mode)
 		break;
 	case PortInputMode::PullDown:
 		cfg = PC_InputPullUpDown;
+		set = false;
 		break;
 	case PortInputMode::PullUp:
 		cfg = PC_InputPullUpDown;
+		set = true;
 		break;
 	default:
 		kassert(!"Invalid port mode.");
@@ -154,6 +178,14 @@ void PortDevice::SetMode(PortPins pin, PortInputMode mode)
 		port->CRL.Set(offset, PM_Input, cfg);
 	else
 		port->CRH.Set(offset, PM_Input, cfg);
+
+	if (set)
+	{
+		if (*set)
+			port->BSRR.Set(pin);
+		else
+			port->BSRR.Reset(pin);
+	}
 }
 
 void PortDevice::SetMode(PortPins pin, PortOutputMode mode, PortOutputSpeed speed)
@@ -190,6 +222,19 @@ void PortDevice::SetMode(PortPins pin, PortOutputMode mode, PortOutputSpeed spee
 		port->CRH.Set(offset, pmode, cfg);
 }
 
+uint32_t PortDevice::GetValue(PortPins pin)
+{
+	return port->IDR.Get(pin);
+}
+
+void PortDevice::SetValue(PortPins pin, uint32_t value)
+{
+	if (value)
+		port->BSRR.Set(pin);
+	else
+		port->BSRR.Reset(pin);
+}
+
 PortPin::PortPin(ObjectAccessor<PortDevice>&& portDevice, PortPins pin)
 	:portDevice_(std::move(portDevice)), pin_(pin)
 {
@@ -208,4 +253,14 @@ void PortPin::SetMode(PortOutputMode mode, PortOutputSpeed speed)
 void PortPin::OnLastClose()
 {
 	portDevice_->ClosePin(pin_);
+}
+
+uint32_t PortPin::GetValue()
+{
+	return portDevice_->GetValue(pin_);
+}
+
+void PortPin::SetValue(uint32_t value)
+{
+	portDevice_->SetValue(pin_, value);
 }

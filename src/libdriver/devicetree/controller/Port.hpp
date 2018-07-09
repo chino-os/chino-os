@@ -62,6 +62,9 @@ namespace Chino
 
 			void SetMode(PortInputMode mode);
 			void SetMode(PortOutputMode mode, PortOutputSpeed speed);
+
+			uint32_t GetValue();
+			void SetValue(uint32_t value);
 		protected:
 			virtual void OnLastClose() override;
 		private:
@@ -89,6 +92,9 @@ namespace Chino
 
 			void SetMode(PortPins pin, PortInputMode mode);
 			void SetMode(PortPins pin, PortOutputMode mode, PortOutputSpeed speed);
+
+			uint32_t GetValue(PortPins pin);
+			void SetValue(PortPins pin, uint32_t value);
 		private:
 			uintptr_t regAddr_;
 			uint32_t usedPins_;

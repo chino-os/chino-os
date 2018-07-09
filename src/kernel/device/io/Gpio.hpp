@@ -13,8 +13,8 @@ namespace Chino
 	{
 		enum class GpioPinValue
 		{
-			Low,
-			High
+			Low = 0,
+			High = 1
 		};
 
 		enum class GpioPinDriveMode

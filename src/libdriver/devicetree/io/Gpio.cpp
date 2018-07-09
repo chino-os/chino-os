@@ -24,12 +24,12 @@ public:
 
 	virtual GpioPinValue Read() override
 	{
-		return GpioPinValue::Low;
+		return static_cast<GpioPinValue>(portPin_->GetValue());
 	}
 
 	virtual void Write(GpioPinValue value) override
 	{
-
+		portPin_->SetValue(static_cast<uint32_t>(value));
 	}
 
 	virtual void SetDriveMode(GpioPinDriveMode driveMode) override
