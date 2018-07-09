@@ -5,10 +5,10 @@
 #include <libbsp/bsp.hpp>
 #include <kernel/kdebug.hpp>
 #include <kernel/device/DeviceManager.hpp>
-#include <incbin/incbin.h>
 #include <libfdt/libfdt.h>
 
-INCBIN(_fdt, "../../devicetree/stm32f103rc.dtb");
+extern char _binary_devicetree_dtb_start[];
+extern char _binary_devicetree_dtb_end[];
 
 using namespace Chino;
 using namespace Chino::Device;
@@ -18,12 +18,12 @@ class FdtRootDriver : public Driver
 public:
 	virtual void Install() override
 	{
-		g_Logger->PutFormat("fdt: %z\n", g_fdtSize);
+		g_Logger->PutFormat("fdt: %z\n", _binary_devicetree_dtb_end - _binary_devicetree_dtb_start);
 		std::vector<ObjectPtr<FDTDevice>> fdtDevices;
 		int depth = 0;
-		auto first_node = fdt_next_node(g_fdtData, -1, &depth);
+		auto first_node = fdt_next_node(_binary_devicetree_dtb_start, -1, &depth);
 		if (first_node >= 0)
-			ForeachNode(fdtDevices, g_fdtData, first_node, depth);
+			ForeachNode(fdtDevices, _binary_devicetree_dtb_start, first_node, depth);
 
 		for (auto& device : fdtDevices)
 			g_DeviceMgr->InstallDevice(device);

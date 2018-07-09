@@ -1,11 +1,11 @@
 //
 // Kernel Device
 //
-#include "Fdt.hpp"
-#include "../controller/Rcc.hpp"
-#include "../controller/Port.hpp"
-#include "../io/Gpio.hpp"
-#include "../io/Usart.hpp"
+#include <libdriver/devicetree/Fdt.hpp>
+#include <libdriver/devicetree/controller/Rcc.hpp>
+#include <libdriver/devicetree/controller/Port.hpp>
+#include <libdriver/devicetree/io/Gpio.hpp>
+#include <libdriver/devicetree/io/Usart.hpp>
 
 using namespace Chino::Device;
 

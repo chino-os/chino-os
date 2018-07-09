@@ -3,7 +3,7 @@
 //
 #pragma once
 
-#include "../fdt/Fdt.hpp"
+#include "../Fdt.hpp"
 
 namespace Chino
 {
