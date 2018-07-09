@@ -17,6 +17,12 @@ namespace Chino
 			Other
 		};
 
+		enum class TransmitRole
+		{
+			Sender,
+			Receiver
+		};
+
 		class Device : public Object
 		{
 		public:

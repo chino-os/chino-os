@@ -37,6 +37,8 @@ namespace Chino
 			virtual void SetStopBits(StopBits stopBits) = 0;
 			virtual void SetDataBits(size_t dataBits) = 0;
 
+			virtual void SetTransmitIsEnabled(TransmitRole role, bool enable) = 0;
+
 			virtual size_t Read(gsl::span<uint8_t> buffer) = 0;
 			virtual void Write(gsl::span<const uint8_t> buffer) = 0;
 		};

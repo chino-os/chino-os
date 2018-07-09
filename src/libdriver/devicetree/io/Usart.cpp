@@ -16,20 +16,12 @@ DEFINE_FDT_DRIVER_DESC_1(UsartDriver, "serial", "st,stm32f103-usart");
 
 typedef volatile struct
 {
-	uint16_t SR;
-	uint16_t  RESERVED0;
-	uint16_t DR;
-	uint16_t  RESERVED1;
-	uint16_t BRR;
-	uint16_t  RESERVED2;
-	uint16_t CR1;
-	uint16_t  RESERVED3;
-	uint16_t CR2;
-	uint16_t  RESERVED4;
-	uint16_t CR3;
-	uint16_t  RESERVED5;
-	uint16_t GTPR;
-	uint16_t  RESERVED6;
+	uint32_t SR;		//!< Status register
+	uint32_t DR;		//!< Data register
+	uint32_t BRR;		//!< Baud rate register
+	uint32_t CR1;		//!< Control register 1
+	uint32_t CR2;		//!< Control register 2
+	uint32_t CR3;		//!< Control register 3
 } USART_TypeDef;
 
 UsartDriver::UsartDriver(const FDTDevice& device)
@@ -100,7 +92,7 @@ public:
 
 	}
 private:
-	USART_TypeDef* usart_;
+	USART_TypeDef * usart_;
 	const FDTDevice& fdt_;
 	std::optional<ObjectAccessor<PortPin>> pinTx_, pinRx_;
 };
