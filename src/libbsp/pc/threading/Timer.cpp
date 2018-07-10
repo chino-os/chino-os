@@ -130,6 +130,11 @@ void Chino::Threading::BSPSleepMs(uint32_t ms)
 	for (size_t i = 0; i < count; i++) a++;
 }
 
+void Chino::Threading::BSPYield()
+{
+	__asm volatile(portYIELD_INTERRUPT);
+}
+
 static void prvSetInterruptGate(uint8_t number, ISR_Handler_t handler, uint8_t flags)
 {
 	uint16_t codeSegment;

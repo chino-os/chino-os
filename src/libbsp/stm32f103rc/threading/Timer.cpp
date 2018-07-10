@@ -56,6 +56,11 @@ void Chino::Threading::BSPSleepMs(uint32_t ms)
 	for (size_t i = 0; i < count; i++) a++;
 }
 
+void Chino::Threading::BSPYield()
+{
+	portNVIC_INT_CTRL_REG |= portNVIC_PENDSVSET_BIT;
+}
+
 extern "C" void SysTick_Handler()
 {
 	/* The SysTick runs at the lowest interrupt priority, so when this interrupt
@@ -64,10 +69,8 @@ extern "C" void SysTick_Handler()
 	known. */
 	ArchDisableInterrupt();
 
-	if(Kernel_IncrementTick())
-	{
-		portNVIC_INT_CTRL_REG |= portNVIC_PENDSVSET_BIT;
-	}
+	if (Kernel_IncrementTick())
+		BSPYield();
 
 	ArchEnableInterrupt();
 }

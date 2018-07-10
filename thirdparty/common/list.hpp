@@ -100,22 +100,21 @@ namespace Chino
 		iterator emplace_back(TArgs&& ...value)
 		{
 			auto new_node = new node(std::forward<TArgs>(value)...);
-			new_node->prev_ = tail_;
-			if (tail_)
-			{
-				tail_->next_ = new_node;
-				tail_ = new_node;
-			}
-			else
-			{
-				head_ = tail_ = new_node;
-			}
-
-			return iterator(new_node);
+			auto it = iterator(new_node);
+			attach(it);
+			return it;
 		}
 
-		void erase(node* node) noexcept
+		void erase(iterator it) noexcept
 		{
+			detach(it.node_);
+			delete it.node_;
+		}
+
+		void detach(iterator it) noexcept
+		{
+			assert(it.good());
+			auto node = it.node_;
 			if (node->prev_)
 				node->prev_->next_ = node->next_;
 			if (node->next_)
@@ -124,7 +123,24 @@ namespace Chino
 				head_ = node->next_;
 			if (tail_ == node)
 				tail_ = node->prev_;
-			delete node;
+			node->prev_ = nullptr;
+			node->next_ = nullptr;
+		}
+
+		void attach(iterator it) noexcept
+		{
+			assert(it.good());
+			auto node = it.node_;
+			node->prev_ = tail_;
+			if (tail_)
+			{
+				tail_->next_ = node;
+				tail_ = node;
+			}
+			else
+			{
+				head_ = tail_ = node;
+			}
 		}
 
 		bool empty() const noexcept

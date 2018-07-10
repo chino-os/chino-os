@@ -7,10 +7,12 @@
 #include <kernel/diagnostic/KernelLogger.hpp>
 #include <kernel/memory/MemoryManager.hpp>
 #include <kernel/object/ObjectManager.hpp>
+#include <kernel/threading/ThreadSynchronizer.hpp>
 #include <kernel/device/io/Gpio.hpp>
 
 using namespace Chino;
 using namespace Chino::Device;
+using namespace Chino::Threading;
 
 void Chino::BSPSystemStartup()
 {
@@ -19,16 +21,29 @@ void Chino::BSPSystemStartup()
 	auto pin0 = gpio->OpenPin(0, access);
 	pin0->SetDriveMode(GpioPinDriveMode::Output);
 
-	while (true)
+	auto proc = g_ProcessMgr->GetCurrentThread()->GetProcess();
+	auto semp = MakeObject<Semaphore>(0);
+	proc->AddThread([&]
 	{
-		pin0->Write(GpioPinValue::Low);
+		while (true)
+		{
+			pin0->Write(GpioPinValue::Low);
 
-		for (size_t i = 0; i < 100; i++)
-			ArchHaltProcessor();
+			semp->Take(1);
 
-		pin0->Write(GpioPinValue::High);
+			pin0->Write(GpioPinValue::High);
 
-		for (size_t i = 0; i < 100; i++)
-			ArchHaltProcessor();
-	}
+			semp->Take(1);
+		}
+	}, 1);
+
+	proc->AddThread([&]
+	{
+		while (true)
+		{
+			for (size_t i = 0; i < 100; i++)
+				ArchHaltProcessor();
+			semp->Give(1);
+		}
+	}, 1);
 }

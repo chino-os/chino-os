@@ -36,6 +36,7 @@ namespace Chino
 	{
 		void BSPSetupSchedulerTimer();
 		void BSPSleepMs(uint32_t ms);
+		void BSPYield();
 	}
 
 	void BSPSystemStartup();

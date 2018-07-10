@@ -13,6 +13,9 @@ extern "C"
 using namespace Chino;
 using namespace Chino::Threading;
 
+std::atomic<size_t> kernel_critical::coreTaken_(0);
+size_t kernel_critical::depth_(0);
+
 static void OnThreadExit();
 static void IdleThreadMain();
 
@@ -46,7 +49,7 @@ void ProcessManager::StartScheduler()
 	ArchHaltProcessor();
 }
 
-ProcessManager::thread_it ProcessManager::SelectNextSwitchToThread()
+thread_it ProcessManager::SelectNextSwitchToThread()
 {
 	// Round robin in threads of same priority
 	thread_it threadSwitchTo;
@@ -94,6 +97,29 @@ ObjectPtr<Thread> ProcessManager::GetCurrentThread()
 	return *runningThread_;
 }
 
+thread_it ProcessManager::DetachCurrentThread()
+{
+	auto thread = runningThread_;
+	assert(thread.good());
+	auto priority = (*thread)->GetPriority();
+	readyThreads_[priority].detach(thread);
+	nextThread_ = SelectNextSwitchToThread();
+	BSPYield();
+	return thread;
+}
+
+void ProcessManager::AttachReadyThread(thread_it thread)
+{
+	assert(thread.good());
+	auto priority = (*thread)->GetPriority();
+	readyThreads_[priority].attach(thread);
+
+	auto nextThread = SelectNextSwitchToThread();
+	nextThread_ = nextThread;
+	if (nextThread != runningThread_)
+		BSPYield();
+}
+
 Process::Process(std::string_view name)
 	:name_(name)
 {
@@ -101,13 +127,13 @@ Process::Process(std::string_view name)
 
 ObjectPtr<Thread> Process::AddThread(std::function<void()> threadMain, uint32_t priority)
 {
-	auto thread = threads_.emplace_back(MakeObject<Thread>(std::move(threadMain), priority));
+	auto thread = threads_.emplace_back(MakeObject<Thread>(this, std::move(threadMain), priority));
 	g_ProcessMgr->AddReadyThread(thread);
 	return thread;
 }
 
-Thread::Thread(std::function<void()> threadMain, uint32_t priority)
-	:priority_(priority), threadContext_({}), threadMain_(std::move(threadMain))
+Thread::Thread(ObjectPtr<Process> process, std::function<void()> threadMain, uint32_t priority)
+	:process_(process), priority_(priority), threadContext_({}), threadMain_(std::move(threadMain))
 {
 	kassert(threadMain_ && priority <= MAX_THREAD_PRIORITY);
 	auto stackSize = DEFAULT_THREAD_STACK_SIZE;
@@ -134,6 +160,33 @@ static void IdleThreadMain()
 		for (size_t i = 0; i < 100; i++)
 			ArchHaltProcessor();
 		g_Logger->PutChar(L'.');
+	}
+}
+
+kernel_critical::kernel_critical()
+{
+	size_t coreId = 1;
+	if (coreTaken_.load(std::memory_order_acquire) != coreId)
+	{
+		size_t expected = 0;
+		while (!coreTaken_.compare_exchange_strong(expected, coreId, std::memory_order_release))
+			expected = 0;
+
+		depth_ = 1;
+		ArchDisableInterrupt();
+	}
+	else
+	{
+		depth_++;
+	}
+}
+
+kernel_critical::~kernel_critical()
+{
+	if (--depth_ == 0)
+	{
+		ArchEnableInterrupt();
+		coreTaken_.store(0, std::memory_order_release);
 	}
 }
 

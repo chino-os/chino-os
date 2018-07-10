@@ -290,6 +290,15 @@ void KernelLogger::PutFormat(const char * format, ...)
 				i++;		// go to next character
 				break;
 			}
+			case 'P':
+			case 'p': {
+				uintptr_t c = va_arg(args, uintptr_t);
+				//char str[32]={0};
+				_itow(c, 16, str);
+				PutString(str);
+				i++;		// go to next character
+				break;
+			}
 
 			default:
 				va_end(args);
