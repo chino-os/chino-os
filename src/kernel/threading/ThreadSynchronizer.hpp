@@ -15,9 +15,10 @@ namespace Chino
 		class Waitable : public Object, public FreeObjectAccess
 		{
 		public:
-			void WaitOne();
 
 		protected:
+			void WaitOne();
+
 			void NotifyOne();
 			void NotifyAll();
 		private:
@@ -33,6 +34,30 @@ namespace Chino
 			void Give(size_t count);
 		private:
 			std::atomic<size_t> count_;
+		};
+
+		class Mutex : public Waitable
+		{
+		public:
+			Mutex();
+
+			void Take();
+			void Give();
+		private:
+			std::atomic<bool> avail_;
+		};
+
+		template<class T>
+		class Locker;
+
+		template<>
+		class Locker<Mutex>
+		{
+		public:
+			Locker(ObjectPtr<Mutex> mutex);
+			~Locker();
+		private:
+			ObjectPtr<Mutex> mutex_;
 		};
 
 		class ThreadSynchronizer

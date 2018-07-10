@@ -23,10 +23,12 @@ void Chino::BSPSystemStartup()
 
 	auto proc = g_ProcessMgr->GetCurrentThread()->GetProcess();
 	auto semp = MakeObject<Semaphore>(0);
+	auto mutex = MakeObject<Mutex>();
 	proc->AddThread([&]
 	{
 		while (true)
 		{
+			Locker<Mutex> locker(mutex);
 			pin0->Write(GpioPinValue::Low);
 
 			semp->Take(1);
