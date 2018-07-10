@@ -59,6 +59,7 @@ ArchTimerHandler:
 	mov %rax, 0 * REGBYTES(%rbx)
 	
 restore:
+	call Kernel_IncrementTick
 	call Kernel_SwitchThreadContext
 
 	mov g_CurrentThreadContext@GOTPCREL(%rip), %rax

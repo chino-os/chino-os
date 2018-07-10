@@ -4,7 +4,7 @@
 #include <libbsp/bsp.hpp>
 #include <libarch/arch.h>
 
-using namespace Chino::Thread;
+using namespace Chino::Threading;
 
 /* Constants required to manipulate the core.  Registers first... */
 #define portNVIC_SYSTICK_CTRL_REG			( * ( ( volatile uint32_t * ) 0xe000e010 ) )
@@ -35,7 +35,7 @@ using namespace Chino::Thread;
 #define portNVIC_INT_CTRL_REG		( * ( ( volatile uint32_t * ) 0xe000ed04 ) )
 #define portNVIC_PENDSVSET_BIT		( 1UL << 28UL )
 
-void Chino::Thread::BSPSetupSchedulerTimer()
+void Chino::Threading::BSPSetupSchedulerTimer()
 {
 	/* Make PendSV and SysTick the lowest priority interrupts. */
 	portNVIC_SYSPRI2_REG |= portNVIC_PENDSV_PRI;
@@ -49,7 +49,7 @@ void Chino::Thread::BSPSetupSchedulerTimer()
 	portNVIC_SYSTICK_CTRL_REG = (portNVIC_SYSTICK_CLK_BIT | portNVIC_SYSTICK_INT_BIT | portNVIC_SYSTICK_ENABLE_BIT);
 }
 
-void Chino::Thread::BSPSleepMs(uint32_t ms)
+void Chino::Threading::BSPSleepMs(uint32_t ms)
 {
 	auto count = configCPU_CLOCK_HZ / 1000 * ms;
 	volatile int a;
@@ -63,8 +63,11 @@ extern "C" void SysTick_Handler()
 	save and then restore the interrupt mask value as its value is already
 	known. */
 	ArchDisableInterrupt();
+
+	if(Kernel_IncrementTick())
 	{
 		portNVIC_INT_CTRL_REG |= portNVIC_PENDSVSET_BIT;
 	}
+
 	ArchEnableInterrupt();
 }

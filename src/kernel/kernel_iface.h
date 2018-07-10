@@ -18,10 +18,14 @@ extern "C"
 #endif
 #include <stdint.h>
 #include <stddef.h>
+#ifndef __cplusplus
+#include <stdbool.h>
+#endif
 
 struct BootParameters;
 
 void Kernel_Main(const struct BootParameters* pParams);
+bool Kernel_IncrementTick();
 void Kernel_SwitchThreadContext();
 
 extern uintptr_t g_CurrentThreadContext;

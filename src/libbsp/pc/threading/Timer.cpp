@@ -6,7 +6,7 @@
 #include <libarch/arch.h>
 #include <climits>
 
-using namespace Chino::Thread;
+using namespace Chino::Threading;
 
 extern "C"
 {
@@ -97,7 +97,7 @@ static void prvSetInterruptGate(uint8_t number, ISR_Handler_t handler, uint8_t f
 static void SetupGDT();
 static void SetupIDT();
 
-void Chino::Thread::BSPSetupSchedulerTimer()
+void Chino::Threading::BSPSetupSchedulerTimer()
 {
 	//SetupGDT();
 	SetupIDT();
@@ -123,7 +123,7 @@ void Chino::Thread::BSPSetupSchedulerTimer()
 	ArchEnableInterrupt();
 }
 
-void Chino::Thread::BSPSleepMs(uint32_t ms)
+void Chino::Threading::BSPSleepMs(uint32_t ms)
 {
 	auto count = configCPU_CLOCK_HZ / 1000 * ms;
 	volatile int a;

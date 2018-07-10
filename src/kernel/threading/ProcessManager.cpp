@@ -1,5 +1,5 @@
 //
-// Chino Thread
+// Chino Threading
 //
 #include "ProcessManager.hpp"
 #include <libbsp/bsp.hpp>
@@ -10,36 +10,37 @@ extern "C"
 	uintptr_t g_CurrentThreadContext = 0;
 }
 
-using namespace Chino::Thread;
+using namespace Chino;
+using namespace Chino::Threading;
 
 static void OnThreadExit();
 static void IdleThreadMain();
 
 ProcessManager::ProcessManager()
-	:runningThread_(0), idleProcess_(nullptr)
+	:runningThread_(0), idleProcess_(nullptr), tickCount_(0)
 {
 
 }
 
-Process& ProcessManager::CreateProcess(std::string_view name, uint32_t mainThreadPriority, std::function<void()> threadMain)
+ObjectPtr<Process> ProcessManager::CreateProcess(std::string_view name, uint32_t mainThreadPriority, std::function<void()> threadMain)
 {
 	auto it = _processes.emplace_back(MakeObject<Process>(name));
 	it->AddThread(std::move(threadMain), mainThreadPriority);
-	return *it;
+	return it;
 }
 
-void ProcessManager::AddReadyThread(Thread& thread)
+void ProcessManager::AddReadyThread(ObjectPtr<Thread> thread)
 {
-	auto priority = thread.GetPriority();
+	auto priority = thread->GetPriority();
 	kassert(priority < readyThreads_.size());
-	readyThreads_[priority].emplace_back(&thread);
+	readyThreads_[priority].emplace_back(thread);
 	kassert(!readyThreads_[priority].empty());
 }
 
 void ProcessManager::StartScheduler()
 {
 	kassert(!idleProcess_);
-	idleProcess_.Reset(&CreateProcess("System Idle", 0, IdleThreadMain));
+	idleProcess_ = CreateProcess("System Idle", 0, IdleThreadMain);
 
 	BSPSetupSchedulerTimer();
 	ArchHaltProcessor();
@@ -72,15 +73,25 @@ ProcessManager::thread_it ProcessManager::SelectNextSwitchToThread()
 	return threadSwitchTo;
 }
 
-ThreadContext_Arch& ProcessManager::SwitchThreadContext()
+bool ProcessManager::IncrementTick()
 {
+	tickCount_++;
 	auto nextThread = SelectNextSwitchToThread();
+	nextThread_ = nextThread;
+	return nextThread != runningThread_;
+}
+
+void ProcessManager::SwitchThreadContext()
+{
+	auto nextThread = nextThread_;
 	runningThread_ = nextThread;
-	auto& arch = (*nextThread)->GetContext();
-#if 0
-	g_Logger->PutFormat("PSP: %x\n", arch.sp);
-#endif
-	return arch;
+	g_CurrentThreadContext = uintptr_t(&(*nextThread)->GetContext());
+}
+
+ObjectPtr<Thread> ProcessManager::GetCurrentThread()
+{
+	assert(runningThread_.good());
+	return *runningThread_;
 }
 
 Process::Process(std::string_view name)
@@ -88,9 +99,9 @@ Process::Process(std::string_view name)
 {
 }
 
-Thread& Process::AddThread(std::function<void()> threadMain, uint32_t priority)
+ObjectPtr<Thread> Process::AddThread(std::function<void()> threadMain, uint32_t priority)
 {
-	auto& thread = *threads_.emplace_back(MakeObject<Thread>(std::move(threadMain), priority));
+	auto thread = threads_.emplace_back(MakeObject<Thread>(std::move(threadMain), priority));
 	g_ProcessMgr->AddReadyThread(thread);
 	return thread;
 }
@@ -126,7 +137,12 @@ static void IdleThreadMain()
 	}
 }
 
+extern "C" bool Kernel_IncrementTick()
+{
+	return g_ProcessMgr->IncrementTick();
+}
+
 extern "C" void Kernel_SwitchThreadContext()
 {
-	g_CurrentThreadContext = uintptr_t(&g_ProcessMgr->SwitchThreadContext());
+	g_ProcessMgr->SwitchThreadContext();
 }

@@ -32,9 +32,11 @@ namespace Chino
 		void BSPDebugClearScreen();
 	}
 
-	namespace Thread
+	namespace Threading
 	{
 		void BSPSetupSchedulerTimer();
 		void BSPSleepMs(uint32_t ms);
 	}
+
+	void BSPSystemStartup();
 }

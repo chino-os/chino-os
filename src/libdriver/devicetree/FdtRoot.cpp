@@ -7,8 +7,8 @@
 #include <kernel/device/DeviceManager.hpp>
 #include <libfdt/libfdt.h>
 
-extern char _binary_devicetree_dtb_start[];
-extern char _binary_devicetree_dtb_end[];
+extern const char _binary_devicetree_dtb_start[];
+extern const char _binary_devicetree_dtb_end[];
 
 using namespace Chino;
 using namespace Chino::Device;

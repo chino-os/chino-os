@@ -4,7 +4,7 @@
 #include "kernel_iface.h"
 #include "utils.hpp"
 #include <libarch/arch.h>
-#include "thread/ProcessManager.hpp"
+#include "threading/ProcessManager.hpp"
 #include "memory/MemoryManager.hpp"
 #include "device/DeviceManager.hpp"
 #include "diagnostic/KernelLogger.hpp"
@@ -16,7 +16,7 @@ using namespace Chino;
 
 StaticHolder<Diagnostic::KernelLogger> g_Logger;
 StaticHolder<Memory::MemoryManager> g_MemoryMgr;
-StaticHolder<Thread::ProcessManager> g_ProcessMgr;
+StaticHolder<Threading::ProcessManager> g_ProcessMgr;
 StaticHolder<Device::DeviceMananger> g_DeviceMgr;
 StaticHolder<ObjectManager> g_ObjectMgr;
 

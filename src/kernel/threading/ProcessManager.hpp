@@ -1,5 +1,5 @@
 //
-// Chino Thread
+// Chino Threading
 //
 #pragma once
 #include <libarch/arch.h>
@@ -14,7 +14,7 @@
 
 namespace Chino
 {
-	namespace Thread
+	namespace Threading
 	{
 		class Thread : public Object, public FreeObjectAccess
 		{
@@ -37,7 +37,7 @@ namespace Chino
 		public:
 			Process(std::string_view name);
 
-			Thread& AddThread(std::function<void()> threadMain, uint32_t priority);
+			ObjectPtr<Thread> AddThread(std::function<void()> threadMain, uint32_t priority);
 		private:
 			std::string name_;
 			std::vector<ObjectPtr<Thread>> threads_;
@@ -49,19 +49,24 @@ namespace Chino
 		public:
 			ProcessManager();
 
-			Process& CreateProcess(std::string_view name, uint32_t mainThreadPriority, std::function<void()> threadMain);
-			void AddReadyThread(Thread& thread);
+			ObjectPtr<Process> CreateProcess(std::string_view name, uint32_t mainThreadPriority, std::function<void()> threadMain);
+			void AddReadyThread(ObjectPtr<Thread> thread);
 			void StartScheduler();
-			ThreadContext_Arch& SwitchThreadContext();
+			bool IncrementTick();
+			void SwitchThreadContext();
+
+			ObjectPtr<Thread> GetCurrentThread();
 		private:
 			thread_it SelectNextSwitchToThread();
 		private:
 			std::vector<ObjectPtr<Process>> _processes;
 			std::array<Chino::list<ObjectPtr<Thread>>, MAX_THREAD_PRIORITY + 1> readyThreads_;
 			thread_it runningThread_;
+			thread_it nextThread_;
+			size_t tickCount_;
 			ObjectPtr<Process> idleProcess_;
 		};
 	}
 }
 
-extern StaticHolder<Chino::Thread::ProcessManager> g_ProcessMgr;
+extern StaticHolder<Chino::Threading::ProcessManager> g_ProcessMgr;
