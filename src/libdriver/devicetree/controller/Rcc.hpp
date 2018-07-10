@@ -23,12 +23,21 @@ namespace Chino
 
 		class RccDevice : public Device, public FreeObjectAccess
 		{
+			enum class ClockSource
+			{
+				HSI,
+				HSE,
+				PLL
+			};
 		public:
 			RccDevice(const FDTDevice& fdt);
 
 			void SetPeriphClockIsEnabled(RccPeriph periph, bool enable);
+			size_t GetClockFrequency(RccPeriph periph);
 
 			static void Rcc1SetPeriphClockIsEnabled(RccPeriph periph, bool enable);
+		private:
+			size_t GetClockFrequency(ClockSource clock);
 		private:
 			uintptr_t regAddr_;
 		};

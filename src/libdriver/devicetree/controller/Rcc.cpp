@@ -234,3 +234,24 @@ void RccDevice::Rcc1SetPeriphClockIsEnabled(RccPeriph periph, bool enable)
 	auto rcc1 = g_ObjectMgr->GetDirectory(WKD_Device).Open("rcc1", OA_Read | OA_Write).MoveAs<RccDevice>();
 	rcc1->SetPeriphClockIsEnabled(periph, enable);
 }
+
+size_t RccDevice::GetClockFrequency(ClockSource clock)
+{
+	size_t freq = 0;
+
+	switch (clock)
+	{
+	case ClockSource::HSI:
+		//freq = 
+		break;
+	case ClockSource::HSE:
+		break;
+	case ClockSource::PLL:
+		break;
+	default:
+		kassert(!"invalid clock source.");
+		break;
+	}
+
+	return freq;
+}

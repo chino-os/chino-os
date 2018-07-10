@@ -22,9 +22,13 @@ void Chino::SystemStartup(const BootParameters& params)
 	g_Logger->PutString(L"\nChino is successfully loaded ♥\n");
 	g_Logger->PutFormat(L"Free memory avaliable: %z bytes\n", g_MemoryMgr->GetFreeBytesRemaining());
 
-	//auto file = g_FileMgr->OpenFile("/dev/fs0/chino/system/kernel");
-	//g_Logger->PutFormat(L"Opened /dev/fs0/chino/system/kernel, Size: %l bytes\n", g_FileMgr->GetFileSize(file));
-	//
+	// For pc
+	/*auto file = g_FileMgr->OpenFile("/dev/fs0/chino/system/kernel");
+	g_Logger->PutFormat(L"Opened /dev/fs0/chino/system/kernel, Size: %l bytes\n", g_FileMgr->GetFileSize(file));
+	*/
+
+	// For arm
+	/*
 	auto access = OA_Read | OA_Write;
 	auto gpio = g_ObjectMgr->GetDirectory(WKD_Device).Open("gpio0", access).MoveAs<GpioController>();
 	auto pin0 = gpio->OpenPin(0, access);
@@ -42,6 +46,7 @@ void Chino::SystemStartup(const BootParameters& params)
 		for (size_t i = 0; i < 100; i++)
 			ArchHaltProcessor();
 	}
+	*/
 
 	while (1)
 		ArchHaltProcessor();

@@ -1,9 +1,8 @@
 //
 // Kernel Device
 //
-#include "Pci.hpp"
-#include "../storage/Ahci.hpp"
-#include "../bridge/Isa.hpp"
+#include <libdriver/acpi/storage/Ahci.hpp>
+#include <libdriver/acpi/bridge/Isa.hpp>
 
 using namespace Chino::Device;
 

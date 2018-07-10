@@ -62,6 +62,11 @@ public:
 		pinRx_.reset();
 	}
 
+	virtual void SetTransmitIsEnabled(TransmitRole role, bool enable) override
+	{
+
+	}
+
 	virtual void SetBaudRate(size_t baudRate) override
 	{
 

@@ -2,7 +2,7 @@
 // Kernel Device
 //
 #include <libbsp/bsp.hpp>
-#include "../../bsp_defines.hpp"
+#include <libbsp/pc/bsp_defines.hpp>
 #include "Acpi.hpp"
 #include <kernel/kdebug.hpp>
 #include <kernel/device/DeviceManager.hpp>
@@ -104,6 +104,6 @@ void AcpiDriver::Install()
 	{
 		auto driver = device->TryLoadDriver();
 		if (driver)
-			g_DeviceMgr->InstallDriver(*driver);
+			g_DeviceMgr->InstallDriver(driver);
 	}
 }

@@ -8,7 +8,7 @@ extern "C"
 #include <acpi/Acpi2_0.h>
 }
 #include <kernel/device/Driver.hpp>
-#include "../pci/Pci.hpp"
+#include "pci/Pci.hpp"
 #include <vector>
 
 namespace Chino

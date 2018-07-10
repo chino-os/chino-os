@@ -114,7 +114,7 @@ void AhciDriver::Port::Install(size_t id, AhciDriver* host, volatile HbaPort * h
 	static const wchar_t* strs[] = { L"None", L"SATA", L"SEMB", L"PM", L"SATAPI" };
 	g_Logger->PutFormat(L"Port(%d): Type: %s, Max LBA: %d, Block Size: %d\n", (int)id, strs[(int)driveType_], (int)MaxLBA, (int)BlockSize);
 
-	g_DeviceMgr->InstallDevice(*this);
+	g_DeviceMgr->InstallDevice(this);
 }
 
 AhciDriver::HbaCmdList * AhciDriver::Port::TryGetFreeCommandSlot(size_t& id) const noexcept

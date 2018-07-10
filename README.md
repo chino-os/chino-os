@@ -9,14 +9,22 @@ chino-os
 ## Features
 - Multitasking
 - Dynamic linking
-- Supports x86_64 architecture
+- Supports many architecture
+
+## Supported Archs & Boards
+
+
+Architecture  | Board        | Firmware Type |
+------------- | -------------|----------------
+x86_64		  | pc			 | iso           |
+cortex-m3	  | stm32f103rc  | hex           |
 
 ## Build
 
-1. Downloads [chino-gnu-toolchain-preview1.tar.gz](https://github.com/chino-os/chino-gnu-toolchain/releases/download/preview1/chino-gnu-toolchain-preview1.tar.gz) and extracts to `/opt/` directory.
+1. Downloads [chino-gnu-toolchain-preview2.tar.gz](https://github.com/chino-os/chino-gnu-toolchain/releases/download/preview2/chino-gnu-toolchain-preview2.tar.gz) and extracts to `/opt/` directory.
 ```bash
-wget https://github.com/chino-os/chino-gnu-toolchain/releases/download/preview1/chino-gnu-toolchain-preview1.tar.gz
-sudo tar xvzf chino-gnu-toolchain-preview1.tar.gz /opt/
+wget https://github.com/chino-os/chino-gnu-toolchain/releases/download/preview2/chino-gnu-toolchain-preview2.tar.gz
+sudo tar xvzf chino-gnu-toolchain-preview2.tar.gz /opt/
 ```
 2. Installs dependencies
 ```bash
@@ -29,15 +37,19 @@ sudo apt install xorriso cmake -y
 ```bash
 git clone https://github.com/chino-os/chino-os.git
 mkdir build && cd build
-../build.sh x86_64 pc
+../build.sh <arch> <board>
 make firmware
 ```
 
 ## Run
+### For iso firmware
 1. Downloads [VirtualBox](https://www.virtualbox.org/wiki/Downloads) and runs.
 2. `File` -> `Import Application`, imports `Chino.ova` which is in `chino-os/vms/` directory.
 3. `Settings` -> `storage`, chooses the `empty` device and imports the `firmware.iso` just generated in the `build` directory.
 4. `Start`.
+### For hex firmware
+1. Download `kernel.hex` to your board.
+2. Reset your board.
 
 ## [License (MIT)](https://raw.githubusercontent.com/chino-os/chino-os/master/LICENSE)
 
