@@ -13,7 +13,8 @@ SET(BSP_SRC ${DT_DIR}/Fdt.cpp
 	${ST_DIR}/controller/Rcc.cpp
 	${ST_DIR}/controller/Port.cpp
 	${ST_DIR}/io/Gpio.cpp
-	${ST_DIR}/io/Usart.cpp)
+	${ST_DIR}/io/Usart.cpp
+	${ST_DIR}/io/I2c.cpp)
 
 FILE(GLOB_RECURSE ST_HAL_SRC "${ST_DIR}/hal/*.c")
 LIST(APPEND BSP_SRC ${ST_HAL_SRC})

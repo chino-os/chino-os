@@ -18,7 +18,8 @@ namespace Chino
 			PortD,
 			PortE,
 			PortF,
-			PortG
+			PortG,
+			I2C1
 		};
 
 		class RccDevice : public Device, public FreeObjectAccess
@@ -27,7 +28,11 @@ namespace Chino
 			{
 				HSI,
 				HSE,
-				PLL
+				PLL,
+				SYSCLK,
+				HCLK,
+				PCLK1,
+				PCLK2
 			};
 		public:
 			RccDevice(const FDTDevice& fdt);
@@ -36,10 +41,12 @@ namespace Chino
 			size_t GetClockFrequency(RccPeriph periph);
 
 			static void Rcc1SetPeriphClockIsEnabled(RccPeriph periph, bool enable);
+			static size_t Rcc1GetClockFrequency(RccPeriph periph);
 		private:
 			size_t GetClockFrequency(ClockSource clock);
 		private:
 			uintptr_t regAddr_;
+			size_t hseFreq_;
 		};
 
 		class RccDriver : public Driver

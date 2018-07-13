@@ -18,21 +18,13 @@
 	        device_type = "rcc";
 	        compatible = "st,stm32f103-rcc";
 			reg = <0x40021000 0x400>;
+			hse_freq = <8000000>;
 	    };
 
 		nvic1: nvic1 {
 			device_type = "nvic";
 			compatible = "arm,cortex-m3-nvic";
 		};
-
-	    usart2: usart2 {
-	        device_type = "serial";
-	        compatible = "st,stm32f103-usart";
-			reg = <0x40013800 0x400>;
-			port = "portA";
-			tx_pin = <2>;
-			rx_pin = <3>;
-	    };
 
 		portA: portA {
 			device_type = "port";
@@ -52,10 +44,28 @@
 			reg = <0x40011000 0x400>;
 		};
 
-		gpio0: gpio0 {
+		gpio1: gpio1 {
 			device_type = "gpio";
 			compatible = "st,stm32f103-gpio";
 			port = "portC";
+		};
+
+	    usart2: usart2 {
+	        device_type = "serial";
+	        compatible = "st,stm32f103-usart";
+			reg = <0x40013800 0x400>;
+			port = "portA";
+			tx_pin = <2>;
+			rx_pin = <3>;
+	    };
+
+		i2c1: i2c1 {
+			device_type = "i2c";
+			compatible = "st,stm32f103-i2c";
+			reg = <0x40005400 0x400>;
+			port = "portB";
+			scl_pin = <6>;
+			sda_pin = <7>;
 		};
 	};
 };

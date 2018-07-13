@@ -11,14 +11,7 @@ using namespace Chino::Device;
 
 DEFINE_FDT_DRIVER_DESC_1(RccDriver, "rcc", "st,stm32f103-rcc");
 
-typedef volatile struct
-{
-	uint32_t SYSCLK_Frequency;  /*!< returns SYSCLK clock frequency expressed in Hz */
-	uint32_t HCLK_Frequency;    /*!< returns HCLK clock frequency expressed in Hz */
-	uint32_t PCLK1_Frequency;   /*!< returns PCLK1 clock frequency expressed in Hz */
-	uint32_t PCLK2_Frequency;   /*!< returns PCLK2 clock frequency expressed in Hz */
-	uint32_t ADCCLK_Frequency;  /*!< returns ADCCLK clock frequency expressed in Hz */
-} RCC_ClocksTypeDef;
+static constexpr size_t HSIFreq = 8000000;	// 8 MHz
 
 struct rcc_cr
 {
@@ -158,6 +151,39 @@ struct apb2_enable
 	uint32_t RESV1 : 16;		//!< Reserved
 };
 
+struct apb1_enable
+{
+	uint32_t TIM2EN : 1;		//!< TIM2 timer clock enable
+	uint32_t TIM3EN : 1;		//!< TIM3 timer clock enable
+	uint32_t TIM4EN : 1;		//!< TIM4 timer clock enable
+	uint32_t TIM5EN : 1;		//!< TIM5 timer clock enable
+	uint32_t TIM6EN : 1;		//!< TIM6 timer clock enable
+	uint32_t TIM7EN : 1;		//!< TIM7 timer clock enable
+	uint32_t TIM12EN : 1;		//!< TIM12 timer clock enable
+	uint32_t TIM13EN : 1;		//!< TIM13 timer clock enable
+	uint32_t TIM14EN : 1;		//!< TIM14 timer clock enable
+	uint32_t RESV0 : 2;			//!< Reserved
+	uint32_t WWDGEN : 1;		//!< Window watchdog clock enable
+	uint32_t RESV1 : 2;			//!< Reserved
+	uint32_t SPI2EN : 1;		//!< SPI2 clock enable
+	uint32_t SPI3EN : 1;		//!< SPI3 clock enable
+	uint32_t RESV3 : 1;			//!< Reserved
+	uint32_t USART2EN : 1;		//!< USART2 clock enable
+	uint32_t USART3EN : 1;		//!< USART3 clock enable
+	uint32_t UART4EN : 1;		//!< USART4 clock enable
+	uint32_t UART5EN : 1;		//!< USART5 clock enable
+	uint32_t I2C1EN : 1;		//!< I2C1 clock enable
+	uint32_t I2C2EN : 1;		//!< I2C2 clock enable
+	uint32_t USBEN : 1;			//!< USB clock enable
+	uint32_t RESV4 : 1;			//!< Reserved
+	uint32_t CANEN : 1;			//!< CAN clock enable
+	uint32_t RESV5 : 1;			//!< Reserved
+	uint32_t BKPEN : 1;			//!< Backup interface clock enable
+	uint32_t PWREN : 1;			//!< Power interface clock enable
+	uint32_t DACEN : 1;			//!< DAC interface clock enable
+	uint32_t RESV6 : 2;			//!< Reserved
+};
+
 typedef volatile struct
 {
 	rcc_cr CR;
@@ -167,7 +193,7 @@ typedef volatile struct
 	uint32_t APB1RSTR;
 	uint32_t AHBENR;
 	apb2_enable APB2ENR;
-	uint32_t APB1ENR;
+	apb1_enable APB1ENR;
 	uint32_t BDCR;
 	uint32_t CSR;
 } RCC_TypeDef;
@@ -191,7 +217,13 @@ RccDevice::RccDevice(const FDTDevice & fdt)
 	kassert(regProp.has_value());
 	regAddr_ = regProp->GetUInt32(0);
 
+	auto hseFreqProp = fdt.GetProperty("hse_freq");
+	kassert(hseFreqProp.has_value());
+	hseFreq_ = hseFreqProp->GetUInt32(0);
+
 	g_ObjectMgr->GetDirectory(WKD_Device).AddItem(fdt.GetName(), *this);
+
+	g_Logger->PutFormat("HCLK: %z, PCLK1: %z, PCLK2: %z\n", GetClockFrequency(ClockSource::HCLK), GetClockFrequency(ClockSource::PCLK1), GetClockFrequency(ClockSource::PCLK2));
 }
 
 void RccDevice::SetPeriphClockIsEnabled(RccPeriph periph, bool enable)
@@ -223,6 +255,9 @@ void RccDevice::SetPeriphClockIsEnabled(RccPeriph periph, bool enable)
 	case RccPeriph::PortG:
 		rcc->APB2ENR.IOPGEN = value;
 		break;
+	case RccPeriph::I2C1:
+		rcc->APB1ENR.I2C1EN = value;
+		break;
 	default:
 		kassert(!"invalid rcc periph.");
 		break;
@@ -235,6 +270,12 @@ void RccDevice::Rcc1SetPeriphClockIsEnabled(RccPeriph periph, bool enable)
 	rcc1->SetPeriphClockIsEnabled(periph, enable);
 }
 
+size_t RccDevice::Rcc1GetClockFrequency(RccPeriph periph)
+{
+	auto rcc1 = g_ObjectMgr->GetDirectory(WKD_Device).Open("rcc1", OA_Read | OA_Write).MoveAs<RccDevice>();
+	return rcc1->GetClockFrequency(periph);
+}
+
 size_t RccDevice::GetClockFrequency(ClockSource clock)
 {
 	size_t freq = 0;
@@ -242,11 +283,133 @@ size_t RccDevice::GetClockFrequency(ClockSource clock)
 	switch (clock)
 	{
 	case ClockSource::HSI:
-		//freq = 
+		freq = HSIFreq;
 		break;
 	case ClockSource::HSE:
+		freq = hseFreq_;
 		break;
 	case ClockSource::PLL:
+	{
+		auto pllSrc = rcc->CFGR.PLLSRC == PLL_SRC_SEL_HSIDiv2 ? GetClockFrequency(ClockSource::HSI) / 2 : GetClockFrequency(ClockSource::HSE) / (rcc->CFGR.PLLXTPRE + 1);
+		freq = pllSrc * (rcc->CFGR.PLLMUL + 2);
+		break;
+	}
+	case ClockSource::SYSCLK:
+	{
+		switch (rcc->CFGR.SWS)
+		{
+		case SYS_CLK_SEL_HSI:
+			freq = GetClockFrequency(ClockSource::HSI);
+			break;
+		case SYS_CLK_SEL_HSE:
+			freq = GetClockFrequency(ClockSource::HSE);
+			break;
+		case SYS_CLK_SEL_PLL:
+			freq = GetClockFrequency(ClockSource::PLL);
+			break;
+		}
+		break;
+	}
+	case ClockSource::HCLK:
+	{
+		uint32_t divider = 0;
+		switch (rcc->CFGR.HPRE)
+		{
+		case AHB_CLK_SCALE_1:
+			divider = 1;
+			break;
+		case AHB_CLK_SCALE_2:
+			divider = 2;
+			break;
+		case AHB_CLK_SCALE_4:
+			divider = 4;
+			break;
+		case AHB_CLK_SCALE_8:
+			divider = 8;
+			break;
+		case AHB_CLK_SCALE_16:
+			divider = 16;
+			break;
+		case AHB_CLK_SCALE_64:
+			divider = 64;
+			break;
+		case AHB_CLK_SCALE_128:
+			divider = 128;
+			break;
+		case AHB_CLK_SCALE_256:
+			divider = 256;
+			break;
+		case AHB_CLK_SCALE_512:
+			divider = 512;
+			break;
+		}
+		freq = GetClockFrequency(ClockSource::SYSCLK) / divider;
+		break;
+	}
+	case ClockSource::PCLK1:
+	{
+		uint32_t divider = 0;
+		switch (rcc->CFGR.PPRE1)
+		{
+		case APB_CLK_SCALE_1:
+			divider = 1;
+			break;
+		case APB_CLK_SCALE_2:
+			divider = 2;
+			break;
+		case APB_CLK_SCALE_4:
+			divider = 4;
+			break;
+		case APB_CLK_SCALE_8:
+			divider = 8;
+			break;
+		case APB_CLK_SCALE_16:
+			divider = 16;
+			break;
+		}
+		freq = GetClockFrequency(ClockSource::HCLK) / divider;
+		break;
+	}
+	case ClockSource::PCLK2:
+	{
+		uint32_t divider = 0;
+		switch (rcc->CFGR.PPRE2)
+		{
+		case APB_CLK_SCALE_1:
+			divider = 1;
+			break;
+		case APB_CLK_SCALE_2:
+			divider = 2;
+			break;
+		case APB_CLK_SCALE_4:
+			divider = 4;
+			break;
+		case APB_CLK_SCALE_8:
+			divider = 8;
+			break;
+		case APB_CLK_SCALE_16:
+			divider = 16;
+			break;
+		}
+		freq = GetClockFrequency(ClockSource::HCLK) / divider;
+		break;
+	}
+	default:
+		kassert(!"invalid clock source.");
+		break;
+	}
+
+	return freq;
+}
+
+size_t RccDevice::GetClockFrequency(RccPeriph periph)
+{
+	size_t freq = 0;
+
+	switch (periph)
+	{
+	case RccPeriph::I2C1:
+		freq = GetClockFrequency(ClockSource::PCLK1);
 		break;
 	default:
 		kassert(!"invalid clock source.");
