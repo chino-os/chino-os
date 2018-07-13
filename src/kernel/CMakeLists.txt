@@ -50,6 +50,6 @@ FILE(GLOB_RECURSE KERNEL_SRC "*.c" "*.cpp")
 
 ADD_EXECUTABLE(kernel ${KERNEL_SRC})
 
-TARGET_LINK_LIBRARIES(kernel arch -Wl,--start-group bsp driver -Wl,--end-group)
+TARGET_LINK_LIBRARIES(kernel arch bsp)
 SET_TARGET_PROPERTIES(kernel PROPERTIES
 							LINKER_LANGUAGE CXX)

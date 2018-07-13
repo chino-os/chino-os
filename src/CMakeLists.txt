@@ -11,7 +11,6 @@ INCLUDE(${BOARD_CMAKE_DIR}/components.cmake)
 
 # Add subproject
 ADD_SUBDIRECTORY(libarch)
-ADD_SUBDIRECTORY(libdriver)
 ADD_SUBDIRECTORY(libbsp)
 IF(${HAS_BOOTLOADER})
 	ADD_SUBDIRECTORY(bootloader)

@@ -3,20 +3,21 @@
 //
 #pragma once
 
-#include "../Fdt.hpp"
+#include <libdriver/devicetree/Fdt.hpp>
 
 namespace Chino
 {
 	namespace Device
 	{
-		class GpioDriver : public Driver
+		class UsartDriver : public Driver
 		{
 		public:
-			DECLARE_FDT_DRIVER(GpioDriver);
+			DECLARE_FDT_DRIVER(UsartDriver);
 
 			virtual void Install() override;
 		private:
 			const FDTDevice& device_;
+			uintptr_t regAddr_;
 		};
 	}
 }

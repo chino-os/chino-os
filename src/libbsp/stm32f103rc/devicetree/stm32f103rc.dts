@@ -20,6 +20,11 @@
 			reg = <0x40021000 0x400>;
 	    };
 
+		nvic1: nvic1 {
+			device_type = "nvic";
+			compatible = "arm,cortex-m3-nvic";
+		};
+
 	    usart2: usart2 {
 	        device_type = "serial";
 	        compatible = "st,stm32f103-usart";

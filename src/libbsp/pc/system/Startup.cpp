@@ -13,6 +13,6 @@ using namespace Chino::Device;
 
 void Chino::BSPSystemStartup()
 {
-	auto file = g_FileMgr->OpenFile("/dev/fs0/chino/system/kernel");
-	g_Logger->PutFormat(L"Opened /dev/fs0/chino/system/kernel, Size: %l bytes\n", g_FileMgr->GetFileSize(file));
+	//auto file = g_FileMgr->OpenFile("/dev/fs0/chino/system/kernel");
+	//g_Logger->PutFormat(L"Opened /dev/fs0/chino/system/kernel, Size: %l bytes\n", g_FileMgr->GetFileSize(file));
 }

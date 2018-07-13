@@ -3,7 +3,7 @@
 //
 #pragma once
 
-#include "../Fdt.hpp"
+#include <libdriver/devicetree/Fdt.hpp>
 #include <noncopyable.hpp>
 
 namespace Chino
