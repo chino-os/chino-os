@@ -52,8 +52,8 @@ void Chino::Threading::BSPSetupSchedulerTimer()
 void Chino::Threading::BSPSleepMs(uint32_t ms)
 {
 	auto count = configCPU_CLOCK_HZ / 1000 * ms;
-	volatile int a;
-	for (size_t i = 0; i < count; i++) a++;
+	for (size_t i = 0; i < count; i++)
+		__asm volatile ("nop");
 }
 
 void Chino::Threading::BSPYield()

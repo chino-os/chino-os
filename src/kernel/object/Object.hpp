@@ -235,6 +235,7 @@ namespace Chino
 				obj_->Close(context_);
 			obj_ = std::move(other.obj_);
 			context_ = std::move(other.context_);
+			return *this;
 		}
 
 		T* operator->() const noexcept

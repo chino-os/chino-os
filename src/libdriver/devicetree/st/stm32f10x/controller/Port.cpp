@@ -38,6 +38,7 @@ struct port_cr
 
 	void Set(uint32_t pinOffset, port_mode mode, port_cfg cfg) volatile
 	{
+		pinOffset *= 4;
 		auto value = Value & ~(0b1111 << pinOffset);
 		Value = value | (mode << pinOffset) | (cfg << (pinOffset + 2));
 	}

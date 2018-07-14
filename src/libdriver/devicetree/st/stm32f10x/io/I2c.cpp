@@ -9,6 +9,7 @@
 #include "../controller/Rcc.hpp"
 #include "../controller/Port.hpp"
 #include <kernel/threading/ThreadSynchronizer.hpp>
+#include <libbsp/bsp.hpp>
 
 using namespace Chino;
 using namespace Chino::Device;
@@ -57,18 +58,23 @@ struct i2c_ccr
 	uint32_t RESV1 : 16;	//!< Reserved
 };
 
-struct i2c_sr2
+union i2c_sr2
 {
-	uint32_t MSL : 1;			//!< Master/slave
-	uint32_t BUSY : 1;			//!< Bus busy
-	uint32_t TRA : 1;			//!< Transmitter/receiver
-	uint32_t RESV0 : 1;			//!< Reserved
-	uint32_t GENCALL : 1;		//!< General call address (Slave mode)
-	uint32_t SMBDEFAULT : 1;	//!< SMBus device default address (Slave mode)
-	uint32_t SMBHOST : 1;		//!< SMBus host header (Slave mode)
-	uint32_t DUALF : 1;			//!< Dual flag (Slave mode)
-	uint32_t PEC : 8;			//!< Packet error checking register
-	uint32_t RESV1 : 16;		//!< Reserved
+	struct
+	{
+		uint32_t MSL : 1;			//!< Master/slave
+		uint32_t BUSY : 1;			//!< Bus busy
+		uint32_t TRA : 1;			//!< Transmitter/receiver
+		uint32_t RESV0 : 1;			//!< Reserved
+		uint32_t GENCALL : 1;		//!< General call address (Slave mode)
+		uint32_t SMBDEFAULT : 1;	//!< SMBus device default address (Slave mode)
+		uint32_t SMBHOST : 1;		//!< SMBus host header (Slave mode)
+		uint32_t DUALF : 1;			//!< Dual flag (Slave mode)
+		uint32_t PEC : 8;			//!< Packet error checking register
+		uint32_t RESV1 : 16;		//!< Reserved
+	};
+
+	uint32_t Value;
 };
 
 typedef volatile struct
@@ -84,6 +90,12 @@ typedef volatile struct
 	uint32_t TRISE;
 } I2C_TypeDef2;
 
+#define  I2C_EVENT_MASTER_MODE_SELECT                      ((uint32_t)0x00030001)  /* BUSY, MSL and SB flag */
+#define  I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED        ((uint32_t)0x00070082)  /* BUSY, MSL, ADDR, TXE and TRA flags */
+#define  I2C_EVENT_MASTER_BYTE_TRANSMITTED                 ((uint32_t)0x00070084)  /* TRA, BUSY, MSL, TXE and BTF flags */
+#define  I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED           ((uint32_t)0x00030002)  /* BUSY, MSL and ADDR flags */
+#define  I2C_EVENT_MASTER_BYTE_RECEIVED                    ((uint32_t)0x00030040)  /* BUSY, MSL and RXNE flags */
+
 class Stm32I2cController;
 
 class Stm32I2cDevice final : public I2cDevice, public ExclusiveObjectAccess
@@ -95,8 +107,8 @@ public:
 
 	}
 
-	virtual size_t Read(gsl::span<uint8_t> buffer) override;
-	virtual void Write(gsl::span<const uint8_t> buffer) override;
+	virtual size_t WriteRead(BufferList<const uint8_t> writeBuffer, BufferList<uint8_t> readBuffer) override;
+	virtual void Write(BufferList<const uint8_t> buffer) override;
 private:
 	friend class Stm32I2cController;
 
@@ -127,8 +139,8 @@ public:
 	{
 		auto access = OA_Read | OA_Write;
 		auto port = g_ObjectMgr->GetDirectory(WKD_Device).Open(fdt_.GetProperty("port")->GetString(), access).MoveAs<PortDevice>();
-		sclPin_ = port->OpenPin(static_cast<PortPins>(fdt_.GetProperty("scl_pin")->GetUInt32(access)));
-		sdaPin_ = port->OpenPin(static_cast<PortPins>(fdt_.GetProperty("sda_pin")->GetUInt32(access)));
+		sclPin_ = port->OpenPin(static_cast<PortPins>(fdt_.GetProperty("scl_pin")->GetUInt32(0)));
+		sdaPin_ = port->OpenPin(static_cast<PortPins>(fdt_.GetProperty("sda_pin")->GetUInt32(0)));
 
 		(*sclPin_)->SetMode(PortOutputMode::AF_OpenDrain, PortOutputSpeed::PS_50MHz);
 		(*sdaPin_)->SetMode(PortOutputMode::AF_OpenDrain, PortOutputSpeed::PS_50MHz);
@@ -136,7 +148,7 @@ public:
 		RccDevice::Rcc1SetPeriphClockIsEnabled(periph_, true);
 		i2c_->CR1.PE = 1;
 		i2c_->CR2.FREQ = RccDevice::Rcc1GetClockFrequency(periph_) / 1000000;
-		g_Logger->PutChar('N');
+		i2c_->CR1.ACK = 1;
 	}
 
 	virtual void OnLastClose() override
@@ -146,33 +158,111 @@ public:
 		sclPin_.reset();
 	}
 
-	size_t Read(ObjectPtr<Stm32I2cDevice> device, gsl::span<uint8_t> buffer)
+	size_t WriteRead(ObjectPtr<Stm32I2cDevice> device, BufferList<const uint8_t> writeBufferList, BufferList<uint8_t> readBufferList)
 	{
 		Threading::kernel_critical kc;
 
-		auto i2c = i2c_;
-
-		g_Logger->PutFormat("i2c: %p, freq: %d\n", i2c, i2c_->CR2.FREQ);
-
-		i2c->CR1.PE = 0;
-		i2c->CCR.CCR = 0x04;
-		i2c->TRISE = RccDevice::Rcc1GetClockFrequency(periph_) / 1000000 + 1;
-		i2c->CR1.PE = 1;
-		i2c->CR1.ACK = 1;
-
-		i2c->CR1.START = 1;
-		while (!i2c->SR2.MSL);
-		g_Logger->PutChar('B');
-		i2c->DR = 0xA0;
-		while (!i2c->SR2.TRA);
-		g_Logger->PutChar('C');
-		i2c->DR = 0x00;
-		while (!i2c->SR2.TRA);
+		SetupDevice(*device);
+		Start(*device, true);
+		WriteData(writeBufferList);
+		Start(*device, false);
+		return ReadData(readBufferList);
 	}
 
-	void Write(ObjectPtr<Stm32I2cDevice> device, gsl::span<const uint8_t> buffer)
+	void Write(ObjectPtr<Stm32I2cDevice> device, BufferList<const uint8_t> bufferList)
 	{
+		Threading::kernel_critical kc;
 
+		SetupDevice(*device);
+		Start(*device, true);
+		WriteData(bufferList);
+		Stop();
+	}
+private:
+	bool CheckEvent(uint32_t event)
+	{
+		auto flag1 = i2c_->SR1 & 0xFFFF;
+		auto flag2 = i2c_->SR2.Value & 0xFFFF;
+		uint32_t status = flag1 | (flag2 << 16);
+		return (status & event) == event;
+	}
+
+	void SetupDevice(Stm32I2cDevice& device)
+	{
+		auto i2c = i2c_;
+
+		while (i2c->SR2.BUSY);
+		auto clk = RccDevice::Rcc1GetClockFrequency(periph_);
+		size_t speed = 100000;
+		auto ccr = std::max(size_t(0x04), clk / (speed << 1));
+
+		i2c->CR1.PE = 0;
+		i2c->CCR.CCR = ccr;
+		i2c->TRISE = clk / 1000000 + 1;
+		i2c->CR1.PE = 1;
+	}
+
+	void WriteData(BufferList<const uint8_t> bufferList)
+	{
+		auto i2c = i2c_;
+
+		for (auto& buffer : bufferList.Buffers)
+		{
+			for (auto data : buffer)
+			{
+				i2c->DR = data;
+				while (!CheckEvent(I2C_EVENT_MASTER_BYTE_TRANSMITTED));
+			}
+		}
+	}
+
+	size_t ReadData(BufferList<uint8_t> bufferList)
+	{
+		auto i2c = i2c_;
+		auto toRead = bufferList.GetTotalSize();
+		auto read = 0;
+
+		for (auto& buffer : bufferList.Buffers)
+		{
+			for (auto& data : buffer)
+			{
+				if (toRead-- == 1)
+					i2c->CR1.ACK = 0;
+				while (!CheckEvent(I2C_EVENT_MASTER_BYTE_RECEIVED));
+				data = i2c->DR;
+				read++;
+			}
+		}
+
+		Stop();
+		i2c->CR1.ACK = 1;
+		return read;
+	}
+
+	void Start(Stm32I2cDevice& device, bool send)
+	{
+		auto i2c = i2c_;
+		auto addr = device.slaveAddress_;
+
+		i2c->CR1.START = 1;
+		while (!CheckEvent(I2C_EVENT_MASTER_MODE_SELECT));
+		if (send)
+		{
+			i2c->DR = addr << 1;
+			while (!CheckEvent(I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));
+		}
+		else
+		{
+			i2c->DR = (addr << 1) | 1;
+			while (!CheckEvent(I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED));
+		}
+	}
+
+	void Stop()
+	{
+		auto i2c = i2c_;
+		i2c->CR1.STOP = 1;
+		while (i2c->SR2.BUSY);
 	}
 private:
 	I2C_TypeDef2 * i2c_;
@@ -181,12 +271,12 @@ private:
 	std::optional<ObjectAccessor<PortPin>> sclPin_, sdaPin_;
 };
 
-size_t Stm32I2cDevice::Read(gsl::span<uint8_t> buffer)
+size_t Stm32I2cDevice::WriteRead(BufferList<const uint8_t> writeBufferList, BufferList<uint8_t> readBufferList)
 {
-	return controller_->Read(this, buffer);
+	return controller_->WriteRead(this, writeBufferList, readBufferList);
 }
 
-void Stm32I2cDevice::Write(gsl::span<const uint8_t> buffer)
+void Stm32I2cDevice::Write(BufferList<const uint8_t> buffer)
 {
 	controller_->Write(this, buffer);
 }

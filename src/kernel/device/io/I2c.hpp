@@ -6,7 +6,6 @@
 
 #include <cstdint>
 #include <cstddef>
-#include <gsl/gsl>
 
 namespace Chino
 {
@@ -15,8 +14,8 @@ namespace Chino
 		class I2cDevice : public Device
 		{
 		public:
-			virtual size_t Read(gsl::span<uint8_t> buffer) = 0;
-			virtual void Write(gsl::span<const uint8_t> buffer) = 0;
+			virtual size_t WriteRead(BufferList<const uint8_t> writeBufferList, BufferList<uint8_t> readBufferList) = 0;
+			virtual void Write(BufferList<const uint8_t> bufferList) = 0;
 		};
 
 		class I2cController : public Device
