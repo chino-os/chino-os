@@ -335,7 +335,7 @@ void KernelLogger::FailFast(const char* message, const char* file, size_t line)
 		ArchHaltProcessor();
 }
 
-void KernelLogger::DumpHex(const char* data, size_t count)
+void KernelLogger::DumpHex(const uint8_t* data, size_t count)
 {
 	for (size_t i = 0; i < count; i++)
 	{
@@ -348,4 +348,6 @@ void KernelLogger::DumpHex(const char* data, size_t count)
 			PutFormat("%x ", data[i]);
 		}
 	}
+
+	PutChar('\n');
 }

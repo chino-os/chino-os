@@ -22,7 +22,7 @@ namespace Chino
 			void PutString(const char* string);
 			void PutString(std::string_view string);
 			void PutFormat(const char* format, ...);
-			void DumpHex(const char* data, size_t count);
+			void DumpHex(const uint8_t* data, size_t count);
 
 			void Clear();
 			void BlueScreen();

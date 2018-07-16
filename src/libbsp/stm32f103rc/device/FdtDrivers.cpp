@@ -9,6 +9,7 @@
 #include <libdriver/devicetree/st/stm32f10x/io/I2c.hpp>
 
 #include <libdriver/devicetree/atmel/storage/eeprom/at24c02.hpp>
+#include <libdriver/devicetree/adi/sensor/adxl345.hpp>
 
 using namespace Chino::Device;
 
@@ -23,5 +24,6 @@ const FDTDriverDescriptor* Chino::Device::g_FDTDrivers[] =
 	REF_FDT_DRIVER_DESC(I2cDriver),
 
 	REF_FDT_DRIVER_DESC(AT24C02Driver),
+	REF_FDT_DRIVER_DESC(ADXL345Driver),
 	nullptr
 };

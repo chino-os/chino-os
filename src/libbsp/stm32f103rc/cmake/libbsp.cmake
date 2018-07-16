@@ -3,6 +3,7 @@ ADD_DEFINITIONS(-DSTM32F10X_HD -D_RTE_ -D__UVISION_VERSION="523")
 SET(DT_DIR ${DRIVER_DIR}/devicetree)
 SET(ST_DIR ${DT_DIR}/st/stm32f10x)
 SET(AT_DIR ${DT_DIR}/atmel)
+SET(AD_DIR ${DT_DIR}/adi)
 SET(ARM_DIR ${DT_DIR}/arm/cortex-m3)
 INCLUDE_DIRECTORIES(${ST_DIR}/hal/inc ${ST_DIR}/hal/cmsis/inc ${ST_DIR}/hal/rte ${ST_DIR}/hal/stdperiph/inc)
 
@@ -17,7 +18,8 @@ SET(BSP_SRC ${DT_DIR}/Fdt.cpp
 	${ST_DIR}/io/Usart.cpp
 	${ST_DIR}/io/I2c.cpp
 
-	${AT_DIR}/storage/eeprom/at24c02.cpp)
+	${AT_DIR}/storage/eeprom/at24c02.cpp
+	${AD_DIR}/sensor/adxl345.cpp)
 
 FILE(GLOB_RECURSE ST_HAL_SRC "${ST_DIR}/hal/*.c")
 LIST(APPEND BSP_SRC ${ST_HAL_SRC})
