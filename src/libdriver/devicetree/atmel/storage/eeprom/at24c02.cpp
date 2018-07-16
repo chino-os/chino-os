@@ -6,22 +6,24 @@
 #include <kernel/device/io/I2c.hpp>
 #include <kernel/device/DeviceManager.hpp>
 #include <kernel/object/ObjectManager.hpp>
+#include <libbsp/bsp.hpp>
 
 using namespace Chino;
 using namespace Chino::Device;
+using namespace Chino::Threading;
 
-DEFINE_FDT_DRIVER_DESC_1(AT24C02Driver, "port", "atmel,at24c02");
+DEFINE_FDT_DRIVER_DESC_1(AT24C02Driver, "eeprom", "atmel,at24c02");
 
 #define AT24C02PageSize 8
-#define AT24C02Pages 256
+#define AT24C02Pages 32
 
-class AT24C02Device : public EEPROMStorage, public ExclusiveObjectAccess
+class AT24C02Device final : public EEPROMStorage, public ExclusiveObjectAccess
 {
 public:
-	AT24C02Device(const FDTDevice& device)
-		:fdt_(device)
+	AT24C02Device(const FDTDevice& fdt)
+		:fdt_(fdt)
 	{
-
+		g_ObjectMgr->GetDirectory(WKD_Device).AddItem(fdt.GetName(), *this);
 	}
 
 	virtual size_t GetSize() override
@@ -31,12 +33,49 @@ public:
 
 	virtual size_t Read(size_t offset, BufferList<uint8_t> bufferList) override
 	{
+		if (offset >= GetSize())
+			throw std::out_of_range("offset is out of range");
+
+		uint8_t send[] = { static_cast<uint8_t>(offset) };
+		uint8_t recv[1];
+		gsl::span<const uint8_t> sendBuffers[] = { send };
+		gsl::span<uint8_t> recvBuffers[] = { recv };
+
+		size_t read = 0;
+		size_t toRead = std::min(GetSize() - offset, bufferList.GetTotalSize());
+		for (auto& buffer : bufferList.Buffers)
+		{
+			for (auto& data : buffer)
+			{
+				kassert(i2cDev_->WriteRead({ sendBuffers }, { recvBuffers }) == 1);
+				data = recv[0];
+				if (++read == toRead)
+					return toRead;
+				send[0]++;
+			}
+		}
+
 		return 0;
 	}
 
 	virtual void Write(size_t offset, BufferList<const uint8_t> bufferList) override
 	{
+		if (offset >= GetSize())
+			throw std::out_of_range("offset is out of range");
 
+		uint8_t send[] = { static_cast<uint8_t>(offset), 0 };
+		gsl::span<const uint8_t> sendBuffers[] = { send };
+
+		for (auto& buffer : bufferList.Buffers)
+		{
+			for (auto data : buffer)
+			{
+				send[1] = data;
+				i2cDev_->Write({ sendBuffers });
+				BSPSleepMs(1);
+				send[0]++;
+			}
+		}
 	}
 
 	virtual void OnFirstOpen() override
@@ -47,7 +86,7 @@ public:
 		auto slaveAddr = fdt_.GetProperty("slave_address");
 		kassert(i2cName && slaveAddr);
 		auto i2c = g_ObjectMgr->GetDirectory(WKD_Device).Open(i2cName->GetString(), access).MoveAs<I2cController>();
-		i2cDev_ = i2c->OpenDevice(slaveAddr->GetUInt32(0));
+		i2cDev_ = i2c->OpenDevice(slaveAddr->GetUInt32(0), access);
 	}
 
 	virtual void OnLastClose() override

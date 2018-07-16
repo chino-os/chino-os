@@ -222,8 +222,6 @@ RccDevice::RccDevice(const FDTDevice & fdt)
 	hseFreq_ = hseFreqProp->GetUInt32(0);
 
 	g_ObjectMgr->GetDirectory(WKD_Device).AddItem(fdt.GetName(), *this);
-
-	g_Logger->PutFormat("HCLK: %z, PCLK1: %z, PCLK2: %z\n", GetClockFrequency(ClockSource::HCLK), GetClockFrequency(ClockSource::PCLK1), GetClockFrequency(ClockSource::PCLK2));
 }
 
 void RccDevice::SetPeriphClockIsEnabled(RccPeriph periph, bool enable)

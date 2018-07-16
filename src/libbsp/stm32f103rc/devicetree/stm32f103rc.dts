@@ -67,5 +67,12 @@
 			scl_pin = <6>;
 			sda_pin = <7>;
 		};
+
+		at24c02: eeprom1 {
+			device_type = "eeprom";
+			compatible = "atmel,at24c02";
+			i2c = "i2c1";
+			slave_address = <0x50>;
+		};
 	};
 };

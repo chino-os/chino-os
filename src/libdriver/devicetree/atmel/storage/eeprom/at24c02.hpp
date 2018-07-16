@@ -9,7 +9,7 @@ namespace Chino
 {
 	namespace Device
 	{
-		class AT24C02Driver : Driver
+		class AT24C02Driver : public Driver
 		{
 		public:
 			DECLARE_FDT_DRIVER(AT24C02Driver);
