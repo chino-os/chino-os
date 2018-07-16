@@ -210,6 +210,11 @@ namespace Chino
 	class ObjectAccessor : NonCopyable
 	{
 	public:
+		ObjectAccessor()
+		{
+
+		}
+
 		template<class U>
 		ObjectAccessor(ObjectAccessor<U>&& other)
 			:context_(std::move(other.context_)), obj_(std::move(other.obj_))
@@ -249,6 +254,13 @@ namespace Chino
 			auto obj = obj_.template As<U>();
 			obj_.Reset();
 			return { std::move(context_), std::move(obj) };
+		}
+
+		void Reset() noexcept
+		{
+			if (obj_.Get())
+				std::move(obj_)->Close(context_);
+			context_ = {};
 		}
 	private:
 		template<class U>

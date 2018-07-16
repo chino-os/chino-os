@@ -13,7 +13,7 @@ namespace Chino
 	{
 		enum class DeviceType
 		{
-			Drive,
+			Storage,
 			Partition,
 			Other
 		};
