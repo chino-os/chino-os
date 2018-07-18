@@ -89,7 +89,7 @@ public:
 
 	virtual size_t Read(gsl::span<uint8_t> buffer) override
 	{
-
+		return 0;
 	}
 
 	virtual void Write(gsl::span<const uint8_t> buffer) override

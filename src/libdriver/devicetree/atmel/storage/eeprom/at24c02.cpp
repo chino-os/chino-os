@@ -37,25 +37,9 @@ public:
 			throw std::out_of_range("offset is out of range");
 
 		uint8_t send[] = { static_cast<uint8_t>(offset) };
-		uint8_t recv[1];
 		gsl::span<const uint8_t> sendBuffers[] = { send };
-		gsl::span<uint8_t> recvBuffers[] = { recv };
 
-		size_t read = 0;
-		size_t toRead = std::min(GetSize() - offset, bufferList.GetTotalSize());
-		for (auto& buffer : bufferList.Buffers)
-		{
-			for (auto& data : buffer)
-			{
-				kassert(i2cDev_->WriteRead({ sendBuffers }, { recvBuffers }) == 1);
-				data = recv[0];
-				if (++read == toRead)
-					return toRead;
-				send[0]++;
-			}
-		}
-
-		return 0;
+		return i2cDev_->WriteRead({ sendBuffers }, bufferList);
 	}
 
 	virtual void Write(size_t offset, BufferList<const uint8_t> bufferList) override

@@ -25,21 +25,19 @@ void Chino::BSPSystemStartup()
 	pin0->SetDriveMode(GpioPinDriveMode::Output);
 
 	auto eeprom1 = g_ObjectMgr->GetDirectory(WKD_Device).Open("eeprom1", access).MoveAs<EEPROMStorage>();
-	uint8_t buffer[10] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+	uint8_t buffer[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 	{
 		gsl::span<const uint8_t> writeBuffers[] = { buffer };
 		eeprom1->Write(0, { writeBuffers });
 	}
 	{
 		gsl::span<uint8_t> readBuffers[] = { buffer };
-		eeprom1->Read(0, { readBuffers });
+		kassert(eeprom1->Read(0, { readBuffers }) == std::size(buffer));
 		g_Logger->PutString("AT24C02 Read:\n");
 		g_Logger->DumpHex(buffer, std::size(buffer));
 	}
 
 	auto accelerometer1 = g_ObjectMgr->GetDirectory(WKD_Device).Open("accelerometer1", access).MoveAs<Accelerometer>();
-	auto accReading = accelerometer1->GetCurrentReading();
-	g_Logger->PutFormat("Current Acceleration: X: %d, Y: %d, Z: %d\n", (int)accReading.AccelerationX, (int)accReading.AccelerationY, (int)accReading.AccelerationZ);
 
 	auto proc = g_ProcessMgr->GetCurrentThread()->GetProcess();
 	auto semp = MakeObject<Semaphore>(0);
@@ -66,6 +64,17 @@ void Chino::BSPSystemStartup()
 			for (size_t i = 0; i < 100; i++)
 				ArchHaltProcessor();
 			semp->Give(1);
+		}
+	}, 1);
+
+	proc->AddThread([&]
+	{
+		while (true)
+		{
+			for (size_t i = 0; i < 100; i++)
+				ArchHaltProcessor();
+			auto accReading = accelerometer1->GetCurrentReading();
+			g_Logger->PutFormat("Acceleration: X: %f, Y: %f, Z: %f\n", accReading.AccelerationX, accReading.AccelerationY, accReading.AccelerationZ);
 		}
 	}, 1);
 

@@ -148,7 +148,6 @@ public:
 		RccDevice::Rcc1SetPeriphClockIsEnabled(periph_, true);
 		i2c_->CR1.PE = 1;
 		i2c_->CR2.FREQ = RccDevice::Rcc1GetClockFrequency(periph_) / 1000000;
-		i2c_->CR1.ACK = 1;
 	}
 
 	virtual void OnLastClose() override
@@ -200,6 +199,7 @@ private:
 		i2c->CCR.CCR = ccr;
 		i2c->TRISE = clk / 1000000 + 1;
 		i2c->CR1.PE = 1;
+		i2c->CR1.ACK = 1;
 	}
 
 	void WriteData(BufferList<const uint8_t> bufferList)
@@ -229,7 +229,7 @@ private:
 				if (toRead-- == 1)
 					i2c->CR1.ACK = 0;
 				while (!CheckEvent(I2C_EVENT_MASTER_BYTE_RECEIVED));
-				data = i2c->DR;
+				data = static_cast<uint8_t>(i2c->DR);
 				read++;
 			}
 		}

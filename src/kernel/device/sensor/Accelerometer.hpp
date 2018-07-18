@@ -10,9 +10,9 @@ namespace Chino
 	{
 		struct AccelerometerReading
 		{
-			float AccelerationX;
-			float AccelerationY;
-			float AccelerationZ;
+			double AccelerationX;
+			double AccelerationY;
+			double AccelerationZ;
 		};
 
 		class Accelerometer : public Device

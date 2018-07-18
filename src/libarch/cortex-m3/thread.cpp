@@ -27,7 +27,7 @@ extern "C"
 		// |   R0   |
 		//  --------
 
-		--stack;
+		stack -= 2;						// for 8 bytes alignment
 		*--stack = portINITIAL_XPSR;
 		*--stack = entryPoint;
 		*--stack = returnAddress;

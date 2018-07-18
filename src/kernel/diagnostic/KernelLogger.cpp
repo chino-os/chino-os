@@ -6,6 +6,7 @@
 #include <libarch/arch.h>
 #include <stdarg.h>
 #include <algorithm>
+#include <cmath>
 
 using namespace Chino::Diagnostic;
 
@@ -47,7 +48,7 @@ wchar_t tbuf[64];
 wchar_t bchars[] = { L'0',L'1',L'2',L'3',L'4',L'5',L'6',L'7',L'8',L'9',L'A',L'B',L'C',L'D',L'E',L'F' };
 wchar_t str[64] = { 0 };
 
-void _itow(uint64_t i, unsigned base, wchar_t* buf) {
+size_t _itow(uint64_t i, unsigned base, wchar_t* buf) {
 	int pos = 0;
 	int opos = 0;
 	int top = 0;
@@ -58,11 +59,12 @@ void _itow(uint64_t i, unsigned base, wchar_t* buf) {
 	if (i == 0 || base > 16) {
 		buf[0] = '0';
 		buf[1] = '\0';
-		return;
+		return 1;
 	}
 
 	while (i != 0) {
-		tbuf[pos] = bchars[i % base];
+		auto rem = i % base;
+		tbuf[pos] = bchars[rem];
 		pos++;
 		i /= base;
 	}
@@ -71,16 +73,49 @@ void _itow(uint64_t i, unsigned base, wchar_t* buf) {
 		buf[opos] = tbuf[pos];
 	}
 	buf[opos] = 0;
+	return opos;
 }
 
-void _itow_s(int64_t i, unsigned base, wchar_t* buf) {
-
-	if (base > 16) return;
+size_t _itow_s(int64_t i, unsigned base, wchar_t* buf) 
+{
+	size_t add = 0;
+	kassert(base <= 16);
 	if (i < 0) {
 		*buf++ = '-';
 		i = -i;
+		add = 1;
 	}
-	_itow(uint64_t(i), base, buf);
+	return _itow(uint64_t(i), base, buf) + add;
+}
+
+void ftoa(double n, wchar_t *res, int afterpoint)
+{
+	// Extract integer part
+	auto ipart = static_cast<int64_t>(std::floor(n));
+
+	// Extract floating part
+	double fpart = std::abs(n - double(ipart));
+	kassert(fpart != 0);
+
+	// convert integer part to string
+	auto i = _itow_s(ipart, 10, res);
+	res += i;
+
+	// check for display option after point
+	if (afterpoint != 0)
+	{
+		*res++ = '.';  // add dot
+	
+					   // Get the value of fraction part upto given no.
+					   // of points after dot. The third parameter is needed
+					   // to handle cases like 233.007
+		fpart *= std::pow(10, afterpoint);
+	
+		auto n = _itow(static_cast<int64_t>(std::floor(fpart)), 10, res);
+		while (n++ < afterpoint)
+			*res++ = '0';
+		_itow(static_cast<int64_t>(std::floor(fpart)), 10, res);
+	}
 }
 
 void KernelLogger::PutFormat(const wchar_t * format, ...)
@@ -242,8 +277,7 @@ void KernelLogger::PutFormat(const char * format, ...)
 				case 'X':
 				case 'x': {
 					int64_t c = va_arg(args, int64_t);
-					//char str[32]={0};
-					_itow((uint64_t)c, 16, str);
+					_itow(c, 16, str);
 					PutString(str);
 					i++;		// go to next character
 					break;
@@ -295,6 +329,14 @@ void KernelLogger::PutFormat(const char * format, ...)
 				uintptr_t c = va_arg(args, uintptr_t);
 				//char str[32]={0};
 				_itow(c, 16, str);
+				PutString(str);
+				i++;		// go to next character
+				break;
+			}
+			case 'f':
+			case 'F': {
+				double c = va_arg(args, double);
+				ftoa(c, str, 6);
 				PutString(str);
 				i++;		// go to next character
 				break;

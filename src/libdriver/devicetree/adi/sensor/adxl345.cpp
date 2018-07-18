@@ -122,10 +122,10 @@ private:
 		i2cDev_->Write({ sendBuffers });
 	}
 
-	static float FixedToFloat(uint8_t low, uint8_t high)
+	static double FixedToFloat(uint8_t low, uint8_t high)
 	{
 		auto value = static_cast<int16_t>(low | (high << 8));
-		return value;
+		return value * (9.80991 * 4e-3); // 4mg
 	}
 private:
 	ObjectAccessor<I2cDevice> i2cDev_;
