@@ -87,4 +87,14 @@
 			slave_address = <0x1D>;
 		};
 	};
+
+	fsmc-peripherals {
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		ili9341: lcd1 {
+			device_type = "display";
+			compatible = "ilitek,ili9341-fsmc";
+		};
+	};
 };

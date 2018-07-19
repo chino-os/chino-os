@@ -10,6 +10,7 @@
 
 #include <libdriver/devicetree/atmel/storage/eeprom/at24c02.hpp>
 #include <libdriver/devicetree/adi/sensor/adxl345.hpp>
+#include <libdriver/devicetree/ilitek/display/lcd/ili9341.hpp>
 
 using namespace Chino::Device;
 
@@ -25,5 +26,6 @@ const FDTDriverDescriptor* Chino::Device::g_FDTDrivers[] =
 
 	REF_FDT_DRIVER_DESC(AT24C02Driver),
 	REF_FDT_DRIVER_DESC(ADXL345Driver),
+	REF_FDT_DRIVER_DESC(ILI9341Driver),
 	nullptr
 };
