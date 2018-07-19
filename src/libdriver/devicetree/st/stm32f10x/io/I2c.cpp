@@ -8,6 +8,7 @@
 #include <kernel/device/DeviceManager.hpp>
 #include "../controller/Rcc.hpp"
 #include "../controller/Port.hpp"
+#include "../controller/Fsmc.hpp"
 #include <kernel/threading/ThreadSynchronizer.hpp>
 #include <libbsp/bsp.hpp>
 
@@ -137,6 +138,7 @@ public:
 
 	virtual void OnFirstOpen() override
 	{
+		FsmcSuppress fs;
 		auto access = OA_Read | OA_Write;
 		auto port = g_ObjectMgr->GetDirectory(WKD_Device).Open(fdt_.GetProperty("port")->GetString(), access).MoveAs<PortDevice>();
 		sclPin_ = port->OpenPin(static_cast<PortPins>(fdt_.GetProperty("scl_pin")->GetUInt32(0)));
@@ -159,23 +161,28 @@ public:
 
 	size_t WriteRead(ObjectPtr<Stm32I2cDevice> device, BufferList<const uint8_t> writeBufferList, BufferList<uint8_t> readBufferList)
 	{
+		FsmcSuppress fs;
 		Threading::kernel_critical kc;
 
 		SetupDevice(*device);
 		Start(*device, true);
 		WriteData(writeBufferList);
 		Start(*device, false);
-		return ReadData(readBufferList);
+		auto ret = ReadData(readBufferList);
+		while (i2c_->SR2.BUSY);
+		return ret;
 	}
 
 	void Write(ObjectPtr<Stm32I2cDevice> device, BufferList<const uint8_t> bufferList)
 	{
+		FsmcSuppress fs;
 		Threading::kernel_critical kc;
 
 		SetupDevice(*device);
 		Start(*device, true);
 		WriteData(bufferList);
 		Stop();
+		while (i2c_->SR2.BUSY);
 	}
 private:
 	bool CheckEvent(uint32_t event)

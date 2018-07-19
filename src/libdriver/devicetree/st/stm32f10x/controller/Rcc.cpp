@@ -184,6 +184,22 @@ struct apb1_enable
 	uint32_t RESV6 : 2;			//!< Reserved
 };
 
+struct ahb_enable
+{
+	uint32_t DMA1EN : 1;		//!< DMA1 clock enable
+	uint32_t DMA2EN : 1;		//!< DMA2 clock enable
+	uint32_t SRAMEN : 1;		//!< SRAM interface clock enable
+	uint32_t RESV0 : 1;			//!< Reserved
+	uint32_t FLITFEN : 1;		//!< FLITF clock enable
+	uint32_t RESV1 : 1;			//!< Reserved
+	uint32_t CRCEN : 1;			//!< CRC clock enable
+	uint32_t RESV2 : 1;			//!< Reserved
+	uint32_t FSMCEN : 1;		//!< FSMC clock enable
+	uint32_t SDIOEN : 1;		//!< SDIO clock enable
+	uint32_t RESV3 : 1;			//!< Reserved
+	uint32_t RESV4 : 21;		//!< Reserved
+};
+
 typedef volatile struct
 {
 	rcc_cr CR;
@@ -191,7 +207,7 @@ typedef volatile struct
 	uint32_t CIR;
 	uint32_t APB2RSTR;
 	uint32_t APB1RSTR;
-	uint32_t AHBENR;
+	ahb_enable AHBENR;
 	apb2_enable APB2ENR;
 	apb1_enable APB1ENR;
 	uint32_t BDCR;
@@ -255,6 +271,9 @@ void RccDevice::SetPeriphClockIsEnabled(RccPeriph periph, bool enable)
 		break;
 	case RccPeriph::I2C1:
 		rcc->APB1ENR.I2C1EN = value;
+		break;
+	case RccPeriph::FSMC:
+		rcc->AHBENR.FSMCEN = value;
 		break;
 	default:
 		kassert(!"invalid rcc periph.");

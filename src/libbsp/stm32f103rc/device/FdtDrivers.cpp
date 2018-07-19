@@ -26,6 +26,6 @@ const FDTDriverDescriptor* Chino::Device::g_FDTDrivers[] =
 
 	REF_FDT_DRIVER_DESC(AT24C02Driver),
 	REF_FDT_DRIVER_DESC(ADXL345Driver),
-	REF_FDT_DRIVER_DESC(ILI9341Driver),
+	//REF_FDT_DRIVER_DESC(ILI9341Driver),
 	nullptr
 };

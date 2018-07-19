@@ -9,6 +9,12 @@ namespace Chino
 {
 	namespace Device
 	{
+		struct FsmcSuppress
+		{
+			FsmcSuppress();
+			~FsmcSuppress();
+		};
+
 		class FsmcDriver : public Driver
 		{
 		public:

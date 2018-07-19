@@ -36,3 +36,13 @@ void FsmcDriver::Install()
 {
 	g_DeviceMgr->InstallDevice(MakeObject<Stm32FsmcController>(device_));
 }
+
+FsmcSuppress::FsmcSuppress()
+{
+	RccDevice::Rcc1SetPeriphClockIsEnabled(RccPeriph::FSMC, false);
+}
+
+FsmcSuppress::~FsmcSuppress()
+{
+	RccDevice::Rcc1SetPeriphClockIsEnabled(RccPeriph::FSMC, true);
+}

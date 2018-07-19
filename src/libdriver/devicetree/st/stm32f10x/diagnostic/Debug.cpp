@@ -1,4 +1,4 @@
-//
+﻿//
 // Kernel Diagnostic
 //
 #include <kernel/utils.hpp>
@@ -73,48 +73,48 @@ void I2C1_Init()
 }
 u8 I2C_Read(u8 nAddr)
 {
-	I2C_AcknowledgeConfig(I2C1, ENABLE); //ʹ��Ӧ��
-	I2C_GenerateSTART(I2C1, ENABLE); //����һ����ʼλ
-	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT)) { ; } //�ȴ�EV5
-	I2C_Send7bitAddress(I2C1, 0xA0, I2C_Direction_Transmitter); //����һ��αдָ��
-	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)) { ; }//�ȴ�EV6
-	I2C_SendData(I2C1, nAddr);//���Ͷ���ַ
-	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED)) { ; } //�ȴ�EV8
+	I2C_AcknowledgeConfig(I2C1, ENABLE); //使能应答
+	I2C_GenerateSTART(I2C1, ENABLE); //发送一个开始位
+	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT)) { ; } //等待EV5
+	I2C_Send7bitAddress(I2C1, 0xA0, I2C_Direction_Transmitter); //发送一个伪写指令
+	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)) { ; }//等待EV6
+	I2C_SendData(I2C1, nAddr);//发送读地址
+	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED)) { ; } //等待EV8
 
-	I2C_GenerateSTART(I2C1, ENABLE); //����һ����ʼλ
-	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT)) { ; } //�ȴ�EV5
-	I2C_Send7bitAddress(I2C1, 0xA0, I2C_Direction_Receiver); //����һ����ָ��
-	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED)) { ; } //�ȴ�EV6
-	I2C_AcknowledgeConfig(I2C1, DISABLE); //Ӧ��ʹ�ܹر�
-	I2C_GenerateSTOP(I2C1, ENABLE); //����һ��ֹͣλ
-	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_RECEIVED)) { ; } //�ȴ�EV7
-	return I2C_ReceiveData(I2C1); //���ض���������
+	I2C_GenerateSTART(I2C1, ENABLE); //发送一个开始位
+	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT)) { ; } //等待EV5
+	I2C_Send7bitAddress(I2C1, 0xA0, I2C_Direction_Receiver); //发送一个读指令
+	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED)) { ; } //等待EV6
+	I2C_AcknowledgeConfig(I2C1, DISABLE); //应答使能关闭
+	I2C_GenerateSTOP(I2C1, ENABLE); //发送一个停止位
+	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_RECEIVED)) { ; } //等待EV7
+	return I2C_ReceiveData(I2C1); //返回读到的数据
 }
 static int8_t I2C_Write(uint8_t writeAddr, uint8_t value)
 {
-	/* ���I2C�����Ƿ�æµ */
+	/* 检测I2C总线是否忙碌 */
 	while (I2C_GetFlagStatus(I2C1, I2C_FLAG_BUSY));
 
-	/* ������ʼ�ź� */
+	/* 发送起始信号 */
 	I2C_GenerateSTART(I2C1, ENABLE);
 
-	/* ���EV5�����Ƿ�����Ϊ����ģʽ */
+	/* 检测EV5，即是否启动为主机模式 */
 	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT));
 
-	/* ����д������ַ */
-	I2C_Send7bitAddress(I2C1, 0xA0, I2C_Direction_Transmitter);//����ģʽ
+	/* 发送写器件地址 */
+	I2C_Send7bitAddress(I2C1, 0xA0, I2C_Direction_Transmitter);//发送模式
 
-	/* ���EV6�������*/
+	/* 检测EV6并清除，*/
 	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));
 
-	/* ����д��ַ */
+	/* 发送写地址 */
 	I2C_SendData(I2C1, writeAddr);
 
-	/* ���EV8 */
+	/* 检测EV8 */
 	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
-	/* �������� */
+	/* 发送数据 */
 	I2C_SendData(I2C1, value);
-	/* ���EV8 */
+	/* 检测EV8 */
 	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
 
 	I2C_GenerateSTOP(I2C1, ENABLE);
@@ -127,73 +127,80 @@ void TFT_GPIO_Config(void)
 {
 	GPIO_InitTypeDef GPIO_InitStructure;
 
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOE
-		| RCC_APB2Periph_GPIOG, ENABLE);
+	/* ´ò¿ªÊ±ÖÓÊ¹ÄÜ */
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOE | RCC_APB2Periph_GPIOG, ENABLE);
 
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;				 //PB0 ÍÆÍìÊä³ö ±³¹â
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; 		 //ÍÆÍìÊä³ö
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_12;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
-	GPIO_Init(GPIOG, &GPIO_InitStructure);
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
 
-	GPIO_InitStructure.GPIO_Pin = (GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_4
-		| GPIO_Pin_5 | GPIO_Pin_8 | GPIO_Pin_8
-		| GPIO_Pin_9 | GPIO_Pin_10 | GPIO_Pin_11
-		| GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14
-		| GPIO_Pin_15);
-
+	//PORTD¸´ÓÃÍÆÍìÊä³ö  
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10 | GPIO_Pin_11 | GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;				 //	//PORTD¸´ÓÃÍÆÍìÊä³ö  
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP; 		 //¸´ÓÃÍÆÍìÊä³ö   
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOD, &GPIO_InitStructure);
 
-	GPIO_InitStructure.GPIO_Pin = (GPIO_Pin_7 | GPIO_Pin_8 | GPIO_Pin_9
-		| GPIO_Pin_10 | GPIO_Pin_11 | GPIO_Pin_12
-		| GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15);
-
+	//PORTE¸´ÓÃÍÆÍìÊä³ö  
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7 | GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10 | GPIO_Pin_11 | GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;				 //	//PORTD¸´ÓÃÍÆÍìÊä³ö  
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP; 		 //¸´ÓÃÍÆÍìÊä³ö   
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOE, &GPIO_InitStructure);
+
+	//	//PORTG12¸´ÓÃÍÆÍìÊä³ö A0	
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_12;	 //	//PORTD¸´ÓÃÍÆÍìÊä³ö  
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP; 		 //¸´ÓÃÍÆÍìÊä³ö   
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOG, &GPIO_InitStructure);
 }
 
 void TFT_FSMC_Config(void)
 {
-	FSMC_NORSRAMInitTypeDef        FSMC_NORSRAMInitStructure;
-	FSMC_NORSRAMTimingInitTypeDef  FSMC_NORSRAMTiming;
+	/* ³õÊ¼»¯º¯Êý */
+	FSMC_NORSRAMInitTypeDef  FSMC_NORSRAMInitStructure;
+	FSMC_NORSRAMTimingInitTypeDef  readWriteTiming;
+	FSMC_NORSRAMTimingInitTypeDef  writeTiming;
 
-	FSMC_NORSRAMTiming.FSMC_AddressSetupTime = 0x02;
+	readWriteTiming.FSMC_AddressSetupTime = 0x01;	 //µØÖ·½¨Á¢Ê±¼ä£¨ADDSET£©Îª2¸öHCLK 1/36M=27ns
+	readWriteTiming.FSMC_AddressHoldTime = 0x00;	 //µØÖ·±£³ÖÊ±¼ä£¨ADDHLD£©Ä£Ê½AÎ´ÓÃµ½	
+	readWriteTiming.FSMC_DataSetupTime = 0x0f;		 // Êý¾Ý±£´æÊ±¼äÎª16¸öHCLK,ÒòÎªÒº¾§Çý¶¯ICµÄ¶ÁÊý¾ÝµÄÊ±ºò£¬ËÙ¶È²»ÄÜÌ«¿ì£¬ÓÈÆä¶Ô1289Õâ¸öIC¡£
+	readWriteTiming.FSMC_BusTurnAroundDuration = 0x00;
+	readWriteTiming.FSMC_CLKDivision = 0x00;
+	readWriteTiming.FSMC_DataLatency = 0x00;
+	readWriteTiming.FSMC_AccessMode = FSMC_AccessMode_A;	 //Ä£Ê½A 
 
-	FSMC_NORSRAMTiming.FSMC_AddressHoldTime = 0x00;
 
-	FSMC_NORSRAMTiming.FSMC_DataSetupTime = 0x05;
+	writeTiming.FSMC_AddressSetupTime = 0x00;	 //µØÖ·½¨Á¢Ê±¼ä£¨ADDSET£©Îª1¸öHCLK  
+	writeTiming.FSMC_AddressHoldTime = 0x00;	 //µØÖ·±£³ÖÊ±¼ä£¨A		
+	writeTiming.FSMC_DataSetupTime = 0x03;		 ////Êý¾Ý±£´æÊ±¼äÎª4¸öHCLK	
+	writeTiming.FSMC_BusTurnAroundDuration = 0x00;
+	writeTiming.FSMC_CLKDivision = 0x00;
+	writeTiming.FSMC_DataLatency = 0x00;
+	writeTiming.FSMC_AccessMode = FSMC_AccessMode_A;	 //Ä£Ê½A 
 
-	FSMC_NORSRAMTiming.FSMC_DataLatency = 0x00;
 
-	FSMC_NORSRAMTiming.FSMC_BusTurnAroundDuration = 0x00;
+	FSMC_NORSRAMInitStructure.FSMC_Bank = FSMC_Bank1_NORSRAM4;//  ÕâÀïÎÒÃÇÊ¹ÓÃNE4 £¬Ò²¾Í¶ÔÓ¦BTCR[6],[7]¡£
+	FSMC_NORSRAMInitStructure.FSMC_DataAddressMux = FSMC_DataAddressMux_Disable; // ²»¸´ÓÃÊý¾ÝµØÖ·
+	FSMC_NORSRAMInitStructure.FSMC_MemoryType = FSMC_MemoryType_SRAM;// FSMC_MemoryType_SRAM;  //SRAM   
+	FSMC_NORSRAMInitStructure.FSMC_MemoryDataWidth = FSMC_MemoryDataWidth_16b;//´æ´¢Æ÷Êý¾Ý¿í¶ÈÎª16bit   
+	FSMC_NORSRAMInitStructure.FSMC_BurstAccessMode = FSMC_BurstAccessMode_Disable;// FSMC_BurstAccessMode_Disable; 
+	FSMC_NORSRAMInitStructure.FSMC_WaitSignalPolarity = FSMC_WaitSignalPolarity_Low;
+	FSMC_NORSRAMInitStructure.FSMC_AsynchronousWait = FSMC_AsynchronousWait_Disable;
+	FSMC_NORSRAMInitStructure.FSMC_WrapMode = FSMC_WrapMode_Disable;
+	FSMC_NORSRAMInitStructure.FSMC_WaitSignalActive = FSMC_WaitSignalActive_BeforeWaitState;
+	FSMC_NORSRAMInitStructure.FSMC_WriteOperation = FSMC_WriteOperation_Enable;	//  ´æ´¢Æ÷Ð´Ê¹ÄÜ
+	FSMC_NORSRAMInitStructure.FSMC_WaitSignal = FSMC_WaitSignal_Disable;
+	FSMC_NORSRAMInitStructure.FSMC_ExtendedMode = FSMC_ExtendedMode_Enable; // ¶ÁÐ´Ê¹ÓÃ²»Í¬µÄÊ±Ðò
+	FSMC_NORSRAMInitStructure.FSMC_WriteBurst = FSMC_WriteBurst_Disable;
+	FSMC_NORSRAMInitStructure.FSMC_ReadWriteTimingStruct = &readWriteTiming; //¶ÁÐ´Ê±Ðò
+	FSMC_NORSRAMInitStructure.FSMC_WriteTimingStruct = &writeTiming;  //Ð´Ê±Ðò
 
-	FSMC_NORSRAMTiming.FSMC_CLKDivision = 0x01;
+	FSMC_NORSRAMInit(&FSMC_NORSRAMInitStructure);  //³õÊ¼»¯FSMCÅäÖÃ
 
-	FSMC_NORSRAMTiming.FSMC_AccessMode = FSMC_AccessMode_B;
-
-	FSMC_NORSRAMInitStructure.FSMC_Bank = FSMC_Bank1_NORSRAM4;
-
-	FSMC_NORSRAMInitStructure.FSMC_MemoryType = FSMC_MemoryType_SRAM;
-
-	FSMC_NORSRAMInitStructure.FSMC_MemoryDataWidth = FSMC_MemoryDataWidth_16b;
-
-	FSMC_NORSRAMInitStructure.FSMC_WriteOperation = FSMC_WriteOperation_Enable;
-
-	FSMC_NORSRAMInitStructure.FSMC_ExtendedMode = FSMC_ExtendedMode_Enable;
-
-	FSMC_NORSRAMInitStructure.FSMC_DataAddressMux = FSMC_DataAddressMux_Disable;
-
-	FSMC_NORSRAMInitStructure.FSMC_ReadWriteTimingStruct = &FSMC_NORSRAMTiming;
-
-	FSMC_NORSRAMInitStructure.FSMC_WriteTimingStruct = &FSMC_NORSRAMTiming;
-
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_FSMC, ENABLE);
-
-	FSMC_NORSRAMInit(&FSMC_NORSRAMInitStructure);
-
-	/*!< Enable FSMC Bank1_SRAM Bank */
-	FSMC_NORSRAMCmd(FSMC_Bank1_NORSRAM4, ENABLE);
+	FSMC_NORSRAMCmd(FSMC_Bank1_NORSRAM4, ENABLE);  // Ê¹ÄÜBANK1 
 }
 
-typedef struct
+typedef volatile struct
 {
 	u16 TFT_CMD;
 	u16 TFT_DATA;
@@ -216,12 +223,12 @@ typedef struct
 
 void TFT_WriteCmd(uint16_t cmd)
 {
-	TFT->TFT_CMD = cmd << 8;
+	TFT->TFT_CMD = cmd;
 }
 
 void TFT_WriteData(u16 dat)
 {
-	TFT->TFT_DATA = dat << 8;
+	TFT->TFT_DATA = dat;
 }
 
 void TFT_WriteData_Color(u16 color)
@@ -230,15 +237,32 @@ void TFT_WriteData_Color(u16 color)
 	TFT->TFT_DATA = color << 8;
 }
 
+uint16_t TFT_ReadData()
+{
+	return TFT->TFT_DATA;
+}
+
 void TFT_Init(void)
 {
 	uint16_t i;
 
 	TFT_GPIO_Config();
 	TFT_FSMC_Config();
+	GPIO_ResetBits(GPIOE, GPIO_Pin_1);
+	Threading::BSPSleepMs(100);
+	GPIO_SetBits(GPIOE, GPIO_Pin_1);
+
+	TFT_WriteCmd(0xDB);
+	for (volatile size_t i = 0; i < 500; i++) ;
+	g_Logger->PutFormat("%p ", &TFT->TFT_DATA);
+	g_Logger->PutFormat("%x ", TFT_ReadData());
+	g_Logger->PutFormat("%x ", TFT_ReadData());
+	g_Logger->PutFormat("%x ", TFT_ReadData());
+	g_Logger->PutFormat("%x ", TFT_ReadData());
+
+	return;
 
 	//************* Start Initial Sequence **********//	
-	TFT_WriteCmd(0xCB);
 	TFT_WriteData(0x39);
 	TFT_WriteData(0x2C);
 	TFT_WriteData(0x00);
@@ -361,6 +385,37 @@ void TFT_Init(void)
 	TFT_WriteCmd(0x29);    //Display on
 }
 
+void TFT_SetWindow(uint16_t xStart, uint16_t yStart, uint16_t xEnd, uint16_t yEnd)
+{
+	TFT_WriteCmd(0x2A);
+
+	TFT_WriteData(xStart / 256);
+	TFT_WriteData(xStart % 256);
+	TFT_WriteData(xEnd / 256);
+	TFT_WriteData(xEnd % 256);
+
+	TFT_WriteCmd(0x2b);
+	TFT_WriteData(yStart / 256);
+	TFT_WriteData(yStart % 256);
+	TFT_WriteData(yEnd / 256);
+	TFT_WriteData(yEnd % 256);
+	TFT_WriteCmd(0x2c);
+}
+
+void TFT_ClearScreen(uint16_t color)
+{
+	uint16_t i, j;
+
+	TFT_SetWindow(0, 0, TFT_XMAX, TFT_YMAX);
+	for (i = 0; i<TFT_XMAX + 1; i++)
+	{
+		for (j = 0; j<TFT_YMAX + 1; j++)
+		{
+			TFT_WriteData_Color(color);
+		}
+	}
+}
+
 int uart_putc(int ch)
 {
 	USART1->SR;
@@ -376,7 +431,11 @@ void Chino::Diagnostic::BSPInitializeDebug(const BootParameters& bootParams)
 	GPIO_Configuration();
 	USART_Configuration(115200);
 
-	//TFT_Init();
+	TFT_Init();
+	while (1);
+	//TFT_SetWindow(0, 0, TFT_XMAX, TFT_YMAX);
+	//TFT_WriteData_Color(BLUE);
+	//TFT_ClearScreen(BLUE);
 	//I2C1_Init();
 	//BSPDebugPutChar('1'); I2C_Write(0x10, 1);
 	//Threading::BSPSleepMs(10);

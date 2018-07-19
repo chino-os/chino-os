@@ -19,7 +19,8 @@ namespace Chino
 			PortE,
 			PortF,
 			PortG,
-			I2C1
+			I2C1,
+			FSMC
 		};
 
 		class RccDevice : public Device, public FreeObjectAccess

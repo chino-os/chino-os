@@ -15,6 +15,7 @@ SET(BSP_SRC ${DT_DIR}/Fdt.cpp
 	${ST_DIR}/diagnostic/Debug.cpp
 	${ST_DIR}/controller/Rcc.cpp
 	${ST_DIR}/controller/Port.cpp
+	${ST_DIR}/controller/Fsmc.cpp
 	${ST_DIR}/io/Gpio.cpp
 	${ST_DIR}/io/Usart.cpp
 	${ST_DIR}/io/I2c.cpp
