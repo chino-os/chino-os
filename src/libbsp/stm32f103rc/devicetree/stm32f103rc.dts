@@ -44,6 +44,30 @@
 			reg = <0x40011000 0x400>;
 		};
 
+		portD: portD {
+			device_type = "port";
+			compatible = "st,stm32f103-port";
+			reg = <0x40011400 0x400>;
+		};
+
+		portE: portE {
+			device_type = "port";
+			compatible = "st,stm32f103-port";
+			reg = <0x40011800 0x400>;
+		};
+
+		portF: portF {
+			device_type = "port";
+			compatible = "st,stm32f103-port";
+			reg = <0x40011C00 0x400>;
+		};
+
+		portG: portG {
+			device_type = "port";
+			compatible = "st,stm32f103-port";
+			reg = <0x40012000 0x400>;
+		};
+
 		gpio1: gpio1 {
 			device_type = "gpio";
 			compatible = "st,stm32f103-gpio";
@@ -67,6 +91,16 @@
 			scl_pin = <6>;
 			sda_pin = <7>;
 		};
+
+		fsmc1: fsmc1 {
+			device_type = "fsmc";
+			compatible = "st,stm32f103-fsmc";
+		};
+
+		lcd8080_driver_fsmc1: lcd8080_driver1 {
+			device_type = "lcd8080-driver";
+			compatible = "st,stm32f103-lcd8080-driver-fsmc";
+		};
 	};
 
 	board-peripherals {
@@ -87,9 +121,10 @@
 			slave_address = <0x1D>;
 		};
 
-		ili9341: lcd1 {
+		ili9486: lcd1 {
 			device_type = "display";
-			compatible = "ilitek,ili9341-fsmc";
+			compatible = "ilitek,ili9486";
+			driver = "lcd8080_driver1";
 		};
 	};
 };

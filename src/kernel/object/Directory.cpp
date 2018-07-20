@@ -6,6 +6,10 @@
 
 using namespace Chino;
 
+Directory::Directory()
+{
+}
+
 void Directory::AddItem(std::string_view name, Object & obj)
 {
 	items_.emplace(name, &obj);
@@ -14,7 +18,8 @@ void Directory::AddItem(std::string_view name, Object & obj)
 ObjectAccessor<Object> Directory::Open(std::string_view name, ObjectAccess access)
 {
 	ObjectAccessContext context{ access };
-	auto it = items_.find(std::string(name));
+	std::string sname(name);
+	auto it = items_.find(sname);
 	kassert(it != items_.end());
 	auto obj = it->second;
 	obj->Open(context);

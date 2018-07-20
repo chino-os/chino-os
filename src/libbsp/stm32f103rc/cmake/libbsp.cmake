@@ -19,10 +19,11 @@ SET(BSP_SRC ${DT_DIR}/Fdt.cpp
 	${ST_DIR}/io/Gpio.cpp
 	${ST_DIR}/io/Usart.cpp
 	${ST_DIR}/io/I2c.cpp
+	${ST_DIR}/display/lcd/lcd8080fsmc.cpp
 
 	${AT_DIR}/storage/eeprom/at24c02.cpp
 	${AD_DIR}/sensor/adxl345.cpp
-	${ILI_DIR}/display/lcd/ili9341.cpp)
+	${ILI_DIR}/display/lcd/ili9486.cpp)
 
 FILE(GLOB_RECURSE ST_HAL_SRC "${ST_DIR}/hal/*.c")
 LIST(APPEND BSP_SRC ${ST_HAL_SRC})

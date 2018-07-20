@@ -95,7 +95,6 @@ void ftoa(double n, wchar_t *res, int afterpoint)
 
 	// Extract floating part
 	double fpart = std::abs(n - double(ipart));
-	kassert(fpart != 0);
 
 	// convert integer part to string
 	auto i = _itow_s(ipart, 10, res);

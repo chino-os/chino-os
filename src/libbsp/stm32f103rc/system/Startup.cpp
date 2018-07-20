@@ -12,6 +12,7 @@
 #include <kernel/device/io/I2c.hpp>
 #include <kernel/device/storage/Storage.hpp>
 #include <kernel/device/sensor/Accelerometer.hpp>
+#include <libdriver/devicetree/ilitek/display/lcd/ili9486.hpp>
 
 using namespace Chino;
 using namespace Chino::Device;
@@ -36,6 +37,8 @@ void Chino::BSPSystemStartup()
 		g_Logger->PutString("AT24C02 Read:\n");
 		g_Logger->DumpHex(buffer, std::size(buffer));
 	}
+
+	auto lcd = g_ObjectMgr->GetDirectory(WKD_Device).Open("lcd1", access);
 
 	auto accelerometer1 = g_ObjectMgr->GetDirectory(WKD_Device).Open("accelerometer1", access).MoveAs<Accelerometer>();
 

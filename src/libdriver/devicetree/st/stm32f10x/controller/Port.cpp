@@ -131,7 +131,7 @@ void PortDevice::MarkPinUsed(PortPins pin, bool used) noexcept
 
 void PortDevice::ValidateExclusiveUsePin(PortPins pin)
 {
-	kassert((usedPins_ & static_cast<uint32_t>(pin)) == 0);
+	kassert((usedPins_ & (1 << static_cast<uint32_t>(pin))) == 0);
 }
 
 #define RCC_PERIPH static_cast<RccPeriph>(static_cast<uint32_t>(RccPeriph::PortA) + portIdx_)
