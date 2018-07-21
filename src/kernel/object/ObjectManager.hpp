@@ -19,7 +19,7 @@ namespace Chino
 		ObjectManager();
 
 		Directory & GetRoot() noexcept;
-		Directory & GetDirectory(WellKnownDirectory wellKnown) noexcept;
+		Directory & GetDirectory(WellKnownDirectory wellKnown);
 	private:
 		ObjectPtr<Directory> root_;
 		ObjectPtr<Directory> device_;

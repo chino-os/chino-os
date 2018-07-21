@@ -1,3 +1,4 @@
+#ifndef _WIN32
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/fcntl.h>
@@ -110,3 +111,4 @@ extern "C"
 		return -1;
 	}
 }
+#endif

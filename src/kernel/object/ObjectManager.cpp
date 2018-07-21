@@ -17,7 +17,7 @@ Directory & ObjectManager::GetRoot() noexcept
 	return *root_;
 }
 
-Directory & ObjectManager::GetDirectory(WellKnownDirectory wellKnown) noexcept
+Directory & ObjectManager::GetDirectory(WellKnownDirectory wellKnown)
 {
 	switch (wellKnown)
 	{
@@ -28,4 +28,6 @@ Directory & ObjectManager::GetDirectory(WellKnownDirectory wellKnown) noexcept
 	default:
 		kassert(!"Invalid directory.");
 	}
+
+	throw std::invalid_argument("Invalid directory.");
 }

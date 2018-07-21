@@ -7,9 +7,6 @@
 #include <kernel/device/DeviceManager.hpp>
 #include <libfdt/libfdt.h>
 
-extern const char _binary_devicetree_dtb_start[];
-extern const char _binary_devicetree_dtb_end[];
-
 using namespace Chino;
 using namespace Chino::Device;
 
@@ -18,12 +15,13 @@ class FdtRootDriver : public Driver
 public:
 	virtual void Install() override
 	{
-		g_Logger->PutFormat("fdt: %z\n", _binary_devicetree_dtb_end - _binary_devicetree_dtb_start);
+		auto fdt = BSPGetFdtData();
+		g_Logger->PutFormat("fdt: %z\n", fdt.size());
 		std::vector<ObjectPtr<FDTDevice>> fdtDevices;
 		int depth = 0;
-		auto first_node = fdt_next_node(_binary_devicetree_dtb_start, -1, &depth);
+		auto first_node = fdt_next_node(fdt.data(), -1, &depth);
 		if (first_node >= 0)
-			ForeachNode(fdtDevices, _binary_devicetree_dtb_start, first_node, depth);
+			ForeachNode(fdtDevices, fdt.data(), first_node, depth);
 
 		for (auto& device : fdtDevices)
 			g_DeviceMgr->InstallDevice(device);

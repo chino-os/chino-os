@@ -75,5 +75,7 @@ namespace Chino
 		};
 
 		extern const FDTDriverDescriptor* g_FDTDrivers[];
+
+		gsl::span<const uint8_t> BSPGetFdtData() noexcept;
 	}
 }

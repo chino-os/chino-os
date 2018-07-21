@@ -188,8 +188,9 @@ namespace Chino
 
 		void Release() noexcept
 		{
-			if (obj_ && obj_->Release())
-				obj_ == nullptr;
+			if (obj_)
+				obj_->Release();
+			obj_ = nullptr;
 		}
 	private:
 		template<class U>

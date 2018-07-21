@@ -5,6 +5,7 @@
 #include "../kdebug.hpp"
 #include <libbsp/bsp.hpp>
 
+using namespace Chino;
 using namespace Chino::Device;
 
 DeviceMananger::DeviceMananger()
@@ -25,7 +26,7 @@ void DeviceMananger::InstallDriver(ObjectPtr<Driver> driver)
 	drivers_.emplace_back(std::move(driver));
 }
 
-void DeviceMananger::InstallDevice(ObjectPtr<Device> drive)
+void DeviceMananger::InstallDevice(ObjectPtr<Chino::Device::Device> drive)
 {
 	devices_.emplace_back(drive);
 

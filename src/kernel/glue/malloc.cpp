@@ -2,13 +2,16 @@
 // Chino Glue
 //
 #include <malloc.h>
-#include <reent.h>
 #include <string.h>
 #include "../memory/MemoryManager.hpp"
 #include "../kdebug.hpp"
+#ifndef _WIN32
+#include <reent.h>
+#endif
 
 using namespace Chino::Memory;
 
+#ifndef _WIN32
 extern "C"
 {
 	void* malloc(size_t n)
@@ -64,3 +67,4 @@ extern "C"
 		return calloc(num, size);
 	}
 }
+#endif

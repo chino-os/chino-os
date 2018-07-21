@@ -1,30 +1,7 @@
-SET(COMMON_FLAGS "\
--Os			\
--fno-common \
--fexceptions \
--ffunction-sections \
--fdata-sections \
--fstrict-volatile-bitfields \
--fno-stack-protector")
+INCLUDE(${BOARD_CMAKE_DIR}/toolchain.cmake)
 
-SET(COMMON_WARNING_FLAGS "-Wall \
--Werror=all \
--Wno-error=unused-function \
--Wno-error=unused-but-set-variable \
--Wno-error=unused-variable \
--Wno-error=deprecated-declarations \
--Wextra \
--Werror=frame-larger-than=65536 \
--Wno-unused-parameter \
--Wno-sign-compare \
--Wno-old-style-declaration")
-
-SET(LDFLAGS "\
--nostartfiles           \
--Wl,-static")
-
-SET(CMAKE_C_FLAGS "${COMMON_FLAGS} -std=gnu11")
-SET(CMAKE_CXX_FLAGS "${COMMON_FLAGS} -std=gnu++17")
+SET(CMAKE_C_FLAGS "${COMMON_C_FLAGS}")
+SET(CMAKE_CXX_FLAGS "${COMMON_CXX_FLAGS}")
 SET(CMAKE_EXE_LINKER_FLAGS "${LDFLAGS}")
 
 # - Add user project to CMake project

@@ -1,32 +1,8 @@
+INCLUDE(${BOARD_CMAKE_DIR}/toolchain.cmake)
 INCLUDE(${BOARD_CMAKE_DIR}/libbsp.cmake)
 
-SET(COMMON_FLAGS "\
--Os			\
--fno-common \
--fexceptions \
--ffunction-sections \
--fdata-sections \
--fstrict-volatile-bitfields \
--fno-stack-protector")
-
-SET(COMMON_WARNING_FLAGS "-Wall \
--Werror=all \
--Wno-error=unused-function \
--Wno-error=unused-but-set-variable \
--Wno-error=unused-variable \
--Wno-error=deprecated-declarations \
--Wextra \
--Werror=frame-larger-than=65536 \
--Wno-unused-parameter \
--Wno-sign-compare \
--Wno-old-style-declaration")
-
-SET(LDFLAGS "\
--nostartfiles           \
--Wl,-static")
-
-SET(CMAKE_C_FLAGS "${COMMON_FLAGS} ${BOARD_C_FLAGS} -std=gnu11")
-SET(CMAKE_CXX_FLAGS "${COMMON_FLAGS} ${BOARD_CXX_FLAGS} -std=gnu++17")
+SET(CMAKE_C_FLAGS "${COMMON_C_FLAGS} ${BOARD_C_FLAGS}")
+SET(CMAKE_CXX_FLAGS "${COMMON_CXX_FLAGS} ${BOARD_CXX_FLAGS}")
 SET(CMAKE_EXE_LINKER_FLAGS "${LDFLAGS} ${BOARD_LDFLAGS}")
 
 # - Add user project to CMake project
@@ -39,7 +15,7 @@ LIST(APPEND BSP_SRC ${BSP_SUB_SRC})
 LIST(APPEND BSP_SRC_ASM ${BSP_SUB_SRC_ASM})
 
 SET_PROPERTY(SOURCE ${BSP_SRC_ASM} PROPERTY LANGUAGE C)
-SET_SOURCE_FILES_PROPERTIES(${BSP_SRC_ASM} PROPERTIES COMPILE_FLAGS "-x assembler-with-cpp -D__${ARCH}")
+SET_SOURCE_FILES_PROPERTIES(${ARCH_SRC_ASM} PROPERTIES COMPILE_FLAGS "${COMMON_ASM_FLAGS}")
 
 ADD_LIBRARY(bsp STATIC ${BSP_SRC} ${BSP_SRC_ASM})
 
