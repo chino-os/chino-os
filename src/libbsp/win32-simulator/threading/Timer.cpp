@@ -5,6 +5,7 @@
 #include <libarch/arch.h>
 #include <Windows.h>
 #include <process.h>
+#include <mutex>
 
 using namespace Chino::Threading;
 
@@ -56,63 +57,87 @@ struct InterruptService
 	}
 };
 
+static std::atomic<bool> _exitKernel;
+
+static void WaitForExitKernelMode()
+{
+	_exitKernel.store(true, std::memory_order_release);
+	while (1);
+}
+
+static std::mutex mutex;
+
 static void ArchSwitchContext(ULONG_PTR)
 {
-	InterruptService is;
-	auto ctx = reinterpret_cast<ThreadContext_Arch*>(g_CurrentThreadContext);
+	std::lock_guard<std::mutex> locker(mutex);
 	CONTEXT hostCtx = { 0 };
-	hostCtx.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
-	GetThreadContext(_workerThread, &hostCtx);
+	hostCtx.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
 
-	// Save
-	if (ctx)
 	{
-		ctx->rax = hostCtx.Rax;
-		ctx->rbx = hostCtx.Rbx;
-		ctx->rcx = hostCtx.Rcx;
-		ctx->rdx = hostCtx.Rdx;
-		ctx->rbp = hostCtx.Rbp;
-		ctx->rdi = hostCtx.Rdi;
-		ctx->rsi = hostCtx.Rsi;
-		ctx->r8 = hostCtx.R8;
-		ctx->r9 = hostCtx.R9;
-		ctx->r10 = hostCtx.R10;
-		ctx->r11 = hostCtx.R11;
-		ctx->r12 = hostCtx.R12;
-		ctx->r13 = hostCtx.R13;
-		ctx->r14 = hostCtx.R14;
-		ctx->r15 = hostCtx.R15;
-
-		ctx->rip = hostCtx.Rip;
-		ctx->eflags = hostCtx.EFlags;
-		ctx->rsp = hostCtx.Rsp;
+		_exitKernel.store(false, std::memory_order_release);
+		SuspendThread(_workerThread);
+		GetThreadContext(_workerThread, &hostCtx);
+		auto newCtx = hostCtx;
+		newCtx.Rip = DWORD64(WaitForExitKernelMode);
+		SetThreadContext(_workerThread, &newCtx);
+		ResumeThread(_workerThread);
+		while (!_exitKernel.load(std::memory_order_acquire));
 	}
 
-	// Restore
-	Kernel_SwitchThreadContext();
-	ctx = reinterpret_cast<ThreadContext_Arch*>(g_CurrentThreadContext);
-	hostCtx.Rax = ctx->rax;
-	hostCtx.Rbx = ctx->rbx;
-	hostCtx.Rcx = ctx->rcx;
-	hostCtx.Rdx = ctx->rdx;
-	hostCtx.Rbp = ctx->rbp;
-	hostCtx.Rdi = ctx->rdi;
-	hostCtx.Rsi = ctx->rsi;
-	hostCtx.R8 = ctx->r8;
-	hostCtx.R9 = ctx->r9;
-	hostCtx.R10 = ctx->r10;
-	hostCtx.R11 = ctx->r11;
-	hostCtx.R12 = ctx->r12;
-	hostCtx.R13 = ctx->r13;
-	hostCtx.R14 = ctx->r14;
-	hostCtx.R15 = ctx->r15;
+	{
+		InterruptService is;
+		auto ctx = reinterpret_cast<ThreadContext_Arch*>(g_CurrentThreadContext);
 
-	hostCtx.Rip = ctx->rip;
-	hostCtx.EFlags = ctx->eflags;
-	hostCtx.Rsp = ctx->rsp;
+		// Save
+		if (ctx)
+		{
+			ctx->rax = hostCtx.Rax;
+			ctx->rbx = hostCtx.Rbx;
+			ctx->rcx = hostCtx.Rcx;
+			ctx->rdx = hostCtx.Rdx;
+			ctx->rbp = hostCtx.Rbp;
+			ctx->rdi = hostCtx.Rdi;
+			ctx->rsi = hostCtx.Rsi;
+			ctx->r8 = hostCtx.R8;
+			ctx->r9 = hostCtx.R9;
+			ctx->r10 = hostCtx.R10;
+			ctx->r11 = hostCtx.R11;
+			ctx->r12 = hostCtx.R12;
+			ctx->r13 = hostCtx.R13;
+			ctx->r14 = hostCtx.R14;
+			ctx->r15 = hostCtx.R15;
 
-	SetThreadContext(_workerThread, &hostCtx);
-	_switchQueued.store(false, std::memory_order_release);
+			ctx->rip = hostCtx.Rip;
+			ctx->eflags = hostCtx.EFlags;
+			ctx->rsp = hostCtx.Rsp;
+		}
+
+		// Restore
+		Kernel_SwitchThreadContext();
+		ctx = reinterpret_cast<ThreadContext_Arch*>(g_CurrentThreadContext);
+		hostCtx.Rax = ctx->rax;
+		hostCtx.Rbx = ctx->rbx;
+		hostCtx.Rcx = ctx->rcx;
+		hostCtx.Rdx = ctx->rdx;
+		hostCtx.Rbp = ctx->rbp;
+		hostCtx.Rdi = ctx->rdi;
+		hostCtx.Rsi = ctx->rsi;
+		hostCtx.R8 = ctx->r8;
+		hostCtx.R9 = ctx->r9;
+		hostCtx.R10 = ctx->r10;
+		hostCtx.R11 = ctx->r11;
+		hostCtx.R12 = ctx->r12;
+		hostCtx.R13 = ctx->r13;
+		hostCtx.R14 = ctx->r14;
+		hostCtx.R15 = ctx->r15;
+
+		hostCtx.Rip = ctx->rip;
+		hostCtx.EFlags = ctx->eflags;
+		hostCtx.Rsp = ctx->rsp;
+
+		SetThreadContext(_workerThread, &hostCtx);
+		_switchQueued.store(false, std::memory_order_release);
+	}
 }
 
 static void ArchQueueContextSwitch()
@@ -153,11 +178,12 @@ extern "C"
 	{
 		LARGE_INTEGER dueTime;
 		dueTime.QuadPart = 0;
-		SetWaitableTimer(_timer, &dueTime, 1000, SchedulerTimerCallback, nullptr, FALSE);
+		SetWaitableTimer(_timer, &dueTime, 10, SchedulerTimerCallback, nullptr, FALSE);
 	}
 
 	void ArchHaltProcessor()
 	{
-		WaitForSingleObject(_wfiEvent, INFINITE);
+		while (WaitForSingleObject(_wfiEvent, 10) != WAIT_OBJECT_0)
+			Sleep(0);
 	}
 }
