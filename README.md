@@ -10,16 +10,26 @@ chino-os
 - Multitasking
 - Dynamic linking
 - Supports many architecture
+- Supports developing & debugging on Windows
 
 ## Supported Archs & Boards
 
 
-Architecture  | Board        | Firmware Type |
-------------- | -------------|----------------
-x86_64		  | pc			 | iso           |
-cortex-m3	  | stm32f103rc  | hex           |
+Architecture  | Board           | Firmware Type |
+------------- | ----------------|----------------
+win-x86_64    | win32-simulator | exe           |
+x86_64		  | pc			    | iso           |
+cortex-m3	  | stm32f103rc     | hex           |
 
 ## Build
+
+### For Win32-Simulator
+
+1. Rename `CMakeSettings-template.json` to `CMakeSettings.json`.
+2. Open root directory in Visual Studio 2017 or higher.
+3. Generate CMake cache and build `kernel.exe`.
+
+### For Others
 
 1. Downloads [chino-gnu-toolchain-preview2.tar.gz](https://github.com/chino-os/chino-gnu-toolchain/releases/download/preview2/chino-gnu-toolchain-preview2.tar.gz) and extracts to `/opt/` directory.
 ```bash
@@ -42,6 +52,8 @@ make firmware
 ```
 
 ## Run
+### For exe
+1. Just run `kernel.exe` .
 ### For iso firmware
 1. Downloads [VirtualBox](https://www.virtualbox.org/wiki/Downloads) and runs.
 2. `File` -> `Import Application`, imports `Chino.ova` which is in `chino-os/vms/` directory.
