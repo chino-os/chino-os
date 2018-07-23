@@ -16,7 +16,6 @@ public:
 	virtual void Install() override
 	{
 		auto fdt = BSPGetFdtData();
-		g_Logger->PutFormat("fdt: %z\n", fdt.size());
 		std::vector<ObjectPtr<FDTDevice>> fdtDevices;
 		int depth = 0;
 		auto first_node = fdt_next_node(fdt.data(), -1, &depth);

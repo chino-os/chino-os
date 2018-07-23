@@ -13,8 +13,9 @@ using namespace Chino::Device;
 
 void Chino::BSPSystemStartup()
 {
+	auto access = OA_Read | OA_Write;
+	auto lcd = g_ObjectMgr->GetDirectory(WKD_Device).Open("lcd1", access);
+
 	while (1)
 		ArchHaltProcessor();
-	//auto file = g_FileMgr->OpenFile("/dev/fs0/chino/system/kernel");
-	//g_Logger->PutFormat(L"Opened /dev/fs0/chino/system/kernel, Size: %l bytes\n", g_FileMgr->GetFileSize(file));
 }

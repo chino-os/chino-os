@@ -2,19 +2,37 @@
 // Kernel Device
 //
 #include <libdriver/devicetree/Fdt.hpp>
+#include <Windows.h>
+#include "../devicetree/resource.h"
+
+#include <libdriver/devicetree/simulator/display/lcd/BasicDisplay.hpp>
 
 using namespace Chino::Device;
 
-const uint8_t _devicetree[1] = { 0 };
+struct dtb_resource
+{
+	gsl::span<const uint8_t> Data;
+
+	dtb_resource()
+	{
+		auto hres = FindResource(nullptr, MAKEINTRESOURCE(IDR_DTB), L"Binary");
+		auto size = SizeofResource(nullptr, hres);
+		auto hmem = LoadResource(nullptr, hres);
+		auto data = LockResource(hmem);
+		Data = { reinterpret_cast<const uint8_t*>(data), size };
+	}
+};
 
 gsl::span<const uint8_t> Chino::Device::BSPGetFdtData() noexcept
 {
-	return _devicetree;
+	static dtb_resource dtb;
+	return dtb.Data;
 }
 
 #define REF_FDT_DRIVER_DESC(Type) &Type::Descriptor
 
 const FDTDriverDescriptor* Chino::Device::g_FDTDrivers[] =
 {
+	REF_FDT_DRIVER_DESC(BasicDisplayDriver),
 	nullptr
 };

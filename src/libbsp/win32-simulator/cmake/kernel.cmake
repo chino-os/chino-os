@@ -3,3 +3,17 @@ SET(BOARD_CXX_FLAGS "")
 SET(BOARD_LDFLAGS "")
 
 SET(LDFLAGS "")
+
+SET(KERNEL_SRC ${BOARD_CMAKE_DIR}/../devicetree/Resource.rc)
+	
+SET(DEVICE_TREE_PATH "${BOARD_CMAKE_DIR}/../devicetree/win32-simulator")
+ADD_CUSTOM_COMMAND(OUTPUT devicetree.dtb
+		COMMAND ${TOOLS_DIR}/dtc -O dtb -o devicetree.dtb ${DEVICE_TREE_PATH}.dts
+        COMMENT "Compiling Device Tree ..."
+		DEPENDS ${DEVICE_TREE_PATH}.dts)
+
+SET_SOURCE_FILES_PROPERTIES(${KERNEL_SRC} PROPERTIES 
+	DEPENDS devicetree.dtb
+	COMPILE_FLAGS "/D BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}")
+
+LIST(APPEND KERNEL_SRC devicetree.dtb)

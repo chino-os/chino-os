@@ -16,6 +16,14 @@
 
 using namespace Chino::Device;
 
+extern const uint8_t* _binary_devicetree_dtb_start;
+extern const uint8_t* _binary_devicetree_dtb_end;
+
+gsl::span<const uint8_t> Chino::Device::BSPGetFdtData() noexcept
+{
+	return { _binary_devicetree_dtb_start , _binary_devicetree_dtb_end };
+}
+
 #define REF_FDT_DRIVER_DESC(Type) &Type::Descriptor
 
 const FDTDriverDescriptor* Chino::Device::g_FDTDrivers[] =

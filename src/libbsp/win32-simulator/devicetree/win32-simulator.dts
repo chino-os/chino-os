@@ -1,0 +1,27 @@
+/dts-v1/;
+
+/ {
+    model = "win32,win32-simulator";
+    compatible = "intel,x86_64";
+
+    cpus {
+	    CPU0: cpu@0 {
+	        device_type = "cpu";
+	    };
+	};
+	
+	soc {
+		#address-cells = <1>;
+		#size-cells = <1>;
+	};
+
+	board-peripherals {
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		basicDisplay: lcd1 {
+			device_type = "display";
+			compatible = "simulator,basic-display";
+		};
+	};
+};
