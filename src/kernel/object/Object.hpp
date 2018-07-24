@@ -31,7 +31,13 @@ namespace Chino
 		};
 	};
 
-	struct IObjectAccess
+	struct IObject
+	{
+		virtual void AddRef() noexcept = 0;
+		virtual bool Release() noexcept = 0;
+	};
+
+	struct IObjectAccess : public virtual IObject
 	{
 		virtual void Open(ObjectAccessContext& context) = 0;
 		virtual void Close(ObjectAccessContext& context) = 0;
@@ -65,7 +71,7 @@ namespace Chino
 		std::atomic<long> useCount_;
 	};
 
-	class Object : public virtual IObjectAccess
+	class Object : public virtual IObject
 	{
 	public:
 		Object();
@@ -142,7 +148,7 @@ namespace Chino
 		template<class U>
 		ObjectPtr<U> As() const
 		{
-			auto ptr = static_cast<U*>(obj_);
+			auto ptr = dynamic_cast<U*>(obj_);
 			kassert(!obj_ || (ptr && obj_));
 			return ObjectPtr<U>(ptr);
 		}

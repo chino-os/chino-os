@@ -10,12 +10,12 @@ Directory::Directory()
 {
 }
 
-void Directory::AddItem(std::string_view name, Object & obj)
+void Directory::AddItem(std::string_view name, IObjectAccess & obj)
 {
 	items_.emplace(name, &obj);
 }
 
-ObjectAccessor<Object> Directory::Open(std::string_view name, ObjectAccess access)
+ObjectAccessor<IObjectAccess> Directory::Open(std::string_view name, ObjectAccess access)
 {
 	ObjectAccessContext context{ access };
 	std::string sname(name);

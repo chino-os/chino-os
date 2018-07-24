@@ -3,6 +3,7 @@
 //
 #pragma once
 #include "../kernel_iface.h"
+#include "../object/Object.hpp"
 #include <gsl/gsl>
 
 namespace Chino
@@ -36,5 +37,37 @@ namespace Chino
 		};
 
 		using Rgb565 = Color<ColorFormat::B5G6R5_UNORM>;
+
+		struct SizeU
+		{
+			uint32_t Width, Height;
+		};
+
+		struct RectU
+		{
+			uint32_t Left, Top, Right, Bottom;
+		};
+
+		struct PointU
+		{
+			uint32_t X, Y;
+		};
+
+		struct SurfaceData
+		{
+			gsl::span<uint8_t> Data;
+			size_t Stride;
+			RectU Rect;
+		};
+
+		class Surface : public Object
+		{
+		public:
+			virtual SizeU GetPixelSize() noexcept = 0;
+			virtual ColorFormat GetFormat() noexcept = 0;
+
+			virtual SurfaceData Lock(const RectU& rect) = 0;
+			virtual void Unlock(SurfaceData& data) = 0;
+		};
 	}
 }

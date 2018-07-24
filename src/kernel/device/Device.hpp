@@ -38,7 +38,7 @@ namespace Chino
 			}
 		};
 
-		class Device : public Object
+		class Device : public Object, public virtual IObjectAccess
 		{
 		public:
 			virtual ObjectPtr<Driver> TryLoadDriver();
