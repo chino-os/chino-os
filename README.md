@@ -1,6 +1,6 @@
 chino-os
 ===
-![Screenshots](screenshots/1.png)
+![Screenshots](screenshots/2.png)
 
 ## Introduction
 

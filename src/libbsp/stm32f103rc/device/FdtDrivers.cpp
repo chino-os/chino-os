@@ -16,8 +16,8 @@
 
 using namespace Chino::Device;
 
-extern const uint8_t* _binary_devicetree_dtb_start;
-extern const uint8_t* _binary_devicetree_dtb_end;
+extern const uint8_t _binary_devicetree_dtb_start[];
+extern const uint8_t _binary_devicetree_dtb_end[];
 
 gsl::span<const uint8_t> Chino::Device::BSPGetFdtData() noexcept
 {

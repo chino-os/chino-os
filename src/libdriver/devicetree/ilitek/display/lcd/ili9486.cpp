@@ -47,7 +47,7 @@ class ILI9486Device : public Device, public ExclusiveObjectAccess
 {
 public:
 	static constexpr uint16_t PixelWidth = 320;
-	static constexpr uint16_t PixelHeight = 240;
+	static constexpr uint16_t PixelHeight = 480;
 
 	ILI9486Device(const FDTDevice& fdt)
 		:fdt_(fdt)
