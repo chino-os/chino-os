@@ -45,7 +45,7 @@ sudo tar xvzf chino-gnu-toolchain-preview3.tar.gz /opt/
 git clone git://git.code.sf.net/p/gnu-efi/code gnu-efi-code
 cd gnu-efi-code
 make && sudo make install
-sudo apt install xorriso cmake -y
+sudo apt install device-tree-compiler xorriso cmake -y
 ```
 3. Clones source and builds
 ```bash
