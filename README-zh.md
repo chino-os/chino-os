@@ -4,48 +4,48 @@ chino-os
 
 ![Screenshots](screenshots/2.png)
 
-## Introduction
+## 简介
 
-`chino` is a real time operating system written in C++, which is designed for the [IoT](https://en.wikipedia.org/wiki/Internet_of_things).
+`chino` 是一个用 C++ 实现的、专为物联网设计的实时操作系统。
 
-## Features
+## 特性
 
-- Multitasking
-- Dynamic linking
-- Supports many architecture
-- Supports developing & debugging on Windows
+- 多任务式
+- 动态链接
+- 支持多种架构
+- 支持在 Windows 下的开发与调试
 
-## Supported Archs & Boards
+## 支持的架构与开发板
 
-Architecture  | Board           | Firmware Type |
+架构          | 开发板           | 固件类型 |
 ------------- | ----------------|----------------
 win-x86_64    | win32-simulator | exe           |
 x86_64		  | pc			    | iso           |
 cortex-m3	  | stm32f103rc     | hex           |
 
-## Build
+## 构建
 
-### For Win32-Simulator
+### Win32 模拟器
 
-1. Rename `CMakeSettings-template.json` to `CMakeSettings.json`.
-2. Open root directory in Visual Studio 2017 or higher.
-3. Generate CMake cache and build `kernel.exe`.
+1. 把 `CMakeSettings-template.json` 重命名为 `CMakeSettings.json`。
+2. 用 Visual Studio 2017 （或者更高版本）打开项目根目录。
+3. 生成 CMake Cache 然后构建。
 
-### For Others
+### 其它
 
-1. Downloads [chino-gnu-toolchain-preview3.tar.gz](https://github.com/chino-os/chino-gnu-toolchain/releases/download/preview3/chino-gnu-toolchain-preview3.tar.gz) and extracts to `/opt/` directory
+1. 下载 [chino-gnu-toolchain-preview3.tar.gz](https://github.com/chino-os/chino-gnu-toolchain/releases/download/preview3/chino-gnu-toolchain-preview3.tar.gz) 并解压到 `/opt/` 目录
 ```bash
 wget https://github.com/chino-os/chino-gnu-toolchain/releases/download/preview3/chino-gnu-toolchain-preview3.tar.gz
 sudo tar xvzf chino-gnu-toolchain-preview3.tar.gz /opt/
 ```
-2. Installs dependencies
+2. 安装依赖
 ```bash
 git clone git://git.code.sf.net/p/gnu-efi/code gnu-efi-code
 cd gnu-efi-code
 make && sudo make install
 sudo apt install xorriso cmake -y
 ```
-3. Clones source and builds
+3. 克隆源码编译
 ```bash
 git clone https://github.com/chino-os/chino-os.git
 mkdir build && cd build
@@ -53,22 +53,22 @@ mkdir build && cd build
 make firmware
 ```
 
-## Run
+## 运行
 
-### For exe
-1. Just run `kernel.exe` (build_i/src/kernel/Debug/kernel.exe).
+### exe 程序
+1. 直接双击 `kernel.exe` （在 build_i/src/kernel/Debug 目录下）。
 
-### For iso firmware
-1. Downloads [VirtualBox](https://www.virtualbox.org/wiki/Downloads) and runs.
-2. `File` -> `Import Application`, imports `Chino.ova` which is in `chino-os/vms/` directory.
-3. `Settings` -> `storage`, chooses the `empty` device and imports the `firmware.iso` just generated in the `build` directory.
-4. `Start`.
+### iso 固件
+1. 下载 [VirtualBox](https://www.virtualbox.org/wiki/Downloads) 并运行。
+2. `文件` -> `导入应用`, 导入 `chino-os/vms/` 目录下的 `Chino.ova`。
+3. `设置` -> `储存`, 选择 `空` 设备然后导入在 `build` 目录下的 `firmware.iso`。
+4. 开始运行。
 
-### For hex firmware
-1. Download `kernel.hex` to your board.
-2. Reset your board.
+### hex 固件
+1. 将 `kernel.hex` 烧录到开发板。
+2. 重启开发板。
 
-## [License (MIT)](https://raw.githubusercontent.com/chino-os/chino-os/master/LICENSE)
+## [许可证 (MIT)](https://raw.githubusercontent.com/chino-os/chino-os/master/LICENSE)
 
 	MIT License
 
@@ -91,3 +91,5 @@ make firmware
 	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 	SOFTWARE.
+
+
