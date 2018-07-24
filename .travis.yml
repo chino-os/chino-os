@@ -4,9 +4,10 @@ addons:
       - cmake
 install:
   - wget https://github.com/chino-os/chino-gnu-toolchain/releases/download/preview3/chino-gnu-toolchain-preview3.tar.gz
-  - tar -xvzf chino-gnu-toolchain-preview3.tar.gz
+  - sudo tar -xzf chino-gnu-toolchain-preview3.tar.gz /opt/
   - export PATH=$PATH:$PWD/chino/bin/
 script:
+ - chmod +x build.sh
  - mkdir build && cd build
  - ../build.sh cortex-m3 stm32f103rc
  - make firmware
