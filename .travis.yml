@@ -7,7 +7,6 @@ install:
   - tar -xvzf chino-gnu-toolchain-preview3.tar.gz
   - export PATH=$PATH:$PWD/chino/bin/
 script:
-# build
  - mkdir build && cd build
  - ../build.sh cortex-m3 stm32f103rc
  - make firmware
