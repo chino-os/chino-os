@@ -4,7 +4,7 @@ addons:
       - cmake
 install:
   - wget https://github.com/chino-os/chino-gnu-toolchain/releases/download/preview3/chino-gnu-toolchain-preview3.tar.gz
-  - sudo tar -xzf chino-gnu-toolchain-preview3.tar.gz /opt/
+  - sudo tar -xzf chino-gnu-toolchain-preview3.tar.gz -C /opt
   - export PATH=$PATH:$PWD/chino/bin/
 script:
  - chmod +x build.sh
