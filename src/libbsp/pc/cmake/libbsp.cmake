@@ -6,5 +6,4 @@ SET(ACPI_DIR ${DRIVER_DIR}/acpi)
 
 SET(BSP_SRC ${ACPI_DIR}/Acpi.cpp
 	${ACPI_DIR}/pci/Pci.cpp
-	${ACPI_DIR}/bridge/Isa.cpp
-	${ACPI_DIR}/storage/Ahci.cpp)
+	${ACPI_DIR}/bridge/Isa.cpp)
