@@ -2,6 +2,8 @@ chino-os
 ===
 [English](README.md) [中文文档](README-zh.md)
 
+[![travis-ci](https://travis-ci.org/chino-os/chino-os.svg?branch=master)](https://travis-ci.org/chino-os/chino-os) [![appveyor](https://ci.appveyor.com/api/projects/status/ff0xqvr439d0780v?svg=true)](https://ci.appveyor.com/project/sunnycase/chino-os)
+
 ![Screenshots](screenshots/2.png)
 
 ## 简介
