@@ -3,10 +3,15 @@ addons:
     packages:
       - cmake
       - device-tree-compiler
+      - xorriso
 install:
   - wget https://github.com/chino-os/chino-gnu-toolchain/releases/download/preview3/chino-gnu-toolchain-preview3.tar.gz
   - sudo tar -xzf chino-gnu-toolchain-preview3.tar.gz -C /opt
   - export PATH=$PATH:/opt/chino/bin
+  - git clone git://git.code.sf.net/p/gnu-efi/code gnu-efi-code
+  - cd gnu-efi-code
+  - make && sudo make install
+  - cd ..
 matrix:
   include:
   - name: "cortex-m3 stm32f103rc"
