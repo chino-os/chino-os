@@ -89,7 +89,7 @@ typedef volatile struct
 	i2c_sr2 SR2;
 	i2c_ccr CCR;
 	uint32_t TRISE;
-} I2C_TypeDef2;
+} I2C_TypeDef;
 
 #define  I2C_EVENT_MASTER_MODE_SELECT                      ((uint32_t)0x00030001)  /* BUSY, MSL and SB flag */
 #define  I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED        ((uint32_t)0x00070082)  /* BUSY, MSL, ADDR, TXE and TRA flags */
@@ -272,7 +272,7 @@ private:
 		while (i2c->SR2.BUSY);
 	}
 private:
-	I2C_TypeDef2 * i2c_;
+	I2C_TypeDef * i2c_;
 	const FDTDevice& fdt_;
 	RccPeriph periph_;
 	std::optional<ObjectAccessor<PortPin>> sclPin_, sdaPin_;

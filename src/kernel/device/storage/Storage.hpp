@@ -36,5 +36,11 @@ namespace Chino
 		public:
 			virtual StorageType GetStorageType() override final;
 		};
+
+		class FlashStorage : public StorageDevice
+		{
+		public:
+			virtual StorageType GetStorageType() override final;
+		};
 	}
 }

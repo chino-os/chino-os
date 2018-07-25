@@ -10,6 +10,7 @@
 #include <kernel/threading/ThreadSynchronizer.hpp>
 #include <kernel/device/io/Gpio.hpp>
 #include <kernel/device/io/I2c.hpp>
+#include <kernel/device/io/Spi.hpp>
 #include <kernel/device/storage/Storage.hpp>
 #include <kernel/device/sensor/Accelerometer.hpp>
 #include <libdriver/devicetree/ilitek/display/lcd/ili9486.hpp>

@@ -272,6 +272,12 @@ void RccDevice::SetPeriphClockIsEnabled(RccPeriph periph, bool enable)
 	case RccPeriph::I2C1:
 		rcc->APB1ENR.I2C1EN = value;
 		break;
+	case RccPeriph::SPI1:
+		rcc->APB2ENR.SPI1EN = value;
+		break;
+	case RccPeriph::SPI2:
+		rcc->APB1ENR.SPI2EN = value;
+		break;
 	case RccPeriph::FSMC:
 		rcc->AHBENR.FSMCEN = value;
 		break;

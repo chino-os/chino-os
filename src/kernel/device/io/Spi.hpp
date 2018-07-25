@@ -13,10 +13,10 @@ namespace Chino
 	{
 		enum class SpiMode
 		{
-			Mode0,
-			Mode1,
-			Mode2,
-			Mode3
+			Mode0,		//!< CPOL = 0, CPHA = 0
+			Mode1,		//!< CPOL = 0, CPHA = 1
+			Mode2,		//!< CPOL = 1, CPHA = 0
+			Mode3		//!< CPOL = 1, CPHA = 1
 		};
 
 		class SpiDevice : public Device
@@ -30,7 +30,7 @@ namespace Chino
 		class SpiController : public Device
 		{
 		public:
-			virtual ObjectAccessor<SpiDevice> OpenDevice(uint32_t chipSelectLine, uint32_t dataBitLength, ObjectAccess access) = 0;
+			virtual ObjectAccessor<SpiDevice> OpenDevice(uint32_t chipSelectMask, SpiMode mode, uint32_t dataBitLength, ObjectAccess access) = 0;
 		};
 	}
 }

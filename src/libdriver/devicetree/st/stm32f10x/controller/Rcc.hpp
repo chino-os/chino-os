@@ -20,6 +20,8 @@ namespace Chino
 			PortF,
 			PortG,
 			I2C1,
+			SPI1,
+			SPI2,
 			FSMC
 		};
 
