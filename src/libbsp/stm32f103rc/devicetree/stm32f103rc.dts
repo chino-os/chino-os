@@ -142,7 +142,7 @@
 			device_type = "flash";
 			compatible = "gd,gd25q128";
 			spi = "spi2";
-			cs_port = "portG";
+			cs_gpio = "gpio2";
 			cs_pin = <13>;
 		};
 

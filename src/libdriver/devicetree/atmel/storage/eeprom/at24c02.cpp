@@ -33,7 +33,7 @@ public:
 
 	virtual size_t Read(size_t offset, BufferList<uint8_t> bufferList) override
 	{
-		if (offset >= GetSize())
+		if (offset > GetSize())
 			throw std::out_of_range("offset is out of range");
 
 		uint8_t send[] = { static_cast<uint8_t>(offset) };

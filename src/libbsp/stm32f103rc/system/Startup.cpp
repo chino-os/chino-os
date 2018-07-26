@@ -13,7 +13,6 @@
 #include <kernel/device/io/Spi.hpp>
 #include <kernel/device/storage/Storage.hpp>
 #include <kernel/device/sensor/Accelerometer.hpp>
-#include <libdriver/devicetree/ilitek/display/lcd/ili9486.hpp>
 
 using namespace Chino;
 using namespace Chino::Device;
@@ -36,6 +35,17 @@ void Chino::BSPSystemStartup()
 		gsl::span<uint8_t> readBuffers[] = { buffer };
 		kassert(eeprom1->Read(0, { readBuffers }) == std::size(buffer));
 		g_Logger->PutString("AT24C02 Read:\n");
+		g_Logger->DumpHex(buffer, std::size(buffer));
+	}
+	auto flash1 = g_ObjectMgr->GetDirectory(WKD_Device).Open("flash1", access).MoveAs<FlashStorage>();
+	{
+		gsl::span<const uint8_t> writeBuffers[] = { buffer };
+		flash1->Write(0, { writeBuffers });
+	}
+	{
+		gsl::span<uint8_t> readBuffers[] = { buffer };
+		kassert(flash1->Read(0, { readBuffers }) == std::size(buffer));
+		g_Logger->PutString("GD25Q128 Read:\n");
 		g_Logger->DumpHex(buffer, std::size(buffer));
 	}
 
