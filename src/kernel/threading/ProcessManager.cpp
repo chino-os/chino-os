@@ -169,7 +169,7 @@ kernel_critical::kernel_critical()
 	if (coreTaken_.load(std::memory_order_acquire) != coreId)
 	{
 		size_t expected = 0;
-		while (!coreTaken_.compare_exchange_strong(expected, coreId, std::memory_order_release))
+		while (!coreTaken_.compare_exchange_strong(expected, coreId, std::memory_order_acq_rel))
 			expected = 0;
 
 		depth_ = 1;

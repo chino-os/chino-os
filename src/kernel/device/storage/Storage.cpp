@@ -16,3 +16,8 @@ StorageType EEPROMStorage::GetStorageType()
 {
 	return StorageType::EEPROM;
 }
+
+StorageType FlashStorage::GetStorageType()
+{
+	return StorageType::Flash;
+}
