@@ -96,6 +96,8 @@
 			port = "portB";
 			scl_pin = <6>;
 			sda_pin = <7>;
+			ev_irq = <31>;
+			er_irq = <32>;
 		};
 
 		spi2: spi2 {

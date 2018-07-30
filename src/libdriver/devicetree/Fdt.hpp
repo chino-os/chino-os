@@ -30,6 +30,15 @@ bool Type::IsSupported(const Chino::Device::FDTDevice& device) \
 return device.HasDeviceType(DeviceType) && device.HasCompatible(Compatible); \
 }
 
+#define DEFINE_FDT_DRIVER_DESC_2(Type, DeviceType, Compatible1, Compatible2) \
+Chino::ObjectPtr<Chino::Device::Driver> Type::Activate(const Chino::Device::FDTDevice& device) \
+{ return Chino::MakeObject<Type>(device); } \
+const Chino::Device::FDTDriverDescriptor Type::Descriptor = { Type::Activate, Type::IsSupported }; \
+bool Type::IsSupported(const Chino::Device::FDTDevice& device) \
+{ \
+return device.HasDeviceType(DeviceType) && (device.HasCompatible(Compatible1) || device.HasCompatible(Compatible2)); \
+}
+
 namespace Chino
 {
 	namespace Device

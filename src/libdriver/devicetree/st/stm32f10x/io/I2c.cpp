@@ -4,6 +4,7 @@
 #include "I2c.hpp"
 #include <kernel/kdebug.hpp>
 #include <kernel/device/io/I2c.hpp>
+#include <kernel/device/controller/Pic.hpp>
 #include <kernel/object/ObjectManager.hpp>
 #include <kernel/device/DeviceManager.hpp>
 #include "../controller/Rcc.hpp"
@@ -144,19 +145,21 @@ public:
 		sclPin_ = port->OpenPin(static_cast<PortPins>(fdt_.GetProperty("scl_pin")->GetUInt32(0)));
 		sdaPin_ = port->OpenPin(static_cast<PortPins>(fdt_.GetProperty("sda_pin")->GetUInt32(0)));
 
-		(*sclPin_)->SetMode(PortOutputMode::AF_OpenDrain, PortOutputSpeed::PS_50MHz);
-		(*sdaPin_)->SetMode(PortOutputMode::AF_OpenDrain, PortOutputSpeed::PS_50MHz);
+		sclPin_->SetMode(PortOutputMode::AF_OpenDrain, PortOutputSpeed::PS_50MHz);
+		sdaPin_->SetMode(PortOutputMode::AF_OpenDrain, PortOutputSpeed::PS_50MHz);
 
 		RccDevice::Rcc1SetPeriphClockIsEnabled(periph_, true);
 		i2c_->CR1.PE = 1;
 		i2c_->CR2.FREQ = RccDevice::Rcc1GetClockFrequency(periph_) / 1000000;
+		SetIRQEnable(true);
 	}
 
 	virtual void OnLastClose() override
 	{
+		SetIRQEnable(false);
 		RccDevice::Rcc1SetPeriphClockIsEnabled(periph_, false);
-		sdaPin_.reset();
-		sclPin_.reset();
+		sdaPin_.Reset();
+		sclPin_.Reset();
 	}
 
 	size_t WriteRead(ObjectPtr<Stm32I2cDevice> device, BufferList<const uint8_t> writeBufferList, BufferList<uint8_t> readBufferList)
@@ -193,6 +196,25 @@ private:
 		return (status & event) == event;
 	}
 
+	void SetIRQEnable(bool enable)
+	{
+		auto erIrq = fdt_.GetProperty("er_irq")->GetUInt32(0);
+		auto nvic = g_ObjectMgr->GetDirectory(WKD_Device).Open("nvic1", OA_Read | OA_Write).MoveAs<PicDevice>();
+
+		if (enable)
+		{
+			erIrq_ = g_DeviceMgr->InstallIRQHandler(nvic->GetId(), erIrq, std::bind(&Stm32I2cController::OnErrorIRQ, this));
+
+			nvic->SetIRQEnabled(erIrq, true);
+		}
+		else
+		{
+			nvic->SetIRQEnabled(erIrq, false);
+
+			erIrq_.Reset();
+		}
+	}
+
 	void SetupDevice(Stm32I2cDevice& device)
 	{
 		auto i2c = i2c_;
@@ -207,6 +229,8 @@ private:
 		i2c->TRISE = clk / 1000000 + 1;
 		i2c->CR1.PE = 1;
 		i2c->CR1.ACK = 1;
+		i2c->CR2.ITEVTEN = 1;
+		i2c->CR2.ITERREN = 1;
 	}
 
 	void WriteData(BufferList<const uint8_t> bufferList)
@@ -271,11 +295,17 @@ private:
 		i2c->CR1.STOP = 1;
 		while (i2c->SR2.BUSY);
 	}
+
+	void OnErrorIRQ()
+	{
+
+	}
 private:
 	I2C_TypeDef * i2c_;
 	const FDTDevice& fdt_;
 	RccPeriph periph_;
-	std::optional<ObjectAccessor<PortPin>> sclPin_, sdaPin_;
+	ObjectAccessor<PortPin> sclPin_, sdaPin_;
+	ObjectPtr<IObject> erIrq_;
 };
 
 size_t Stm32I2cDevice::WriteRead(BufferList<const uint8_t> writeBufferList, BufferList<uint8_t> readBufferList)

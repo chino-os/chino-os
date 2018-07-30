@@ -4,6 +4,7 @@
 #include "DeviceManager.hpp"
 #include "../kdebug.hpp"
 #include <libbsp/bsp.hpp>
+#include "controller/Pic.hpp"
 
 using namespace Chino;
 using namespace Chino::Device;
@@ -43,4 +44,38 @@ void DeviceMananger::DumpDevices()
 	//{
 	//	g_Logger->PutFormat("Drive%d: Max LBA: %d, Block Size: %d\n", i++, (int)dev->MaxLBA, (int)dev->BlockSize);
 	//}
+}
+
+ObjectPtr<IObject> DeviceMananger::InstallIRQHandler(size_t picId, int32_t irq, std::function<void()> handler)
+{
+	auto entry = MakeObject<IRQEntry>(picId, irq, std::move(handler));
+	irqHandlers_[picId][irq] = entry;
+	return entry;
+}
+
+void DeviceMananger::OnIRQ(size_t picId, int32_t irq)
+{
+	auto& handler = irqHandlers_.at(picId).at(irq);
+	handler->Invoke();
+}
+
+void DeviceMananger::UninstallIRQHandler(size_t picId, int32_t irq)
+{
+	irqHandlers_.at(picId).erase(irq);
+}
+
+DeviceMananger::IRQEntry::IRQEntry(size_t picId, int32_t irq, std::function<void()>&& handler)
+	:picId_(picId), irq_(irq), handler_(std::move(handler))
+{
+
+}
+
+DeviceMananger::IRQEntry::~IRQEntry()
+{
+	g_DeviceMgr->UninstallIRQHandler(picId_, irq_);
+}
+
+void DeviceMananger::IRQEntry::Invoke()
+{
+	handler_();
 }

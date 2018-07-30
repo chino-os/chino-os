@@ -13,6 +13,8 @@ SET(BSP_SRC ${DT_DIR}/Fdt.cpp
 	${DT_DIR}/FdtRoot.cpp
 	${ARM_DIR}/Boot.c 
 	${ARM_DIR}/threading/Timer.cpp
+	${ARM_DIR}/controller/Nvic.cpp
+	${ST_DIR}/controller/Nvic.cpp
 	${ST_DIR}/diagnostic/Debug.cpp
 	${ST_DIR}/controller/Rcc.cpp
 	${ST_DIR}/controller/Port.cpp
@@ -40,6 +42,6 @@ ADD_CUSTOM_COMMAND(OUTPUT devicetree.o
 
 LIST(APPEND BSP_SRC devicetree.o)
 
-SET(BSP_SRC_ASM ${ARM_DIR}/Boot.S)
+SET(BSP_SRC_ASM ${ST_DIR}/Boot.S)
 
 LIST(APPEND BSP_LIBS fdt)
