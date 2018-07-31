@@ -29,6 +29,14 @@ void Waitable::NotifyOne()
 
 void Waitable::NotifyAll()
 {
+	kernel_critical kc;
+	while (!waitingThreads_.empty())
+	{
+		auto thread = waitingThreads_.back();
+		waitingThreads_.pop_back();
+
+		g_ProcessMgr->AttachReadyThread(thread);
+	}
 }
 
 Semaphore::Semaphore(size_t initialCount)
@@ -59,7 +67,7 @@ void Semaphore::Give(size_t count)
 	if (count)
 	{
 		count_.fetch_add(count, std::memory_order_relaxed);
-		NotifyOne();
+		NotifyAll();
 	}
 }
 
@@ -84,6 +92,53 @@ void Mutex::Take()
 				break;
 		}
 	}
+}
+
+void Mutex::Give()
+{
+	avail_.store(true, std::memory_order_relaxed);
+	NotifyOne();
+}
+
+Event::Event(bool initialState, bool autoReset)
+	:autoReset_(autoReset), signaled_(initialState)
+{
+
+}
+
+void Event::Wait()
+{
+	while (true)
+	{
+		auto expected = signaled_.load(std::memory_order_relaxed);
+		if (!expected)
+		{
+			WaitOne();
+		}
+		else
+		{
+			if (autoReset_)
+			{
+				if (signaled_.compare_exchange_strong(expected, false, std::memory_order_relaxed))
+					break;
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
+}
+
+void Event::Signal()
+{
+	signaled_.store(true, std::memory_order_relaxed);
+	NotifyAll();
+}
+
+void Event::Reset()
+{
+	signaled_.store(false, std::memory_order_relaxed);
 }
 
 void Mutex::Give()

@@ -11,7 +11,7 @@
 using namespace Chino;
 using namespace Chino::Device;
 
-DEFINE_FDT_DRIVER_DESC_1(NvicDriver, "pic", "arm,cortex-m3");
+DEFINE_FDT_DRIVER_DESC_1(NvicDriver, "pic", "arm,cortex-m3-nvic");
 
 #define NVIC_ISER ((volatile uint32_t*)0xE000E100)
 #define NVIC_ICER ((volatile uint32_t*)0xE000E180)

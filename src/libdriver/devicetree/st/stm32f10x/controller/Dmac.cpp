@@ -26,7 +26,7 @@ public:
 
 	virtual ObjectPtr<DmaChannel> OpenChannel(RccPeriph periph) override
 	{
-		if (N == 1)
+		if constexpr (N == 1)
 		{
 
 		}

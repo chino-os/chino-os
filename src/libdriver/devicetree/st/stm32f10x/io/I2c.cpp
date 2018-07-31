@@ -12,6 +12,7 @@
 #include "../controller/Fsmc.hpp"
 #include <kernel/threading/ThreadSynchronizer.hpp>
 #include <libbsp/bsp.hpp>
+#include <kernel/device/Async.hpp>
 
 using namespace Chino;
 using namespace Chino::Device;
@@ -229,7 +230,6 @@ private:
 		i2c->TRISE = clk / 1000000 + 1;
 		i2c->CR1.PE = 1;
 		i2c->CR1.ACK = 1;
-		i2c->CR2.ITEVTEN = 1;
 		i2c->CR2.ITERREN = 1;
 	}
 
@@ -298,7 +298,7 @@ private:
 
 	void OnErrorIRQ()
 	{
-
+		g_Logger->PutChar('E');
 	}
 private:
 	I2C_TypeDef * i2c_;
@@ -306,6 +306,7 @@ private:
 	RccPeriph periph_;
 	ObjectAccessor<PortPin> sclPin_, sdaPin_;
 	ObjectPtr<IObject> erIrq_;
+	//ObjectPtr<AsyncAction> currentAction_;
 };
 
 size_t Stm32I2cDevice::WriteRead(BufferList<const uint8_t> writeBufferList, BufferList<uint8_t> readBufferList)

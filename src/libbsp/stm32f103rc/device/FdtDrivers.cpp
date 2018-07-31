@@ -2,6 +2,7 @@
 // Kernel Device
 //
 #include <libdriver/devicetree/Fdt.hpp>
+#include <libdriver/devicetree/arm/cortex-m3/controller/Nvic.hpp>
 #include <libdriver/devicetree/st/stm32f10x/controller/Rcc.hpp>
 #include <libdriver/devicetree/st/stm32f10x/controller/Port.hpp>
 #include <libdriver/devicetree/st/stm32f10x/controller/Fsmc.hpp>
@@ -30,6 +31,7 @@ gsl::span<const uint8_t> Chino::Device::BSPGetFdtData() noexcept
 
 const FDTDriverDescriptor* Chino::Device::g_FDTDrivers[] =
 {
+	REF_FDT_DRIVER_DESC(NvicDriver),
 	REF_FDT_DRIVER_DESC(RccDriver),
 	REF_FDT_DRIVER_DESC(PortDriver),
 	REF_FDT_DRIVER_DESC(FsmcDriver),

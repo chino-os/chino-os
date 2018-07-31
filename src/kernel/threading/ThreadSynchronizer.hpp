@@ -12,7 +12,7 @@ namespace Chino
 {
 	namespace Threading
 	{
-		class Waitable : public Object, public FreeObjectAccess
+		class Waitable : public Object
 		{
 		public:
 
@@ -45,6 +45,19 @@ namespace Chino
 			void Give();
 		private:
 			std::atomic<bool> avail_;
+		};
+
+		class Event : public Waitable
+		{
+		public:
+			Event(bool initialState = false, bool autoReset = true);
+
+			void Wait();
+			void Signal();
+			void Reset();
+		private:
+			const bool autoReset_;
+			std::atomic<bool> signaled_;
 		};
 
 		template<class T>

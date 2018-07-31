@@ -22,7 +22,7 @@
 	    };
 
 		nvic1: nvic1 {
-			device_type = "nvic";
+			device_type = "pic";
 			compatible = "arm,cortex-m3-nvic";
 		};
 
