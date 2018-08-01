@@ -49,6 +49,7 @@ void Semaphore::Take(size_t count)
 {
 	while (count)
 	{
+		kernel_critical kc;
 		auto expected = count_.load(std::memory_order_relaxed);
 		if (expected < count)
 		{
@@ -81,6 +82,7 @@ void Mutex::Take()
 {
 	while (true)
 	{
+		kernel_critical kc;
 		auto expected = avail_.load(std::memory_order_relaxed);
 		if (!expected)
 		{
@@ -110,6 +112,7 @@ void Event::Wait()
 {
 	while (true)
 	{
+		kernel_critical kc;
 		auto expected = signaled_.load(std::memory_order_relaxed);
 		if (!expected)
 		{
@@ -141,12 +144,6 @@ void Event::Reset()
 	signaled_.store(false, std::memory_order_relaxed);
 }
 
-void Mutex::Give()
-{
-	avail_.store(true, std::memory_order_relaxed);
-	NotifyOne();
-}
-
 Locker<Mutex>::Locker(ObjectPtr<Mutex> mutex)
 	:mutex_(std::move(mutex))
 {
@@ -155,5 +152,6 @@ Locker<Mutex>::Locker(ObjectPtr<Mutex> mutex)
 
 Locker<Mutex>::~Locker()
 {
-	mutex_->Give();
+	if (mutex_)
+		mutex_->Give();
 }

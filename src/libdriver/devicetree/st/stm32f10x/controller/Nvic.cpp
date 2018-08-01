@@ -74,4 +74,24 @@ extern "C"
 	IRQ_THUNK(DMA2_Channel2, 57);
 	IRQ_THUNK(DMA2_Channel3, 58);
 	IRQ_THUNK(DMA2_Channel4_5, 59);
+
+	void HardFault_Handler()
+	{
+		while (1);
+	}
+
+	void MemManage_Handler()
+	{
+		while (1);
+	}
+
+	void BusFault_Handler()
+	{
+		while (1);
+	}
+
+	void UsageFault_Handler()
+	{
+		while (1);
+	}
 }

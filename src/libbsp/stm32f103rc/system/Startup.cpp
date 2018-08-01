@@ -13,6 +13,7 @@
 #include <kernel/device/io/Spi.hpp>
 #include <kernel/device/storage/Storage.hpp>
 #include <kernel/device/sensor/Accelerometer.hpp>
+#include <libdriver/devicetree/st/stm32f10x/controller/Dmac.hpp>
 
 using namespace Chino;
 using namespace Chino::Device;
@@ -47,6 +48,25 @@ void Chino::BSPSystemStartup()
 		kassert(flash1->Read(0, { readBuffers }) == std::size(buffer));
 		g_Logger->PutString("GD25Q128 Read:\n");
 		g_Logger->DumpHex(buffer, std::size(buffer));
+	}
+	{
+		uint8_t buffer2[std::size(buffer)];
+		auto dmac = g_ObjectMgr->GetDirectory(WKD_Device).Open("dmac1", access).MoveAs<DmaController>();
+		auto dma = dmac->OpenChannel(DmaRequestLine::I2C1_RX);
+		DmaTransferOptions options;
+		options.Count = std::size(buffer);
+		options.DestAddress = uintptr_t(buffer2);
+		options.DestBitwidth = 8;
+		options.DestInc = true;
+		options.SourceAddress = uintptr_t(buffer);
+		options.SourceBitwidth = 8;
+		options.SourceInc = true;
+		options.Type = DmaTransmition::Mem2Mem;
+		dma->Configure(options);
+		auto task = dma->StartAsync();
+		task->GetResult();
+		g_Logger->PutString("Dma Copy:\n");
+		g_Logger->DumpHex(buffer2, std::size(buffer));
 	}
 
 	auto lcd = g_ObjectMgr->GetDirectory(WKD_Device).Open("lcd1", access);

@@ -69,6 +69,12 @@ namespace Chino
 		public:
 			Locker(ObjectPtr<Mutex> mutex);
 			~Locker();
+
+			Locker(const Locker&) = delete;
+			Locker& operator=(const Locker&) = delete;
+
+			Locker(Locker&& other) = default;
+			Locker& operator=(Locker&& other) = default;
 		private:
 			ObjectPtr<Mutex> mutex_;
 		};

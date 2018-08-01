@@ -6,20 +6,20 @@
 using namespace Chino;
 using namespace Chino::Threading;
 
-AsyncAction::AsyncAction()
+AsyncActionCompletionEvent::AsyncActionCompletionEvent()
 	:completionEvent_(MakeObject<Event>(false, false)), isCompleted_(false)
 {
 
 }
 
-void AsyncAction::SetResult()
+void AsyncActionCompletionEvent::SetResult()
 {
 	kassert(!isCompleted_);
 	isCompleted_.store(true, std::memory_order_release);
 	completionEvent_->Signal();
 }
 
-void AsyncAction::SetException(const std::exception_ptr& except)
+void AsyncActionCompletionEvent::SetException(const std::exception_ptr& except)
 {
 	kassert(!isCompleted_);
 	exception_ = except;
@@ -27,12 +27,12 @@ void AsyncAction::SetException(const std::exception_ptr& except)
 	completionEvent_->Signal();
 }
 
-void AsyncAction::Wait()
+void AsyncActionCompletionEvent::Wait()
 {
 	completionEvent_->Wait();
 }
 
-void AsyncAction::GetResult()
+void AsyncActionCompletionEvent::GetResult()
 {
 	Wait();
 
@@ -40,7 +40,7 @@ void AsyncAction::GetResult()
 		std::rethrow_exception(exception_);
 }
 
-bool AsyncAction::IsCompleted()
+bool AsyncActionCompletionEvent::IsCompleted()
 {
 	return isCompleted_.load(std::memory_order_acquire);
 }

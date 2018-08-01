@@ -114,10 +114,13 @@ void ProcessManager::AttachReadyThread(thread_it thread)
 	auto priority = (*thread)->GetPriority();
 	readyThreads_[priority].attach(thread);
 
-	auto nextThread = SelectNextSwitchToThread();
-	nextThread_ = nextThread;
-	if (nextThread != runningThread_)
-		BSPYield();
+	//if (!runningThread_.good() || priority > (*runningThread_)->GetPriority())
+	{
+		auto nextThread = SelectNextSwitchToThread();
+		nextThread_ = nextThread;
+		if (nextThread != runningThread_)
+			BSPYield();
+	}
 }
 
 Process::Process(std::string_view name)

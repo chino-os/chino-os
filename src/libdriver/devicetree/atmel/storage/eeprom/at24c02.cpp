@@ -56,7 +56,7 @@ public:
 			{
 				send[1] = data;
 				i2cDev_->Write({ sendBuffers });
-				//BSPSleepMs(1);
+				BSPSleepMs(1);
 				send[0]++;
 			}
 		}

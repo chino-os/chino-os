@@ -18,17 +18,35 @@ namespace Chino
 			Mem2Mem
 		};
 
+		enum class DmaRequestLine
+		{
+			I2C1_TX,
+			I2C1_RX
+		};
+
+		struct DmaTransferOptions
+		{
+			DmaTransmition Type;
+			uintptr_t SourceAddress;
+			size_t SourceBitwidth;
+			bool SourceInc;
+			uintptr_t DestAddress;
+			size_t DestBitwidth;
+			bool DestInc;
+			size_t Count;
+		};
+
 		class DmaChannel : public Object
 		{
 		public:
-			virtual void Configure(DmaTransmition transmition, uintptr_t sourceAddr, uintptr_t destAddr, size_t sourceWidth, size_t destWidth, size_t count) = 0;
+			virtual void Configure(const DmaTransferOptions& options) = 0;
 			virtual ObjectPtr<IAsyncAction> StartAsync() = 0;
 		};
 
 		class DmaController : public Device
 		{
 		public:
-			virtual ObjectPtr<DmaChannel> OpenChannel(RccPeriph periph) = 0;
+			virtual ObjectPtr<DmaChannel> OpenChannel(DmaRequestLine requestLine) = 0;
 		};
 
 		class DmacDriver : public Driver
