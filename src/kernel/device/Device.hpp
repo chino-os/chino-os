@@ -100,6 +100,29 @@ namespace Chino
 					return result;
 				}
 
+				bool IsEmpty() const noexcept
+				{
+					return bufferCount_ == 0;
+				}
+
+				gsl::span<T> First() const noexcept
+				{
+					return bufferCount_ ? buffers_[0] : gsl::span<T>{};
+				}
+
+				gsl::span<T> Pop() noexcept
+				{
+					if (bufferCount_)
+					{
+						auto result = buffers_[0];
+						std::copy(buffers_.begin() + 1, buffers_.end(), buffers_.begin());
+						bufferCount_--;
+						return result;
+					}
+
+					return {};
+				}
+
 				template<class TOut>
 				size_t CopyTo(gsl::span<TOut> buffer) const noexcept
 				{
@@ -132,7 +155,22 @@ namespace Chino
 					result.bufferCount_ = bufferCount_ + 1;
 					return result;
 				}
+
+				template<class TOut>
+				BufferListSelect<TOut> Cast() const noexcept
+				{
+					static_assert(sizeof(T) % sizeof(TOut) == 0, "Invalid cast");
+
+					BufferListSelect<TOut> result;
+					for (size_t i = 0; i < bufferCount_; i++)
+						result.buffers_[i] = { reinterpret_cast<TOut*>(buffers_[i].data()), ptrdiff_t(buffers_[i].size() * sizeof(T) / sizeof(TOut)) };
+					result.bufferCount_ = bufferCount_;
+					return result;
+				}
 			private:
+				template<class U>
+				friend class BufferListSelect;
+
 				std::array<gsl::span<T>, BufferList<T>::MaxBuffersCount> buffers_;
 				size_t bufferCount_;
 			};

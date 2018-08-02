@@ -45,7 +45,7 @@ namespace Chino
 		private:
 			std::vector<ObjectPtr<Driver>> drivers_;
 			std::vector<ObjectPtr<Device>> devices_;
-			std::unordered_map<size_t, std::unordered_map<int32_t, ObjectPtr<IRQEntry>>> irqHandlers_;
+			std::unordered_map<size_t, std::unordered_map<int32_t, IRQEntry*>> irqHandlers_;
 		};
 	}
 }

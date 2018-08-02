@@ -9,7 +9,6 @@ using namespace Chino::Threading;
 AsyncActionCompletionEvent::AsyncActionCompletionEvent()
 	:completionEvent_(MakeObject<Event>(false, false)), isCompleted_(false)
 {
-
 }
 
 void AsyncActionCompletionEvent::SetResult()

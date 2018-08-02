@@ -22,7 +22,7 @@ namespace Chino
 		class Thread : public Object, public FreeObjectAccess
 		{
 		public:
-			Thread(ObjectPtr<Process> process, std::function<void()> threadMain, uint32_t priority);
+			Thread(ObjectPtr<Process> process, std::function<void()> threadMain, uint32_t priority, size_t stackSize);
 
 			uint32_t GetPriority() const noexcept { return priority_; }
 			ThreadContext_Arch& GetContext() noexcept { return threadContext_; }
@@ -42,7 +42,7 @@ namespace Chino
 		public:
 			Process(std::string_view name);
 
-			ObjectPtr<Thread> AddThread(std::function<void()> threadMain, uint32_t priority);
+			ObjectPtr<Thread> AddThread(std::function<void()> threadMain, uint32_t priority, size_t stackSize = DEFAULT_THREAD_STACK_SIZE);
 		private:
 			std::string name_;
 			std::vector<ObjectPtr<Thread>> threads_;
@@ -82,7 +82,7 @@ namespace Chino
 			~kernel_critical();
 		private:
 			static std::atomic<size_t> coreTaken_;
-			static size_t depth_;
+			static std::atomic<size_t> depth_;
 		};
 	}
 }

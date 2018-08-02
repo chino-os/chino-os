@@ -14,7 +14,7 @@ using namespace Chino;
 using namespace Chino::Threading;
 
 std::atomic<size_t> kernel_critical::coreTaken_(0);
-size_t kernel_critical::depth_(0);
+std::atomic<size_t> kernel_critical::depth_(0);
 
 static void OnThreadExit();
 static void IdleThreadMain();
@@ -128,18 +128,18 @@ Process::Process(std::string_view name)
 {
 }
 
-ObjectPtr<Thread> Process::AddThread(std::function<void()> threadMain, uint32_t priority)
+ObjectPtr<Thread> Process::AddThread(std::function<void()> threadMain, uint32_t priority, size_t stackSize)
 {
-	auto thread = threads_.emplace_back(MakeObject<Thread>(this, std::move(threadMain), priority));
+	auto thread = threads_.emplace_back(MakeObject<Thread>(this, std::move(threadMain), priority, stackSize));
 	g_ProcessMgr->AddReadyThread(thread);
 	return thread;
 }
 
-Thread::Thread(ObjectPtr<Process> process, std::function<void()> threadMain, uint32_t priority)
+Thread::Thread(ObjectPtr<Process> process, std::function<void()> threadMain, uint32_t priority, size_t stackSize)
 	:process_(process), priority_(priority), threadContext_({}), threadMain_(std::move(threadMain))
 {
 	kassert(threadMain_ && priority <= MAX_THREAD_PRIORITY);
-	auto stackSize = DEFAULT_THREAD_STACK_SIZE;
+	kassert(stackSize && stackSize % sizeof(uintptr_t) == 0);
 	stack_ = std::make_unique<uint8_t[]>(stackSize);
 	auto stackPointer = uintptr_t(stack_.get()) + stackSize;
 	ArchInitializeThreadContextArch(&threadContext_, stackPointer, uintptr_t(ThreadMainThunk), uintptr_t(OnThreadExit), uintptr_t(this));

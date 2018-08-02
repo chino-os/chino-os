@@ -11,6 +11,7 @@
 #include "Rcc.hpp"
 #include <string>
 #include <io_helper.hpp>
+#include <kernel/memory/MemoryManager.hpp>
 
 using namespace Chino;
 using namespace Chino::Device;
@@ -137,6 +138,18 @@ typedef volatile struct
 	} Channel[7];
 } DMAC_TypeDef;
 
+struct DmaTransferOptions
+{
+	DmaTransmition Type;
+	uintptr_t SourceAddress;
+	size_t SourceByteWidth;
+	bool SourceInc;
+	uintptr_t DestAddress;
+	size_t DestByteWidth;
+	bool DestInc;
+	size_t Count;
+};
+
 class Stm32DmaControllerBase : public DmaController, public FreeObjectAccess
 {
 public:
@@ -162,8 +175,8 @@ public:
 			ccr.DIR = DMAC_DIR_FromPeriph;
 			ccr.PINC = options.SourceInc ? 1 : 0;
 			ccr.MINC = options.DestInc ? 1 : 0;
-			ccr.PSIZE = GetWidth(options.SourceBitwidth);
-			ccr.MSIZE = GetWidth(options.DestBitwidth);
+			ccr.PSIZE = GetWidth(options.SourceByteWidth);
+			ccr.MSIZE = GetWidth(options.DestByteWidth);
 			channel.CPAR = options.SourceAddress;
 			channel.CMAR = options.DestAddress;
 		}
@@ -172,8 +185,8 @@ public:
 			ccr.DIR = DMAC_DIR_FromMem;
 			ccr.MINC = options.SourceInc ? 1 : 0;
 			ccr.PINC = options.DestInc ? 1 : 0;
-			ccr.MSIZE = GetWidth(options.SourceBitwidth);
-			ccr.PSIZE = GetWidth(options.DestBitwidth);
+			ccr.MSIZE = GetWidth(options.SourceByteWidth);
+			ccr.PSIZE = GetWidth(options.DestByteWidth);
 			channel.CMAR = options.SourceAddress;
 			channel.CPAR = options.DestAddress;
 		}
@@ -182,8 +195,8 @@ public:
 			ccr.DIR = DMAC_DIR_FromPeriph;
 			ccr.PINC = options.SourceInc ? 1 : 0;
 			ccr.MINC = options.DestInc ? 1 : 0;
-			ccr.PSIZE = GetWidth(options.SourceBitwidth);
-			ccr.MSIZE = GetWidth(options.DestBitwidth);
+			ccr.PSIZE = GetWidth(options.SourceByteWidth);
+			ccr.MSIZE = GetWidth(options.DestByteWidth);
 			ccr.MEM2MEM = 1;
 			channel.CPAR = options.SourceAddress;
 			channel.CMAR = options.DestAddress;
@@ -193,6 +206,8 @@ public:
 		ccr.TEIE = 1;
 		channel.CCR.Value = ccr.Value;
 		channel.CNDTR.NDT = options.Count;
+
+		//g_Logger->PutFormat("ccr: %x, cndtr: %z\n", channel.CCR.Value, channel.CNDTR.NDT);
 	}
 
 	void StartAsync(size_t channelId)
@@ -215,11 +230,11 @@ private:
 	{
 		switch (bitwidth)
 		{
-		case 8:
+		case 1:
 			return DMAC_WIDTH_8;
-		case 16:
+		case 2:
 			return DMAC_WIDTH_16;
-		case 32:
+		case 4:
 			return DMAC_WIDTH_32;
 		default:
 			throw std::invalid_argument("Invalid bitwidth.");
@@ -237,11 +252,15 @@ class Stm32DmaChannel : public DmaChannel
 {
 	struct Session
 	{
+		DmaTransferOptions Options;
 		ObjectPtr<AsyncActionCompletionEvent> CompletionEvent;
+		Chino::Device::details::BufferListSelect<const volatile uint8_t> RestSource;
+		Chino::Device::details::BufferListSelect<volatile uint8_t> RestDest;
+		size_t SourceByteWidth, DestByteWidth;
 	};
 public:
 	Stm32DmaChannel(size_t dmacId, size_t channelId, size_t irq, ObjectAccessor<Stm32DmaControllerBase>&& dmac, Locker<Mutex>&& locker)
-		:dmacId_(dmacId), channelId_(channelId), dmac_(std::move(dmac)), locker_(std::move(locker))
+		:dmacId_(dmacId), channelId_(channelId), irq_(irq), dmac_(std::move(dmac)), locker_(std::move(locker))
 	{
 		if (dmacId == 2 && (channelId == 3 || channelId == 4))
 		{
@@ -261,20 +280,42 @@ public:
 		{
 			dmac_->Unregister3And4ChannelISR(channelId_);
 		}
+		else
+		{
+			auto nvic = g_ObjectMgr->GetDirectory(WKD_Device).Open("nvic1", OA_Read | OA_Write).MoveAs<PicDevice>();
+			nvic->SetIRQEnabled(irq_, false);
+		}
 	}
 
-	virtual void Configure(const DmaTransferOptions& options) override
+	virtual void ConfigureImpl(DmaTransmition type, BufferList<const volatile uint8_t> source, BufferList<volatile uint8_t> dest, size_t sourceByteWidth, size_t destByteWidth) override
 	{
-		dmac_->Configure(channelId_, options);
+		auto srcSize = source.GetTotalSize() / sourceByteWidth;
+		auto destSize = dest.GetTotalSize() / destByteWidth;
+		kassert(srcSize && destSize);
+		if (srcSize != 1 && destSize != 1)
+		{
+			if (srcSize != destSize)
+				throw std::invalid_argument("Transmition count must be equal or 1.");
+		}
+
+		if (currentSession_)
+			throw std::runtime_error("A session is already running.");
+
+		DmaTransferOptions options;
+		options.Type = type;
+		options.SourceInc = srcSize != 1;
+		options.DestInc = destSize != 1;
+		options.SourceByteWidth = sourceByteWidth;
+		options.DestByteWidth = destByteWidth;
+
+		auto event = MakeObject<AsyncActionCompletionEvent>();
+		currentSession_ = { options, event, source.Select(), dest.Select(), sourceByteWidth, destByteWidth };
+		StartNextTransmition();
 	}
 
 	virtual ObjectPtr<IAsyncAction> StartAsync()
 	{
-		if (currentSession_)
-			throw std::runtime_error("A session is already running.");
-
-		auto event = MakeObject<AsyncActionCompletionEvent>();
-		currentSession_ = { event };
+		auto event = currentSession_->CompletionEvent;
 		dmac_->StartAsync(channelId_);
 		return event;
 	}
@@ -283,19 +324,96 @@ private:
 	{
 		auto& dmac = dmac_->dmac_;
 		auto channelId = channelId_;
+		bool disable = false;
 		if (dmac->ISR.Any(channelId))
 		{
 			if (dmac->ISR.IsCompleted(channelId))
-				currentSession_->CompletionEvent->SetResult();
+			{
+				if (currentSession_->RestSource.IsEmpty())
+				{
+					currentSession_->CompletionEvent->SetResult();
+					disable = true;
+				}
+				else
+				{
+					dmac->Channel[channelId].CCR.EN = 0;
+					StartNextTransmition();
+					dmac_->StartAsync(channelId_);
+				}
+			}
 			else if (dmac->ISR.HasError(channelId))
+			{
 				currentSession_->CompletionEvent->SetException(std::make_exception_ptr(std::runtime_error("DMA transfer error.")));
+				disable = true;
+			}
 
 			dmac->IFCR.ClearAll(channelId);
-			currentSession_.reset();
+
+			if (disable)
+			{
+				dmac->Channel[channelId].CCR.EN = 0;
+				currentSession_.reset();
+			}
 		}
+	}
+
+	void StartNextTransmition()
+	{
+		auto& session = *currentSession_;
+		auto& options = session.Options;
+
+		auto srcInc = options.SourceInc;
+		auto destInc = options.DestInc;
+
+		gsl::span<const volatile uint8_t> src;
+		gsl::span<volatile uint8_t> dest;
+		if (srcInc && !destInc)
+		{
+			src = session.RestSource.Pop();
+			dest = session.RestDest.First();
+			options.Count = src.size() / session.SourceByteWidth;
+		}
+		else if (!srcInc && destInc)
+		{
+			src = session.RestSource.First();
+			dest = session.RestDest.Pop();
+			options.Count = dest.size() / session.DestByteWidth;
+		}
+		else if (srcInc && destInc)
+		{
+			src = session.RestSource.First();
+			dest = session.RestDest.First();
+			options.Count = std::min(src.size() / session.SourceByteWidth, dest.size() / session.DestByteWidth);
+			src = src.subspan(0, options.Count * session.SourceByteWidth);
+			dest = dest.subspan(0, options.Count * session.DestByteWidth);
+
+			session.RestSource = session.RestSource.Skip(src.size());
+			session.RestDest = session.RestDest.Skip(src.size());
+		}
+		else
+		{
+			if (session.RestSource.Count() / session.SourceByteWidth != 1 || session.RestDest.Count() / session.DestByteWidth != 1)
+				throw std::runtime_error("Not supported.");
+
+			src = session.RestSource.First();
+			dest = session.RestDest.First();
+			options.Count = 1;
+			src = src.subspan(0, session.SourceByteWidth);
+			dest = dest.subspan(0, session.DestByteWidth);
+
+			session.RestSource = {};
+			session.RestDest = {};
+		}
+
+		kassert(options.Count);
+		options.SourceAddress = uintptr_t(src.data());
+		options.DestAddress = uintptr_t(dest.data());
+
+		dmac_->Configure(channelId_, session.Options);
 	}
 private:
 	const size_t dmacId_;
+	const size_t irq_;
 	const size_t channelId_;
 	ObjectAccessor<Stm32DmaControllerBase> dmac_;
 	Locker<Mutex> locker_;

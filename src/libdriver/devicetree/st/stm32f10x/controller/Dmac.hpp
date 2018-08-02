@@ -24,23 +24,20 @@ namespace Chino
 			I2C1_RX
 		};
 
-		struct DmaTransferOptions
-		{
-			DmaTransmition Type;
-			uintptr_t SourceAddress;
-			size_t SourceBitwidth;
-			bool SourceInc;
-			uintptr_t DestAddress;
-			size_t DestBitwidth;
-			bool DestInc;
-			size_t Count;
-		};
-
 		class DmaChannel : public Object
 		{
 		public:
-			virtual void Configure(const DmaTransferOptions& options) = 0;
 			virtual ObjectPtr<IAsyncAction> StartAsync() = 0;
+
+			template<class TSource, class TDest>
+			void Configure(DmaTransmition type, BufferList<const TSource> source, BufferList<TDest> dest)
+			{
+				auto srcCast = source.Select().template Cast<const volatile uint8_t>();
+				auto destCast = dest.Select().template Cast<volatile uint8_t>();
+				ConfigureImpl(type, srcCast.AsBufferList(), destCast.AsBufferList(), sizeof(TSource), sizeof(TDest));
+			}
+		protected:
+			virtual void ConfigureImpl(DmaTransmition type, BufferList<const volatile uint8_t> source, BufferList<volatile uint8_t> dest, size_t sourceByteWidth, size_t destByteWidth) = 0;
 		};
 
 		class DmaController : public Device

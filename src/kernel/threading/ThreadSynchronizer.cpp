@@ -9,15 +9,15 @@ using namespace Chino::Threading;
 
 void Waitable::WaitOne()
 {
-	kernel_critical kc;
 	auto it = g_ProcessMgr->DetachCurrentThread();
 	if (std::find(waitingThreads_.begin(), waitingThreads_.end(), it) == waitingThreads_.end())
+	{
 		waitingThreads_.emplace_back(it);
+	}
 }
 
 void Waitable::NotifyOne()
 {
-	kernel_critical kc;
 	if (!waitingThreads_.empty())
 	{
 		auto thread = waitingThreads_.back();
@@ -29,7 +29,6 @@ void Waitable::NotifyOne()
 
 void Waitable::NotifyAll()
 {
-	kernel_critical kc;
 	while (!waitingThreads_.empty())
 	{
 		auto thread = waitingThreads_.back();
@@ -67,6 +66,7 @@ void Semaphore::Give(size_t count)
 {
 	if (count)
 	{
+		kernel_critical kc;
 		count_.fetch_add(count, std::memory_order_relaxed);
 		NotifyAll();
 	}
@@ -98,6 +98,7 @@ void Mutex::Take()
 
 void Mutex::Give()
 {
+	kernel_critical kc;
 	avail_.store(true, std::memory_order_relaxed);
 	NotifyOne();
 }
@@ -113,7 +114,7 @@ void Event::Wait()
 	while (true)
 	{
 		kernel_critical kc;
-		auto expected = signaled_.load(std::memory_order_relaxed);
+		auto expected = signaled_.load(std::memory_order_acquire);
 		if (!expected)
 		{
 			WaitOne();
@@ -122,7 +123,7 @@ void Event::Wait()
 		{
 			if (autoReset_)
 			{
-				if (signaled_.compare_exchange_strong(expected, false, std::memory_order_relaxed))
+				if (signaled_.compare_exchange_strong(expected, false, std::memory_order_acq_rel))
 					break;
 			}
 			else
@@ -135,7 +136,8 @@ void Event::Wait()
 
 void Event::Signal()
 {
-	signaled_.store(true, std::memory_order_relaxed);
+	kernel_critical kc;
+	signaled_.store(true, std::memory_order_release);
 	NotifyAll();
 }
 

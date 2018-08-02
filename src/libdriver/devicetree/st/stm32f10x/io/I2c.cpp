@@ -10,9 +10,11 @@
 #include "../controller/Rcc.hpp"
 #include "../controller/Port.hpp"
 #include "../controller/Fsmc.hpp"
+#include "../controller/Dmac.hpp"
 #include <kernel/threading/ThreadSynchronizer.hpp>
 #include <libbsp/bsp.hpp>
 #include <kernel/device/Async.hpp>
+#include <kernel/memory/MemoryManager.hpp>
 
 using namespace Chino;
 using namespace Chino::Device;
@@ -166,7 +168,7 @@ public:
 	size_t WriteRead(ObjectPtr<Stm32I2cDevice> device, BufferList<const uint8_t> writeBufferList, BufferList<uint8_t> readBufferList)
 	{
 		FsmcSuppress fs;
-		Threading::kernel_critical kc;
+		//Threading::kernel_critical kc;
 
 		SetupDevice(*device);
 		Start(*device, true);
@@ -180,7 +182,7 @@ public:
 	void Write(ObjectPtr<Stm32I2cDevice> device, BufferList<const uint8_t> bufferList)
 	{
 		FsmcSuppress fs;
-		Threading::kernel_critical kc;
+		//Threading::kernel_critical kc;
 
 		SetupDevice(*device);
 		Start(*device, true);
@@ -231,20 +233,19 @@ private:
 		i2c->CR1.PE = 1;
 		i2c->CR1.ACK = 1;
 		i2c->CR2.ITERREN = 1;
+		i2c->CR2.DMAEN = 1;
 	}
 
 	void WriteData(BufferList<const uint8_t> bufferList)
 	{
 		auto i2c = i2c_;
 
-		for (auto& buffer : bufferList.Buffers)
-		{
-			for (auto data : buffer)
-			{
-				i2c->DR = data;
-				while (!CheckEvent(I2C_EVENT_MASTER_BYTE_TRANSMITTED));
-			}
-		}
+		gsl::span<volatile uint8_t> destBuffers[] = { { reinterpret_cast<volatile uint8_t*>(&i2c->DR), 1 } };
+		auto dmac = g_ObjectMgr->GetDirectory(WKD_Device).Open("dmac1", OA_Read | OA_Write).MoveAs<DmaController>();
+		auto dma = dmac->OpenChannel(DmaRequestLine::I2C1_TX);
+		dma->Configure<uint8_t, volatile uint8_t>(DmaTransmition::Mem2Periph, bufferList, { destBuffers });
+		auto event = dma->StartAsync();
+		event->GetResult();
 	}
 
 	size_t ReadData(BufferList<uint8_t> bufferList)
@@ -306,7 +307,7 @@ private:
 	RccPeriph periph_;
 	ObjectAccessor<PortPin> sclPin_, sdaPin_;
 	ObjectPtr<IObject> erIrq_;
-	//ObjectPtr<AsyncAction> currentAction_;
+	ObjectPtr<AsyncActionCompletionEvent> currentCompletionEvent_;
 };
 
 size_t Stm32I2cDevice::WriteRead(BufferList<const uint8_t> writeBufferList, BufferList<uint8_t> readBufferList)

@@ -51,18 +51,12 @@ void Chino::BSPSystemStartup()
 	}
 	{
 		uint8_t buffer2[std::size(buffer)];
+		gsl::span<const uint8_t> writeBuffers[] = { buffer };
+		gsl::span<uint8_t> readBuffers[] = { buffer2 };
+
 		auto dmac = g_ObjectMgr->GetDirectory(WKD_Device).Open("dmac1", access).MoveAs<DmaController>();
-		auto dma = dmac->OpenChannel(DmaRequestLine::I2C1_RX);
-		DmaTransferOptions options;
-		options.Count = std::size(buffer);
-		options.DestAddress = uintptr_t(buffer2);
-		options.DestBitwidth = 8;
-		options.DestInc = true;
-		options.SourceAddress = uintptr_t(buffer);
-		options.SourceBitwidth = 8;
-		options.SourceInc = true;
-		options.Type = DmaTransmition::Mem2Mem;
-		dma->Configure(options);
+		auto dma = dmac->OpenChannel(DmaRequestLine::I2C1_TX);
+		dma->Configure<uint8_t, uint8_t>(DmaTransmition::Mem2Mem, { writeBuffers }, { readBuffers });
 		auto task = dma->StartAsync();
 		task->GetResult();
 		g_Logger->PutString("Dma Copy:\n");
@@ -89,7 +83,7 @@ void Chino::BSPSystemStartup()
 
 			semp->Take(1);
 		}
-	}, 1);
+	}, 1, 1024);
 
 	proc->AddThread([&]
 	{
@@ -99,7 +93,7 @@ void Chino::BSPSystemStartup()
 				ArchHaltProcessor();
 			semp->Give(1);
 		}
-	}, 1);
+	}, 1, 1024);
 
 	proc->AddThread([&]
 	{
@@ -110,7 +104,7 @@ void Chino::BSPSystemStartup()
 			auto accReading = accelerometer1->GetCurrentReading();
 			g_Logger->PutFormat("Acceleration: X: %f, Y: %f, Z: %f\n", accReading.AccelerationX, accReading.AccelerationY, accReading.AccelerationZ);
 		}
-	}, 1);
+	}, 1, 2048);
 
 	while (1)
 		ArchHaltProcessor();

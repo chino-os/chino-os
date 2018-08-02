@@ -132,7 +132,7 @@ namespace Chino
 
 		~ObjectPtr()
 		{
-
+			Reset();
 		}
 
 		void Reset(T* obj = nullptr) noexcept
@@ -181,8 +181,13 @@ namespace Chino
 
 		ObjectPtr& operator=(ObjectPtr&& other) noexcept
 		{
-			Reset(other.obj_);
-			other.obj_ = nullptr;
+			if (obj_ != other.obj_)
+			{
+				Release();
+				obj_ = other.obj_;
+				other.obj_ = nullptr;
+			}
+
 			return *this;
 		}
 
