@@ -3,6 +3,7 @@
 //
 #include "ili9486.hpp"
 #include <libdriver/devicetree/intel/display/lcd/lcd8080.hpp>
+#include <kernel/device/display/Display.hpp>
 #include <kernel/kdebug.hpp>
 #include <kernel/object/ObjectManager.hpp>
 #include <kernel/device/DeviceManager.hpp>
@@ -12,6 +13,7 @@
 
 using namespace Chino;
 using namespace Chino::Device;
+using namespace Chino::Graphics;
 using namespace Chino::Threading;
 
 DEFINE_FDT_DRIVER_DESC_1(ILI9486Driver, "display", "ilitek,ili9486");
@@ -43,18 +45,65 @@ enum PixeFormat
 	PixelFormat_18bit = 0b0110
 };
 
-class ILI9486Device : public Device, public ExclusiveObjectAccess
+namespace
 {
-public:
 	static constexpr uint16_t PixelWidth = 320;
 	static constexpr uint16_t PixelHeight = 480;
+}
 
+class ILI9486Device;
+
+class ILI9486PrimarySurface : public Surface
+{
+public:
+	ILI9486PrimarySurface(ObjectAccessor<ILI9486Device>&& device)
+		:device_(std::move(device))
+	{
+
+	}
+
+	virtual SizeU GetPixelSize() noexcept
+	{
+		return { PixelHeight, PixelHeight };
+	}
+
+	virtual ColorFormat GetFormat() noexcept
+	{
+		return ColorFormat::B5G6R5_UNORM;
+	}
+
+	virtual SurfaceData Lock(const RectU& rect)
+	{
+		throw std::runtime_error("Not supported.");
+	}
+
+	virtual void Unlock(SurfaceData& data)
+	{
+		throw std::runtime_error("Not supported.");
+	}
+private:
+	ObjectAccessor<ILI9486Device> device_;
+};
+
+class ILI9486Device : public DisplayDevice, public ExclusiveObjectAccess
+{
+public:
 	ILI9486Device(const FDTDevice& fdt)
 		:fdt_(fdt)
 	{
 		g_ObjectMgr->GetDirectory(WKD_Device).AddItem(fdt.GetName(), *this);
 	}
 
+	virtual ObjectPtr<Surface> OpenPrimarySurface(ObjectAccess access) override
+	{
+		return MakeObject<ILI9486PrimarySurface>(MakeAccessor<ILI9486Device>(this, access));
+	}
+
+	virtual void CopySubresource(Graphics::Surface& src, Graphics::Surface& dest, const Graphics::RectU& srcRect, const Graphics::PointU& destPosition) override
+	{
+		kassert(!"Not impl.");
+	}
+protected:
 	virtual void OnFirstOpen() override
 	{
 		auto access = OA_Read | OA_Write;
@@ -66,7 +115,6 @@ public:
 	{
 		lcd_.Reset();
 	}
-
 private:
 	void Write(uint16_t reg, gsl::span<const uint16_t> data)
 	{
