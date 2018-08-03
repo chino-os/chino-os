@@ -22,8 +22,15 @@
 	    };
 
 		nvic1: nvic1 {
-			device_type = "nvic";
+			device_type = "pic";
 			compatible = "arm,cortex-m3-nvic";
+		};
+
+		dmac1: dmac1 {
+			device_type = "dmac";
+			compatible = "st,stm32f103-dmac1";
+			reg = <0x40020000 0x400>;
+			irq = <11 12 13 14 15 16 17>;
 		};
 
 		portA: portA {
@@ -96,6 +103,8 @@
 			port = "portB";
 			scl_pin = <6>;
 			sda_pin = <7>;
+			ev_irq = <31>;
+			er_irq = <32>;
 		};
 
 		spi2: spi2 {

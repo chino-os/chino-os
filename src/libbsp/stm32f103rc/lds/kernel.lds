@@ -15,15 +15,23 @@ _ram_end = ORIGIN(DATA) + LENGTH(DATA);
 
 SECTIONS
 {
+	.isr :
+	{
+        KEEP(*(.isr_vector))            /* Startup code */
+	} > CODE = 0
+
+	.init :
+	{
+		KEEP (*(SORT_NONE(.init)))
+	} > CODE = 0
+
     .text :
     {
         . = ALIGN(4);
         _stext = .;
-        KEEP(*(.isr_vector))            /* Startup code */
         . = ALIGN(4);
         *(.text)                        /* remaining code */
         *(.text.*)                      /* remaining code */
-		*(.ARM.extab.text.*)
         *(.glue_7)
         *(.glue_7t)
         *(.gnu.linkonce.t*)
@@ -31,6 +39,11 @@ SECTIONS
         . = ALIGN(4);
         _etext = .;
     } > CODE = 0
+
+	.fini :
+	{
+	  KEEP (*(SORT_NONE(.fini)))
+	} > CODE = 0
 	
     /* Read-only data segment */
     .rodata :
@@ -40,19 +53,48 @@ SECTIONS
       *(.gnu.linkonce.r.*)
     } > CODE = 0
 
+	.ARM.extab : /* exception unwinding information */
+    {
+        *(.ARM.extab*)
+	} > CODE = 0
+
     /* .ARM.exidx is sorted, so has to go in its own output section.  */
     __exidx_start = .;
     .ARM.exidx :
     {
         *(.ARM.exidx* .gnu.linkonce.armexidx.*)
-
-        /* This is used by the startup in order to initialize the .data secion */
-        _sidata = .;
-    } > CODE
+    } > CODE = 0
     __exidx_end = .;
 
     /* .data section which is used for initialized data */
-
+	   /*
+     * Newlib and Eglibc (at least) need these for C++ support.
+     *
+     * (Copied from Sourcery CodeBench Lite: arm-none-eabi-gcc -V)
+     */
+    .preinit_array :
+    {
+        PROVIDE_HIDDEN(__preinit_array_start = .);
+        KEEP(*(.preinit_array*))
+        PROVIDE_HIDDEN(__preinit_array_end = .);
+    } > CODE = 0
+    .init_array :
+    {
+        PROVIDE_HIDDEN(__init_array_start = .);
+        KEEP(*(SORT(.init_array.*)))
+        KEEP(*(.init_array*))
+        PROVIDE_HIDDEN(__init_array_end = .);
+    } > CODE = 0
+    .fini_array :
+    {
+        PROVIDE_HIDDEN(__fini_array_start = .);
+        KEEP(*(SORT(.fini_array.*)))
+        KEEP(*(.fini_array*))
+        PROVIDE_HIDDEN(__fini_array_end = .);
+	} > CODE = 0
+	
+    /* This is used by the startup in order to initialize the .data secion */
+    _sidata = .;
     .data : AT (_sidata)
     {
         . = ALIGN(4);
@@ -65,18 +107,10 @@ SECTIONS
 		
         *(.got)
         *(.got.plt)
-        *(.init_array)
 
         . = ALIGN(4);
         /* This is used by the startup in order to initialize the .data secion */
         _edata = . ;
-    } >DATA
-
-    .stack : 
-    {
-        . = . + _system_stack_size;
-        . = ALIGN(4);
-        _estack = .;
     } >DATA
 
     __bss_start = .;
@@ -97,6 +131,13 @@ SECTIONS
         *(.bss.init)
     } > DATA
     __bss_end = .;
+
+    .stack : 
+    {
+        . = . + _system_stack_size;
+        . = ALIGN(4);
+        _estack = .;
+    } >DATA
 
     _end = .;
 

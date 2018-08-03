@@ -22,7 +22,9 @@ namespace Chino
 			I2C1,
 			SPI1,
 			SPI2,
-			FSMC
+			FSMC,
+			DMAC1,
+			DMAC2
 		};
 
 		class RccDevice : public Device, public FreeObjectAccess

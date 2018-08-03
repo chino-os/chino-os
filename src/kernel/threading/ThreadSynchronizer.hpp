@@ -12,7 +12,7 @@ namespace Chino
 {
 	namespace Threading
 	{
-		class Waitable : public Object, public FreeObjectAccess
+		class Waitable : public Object
 		{
 		public:
 
@@ -47,6 +47,19 @@ namespace Chino
 			std::atomic<bool> avail_;
 		};
 
+		class Event : public Waitable
+		{
+		public:
+			Event(bool initialState = false, bool autoReset = true);
+
+			void Wait();
+			void Signal();
+			void Reset();
+		private:
+			const bool autoReset_;
+			std::atomic<bool> signaled_;
+		};
+
 		template<class T>
 		class Locker;
 
@@ -56,6 +69,12 @@ namespace Chino
 		public:
 			Locker(ObjectPtr<Mutex> mutex);
 			~Locker();
+
+			Locker(const Locker&) = delete;
+			Locker& operator=(const Locker&) = delete;
+
+			Locker(Locker&& other) = default;
+			Locker& operator=(Locker&& other) = default;
 		private:
 			ObjectPtr<Mutex> mutex_;
 		};

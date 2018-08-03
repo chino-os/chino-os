@@ -9,3 +9,10 @@ struct NonCopyable
 	NonCopyable(NonCopyable&&) = default;
 	NonCopyable& operator=(NonCopyable&&) = default;
 };
+
+struct NonCopyOrMovable
+{
+	NonCopyOrMovable() = default;
+	NonCopyOrMovable(const NonCopyOrMovable&) = delete;
+	NonCopyOrMovable& operator=(const NonCopyOrMovable&) = delete;
+};

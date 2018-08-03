@@ -9,15 +9,15 @@ using namespace Chino::Threading;
 
 void Waitable::WaitOne()
 {
-	kernel_critical kc;
 	auto it = g_ProcessMgr->DetachCurrentThread();
 	if (std::find(waitingThreads_.begin(), waitingThreads_.end(), it) == waitingThreads_.end())
+	{
 		waitingThreads_.emplace_back(it);
+	}
 }
 
 void Waitable::NotifyOne()
 {
-	kernel_critical kc;
 	if (!waitingThreads_.empty())
 	{
 		auto thread = waitingThreads_.back();
@@ -29,6 +29,13 @@ void Waitable::NotifyOne()
 
 void Waitable::NotifyAll()
 {
+	while (!waitingThreads_.empty())
+	{
+		auto thread = waitingThreads_.back();
+		waitingThreads_.pop_back();
+
+		g_ProcessMgr->AttachReadyThread(thread);
+	}
 }
 
 Semaphore::Semaphore(size_t initialCount)
@@ -41,6 +48,7 @@ void Semaphore::Take(size_t count)
 {
 	while (count)
 	{
+		kernel_critical kc;
 		auto expected = count_.load(std::memory_order_relaxed);
 		if (expected < count)
 		{
@@ -58,8 +66,9 @@ void Semaphore::Give(size_t count)
 {
 	if (count)
 	{
+		kernel_critical kc;
 		count_.fetch_add(count, std::memory_order_relaxed);
-		NotifyOne();
+		NotifyAll();
 	}
 }
 
@@ -73,6 +82,7 @@ void Mutex::Take()
 {
 	while (true)
 	{
+		kernel_critical kc;
 		auto expected = avail_.load(std::memory_order_relaxed);
 		if (!expected)
 		{
@@ -88,8 +98,52 @@ void Mutex::Take()
 
 void Mutex::Give()
 {
+	kernel_critical kc;
 	avail_.store(true, std::memory_order_relaxed);
 	NotifyOne();
+}
+
+Event::Event(bool initialState, bool autoReset)
+	:autoReset_(autoReset), signaled_(initialState)
+{
+
+}
+
+void Event::Wait()
+{
+	while (true)
+	{
+		kernel_critical kc;
+		auto expected = signaled_.load(std::memory_order_acquire);
+		if (!expected)
+		{
+			WaitOne();
+		}
+		else
+		{
+			if (autoReset_)
+			{
+				if (signaled_.compare_exchange_strong(expected, false, std::memory_order_acq_rel))
+					break;
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
+}
+
+void Event::Signal()
+{
+	kernel_critical kc;
+	signaled_.store(true, std::memory_order_release);
+	NotifyAll();
+}
+
+void Event::Reset()
+{
+	signaled_.store(false, std::memory_order_relaxed);
 }
 
 Locker<Mutex>::Locker(ObjectPtr<Mutex> mutex)
@@ -100,5 +154,6 @@ Locker<Mutex>::Locker(ObjectPtr<Mutex> mutex)
 
 Locker<Mutex>::~Locker()
 {
-	mutex_->Give();
+	if (mutex_)
+		mutex_->Give();
 }

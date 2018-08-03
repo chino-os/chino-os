@@ -281,6 +281,12 @@ void RccDevice::SetPeriphClockIsEnabled(RccPeriph periph, bool enable)
 	case RccPeriph::FSMC:
 		rcc->AHBENR.FSMCEN = value;
 		break;
+	case RccPeriph::DMAC1:
+		rcc->AHBENR.DMA1EN = value;
+		break;
+	case RccPeriph::DMAC2:
+		rcc->AHBENR.DMA2EN = value;
+		break;
 	default:
 		kassert(!"invalid rcc periph.");
 		break;

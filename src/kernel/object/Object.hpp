@@ -77,8 +77,8 @@ namespace Chino
 		Object();
 		virtual ~Object();
 
-		void AddRef() noexcept;
-		bool Release() noexcept;
+		virtual void AddRef() noexcept override;
+		virtual bool Release() noexcept override;
 	private:
 		std::atomic<long> refCount_;
 	};
@@ -132,7 +132,7 @@ namespace Chino
 
 		~ObjectPtr()
 		{
-
+			Reset();
 		}
 
 		void Reset(T* obj = nullptr) noexcept
@@ -173,10 +173,21 @@ namespace Chino
 			return *this;
 		}
 
-		ObjectPtr& operator=(ObjectPtr&& other) noexcept
+		ObjectPtr& operator=(const ObjectPtr& other) noexcept
 		{
 			Reset(other.obj_);
-			other.obj_ = nullptr;
+			return *this;
+		}
+
+		ObjectPtr& operator=(ObjectPtr&& other) noexcept
+		{
+			if (obj_ != other.obj_)
+			{
+				Release();
+				obj_ = other.obj_;
+				other.obj_ = nullptr;
+			}
+
 			return *this;
 		}
 

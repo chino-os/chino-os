@@ -10,7 +10,7 @@ extern "C"
 #include <pci22.h>
 }
 
-#include <kernel/device/Driver.hpp>
+#include <kernel/device/Device.hpp>
 #include <cstddef>
 #include <memory>
 #include <array>
@@ -40,7 +40,7 @@ namespace Chino
 			PCIDriverIsSupported_t IsSupported;
 		};
 
-		class PCIDevice
+		class PCIDevice : public Device, public ExclusiveObjectAccess
 		{
 		public:
 			PCIDevice(size_t bus, size_t device, size_t function, PCI_DEVICE_INDEPENDENT_REGION* configuration);

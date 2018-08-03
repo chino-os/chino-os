@@ -18,15 +18,11 @@ ArchHaltProcessor:
 	bx lr
 
 ArchEnableInterrupt:
-	mov r0,	#0
-	msr basepri, r0
+	cpsie i
 	bx lr
 
 ArchDisableInterrupt:
-	mov r0,	#MAXBasePriority
-	msr basepri, r0
-	isb
-	dsb
+	cpsid i
 	bx lr
 	
   .type  PendSV_Handler, %function
