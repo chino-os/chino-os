@@ -329,7 +329,7 @@ private:
 		{
 			if (dmac->ISR.IsCompleted(channelId))
 			{
-				if (currentSession_->RestSource.IsEmpty())
+				if (currentSession_->RestSource.IsEmpty() || currentSession_->RestDest.IsEmpty())
 				{
 					currentSession_->CompletionEvent->SetResult();
 					disable = true;

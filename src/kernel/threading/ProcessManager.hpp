@@ -75,7 +75,7 @@ namespace Chino
 			ObjectPtr<Process> idleProcess_;
 		};
 
-		class kernel_critical
+		class kernel_critical : private NonCopyOrMovable
 		{
 		public:
 			kernel_critical();

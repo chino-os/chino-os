@@ -114,7 +114,7 @@ void ProcessManager::AttachReadyThread(thread_it thread)
 	auto priority = (*thread)->GetPriority();
 	readyThreads_[priority].attach(thread);
 
-	//if (!runningThread_.good() || priority > (*runningThread_)->GetPriority())
+	if (!runningThread_.good() || priority > (*runningThread_)->GetPriority())
 	{
 		auto nextThread = SelectNextSwitchToThread();
 		nextThread_ = nextThread;
@@ -175,21 +175,18 @@ kernel_critical::kernel_critical()
 		while (!coreTaken_.compare_exchange_strong(expected, coreId, std::memory_order_acq_rel))
 			expected = 0;
 
-		depth_ = 1;
 		ArchDisableInterrupt();
 	}
-	else
-	{
-		depth_++;
-	}
+
+	depth_++;
 }
 
 kernel_critical::~kernel_critical()
 {
 	if (--depth_ == 0)
 	{
-		ArchEnableInterrupt();
 		coreTaken_.store(0, std::memory_order_release);
+		ArchEnableInterrupt();
 	}
 }
 

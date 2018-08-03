@@ -39,9 +39,9 @@ public:
 		if (irq > 0)
 		{
 			if (enable)
-				SetBit(NVIC_ISER, irq, true);
+				SetBit(NVIC_ISER, irq);
 			else
-				SetBit(NVIC_ICER, irq, true);
+				SetBit(NVIC_ICER, irq);
 		}
 	}
 
@@ -61,9 +61,9 @@ public:
 		if (irq > 0)
 		{
 			if (pending)
-				SetBit(NVIC_ISPR, irq, true);
+				SetBit(NVIC_ISPR, irq);
 			else
-				SetBit(NVIC_ICPR, irq, true);
+				SetBit(NVIC_ICPR, irq);
 		}
 	}
 private:
