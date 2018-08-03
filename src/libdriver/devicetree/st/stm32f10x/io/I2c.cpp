@@ -232,18 +232,10 @@ public:
 		FsmcSuppress fs;
 
 		session_.IsWriteRead = true;
-		g_Logger->PutChar('1');
 		SetupDevice(*device);
-		g_Logger->PutChar('2');
 		Start(*device);
-		g_Logger->PutChar('3');
 		WriteData(writeBufferList);
-		g_Logger->PutChar('4');
-		g_Logger->PutChar('5');
 		auto ret = ReadData(readBufferList);
-		g_Logger->PutChar('6');
-		while (i2c_->SR2.BUSY);
-		g_Logger->PutChar('7');
 		return ret;
 	}
 
