@@ -6,4 +6,4 @@ SET(BSP_SRC ${DT_DIR}/Fdt.cpp
 	
 	${SIM_DIR}/display/lcd/BasicDisplay.cpp)
 
-LIST(APPEND BSP_LIBS fdt d2d1)
+LIST(APPEND BSP_LIBS fdt ddraw dxguid)

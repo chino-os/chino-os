@@ -62,22 +62,22 @@ public:
 
 	}
 
-	virtual SizeU GetPixelSize() noexcept
+	virtual SizeU GetPixelSize() noexcept override
 	{
 		return { PixelHeight, PixelHeight };
 	}
 
-	virtual ColorFormat GetFormat() noexcept
+	virtual ColorFormat GetFormat() noexcept override
 	{
 		return ColorFormat::B5G6R5_UNORM;
 	}
 
-	virtual SurfaceData Lock(const RectU& rect)
+	virtual SurfaceData Lock(const RectU& rect) override
 	{
 		throw std::runtime_error("Not supported.");
 	}
 
-	virtual void Unlock(SurfaceData& data)
+	virtual void Unlock(SurfaceData& data) override
 	{
 		throw std::runtime_error("Not supported.");
 	}
@@ -94,14 +94,20 @@ public:
 		g_ObjectMgr->GetDirectory(WKD_Device).AddItem(fdt.GetName(), *this);
 	}
 
-	virtual ObjectPtr<Surface> OpenPrimarySurface(ObjectAccess access) override
+	virtual ObjectPtr<Surface> OpenPrimarySurface() override
 	{
-		return MakeObject<ILI9486PrimarySurface>(MakeAccessor<ILI9486Device>(this, access));
+		return MakeObject<ILI9486PrimarySurface>(MakeAccessor<ILI9486Device>(this, OA_Read | OA_Write));
 	}
 
 	virtual void CopySubresource(Graphics::Surface& src, Graphics::Surface& dest, const Graphics::RectU& srcRect, const Graphics::PointU& destPosition) override
 	{
-		kassert(!"Not impl.");
+		auto devSurface = dynamic_cast<ILI9486PrimarySurface*>(&src);
+
+		// Copy from device
+		if (devSurface)
+		{
+
+		}
 	}
 protected:
 	virtual void OnFirstOpen() override
