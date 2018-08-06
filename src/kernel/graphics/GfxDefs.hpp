@@ -28,6 +28,14 @@ namespace Chino
 		struct Color<ColorFormat::B5G6R5_UNORM>
 		{
 			uint16_t Value;
+
+			static Color From(ColorValue value) noexcept
+			{
+				auto r = value.R * 31;
+				auto g = value.G * 63;
+				auto b = value.B * 31;
+				return { static_cast<uint16_t>((uint16_t(r) << 11) | (uint16_t(g) << 5) | uint16_t(b)) };
+			}
 		};
 
 		template<>

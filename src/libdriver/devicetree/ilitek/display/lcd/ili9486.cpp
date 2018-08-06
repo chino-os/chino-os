@@ -90,6 +90,8 @@ private:
 	ILI9486Device& device_;
 };
 
+ObjectAccessor<LCD8080Controller> lcd_;
+
 class ILI9486Device : public DisplayDevice, public ExclusiveObjectAccess
 {
 public:
@@ -104,23 +106,32 @@ public:
 		return MakeObject<ILI9486PrimarySurface>(*this);
 	}
 
+	virtual void Clear(Graphics::Surface& src, const RectU& rect, const Graphics::ColorValue& color) override
+	{
+		auto devSurface = dynamic_cast<ILI9486PrimarySurface*>(&src);
+		kassert(devSurface);
+
+		auto bytes = rect.GetSize().Width * rect.GetSize().Height * GetPixelBytes(ColorFormat::B5G6R5_UNORM);
+		SetAccessRegion(rect);
+		lcd_->Fill(Cmd_MemoryWrite, Rgb565::From(color).Value, PixelWidth * PixelHeight);
+	}
+	
 	virtual void CopySubresource(Graphics::Surface& src, Graphics::Surface& dest, const Graphics::RectU& srcRect, const Graphics::PointU& destPosition) override
 	{
 		auto devSurface = dynamic_cast<ILI9486PrimarySurface*>(&src);
-
+	
 		// Copy from device
 		if (devSurface)
 		{
-
+	
 		}
-
+	
 		devSurface = dynamic_cast<ILI9486PrimarySurface*>(&dest);
 		// Copy to device
 		kassert(devSurface);
 		{
-			SetAccessRegion(uint16_t(destPosition.X), uint16_t(destPosition.X + srcRect.GetSize().Width - 1), uint16_t(destPosition.Y), uint16_t(destPosition.Y + srcRect.GetSize().Height - 1));
-
 			auto locker = src.Lock(srcRect);
+			SetAccessRegion({ destPosition, srcRect.GetSize() });
 			lcd_->Write(Cmd_MemoryWrite, locker);
 			src.Unlock(locker);
 		}
@@ -161,7 +172,7 @@ private:
 		SleepOut();
 		SetInterfacePixelFormat(PixelFormat_16bit, PixelFormat_16bit);
 		DisplayOn();
-		ClearScreen(GREEN);
+		ClearScreen(BLACK);
 	}
 
 	uint32_t ReadID4()
@@ -180,7 +191,7 @@ private:
 	void SleepOut()
 	{
 		SendCmd(Cmd_SleepOut);
-		BSPSleepMs(5);
+		BSPSleepMs(50);
 	}
 
 	void SetInterfacePixelFormat(PixeFormat cpu, PixeFormat rgb)
@@ -207,6 +218,11 @@ private:
 		}
 	}
 
+	void SetAccessRegion(const RectU& rect)
+	{
+		SetAccessRegion(rect.Left, rect.Right - 1, rect.Top, rect.Bottom - 1);
+	}
+
 	void SetFullAccessRegion()
 	{
 		SetAccessRegion(0, PixelWidth - 1, 0, PixelHeight - 1);
@@ -219,7 +235,6 @@ private:
 	}
 private:
 	const FDTDevice& fdt_;
-	ObjectAccessor<LCD8080Controller> lcd_;
 };
 
 ILI9486Driver::ILI9486Driver(const FDTDevice& device)

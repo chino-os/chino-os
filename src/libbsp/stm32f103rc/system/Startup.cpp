@@ -20,7 +20,22 @@ using namespace Chino::Device;
 using namespace Chino::Graphics;
 using namespace Chino::Threading;
 
-#define USE_I2C 0
+#define USE_I2C 1
+
+class App
+{
+public:
+	App()
+	{
+		dc_ = MakeObject<DeviceContext>(g_ObjectMgr->GetDirectory(WKD_Device).Open("lcd1", OA_Read | OA_Write).MoveAs<DisplayDevice>());
+		primarySurface_ = dc_->CreatePrimarySurface();
+	}
+
+	void Start();
+private:
+	ObjectPtr<DeviceContext> dc_;
+	ObjectPtr<Surface> primarySurface_;
+};
 
 void Chino::BSPSystemStartup()
 {
@@ -43,6 +58,11 @@ void Chino::BSPSystemStartup()
 		g_Logger->DumpHex(buffer, std::size(buffer));
 	}
 #endif
+
+#if USE_I2C
+	auto accelerometer1 = g_ObjectMgr->GetDirectory(WKD_Device).Open("accelerometer1", access).MoveAs<Accelerometer>();
+#endif
+
 	auto flash1 = g_ObjectMgr->GetDirectory(WKD_Device).Open("flash1", access).MoveAs<FlashStorage>();
 	{
 		gsl::span<const uint8_t> writeBuffers[] = { buffer };
@@ -55,11 +75,8 @@ void Chino::BSPSystemStartup()
 		g_Logger->DumpHex(buffer, std::size(buffer));
 	}
 
-	auto lcd = g_ObjectMgr->GetDirectory(WKD_Device).Open("lcd1", access);
-	//auto dc = MakeObject<DeviceContext>(g_ObjectMgr->GetDirectory(WKD_Device).Open("lcd1", access).MoveAs<DisplayDevice>());
-#if USE_I2C
-	auto accelerometer1 = g_ObjectMgr->GetDirectory(WKD_Device).Open("accelerometer1", access).MoveAs<Accelerometer>();
-#endif
+	App app;
+	app.Start();
 
 	auto proc = g_ProcessMgr->GetCurrentThread()->GetProcess();
 	auto semp = MakeObject<Semaphore>(0);
@@ -104,4 +121,9 @@ void Chino::BSPSystemStartup()
 
 	while (1)
 		ArchHaltProcessor();
+}
+
+void App::Start()
+{
+	dc_->Clear(*primarySurface_, { {}, primarySurface_->GetPixelSize() }, { 1, 0, 0 });
 }

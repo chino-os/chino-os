@@ -118,6 +118,18 @@ ObjectPtr<Surface> DeviceContext::CreateOffscreenSurface(ColorFormat format, con
 	return MakeObject<SoftwareSurface>(format, size, data, copy);
 }
 
+void DeviceContext::Clear(Surface& src, const RectU& srcRect, const ColorValue& color)
+{
+	if (src.GetLocation() == SurfaceLocation::DeviceMemory)
+	{
+		device_->Clear(src, srcRect, color);
+	}
+	else
+	{
+		throw std::runtime_error("Not impl.");
+	}
+}
+
 void DeviceContext::CopySubresource(Surface& src, Surface& dest, const RectU& srcRect, const PointU& destPosition)
 {
 	if (src.GetFormat() != dest.GetFormat())

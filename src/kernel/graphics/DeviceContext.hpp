@@ -18,6 +18,7 @@ namespace Chino
 			ObjectPtr<Surface> CreateOffscreenSurface(ColorFormat format, const SizeU& size);
 			ObjectPtr<Surface> CreateOffscreenSurface(ColorFormat format, const SizeU& size, const SurfaceData& data, bool copy = true);
 
+			void Clear(Surface& src, const RectU& srcRect, const ColorValue& color);
 			void CopySubresource(Surface& src, Surface& dest, const RectU& srcRect, const PointU& destPosition);
 		private:
 			ObjectAccessor<Device::DisplayDevice> device_;

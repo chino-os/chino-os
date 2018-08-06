@@ -14,6 +14,7 @@ namespace Chino
 		public:
 			virtual ObjectPtr<Graphics::Surface> OpenPrimarySurface() = 0;
 
+			virtual void Clear(Graphics::Surface& src, const Graphics::RectU& rect, const Graphics::ColorValue& color) = 0;
 			virtual void CopySubresource(Graphics::Surface& src, Graphics::Surface& dest, const Graphics::RectU& srcRect, const Graphics::PointU& destPosition) = 0;
 		};
 	}
