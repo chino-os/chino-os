@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstring>
 #include <cassert>
+#include <gsl/gsl>
 
 template<class T>
 class StaticHolder

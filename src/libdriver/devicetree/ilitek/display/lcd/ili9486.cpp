@@ -3,6 +3,7 @@
 //
 #include "ili9486.hpp"
 #include <libdriver/devicetree/intel/display/lcd/lcd8080.hpp>
+#include <kernel/device/display/Display.hpp>
 #include <kernel/kdebug.hpp>
 #include <kernel/object/ObjectManager.hpp>
 #include <kernel/device/DeviceManager.hpp>
@@ -12,6 +13,7 @@
 
 using namespace Chino;
 using namespace Chino::Device;
+using namespace Chino::Graphics;
 using namespace Chino::Threading;
 
 DEFINE_FDT_DRIVER_DESC_1(ILI9486Driver, "display", "ilitek,ili9486");
@@ -43,18 +45,98 @@ enum PixeFormat
 	PixelFormat_18bit = 0b0110
 };
 
-class ILI9486Device : public Device, public ExclusiveObjectAccess
+namespace
 {
-public:
 	static constexpr uint16_t PixelWidth = 320;
 	static constexpr uint16_t PixelHeight = 480;
+}
 
+class ILI9486Device;
+
+class ILI9486PrimarySurface : public Surface
+{
+public:
+	ILI9486PrimarySurface(ILI9486Device& device)
+		:device_(device)
+	{
+
+	}
+
+	virtual SizeU GetPixelSize() noexcept override
+	{
+		return { PixelHeight, PixelHeight };
+	}
+
+	virtual ColorFormat GetFormat() noexcept override
+	{
+		return ColorFormat::B5G6R5_UNORM;
+	}
+
+	virtual SurfaceData Lock(const RectU& rect) override
+	{
+		throw std::runtime_error("Not supported.");
+	}
+
+	virtual void Unlock(SurfaceData& data) override
+	{
+		throw std::runtime_error("Not supported.");
+	}
+
+	virtual SurfaceLocation GetLocation() noexcept override
+	{
+		return SurfaceLocation::DeviceMemory;
+	}
+private:
+	ILI9486Device& device_;
+};
+
+ObjectAccessor<LCD8080Controller> lcd_;
+
+class ILI9486Device : public DisplayDevice, public ExclusiveObjectAccess
+{
+public:
 	ILI9486Device(const FDTDevice& fdt)
 		:fdt_(fdt)
 	{
 		g_ObjectMgr->GetDirectory(WKD_Device).AddItem(fdt.GetName(), *this);
 	}
 
+	virtual ObjectPtr<Surface> OpenPrimarySurface() override
+	{
+		return MakeObject<ILI9486PrimarySurface>(*this);
+	}
+
+	virtual void Clear(Graphics::Surface& src, const RectU& rect, const Graphics::ColorValue& color) override
+	{
+		auto devSurface = dynamic_cast<ILI9486PrimarySurface*>(&src);
+		kassert(devSurface);
+
+		auto bytes = rect.GetSize().Width * rect.GetSize().Height * GetPixelBytes(ColorFormat::B5G6R5_UNORM);
+		SetAccessRegion(rect);
+		lcd_->Fill(Cmd_MemoryWrite, Rgb565::From(color).Value, PixelWidth * PixelHeight);
+	}
+	
+	virtual void CopySubresource(Graphics::Surface& src, Graphics::Surface& dest, const Graphics::RectU& srcRect, const Graphics::PointU& destPosition) override
+	{
+		auto devSurface = dynamic_cast<ILI9486PrimarySurface*>(&src);
+	
+		// Copy from device
+		if (devSurface)
+		{
+	
+		}
+	
+		devSurface = dynamic_cast<ILI9486PrimarySurface*>(&dest);
+		// Copy to device
+		kassert(devSurface);
+		{
+			auto locker = src.Lock(srcRect);
+			SetAccessRegion({ destPosition, srcRect.GetSize() });
+			lcd_->Write(Cmd_MemoryWrite, locker);
+			src.Unlock(locker);
+		}
+	}
+protected:
 	virtual void OnFirstOpen() override
 	{
 		auto access = OA_Read | OA_Write;
@@ -66,7 +148,6 @@ public:
 	{
 		lcd_.Reset();
 	}
-
 private:
 	void Write(uint16_t reg, gsl::span<const uint16_t> data)
 	{
@@ -91,7 +172,7 @@ private:
 		SleepOut();
 		SetInterfacePixelFormat(PixelFormat_16bit, PixelFormat_16bit);
 		DisplayOn();
-		ClearScreen(GREEN);
+		ClearScreen(BLACK);
 	}
 
 	uint32_t ReadID4()
@@ -110,7 +191,7 @@ private:
 	void SleepOut()
 	{
 		SendCmd(Cmd_SleepOut);
-		BSPSleepMs(5);
+		BSPSleepMs(50);
 	}
 
 	void SetInterfacePixelFormat(PixeFormat cpu, PixeFormat rgb)
@@ -137,6 +218,11 @@ private:
 		}
 	}
 
+	void SetAccessRegion(const RectU& rect)
+	{
+		SetAccessRegion(rect.Left, rect.Right - 1, rect.Top, rect.Bottom - 1);
+	}
+
 	void SetFullAccessRegion()
 	{
 		SetAccessRegion(0, PixelWidth - 1, 0, PixelHeight - 1);
@@ -149,7 +235,6 @@ private:
 	}
 private:
 	const FDTDevice& fdt_;
-	ObjectAccessor<LCD8080Controller> lcd_;
 };
 
 ILI9486Driver::ILI9486Driver(const FDTDevice& device)
