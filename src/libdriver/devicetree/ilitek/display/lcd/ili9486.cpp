@@ -56,8 +56,8 @@ class ILI9486Device;
 class ILI9486PrimarySurface : public Surface
 {
 public:
-	ILI9486PrimarySurface(ObjectAccessor<ILI9486Device>&& device)
-		:device_(std::move(device))
+	ILI9486PrimarySurface(ILI9486Device& device)
+		:device_(device)
 	{
 
 	}
@@ -81,8 +81,13 @@ public:
 	{
 		throw std::runtime_error("Not supported.");
 	}
+
+	virtual SurfaceLocation GetLocation() noexcept override
+	{
+		return SurfaceLocation::DeviceMemory;
+	}
 private:
-	ObjectAccessor<ILI9486Device> device_;
+	ILI9486Device& device_;
 };
 
 class ILI9486Device : public DisplayDevice, public ExclusiveObjectAccess
@@ -96,7 +101,7 @@ public:
 
 	virtual ObjectPtr<Surface> OpenPrimarySurface() override
 	{
-		return MakeObject<ILI9486PrimarySurface>(MakeAccessor<ILI9486Device>(this, OA_Read | OA_Write));
+		return MakeObject<ILI9486PrimarySurface>(*this);
 	}
 
 	virtual void CopySubresource(Graphics::Surface& src, Graphics::Surface& dest, const Graphics::RectU& srcRect, const Graphics::PointU& destPosition) override
@@ -107,6 +112,17 @@ public:
 		if (devSurface)
 		{
 
+		}
+
+		devSurface = dynamic_cast<ILI9486PrimarySurface*>(&dest);
+		// Copy to device
+		kassert(devSurface);
+		{
+			SetAccessRegion(uint16_t(destPosition.X), uint16_t(destPosition.X + srcRect.GetSize().Width - 1), uint16_t(destPosition.Y), uint16_t(destPosition.Y + srcRect.GetSize().Height - 1));
+
+			auto locker = src.Lock(srcRect);
+			lcd_->Write(Cmd_MemoryWrite, locker);
+			src.Unlock(locker);
 		}
 	}
 protected:

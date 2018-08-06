@@ -13,11 +13,14 @@
 #include <kernel/device/io/Spi.hpp>
 #include <kernel/device/storage/Storage.hpp>
 #include <kernel/device/sensor/Accelerometer.hpp>
-#include <libdriver/devicetree/st/stm32f10x/controller/Dmac.hpp>
+#include <kernel/graphics/DeviceContext.hpp>
 
 using namespace Chino;
 using namespace Chino::Device;
+using namespace Chino::Graphics;
 using namespace Chino::Threading;
+
+#define USE_I2C 0
 
 void Chino::BSPSystemStartup()
 {
@@ -26,8 +29,9 @@ void Chino::BSPSystemStartup()
 	auto pin0 = gpio->OpenPin(0, access);
 	pin0->SetDriveMode(GpioPinDriveMode::Output);
 
-	auto eeprom1 = g_ObjectMgr->GetDirectory(WKD_Device).Open("eeprom1", access).MoveAs<EEPROMStorage>();
 	uint8_t buffer[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+#if USE_I2C
+	auto eeprom1 = g_ObjectMgr->GetDirectory(WKD_Device).Open("eeprom1", access).MoveAs<EEPROMStorage>();
 	{
 		gsl::span<const uint8_t> writeBuffers[] = { buffer };
 		eeprom1->Write(0, { writeBuffers });
@@ -38,6 +42,7 @@ void Chino::BSPSystemStartup()
 		g_Logger->PutString("AT24C02 Read:\n");
 		g_Logger->DumpHex(buffer, std::size(buffer));
 	}
+#endif
 	auto flash1 = g_ObjectMgr->GetDirectory(WKD_Device).Open("flash1", access).MoveAs<FlashStorage>();
 	{
 		gsl::span<const uint8_t> writeBuffers[] = { buffer };
@@ -49,23 +54,12 @@ void Chino::BSPSystemStartup()
 		g_Logger->PutString("GD25Q128 Read:\n");
 		g_Logger->DumpHex(buffer, std::size(buffer));
 	}
-	{
-		uint8_t buffer2[std::size(buffer)];
-		gsl::span<const uint8_t> writeBuffers[] = { buffer };
-		gsl::span<uint8_t> readBuffers[] = { buffer2 };
-	
-		auto dmac = g_ObjectMgr->GetDirectory(WKD_Device).Open("dmac1", access).MoveAs<DmaController>();
-		auto dma = dmac->OpenChannel(DmaRequestLine::I2C1_TX);
-		dma->Configure<uint8_t, uint8_t>(DmaTransmition::Mem2Mem, { writeBuffers }, { readBuffers });
-		auto task = dma->StartAsync();
-		task->GetResult();
-		g_Logger->PutString("Dma Copy:\n");
-		g_Logger->DumpHex(buffer2, std::size(buffer));
-	}
 
 	auto lcd = g_ObjectMgr->GetDirectory(WKD_Device).Open("lcd1", access);
-
-	//auto accelerometer1 = g_ObjectMgr->GetDirectory(WKD_Device).Open("accelerometer1", access).MoveAs<Accelerometer>();
+	//auto dc = MakeObject<DeviceContext>(g_ObjectMgr->GetDirectory(WKD_Device).Open("lcd1", access).MoveAs<DisplayDevice>());
+#if USE_I2C
+	auto accelerometer1 = g_ObjectMgr->GetDirectory(WKD_Device).Open("accelerometer1", access).MoveAs<Accelerometer>();
+#endif
 
 	auto proc = g_ProcessMgr->GetCurrentThread()->GetProcess();
 	auto semp = MakeObject<Semaphore>(0);
@@ -95,16 +89,18 @@ void Chino::BSPSystemStartup()
 		}
 	}, 1, 1024);
 
-	//proc->AddThread([&]
-	//{
-	//	while (true)
-	//	{
-	//		for (size_t i = 0; i < 100; i++)
-	//			ArchHaltProcessor();
-	//		auto accReading = accelerometer1->GetCurrentReading();
-	//		g_Logger->PutFormat("Acceleration: X: %f, Y: %f, Z: %f\n", accReading.AccelerationX, accReading.AccelerationY, accReading.AccelerationZ);
-	//	}
-	//}, 1, 2048);
+#if USE_I2C
+	proc->AddThread([&]
+	{
+		while (true)
+		{
+			for (size_t i = 0; i < 100; i++)
+				ArchHaltProcessor();
+			auto accReading = accelerometer1->GetCurrentReading();
+			g_Logger->PutFormat("Acceleration: X: %f, Y: %f, Z: %f\n", accReading.AccelerationX, accReading.AccelerationY, accReading.AccelerationZ);
+		}
+	}, 1, 2048);
+#endif
 
 	while (1)
 		ArchHaltProcessor();
