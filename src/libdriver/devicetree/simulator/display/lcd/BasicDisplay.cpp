@@ -6,6 +6,7 @@
 #include <kernel/object/ObjectManager.hpp>
 #include <kernel/device/DeviceManager.hpp>
 #include <kernel/device/display/Display.hpp>
+#include <kernel/threading/ThreadSynchronizer.hpp>
 #include <libbsp/bsp.hpp>
 #include <Windows.h>
 #include <process.h>
@@ -57,7 +58,8 @@ struct WindowClassRegiser
 class NativeWindow
 {
 public:
-	NativeWindow()
+	NativeWindow(HANDLE readyEvent)
+		:readyEvent_(std::move(readyEvent))
 	{
 
 	}
@@ -100,11 +102,28 @@ private:
 		ShowWindow(hWnd_, SW_SHOW);
 		UpdateWindow(hWnd_);
 
+		SetEvent(readyEvent_);
+
 		MSG msg;
-		while (GetMessage(&msg, NULL, 0, 0))
+		while (true)
 		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
+			if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+			{
+				if (msg.message == WM_QUIT)
+					break;
+
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+			else
+			{
+				RECT rect{ 0,0 };
+				ClientToScreen(hWnd_, (LPPOINT)&rect);
+				rect.right = rect.left + 320;
+				rect.bottom = rect.top + 480;
+				coassert(mainSurface_->Blt(&rect, offSurface_.Get(), nullptr, DDBLT_WAIT, nullptr));
+				Sleep(1);
+			}
 		}
 	}
 
@@ -153,6 +172,7 @@ private:
 	}
 private:
 	HWND hWnd_;
+	HANDLE readyEvent_;
 	wrl::ComPtr<IDirectDraw7> ddraw_;
 	wrl::ComPtr<IDirectDrawSurface7> mainSurface_, offSurface_;
 };
@@ -181,6 +201,11 @@ public:
 		return ColorFormat::B5G6R5_UNORM;
 	}
 
+	virtual SurfaceLocation GetLocation() noexcept override
+	{
+		return SurfaceLocation::DeviceMemory;
+	}
+
 	virtual SurfaceData Lock(const RectU& rect) override
 	{
 		throw std::runtime_error("Not supported.");
@@ -201,7 +226,7 @@ public:
 	static constexpr uint16_t PixelHeight = 240;
 
 	BasicDisplayDevice(const FDTDevice& fdt)
-		:fdt_(fdt)
+		:fdt_(fdt), readyEvent_(CreateEvent(nullptr, FALSE, FALSE, nullptr)), window_(readyEvent_)
 	{
 		g_ObjectMgr->GetDirectory(WKD_Device).AddItem(fdt.GetName(), *this);
 	}
@@ -209,6 +234,32 @@ public:
 	virtual ObjectPtr<Surface> OpenPrimarySurface() override
 	{
 		return MakeObject<BasicDisplaySurface>(window_);
+	}
+
+	virtual void Clear(Graphics::Surface& src, const RectU& rect, const Graphics::ColorValue& color) override
+	{
+		auto devSurface = dynamic_cast<BasicDisplaySurface*>(&src);
+		kassert(devSurface);
+
+		RECT drect{ rect.Left, rect.Top, rect.Right, rect.Bottom };
+		DDSURFACEDESC2 ddsd{};
+		ddsd.dwSize = sizeof(ddsd);
+
+		coassert(devSurface->GetBackSurface()->Lock(&drect, &ddsd, DDLOCK_WAIT | DDLOCK_WRITEONLY, nullptr));
+
+		auto bytes = rect.GetSize().Width * rect.GetSize().Height * GetPixelBytes(ColorFormat::B5G6R5_UNORM);
+
+		auto data = reinterpret_cast<uint16_t*>(ddsd.lpSurface);
+		auto value = Rgb565::From(color).Value;
+		for (size_t y = 0; y < rect.GetSize().Height; y++)
+		{
+			for (size_t x = 0; x < rect.GetSize().Width; x++)
+				data[x] = value;
+
+			data += ddsd.lPitch / 2;
+		}
+
+		devSurface->GetBackSurface()->Unlock(&drect);
 	}
 
 	virtual void CopySubresource(Surface& src, Surface& dest, const RectU& srcRect, const PointU& destPosition) override
@@ -226,12 +277,41 @@ public:
 
 			DDSURFACEDESC2 ddsd;
 			coassert(devSurface->GetBackSurface()->Lock(&rect, &ddsd, DDLOCK_WAIT | DDLOCK_READONLY, nullptr));
+			devSurface->GetBackSurface()->Unlock(&rect);
+		}
+
+		devSurface = dynamic_cast<BasicDisplaySurface*>(&dest);
+		// Copy to device
+		kassert(devSurface);
+		{
+			RECT rect;
+			DDSURFACEDESC2 ddsd;
+			rect.left = destPosition.X;
+			rect.top = destPosition.Y;
+			rect.right = destPosition.X + srcRect.GetSize().Width;
+			rect.bottom = destPosition.Y + srcRect.GetSize().Height;
+
+			auto locker = src.Lock(srcRect);
+			coassert(devSurface->GetBackSurface()->Lock(&rect, &ddsd, DDLOCK_WAIT | DDLOCK_WRITEONLY, nullptr));
+
+			auto lineSize = srcRect.GetSize().Width * GetPixelBytes(src.GetFormat());
+			auto srcData = locker.Data.data();
+			auto destData = reinterpret_cast<uint8_t*>(ddsd.lpSurface);
+			for (size_t y = 0; y < srcRect.GetSize().Height; y++)
+			{
+				auto begin = srcData + y * locker.Stride;
+				std::copy(begin, begin + lineSize, destData + y * ddsd.lPitch);
+			}
+
+			devSurface->GetBackSurface()->Unlock(&rect);
+			src.Unlock(locker);
 		}
 	}
 protected:
 	virtual void OnFirstOpen() override
 	{
 		wndThread_ = _beginthread(NativeWindow::ThreadMain, 1 * 1024 * 1024, &window_);
+		WaitForSingleObject(readyEvent_, INFINITE);
 	}
 
 	virtual void OnLastClose() override
@@ -241,6 +321,7 @@ protected:
 private:
 private:
 	uintptr_t wndThread_;
+	HANDLE readyEvent_;
 	NativeWindow window_;
 	const FDTDevice& fdt_;
 };

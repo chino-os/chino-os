@@ -125,5 +125,8 @@ void Chino::BSPSystemStartup()
 
 void App::Start()
 {
+	auto green = dc_->CreateOffscreenSurface(ColorFormat::B5G6R5_UNORM, { 30,30 });
+	dc_->Clear(*green, { {}, green->GetPixelSize() }, { 0,1,0 });
 	dc_->Clear(*primarySurface_, { {}, primarySurface_->GetPixelSize() }, { 1, 0, 0 });
+	dc_->CopySubresource(*green, *primarySurface_, { {}, green->GetPixelSize() }, { 100, 100 });
 }

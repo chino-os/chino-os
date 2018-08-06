@@ -29,6 +29,28 @@ static void CopyBits(const uint8_t* src, size_t srcStride, uint8_t* dest, size_t
 	}
 }
 
+static void FillBits(const SurfaceData& data, ColorFormat format, const ColorValue& color)
+{
+	if (format == ColorFormat::B5G6R5_UNORM)
+	{
+		gsl::span<uint16_t> span = { reinterpret_cast<uint16_t*>(data.Data.data()), data.Data.size() / 2 };
+
+		auto src = span.data();
+		auto value = Rgb565::From(color).Value;
+		for (size_t y = 0; y < data.Rect.GetSize().Height; y++)
+		{
+			for (size_t x = 0; x < data.Rect.GetSize().Width; x++)
+				src[x] = value;
+
+			src += data.Stride / 2;
+		}
+	}
+	else
+	{
+		throw std::runtime_error("Not implemented.");
+	}
+}
+
 class SoftwareSurface : public Surface
 {
 public:
@@ -76,9 +98,9 @@ public:
 	virtual SurfaceData Lock(const RectU& rect) override
 	{
 		auto begin = rect.Top * stride_ + GetPixelBytes(format_) * rect.Left;
-		auto end = rect.Bottom * stride_ + GetPixelBytes(format_) * rect.Right;
+		auto end = (int32_t(rect.Bottom - 1)) * stride_ + GetPixelBytes(format_) * rect.Right;
 
-		if (begin >= data_.size_bytes() || end >= data_.size_bytes())
+		if (begin > data_.size_bytes() || end > data_.size_bytes())
 			throw std::out_of_range("Lock rect is out of range.");
 
 		return { { data_.data() + begin, data_.data() + end }, stride_, rect };
@@ -126,7 +148,9 @@ void DeviceContext::Clear(Surface& src, const RectU& srcRect, const ColorValue& 
 	}
 	else
 	{
-		throw std::runtime_error("Not impl.");
+		auto srcLocker = src.Lock(srcRect);
+		FillBits(srcLocker, src.GetFormat(), color);
+		src.Unlock(srcLocker);
 	}
 }
 
@@ -142,6 +166,8 @@ void DeviceContext::CopySubresource(Surface& src, Surface& dest, const RectU& sr
 		auto destLocker = dest.Lock({ destPosition, srcRect.GetSize() });
 		auto lineSize = srcRect.GetSize().Width * GetPixelBytes(src.GetFormat());
 		CopyBits(srcLocker.Data.data(), srcLocker.Stride, destLocker.Data.data(), destLocker.Stride, lineSize, srcRect.GetSize().Height);
+		dest.Unlock(destLocker);
+		src.Unlock(srcLocker);
 	}
 	else
 	{
