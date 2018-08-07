@@ -20,7 +20,7 @@ using namespace Chino::Device;
 using namespace Chino::Graphics;
 using namespace Chino::Threading;
 
-#define USE_I2C 1
+#define RW_TEST 0
 
 class App
 {
@@ -44,8 +44,11 @@ void Chino::BSPSystemStartup()
 	auto pin0 = gpio->OpenPin(0, access);
 	pin0->SetDriveMode(GpioPinDriveMode::Output);
 
+	auto proc = g_ProcessMgr->GetCurrentThread()->GetProcess();
+
+#if RW_TEST
 	uint8_t buffer[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-#if USE_I2C
+
 	auto eeprom1 = g_ObjectMgr->GetDirectory(WKD_Device).Open("eeprom1", access).MoveAs<EEPROMStorage>();
 	{
 		gsl::span<const uint8_t> writeBuffers[] = { buffer };
@@ -57,11 +60,8 @@ void Chino::BSPSystemStartup()
 		g_Logger->PutString("AT24C02 Read:\n");
 		g_Logger->DumpHex(buffer, std::size(buffer));
 	}
-#endif
 
-#if USE_I2C
 	auto accelerometer1 = g_ObjectMgr->GetDirectory(WKD_Device).Open("accelerometer1", access).MoveAs<Accelerometer>();
-#endif
 
 	auto flash1 = g_ObjectMgr->GetDirectory(WKD_Device).Open("flash1", access).MoveAs<FlashStorage>();
 	{
@@ -75,10 +75,21 @@ void Chino::BSPSystemStartup()
 		g_Logger->DumpHex(buffer, std::size(buffer));
 	}
 
+	proc->AddThread([&]
+	{
+		while (true)
+		{
+			for (size_t i = 0; i < 100; i++)
+				ArchHaltProcessor();
+			auto accReading = accelerometer1->GetCurrentReading();
+			g_Logger->PutFormat("Acceleration: X: %f, Y: %f, Z: %f\n", accReading.AccelerationX, accReading.AccelerationY, accReading.AccelerationZ);
+		}
+	}, 1, 2048);
+#endif
+
 	App app;
 	app.Start();
 
-	auto proc = g_ProcessMgr->GetCurrentThread()->GetProcess();
 	auto semp = MakeObject<Semaphore>(0);
 	auto mutex = MakeObject<Mutex>();
 	proc->AddThread([&]
@@ -105,19 +116,6 @@ void Chino::BSPSystemStartup()
 			semp->Give(1);
 		}
 	}, 1, 1024);
-
-#if USE_I2C
-	proc->AddThread([&]
-	{
-		while (true)
-		{
-			for (size_t i = 0; i < 100; i++)
-				ArchHaltProcessor();
-			auto accReading = accelerometer1->GetCurrentReading();
-			g_Logger->PutFormat("Acceleration: X: %f, Y: %f, Z: %f\n", accReading.AccelerationX, accReading.AccelerationY, accReading.AccelerationZ);
-		}
-	}, 1, 2048);
-#endif
 
 	while (1)
 		ArchHaltProcessor();
