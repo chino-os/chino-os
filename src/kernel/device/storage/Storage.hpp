@@ -44,6 +44,8 @@ namespace Chino
 
 			virtual size_t GetSectorSize() = 0;
 			virtual size_t GetSectorsCount() = 0;
+			//virtual size_t GetPageSize() = 0;
+			//virtual void ProgramPage(BufferList<const uint8_t> bufferList) = 0;
 			virtual void EraseSector(size_t sectorId) = 0;
 			virtual void EraseAllSectors() = 0;
 		};

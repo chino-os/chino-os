@@ -9,6 +9,7 @@
 #include <kernel/threading/ThreadSynchronizer.hpp>
 #include "../controller/Rcc.hpp"
 #include "../controller/Port.hpp"
+#include "../controller/Dmac.hpp"
 
 using namespace Chino;
 using namespace Chino::Device;
@@ -153,8 +154,6 @@ public:
 
 	void Write(Stm32SpiDevice& device, BufferList<const uint8_t> bufferList)
 	{
-		Threading::kernel_critical kc;
-
 		spi_->CR1.SPE = 1;
 		SetupDevice(device);
 
@@ -171,14 +170,12 @@ public:
 
 	void TransferSequential(Stm32SpiDevice& device, BufferList<const uint8_t> writeBufferList, BufferList<uint8_t> readBufferList)
 	{
-		Threading::kernel_critical kc;
-
 		spi_->CR1.SPE = 1;
 		SetupDevice(device);
 
 		WriteData(device, writeBufferList);
-		spi_->CR1.RXONLY = 1;
-		ReadData(device, readBufferList);
+		if (!readBufferList.IsEmpty())
+			ReadData(device, readBufferList);
 
 		while (spi_->SR.BSY);
 		spi_->CR1.SPE = 0;
@@ -255,7 +252,7 @@ private:
 			throw std::invalid_argument("Invalid data bit length.");
 		}
 
-		cr1.BR = spi_baud_rate::SPI_BD_Div256;
+		cr1.BR = spi_baud_rate::SPI_BD_Div2;
 		while (spi_->SR.BSY);
 		spi_->CR1.Value = cr1.Value;
 	}
@@ -264,16 +261,29 @@ private:
 	{
 		if (device.dataBitLength_ == 8)
 		{
-			for (auto& buffer : bufferList.Buffers)
-			{
-				for (auto data : buffer)
-				{
-					while (!spi_->SR.TXE);
-					spi_->DR = data;
-					while (!spi_->SR.RXNE);
-					auto value = spi_->DR;
-				}
-			}
+			uint8_t dummy[1];
+			gsl::span<uint8_t> readDestBuffers[] = { dummy };
+			gsl::span<const volatile uint8_t> readSrcBuffers[] = { { reinterpret_cast<const volatile uint8_t*>(&spi_->DR), 1 } };
+
+			auto dmac = g_ObjectMgr->GetDirectory(WKD_Device).Open("dmac1", OA_Read | OA_Write).MoveAs<DmaController>();
+			auto readDma = dmac->OpenChannel(DmaRequestLine::SPI2_RX);
+			readDma->Configure<volatile uint8_t, uint8_t>(DmaTransmition::Perip2Mem, { readSrcBuffers }, { readDestBuffers }, bufferList.GetTotalSize());
+
+			gsl::span<volatile uint8_t> writeDestBuffers[] = { { reinterpret_cast<volatile uint8_t*>(&spi_->DR), 1 } };
+			auto writeDma = dmac->OpenChannel(DmaRequestLine::SPI2_TX);
+			writeDma->Configure<uint8_t, volatile uint8_t>(DmaTransmition::Mem2Periph, bufferList, { writeDestBuffers });
+
+			auto readEvent = readDma->StartAsync();
+			auto writeEvent = writeDma->StartAsync();
+
+			spi_->CR2.RXDMAEN = 1;
+			spi_->CR2.TXDMAEN = 1;
+
+			readEvent->Wait();
+			writeEvent->Wait();
+
+			spi_->CR2.RXDMAEN = 0;
+			spi_->CR2.TXDMAEN = 0;
 		}
 		else
 		{
@@ -297,14 +307,29 @@ private:
 	{
 		if (device.dataBitLength_ == 8)
 		{
-			for (auto& buffer : bufferList.Buffers)
-			{
-				for (auto& data : buffer)
-				{
-					while (!spi_->SR.RXNE);
-					data = spi_->DR;
-				}
-			}
+			uint8_t dummy[1] = { 0 };
+			gsl::span<const uint8_t> writeSrcBuffers[] = { dummy };
+			gsl::span<volatile uint8_t> writeDestBuffers[] = { { reinterpret_cast<volatile uint8_t*>(&spi_->DR), 1 } };
+
+			auto dmac = g_ObjectMgr->GetDirectory(WKD_Device).Open("dmac1", OA_Read | OA_Write).MoveAs<DmaController>();
+			auto readDma = dmac->OpenChannel(DmaRequestLine::SPI2_TX);
+			readDma->Configure<uint8_t, volatile uint8_t>(DmaTransmition::Mem2Periph, { writeSrcBuffers }, { writeDestBuffers }, bufferList.GetTotalSize());
+
+			gsl::span<const volatile uint8_t> readSrcBuffers[] = { { reinterpret_cast<const volatile uint8_t*>(&spi_->DR), 1 } };
+			auto writeDma = dmac->OpenChannel(DmaRequestLine::SPI2_RX);
+			writeDma->Configure<volatile uint8_t, uint8_t>(DmaTransmition::Perip2Mem, { readSrcBuffers }, bufferList);
+
+			auto readEvent = readDma->StartAsync();
+			auto writeEvent = writeDma->StartAsync();
+
+			spi_->CR2.RXDMAEN = 1;
+			spi_->CR2.TXDMAEN = 1;
+
+			readEvent->Wait();
+			writeEvent->Wait();
+
+			spi_->CR2.RXDMAEN = 0;
+			spi_->CR2.TXDMAEN = 0;
 		}
 		else
 		{

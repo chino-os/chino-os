@@ -40,7 +40,6 @@ class GD25Q128Device : public FlashStorage, public ExclusiveObjectAccess
 		}
 	private:
 		ObjectAccessor<GpioPin>& pin_;
-		kernel_critical kc;
 	};
 public:
 	GD25Q128Device(const FDTDevice& fdt)
