@@ -254,8 +254,8 @@ class Stm32DmaChannel : public DmaChannel
 	{
 		DmaTransferOptions Options;
 		ObjectPtr<AsyncActionCompletionEvent> CompletionEvent;
-		Chino::Device::details::BufferListSelect<const volatile uint8_t> RestSource;
-		Chino::Device::details::BufferListSelect<volatile uint8_t> RestDest;
+		Chino::details::BufferListSelect<const volatile uint8_t> RestSource;
+		Chino::details::BufferListSelect<volatile uint8_t> RestDest;
 		size_t SourceByteWidth, DestByteWidth;
 	};
 public:
