@@ -16,9 +16,9 @@ using namespace Chino;
 
 StaticHolder<Diagnostic::KernelLogger> g_Logger;
 StaticHolder<Memory::MemoryManager> g_MemoryMgr;
+StaticHolder<ObjectManager> g_ObjectMgr;
 StaticHolder<Threading::ProcessManager> g_ProcessMgr;
 StaticHolder<Device::DeviceMananger> g_DeviceMgr;
-StaticHolder<ObjectManager> g_ObjectMgr;
 
 extern "C"
 {

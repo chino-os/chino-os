@@ -62,6 +62,26 @@ void Semaphore::Take(size_t count)
 	}
 }
 
+bool Semaphore::TryTake(size_t count)
+{
+	while (count)
+	{
+		kernel_critical kc;
+		auto expected = count_.load(std::memory_order_relaxed);
+		if (expected < count)
+		{
+			return false;
+		}
+		else
+		{
+			if (count_.compare_exchange_strong(expected, expected - count, std::memory_order_relaxed))
+				return true;
+		}
+	}
+
+	return false;
+}
+
 void Semaphore::Give(size_t count)
 {
 	if (count)
@@ -101,6 +121,54 @@ void Mutex::Give()
 	kernel_critical kc;
 	avail_.store(true, std::memory_order_relaxed);
 	NotifyOne();
+}
+
+RecursiveMutex::RecursiveMutex()
+	:avail_(true), thread_(nullptr), depth_(0)
+{
+
+}
+
+size_t RecursiveMutex::Take()
+{
+	auto cntThread = g_ProcessMgr->GetCurrentThread().Get();
+	if (thread_.load(std::memory_order_acquire) != cntThread)
+	{
+		while (true)
+		{
+			kernel_critical kc;
+			auto expected = avail_.load(std::memory_order_relaxed);
+			if (!expected)
+			{
+				WaitOne();
+			}
+			else
+			{
+				if (avail_.compare_exchange_strong(expected, false, std::memory_order_relaxed))
+				{
+					thread_.store(cntThread, std::memory_order_release);
+					break;
+				}
+			}
+		}
+	}
+
+	return depth_++;
+}
+
+size_t RecursiveMutex::Give()
+{
+	auto cntThread = g_ProcessMgr->GetCurrentThread().Get();
+	kassert(thread_.load(std::memory_order_acquire) == cntThread);
+	auto depth = depth_--;
+	if (depth == 1)
+	{
+		kernel_critical kc;
+		avail_.store(true, std::memory_order_relaxed);
+		NotifyOne();
+	}
+
+	return depth;
 }
 
 Event::Event(bool initialState, bool autoReset)

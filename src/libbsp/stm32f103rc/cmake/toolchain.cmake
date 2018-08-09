@@ -21,6 +21,7 @@ SET(COMMON_WARNING_FLAGS "-Wall \
 
 SET(LDFLAGS "\
 -nostartfiles           \
+-Wl,-gc-sections \
 -Wl,-static")
 
 SET(COMMON_C_FLAGS "${COMMON_FLAGS} -std=gnu11")

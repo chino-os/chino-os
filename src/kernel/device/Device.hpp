@@ -15,6 +15,7 @@ namespace Chino
 		{
 			Storage,
 			Partition,
+			NetworkInterface,
 			Other
 		};
 

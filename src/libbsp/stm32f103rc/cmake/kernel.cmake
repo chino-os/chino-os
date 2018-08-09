@@ -5,4 +5,5 @@ SET(BOARD_LDFLAGS "-Wl,-z,relro,-z,now -Wl,--no-dynamic-linker")
 SET(LDFLAGS "\
 -nostartfiles           \
 -T ${BOARD_LDS_DIR}/kernel.lds \
+-Wl,-gc-sections \
 -Wl,-static")

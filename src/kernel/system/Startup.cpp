@@ -7,13 +7,19 @@
 #include "../diagnostic/KernelLogger.hpp"
 #include "../memory/MemoryManager.hpp"
 #include "../object/ObjectManager.hpp"
+#include "../network/NetworkManager.hpp"
 #include <libbsp/bsp.hpp>
 
 using namespace Chino;
 using namespace Chino::Device;
+using namespace Chino::Network;
+
+StaticHolder<NetworkManager> g_NetworkMgr;
 
 void Chino::SystemStartup(const BootParameters& params)
 {
+	g_NetworkMgr.construct();
+
 	g_DeviceMgr->InstallDevices(params);
 
 	g_DeviceMgr->DumpDevices();
