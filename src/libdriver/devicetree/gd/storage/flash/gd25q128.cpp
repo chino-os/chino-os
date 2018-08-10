@@ -43,7 +43,7 @@ class GD25Q128Device : public FlashStorage, public ExclusiveObjectAccess
 	};
 public:
 	GD25Q128Device(const FDTDevice& fdt)
-		:fdt_(fdt), tempSectorSpan_(tempSector_)
+		:fdt_(fdt)
 	{
 		g_ObjectMgr->GetDirectory(WKD_Device).AddItem(fdt.GetName(), *this);
 	}
@@ -74,6 +74,12 @@ public:
 		auto toWrite = bufferList.GetTotalSize();
 		if (offset + toWrite >= GetSize())
 			throw std::out_of_range("offset is out of range");
+
+		if (!tempSector_)
+		{
+			tempSector_ = std::make_unique<uint8_t[]>(SECTOR_SIZE);
+			tempSectorSpan_ = { tempSector_.get(), SECTOR_SIZE };
+		}
 
 		auto startBytes = offset;
 		auto endBytes = offset + toWrite;
@@ -172,6 +178,9 @@ protected:
 
 	virtual void OnLastClose() override
 	{
+		tempSector_.reset();
+		tempSectorSpan_ = {};
+
 		dev_.Reset();
 		csPin_.Reset();
 	}
@@ -270,7 +279,7 @@ private:
 	const FDTDevice& fdt_;
 	ObjectAccessor<SpiDevice> dev_;
 	ObjectAccessor<GpioPin> csPin_;
-	std::array<uint8_t, SECTOR_SIZE> tempSector_;
+	std::unique_ptr<uint8_t[]> tempSector_;
 	gsl::span<uint8_t> tempSectorSpan_;
 };
 

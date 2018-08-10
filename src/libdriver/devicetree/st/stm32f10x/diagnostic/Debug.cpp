@@ -195,7 +195,7 @@ static void ENC28J60_SPI2_Init(void)
 
 	SPI_Cmd(SPI2, ENABLE); //使能SPI外设
 
-	SPI2_ReadWriteByte(0xff);//启动传输	 
+	//SPI2_ReadWriteByte(0xff);//启动传输	 
 
 }
 
@@ -206,10 +206,10 @@ void ENC28J60_Reset(void)
 	ENC28J60_SPI2_Init();//SPI2初始化
 	SPI2_SetSpeed(SPI_BaudRatePrescaler_4);	//SPI2 SCK频率为36M/4=9Mhz
 	//TIM6_Int_Init(1000, 719);//100Khz计数频率，计数到1000为10ms
-	ENC28J60_RST = 0;			//复位ENC28J60
-	delay_ms(10);
-	ENC28J60_RST = 1;			//复位结束				    
-	delay_ms(10);
+	//ENC28J60_RST = 0;			//复位ENC28J60
+	//delay_ms(10);
+	//ENC28J60_RST = 1;			//复位结束				    
+	//delay_ms(10);
 }
 //读取ENC28J60寄存器(带操作码) 
 //op：操作码
@@ -318,16 +318,18 @@ u8 ENC28J60_Init(u8* macaddr)
 	u16 retry = 0;
 	ENC28J60_Reset();
 	ENC28J60_Write_Op(ENC28J60_SOFT_RESET, 0, ENC28J60_SOFT_RESET);//软件复位
-	while (!(ENC28J60_Read(ESTAT)&ESTAT_CLKRDY) && retry<500)//等待时钟稳定
-	{
-		retry++;
-		delay_ms(1);
-	};
-	if (retry >= 500)return 1;//ENC28J60初始化失败
+	while (!(ENC28J60_Read(ESTAT)&ESTAT_CLKRDY));
+	//while (!(ENC28J60_Read(ESTAT)&ESTAT_CLKRDY) && retry<500)//等待时钟稳定
+	//{
+	//	retry++;
+	//	delay_ms(1);
+	//};
+	//if (retry >= 500)return 1;//ENC28J60初始化失败
 							  // do bank 0 stuff
 							  // initialize receive buffer
 							  // 16-bit transfers,must write low byte first
 							  // set receive buffer start address	   设置接收缓冲区地址  8K字节容量
+	g_Logger->PutFormat("ID: %x\n", ENC28J60_Get_EREVID());
 	NextPacketPtr = RXSTART_INIT;
 	// Rx start
 	//接收缓冲器由一个硬件管理的循环FIFO 缓冲器构成。

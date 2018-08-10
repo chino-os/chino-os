@@ -78,10 +78,40 @@
 		gpio1: gpio1 {
 			device_type = "gpio";
 			compatible = "st,stm32f103-gpio";
-			port = "portC";
+			port = "portA";
 		};
 
 		gpio2: gpio2 {
+			device_type = "gpio";
+			compatible = "st,stm32f103-gpio";
+			port = "portB";
+		};
+
+		gpio3: gpio3 {
+			device_type = "gpio";
+			compatible = "st,stm32f103-gpio";
+			port = "portC";
+		};
+
+		gpio4: gpio4 {
+			device_type = "gpio";
+			compatible = "st,stm32f103-gpio";
+			port = "portD";
+		};
+
+		gpio5: gpio5 {
+			device_type = "gpio";
+			compatible = "st,stm32f103-gpio";
+			port = "portE";
+		};
+
+		gpio6: gpio6 {
+			device_type = "gpio";
+			compatible = "st,stm32f103-gpio";
+			port = "portF";
+		};
+
+		gpio7: gpio7 {
 			device_type = "gpio";
 			compatible = "st,stm32f103-gpio";
 			port = "portG";
@@ -112,7 +142,6 @@
 			compatible = "st,stm32f103-spi";
 			reg = <0x40003800 0x400>;
 			port = "portB";
-			nss_pin = <12>;
 			sck_pin = <13>;
 			miso_pin = <14>;
 			mosi_pin = <15>;
@@ -151,7 +180,7 @@
 			device_type = "flash";
 			compatible = "gd,gd25q128";
 			spi = "spi2";
-			cs_gpio = "gpio2";
+			cs_gpio = "gpio7";
 			cs_pin = <13>;
 		};
 
@@ -165,6 +194,8 @@
 			device_type = "ethernet-controller";
 			compatible = "microchip,enc28j60";
 			spi = "spi2";
+			cs_gpio = "gpio2";
+			cs_pin = <12>;
 		};
 	};
 };

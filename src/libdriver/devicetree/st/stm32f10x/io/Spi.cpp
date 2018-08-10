@@ -185,12 +185,12 @@ protected:
 	{
 		auto access = OA_Read | OA_Write;
 		auto port = g_ObjectMgr->GetDirectory(WKD_Device).Open(fdt_.GetProperty("port")->GetString(), access).MoveAs<PortDevice>();
-		nssPin_ = port->OpenPin(static_cast<PortPins>(fdt_.GetProperty("nss_pin")->GetUInt32(0)));
+		//nssPin_ = port->OpenPin(static_cast<PortPins>(fdt_.GetProperty("nss_pin")->GetUInt32(0)));
 		sckPin_ = port->OpenPin(static_cast<PortPins>(fdt_.GetProperty("sck_pin")->GetUInt32(0)));
 		misoPin_ = port->OpenPin(static_cast<PortPins>(fdt_.GetProperty("miso_pin")->GetUInt32(0)));
 		mosiPin_ = port->OpenPin(static_cast<PortPins>(fdt_.GetProperty("mosi_pin")->GetUInt32(0)));
 
-		nssPin_->SetMode(PortOutputMode::AF_PushPull, PortOutputSpeed::PS_50MHz);
+		//nssPin_->SetMode(PortOutputMode::AF_PushPull, PortOutputSpeed::PS_50MHz);
 		sckPin_->SetMode(PortOutputMode::AF_PushPull, PortOutputSpeed::PS_50MHz);
 		misoPin_->SetMode(PortOutputMode::AF_PushPull, PortOutputSpeed::PS_50MHz);
 		mosiPin_->SetMode(PortOutputMode::AF_PushPull, PortOutputSpeed::PS_50MHz);
@@ -201,7 +201,7 @@ protected:
 	virtual void OnLastClose() override
 	{
 		RccDevice::Rcc1SetPeriphClockIsEnabled(periph_, false);
-		nssPin_.Reset();
+		//nssPin_.Reset();
 		sckPin_.Reset();
 		misoPin_.Reset();
 		mosiPin_.Reset();
@@ -252,7 +252,7 @@ private:
 			throw std::invalid_argument("Invalid data bit length.");
 		}
 
-		cr1.BR = spi_baud_rate::SPI_BD_Div2;
+		cr1.BR = spi_baud_rate::SPI_BD_Div4;
 		while (spi_->SR.BSY);
 		spi_->CR1.Value = cr1.Value;
 	}
@@ -307,7 +307,7 @@ private:
 	{
 		if (device.dataBitLength_ == 8)
 		{
-			uint8_t dummy[1] = { 0 };
+			uint8_t dummy[1] = { 0xFF };
 			gsl::span<const uint8_t> writeSrcBuffers[] = { dummy };
 			gsl::span<volatile uint8_t> writeDestBuffers[] = { { reinterpret_cast<volatile uint8_t*>(&spi_->DR), 1 } };
 
