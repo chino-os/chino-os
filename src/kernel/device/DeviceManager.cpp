@@ -60,8 +60,19 @@ ObjectPtr<IObject> DeviceMananger::InstallIRQHandler(size_t picId, int32_t irq, 
 
 void DeviceMananger::OnIRQ(size_t picId, int32_t irq)
 {
-	auto& handler = irqHandlers_.at(picId).at(irq);
-	handler->Invoke();
+	IRQEntry* entry;
+
+	try
+	{
+		entry = irqHandlers_.at(picId).at(irq);
+	}
+	catch (std::out_of_range&)
+	{
+		g_Logger->PutFormat("Unhandled IRQ: %z:%d\n", picId, irq);
+		throw;
+	}
+
+	entry->Invoke();
 }
 
 void DeviceMananger::UninstallIRQHandler(size_t picId, int32_t irq)

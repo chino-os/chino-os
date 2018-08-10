@@ -15,6 +15,7 @@ namespace Chino
 			NetworkManager();
 
 			void TryInstallNetworkDevice(ObjectPtr<Device::Device> device);
+			void Test();
 		};
 	}
 }

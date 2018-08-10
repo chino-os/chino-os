@@ -190,8 +190,81 @@ kernel_critical::~kernel_critical()
 	}
 }
 
+#include "timer.h"
+uint16_t current_clock = 0;
+/*
+********************************************************************************
+* 函 数 名: clock_time
+* 功能说明: 返回当前计数值
+* 参    数：无
+* 返 回 值: uint16_t current_clock  当前计数时间
+* 使用说明：
+* 调用方法：clock_time()
+********************************************************************************
+*/
+uint16_t clock_time(void)
+{
+	return current_clock;
+}
+
+/*
+********************************************************************************
+* 函 数 名: timer_set
+* 功能说明: 设定定时器定时间隔时间
+* 参    数：timer_typedef* ptimer   定时器结构体
+*           uint16_t interval       间隔时间
+* 返 回 值: 无
+* 使用说明：
+* 调用方法：timer_set(&arp_timer,10000);
+********************************************************************************
+*/
+void timer_set(timer_typedef* ptimer, uint16_t interval)
+{
+	/* 设置时间间隔 */
+	ptimer->interval = interval;
+	/* 设置启动时间 */
+	ptimer->start = clock_time();
+}
+
+/*
+********************************************************************************
+* 函 数 名: timer_reset
+* 功能说明: 重新设定定时器
+* 参    数：timer_typedef* ptimer   定时器结构体
+* 返 回 值: 无
+* 使用说明：
+* 调用方法：timer_reset(&arp_timer);
+********************************************************************************
+*/
+void timer_reset(timer_typedef * ptimer)
+{
+	ptimer->start = ptimer->start + ptimer->interval;
+}
+
+/*
+********************************************************************************
+* 函 数 名: timer_expired
+* 功能说明: 查询定时器是否溢出
+* 参    数：timer_typedef* ptimer   定时器结构体
+* 返 回 值: int8_t                  定时器是否溢出 1 代表溢出 0代表未溢出
+* 使用说明：
+* 调用方法：timer_expired(&arp_timer)
+********************************************************************************
+*/
+int8_t timer_expired(timer_typedef* ptimer)
+{
+	/* 一定要装换为有符号数，进行数学比较时，多使用有符号数 */
+	if ((int16_t)(clock_time() - ptimer->start) >= (int16_t)ptimer->interval)
+		return 1;
+	else
+		return 0;
+}
+
+
 extern "C" bool Kernel_IncrementTick()
 {
+	/* 时间标志累加 */
+	current_clock++;
 	return g_ProcessMgr->IncrementTick();
 }
 

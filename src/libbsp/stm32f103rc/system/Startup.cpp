@@ -6,6 +6,7 @@
 #include <kernel/threading/ProcessManager.hpp>
 #include <kernel/diagnostic/KernelLogger.hpp>
 #include <kernel/memory/MemoryManager.hpp>
+#include <kernel/network/NetworkManager.hpp>
 #include <kernel/object/ObjectManager.hpp>
 #include <kernel/threading/ThreadSynchronizer.hpp>
 #include <kernel/device/io/Gpio.hpp>
@@ -127,4 +128,6 @@ void App::Start()
 	dc_->Clear(*green, { {}, green->GetPixelSize() }, { 0,1,0 });
 	dc_->Clear(*primarySurface_, { {}, primarySurface_->GetPixelSize() }, { 1, 0, 0 });
 	dc_->CopySubresource(*green, *primarySurface_, { {}, green->GetPixelSize() }, { 100, 100 });
+
+	g_NetworkMgr->Test();
 }

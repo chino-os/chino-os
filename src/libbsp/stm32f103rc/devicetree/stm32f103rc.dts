@@ -160,5 +160,11 @@
 			compatible = "ilitek,ili9486";
 			driver = "lcd8080_driver1";
 		};
+
+		enc28j60: eth0 {
+			device_type = "ethernet-controller";
+			compatible = "microchip,enc28j60";
+			spi = "spi2";
+		};
 	};
 };
