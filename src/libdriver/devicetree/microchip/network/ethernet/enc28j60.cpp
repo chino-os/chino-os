@@ -231,23 +231,21 @@ enum operation_t
 #define BANK_MASK		0x60
 #define SPRD_MASK		0x80
 
-extern void ENC28J60_Write_Op(uint8_t op, uint8_t addr, uint8_t data);
-extern uint8_t ENC28J60_Read(uint8_t addr);
-extern void ENC28J60_Reset(void);
-extern void ENC28J60_Set_Bank(uint8_t bank);
-extern uint8_t ENC28J60_Read_Op(uint8_t op, uint8_t addr);
-
 class ENC28J60Device : public Device, public ExclusiveObjectAccess
 {
-	struct CS
+	struct CS : public ChipSelectPin
 	{
 		CS(ObjectAccessor<GpioPin>& pin)
 			:pin_(pin)
 		{
+		}
+
+		virtual void Activate() override
+		{
 			pin_->Write(GpioPinValue::Low);
 		}
 
-		~CS()
+		virtual void Deactivate() override
 		{
 			pin_->Write(GpioPinValue::High);
 		}
@@ -256,7 +254,7 @@ class ENC28J60Device : public Device, public ExclusiveObjectAccess
 	};
 public:
 	ENC28J60Device(const FDTDevice& fdt)
-		:fdt_(fdt)
+		:fdt_(fdt), cs_(csPin_)
 	{
 		g_ObjectMgr->GetDirectory(WKD_Device).AddItem(fdt.GetName(), *this);
 	}
@@ -265,7 +263,7 @@ protected:
 	{
 		auto access = OA_Read | OA_Write;
 		auto spi = g_ObjectMgr->GetDirectory(WKD_Device).Open(fdt_.GetProperty("spi")->GetString(), access).MoveAs<SpiController>();
-		dev_ = spi->OpenDevice(0, SpiMode::Mode0, 8, access);
+		dev_ = spi->OpenDevice(cs_, SpiMode::Mode0, 8, access);
 		auto gpio = g_ObjectMgr->GetDirectory(WKD_Device).Open(fdt_.GetProperty("cs_gpio")->GetString(), access).MoveAs<GpioController>();
 		csPin_ = gpio->OpenPin(fdt_.GetProperty("cs_pin")->GetUInt32(0), access);
 		csPin_->SetDriveMode(GpioPinDriveMode::Output);
@@ -284,12 +282,20 @@ protected:
 private:
 	void Reset()
 	{
-		ENC28J60_Reset();
-		ENC28J60_Write_Op(SOFT_RESET, 0, SOFT_RESET);
-		while (!(ENC28J60_Read(ESTAT) & ESTAT_CLKRDY));
+		WriteOp(SOFT_RESET, 0, SOFT_RESET);
+		while (!(Read(ESTAT) & ESTAT_CLKRDY));
 
 		auto id = Read(EREVID);
 		g_Logger->PutFormat("ID: %x\n", id);
+
+		packetPtr_ = 0;
+		SetPacketPtr(0);
+	}
+
+	void SetPacketPtr(uint16_t ptr)
+	{
+		Write(ERXSTL, uint8_t(ptr));
+		Write(ERXSTH, uint8_t(ptr >> 8));
 	}
 
 	void SetBank(bank_t bank)
@@ -304,13 +310,9 @@ private:
 
 	void WriteOp(operation_t op, uint8_t addr, uint8_t data)
 	{
-		//const uint8_t toWrite[2] = { static_cast<uint8_t>(op | (addr & ADDR_MASK)), data };
-		//gsl::span<const uint8_t> buffers[] = { toWrite };
-		//{
-		//	CS(*csPin_);
-		//	dev_->Write({ buffers });
-		//}
-		ENC28J60_Write_Op(op, addr, data);
+		const uint8_t toWrite[] = { static_cast<uint8_t>(op | (addr & ADDR_MASK)), data };
+		gsl::span<const uint8_t> buffers[] = { toWrite };
+		dev_->Write({ buffers });
 	}
 
 	uint8_t ReadOp(operation_t op, uint8_t addr)
@@ -324,7 +326,6 @@ private:
 			uint8_t toRead[2];
 			gsl::span<uint8_t> readBuffers[] = { toRead };
 
-			CS(*csPin_);
 			dev_->TransferSequential({ writeBuffers }, { readBuffers });
 			return toRead[1];
 		}
@@ -333,7 +334,6 @@ private:
 			uint8_t toRead[1];
 			gsl::span<uint8_t> readBuffers[] = { toRead };
 
-			CS(*csPin_);
 			dev_->TransferSequential({ writeBuffers }, { readBuffers });
 			return toRead[0];
 		}
@@ -342,9 +342,7 @@ private:
 	uint8_t Read(uint8_t addr)
 	{
 		SetBank(static_cast<bank_t>(addr & BANK_MASK));
-		//ENC28J60_Set_Bank(addr);
-		//return ReadOp(READ_CTRL_REG, addr);
-		return ENC28J60_Read_Op(READ_CTRL_REG, addr);
+		return ReadOp(READ_CTRL_REG, addr);
 	}
 
 	void Write(uint8_t addr, uint8_t data)
@@ -356,7 +354,9 @@ private:
 	const FDTDevice& fdt_;
 	ObjectAccessor<SpiDevice> dev_;
 	ObjectAccessor<GpioPin> csPin_;
+	CS cs_;
 	bank_t lastBank_;
+	uint16_t packetPtr_;
 };
 
 ENC28J60Driver::ENC28J60Driver(const FDTDevice& device)

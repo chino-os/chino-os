@@ -36,13 +36,11 @@ class GD25Q128Device : public FlashStorage, public ExclusiveObjectAccess
 		virtual void Activate() override
 		{
 			pin_->Write(GpioPinValue::Low);
-			g_Logger->PutChar('A');
 		}
 
 		virtual void Deactivate() override
 		{
 			pin_->Write(GpioPinValue::High);
-			g_Logger->PutChar('D');
 		}
 	private:
 		ObjectAccessor<GpioPin>& pin_;
