@@ -26,24 +26,30 @@ DEFINE_FDT_DRIVER_DESC_1(GD25Q128Driver, "flash", "gd,gd25q128");
 
 class GD25Q128Device : public FlashStorage, public ExclusiveObjectAccess
 {
-	struct CS
+	struct CS : public ChipSelectPin
 	{
 		CS(ObjectAccessor<GpioPin>& pin)
 			:pin_(pin)
 		{
-			pin_->Write(GpioPinValue::Low);
 		}
 
-		~CS()
+		virtual void Activate() override
+		{
+			pin_->Write(GpioPinValue::Low);
+			g_Logger->PutChar('A');
+		}
+
+		virtual void Deactivate() override
 		{
 			pin_->Write(GpioPinValue::High);
+			g_Logger->PutChar('D');
 		}
 	private:
 		ObjectAccessor<GpioPin>& pin_;
 	};
 public:
 	GD25Q128Device(const FDTDevice& fdt)
-		:fdt_(fdt)
+		:fdt_(fdt), cs_(csPin_)
 	{
 		g_ObjectMgr->GetDirectory(WKD_Device).AddItem(fdt.GetName(), *this);
 	}
@@ -63,7 +69,6 @@ public:
 		gsl::span<const uint8_t> writeBuffers[] = { cmd };
 		{
 			BusyWait();
-			CS cs(csPin_);
 			dev_->TransferSequential({ writeBuffers }, readBuffers.AsBufferList());
 		}
 		return readBuffers.Count();
@@ -160,7 +165,6 @@ public:
 		gsl::span<const uint8_t> writeBuffers[] = { cmd };
 		{
 			WriteEnable();
-			CS cs(csPin_);
 			dev_->Write({ writeBuffers });
 		}
 	}
@@ -169,7 +173,7 @@ protected:
 	{
 		auto access = OA_Read | OA_Write;
 		auto spi = g_ObjectMgr->GetDirectory(WKD_Device).Open(fdt_.GetProperty("spi")->GetString(), access).MoveAs<SpiController>();
-		dev_ = spi->OpenDevice(0, SpiMode::Mode0, 8, access);
+		dev_ = spi->OpenDevice(cs_, SpiMode::Mode0, 8, access);
 		auto gpio = g_ObjectMgr->GetDirectory(WKD_Device).Open(fdt_.GetProperty("cs_gpio")->GetString(), access).MoveAs<GpioController>();
 		csPin_ = gpio->OpenPin(fdt_.GetProperty("cs_pin")->GetUInt32(0), access);
 		csPin_->SetDriveMode(GpioPinDriveMode::Output);
@@ -197,7 +201,6 @@ private:
 		gsl::span<const uint8_t> writeBuffers[] = { cmd };
 		{
 			BusyWait();
-			CS cs(csPin_);
 			dev_->Write({ writeBuffers });
 		}
 	}
@@ -208,7 +211,6 @@ private:
 		gsl::span<const uint8_t> writeBuffers[] = { cmd };
 		{
 			BusyWait();
-			CS cs(csPin_);
 			dev_->Write({ writeBuffers });
 		}
 	}
@@ -220,7 +222,6 @@ private:
 		gsl::span<const uint8_t> writeBuffers[] = { cmd };
 		gsl::span<uint8_t> readBuffers[] = { status };
 		{
-			CS cs(csPin_);
 			dev_->TransferSequential({ writeBuffers }, { readBuffers });
 		}
 
@@ -238,7 +239,6 @@ private:
 		gsl::span<const uint8_t> writeBuffers[] = { cmd };
 		{
 			WriteEnable();
-			CS cs(csPin_);
 			dev_->Write({ writeBuffers });
 		}
 	}
@@ -253,7 +253,6 @@ private:
 			auto writeBuffers = restBuffers.Take(PAGE_SIZE).Prepend(cmd);
 			{
 				WriteEnable();
-				CS cs(csPin_);
 				dev_->Write(writeBuffers.AsBufferList());
 			}
 
@@ -269,7 +268,6 @@ private:
 		gsl::span<const uint8_t> writeBuffers[] = { cmd };
 		gsl::span<uint8_t> readBuffers[] = { {reinterpret_cast<uint8_t*>(&id), 2 } };
 		{
-			CS cs(csPin_);
 			dev_->TransferSequential({ writeBuffers }, { readBuffers });
 		}
 
@@ -279,6 +277,7 @@ private:
 	const FDTDevice& fdt_;
 	ObjectAccessor<SpiDevice> dev_;
 	ObjectAccessor<GpioPin> csPin_;
+	CS cs_;
 	std::unique_ptr<uint8_t[]> tempSector_;
 	gsl::span<uint8_t> tempSectorSpan_;
 };

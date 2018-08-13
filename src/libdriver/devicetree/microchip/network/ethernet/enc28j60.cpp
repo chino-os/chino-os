@@ -231,6 +231,12 @@ enum operation_t
 #define BANK_MASK		0x60
 #define SPRD_MASK		0x80
 
+extern void ENC28J60_Write_Op(uint8_t op, uint8_t addr, uint8_t data);
+extern uint8_t ENC28J60_Read(uint8_t addr);
+extern void ENC28J60_Reset(void);
+extern void ENC28J60_Set_Bank(uint8_t bank);
+extern uint8_t ENC28J60_Read_Op(uint8_t op, uint8_t addr);
+
 class ENC28J60Device : public Device, public ExclusiveObjectAccess
 {
 	struct CS
@@ -278,10 +284,9 @@ protected:
 private:
 	void Reset()
 	{
-		Threading::BSPSleepMs(100);
-		WriteOp(SOFT_RESET, 0, SOFT_RESET);
-		Threading::BSPSleepMs(100);
-		while (!(Read(ESTAT) & ESTAT_CLKRDY));
+		ENC28J60_Reset();
+		ENC28J60_Write_Op(SOFT_RESET, 0, SOFT_RESET);
+		while (!(ENC28J60_Read(ESTAT) & ESTAT_CLKRDY));
 
 		auto id = Read(EREVID);
 		g_Logger->PutFormat("ID: %x\n", id);
@@ -299,12 +304,13 @@ private:
 
 	void WriteOp(operation_t op, uint8_t addr, uint8_t data)
 	{
-		const uint8_t toWrite[2] = { static_cast<uint8_t>(op | (addr & ADDR_MASK)), data };
-		gsl::span<const uint8_t> buffers[] = { toWrite };
-		{
-			CS(*csPin_);
-			dev_->Write({ buffers });
-		}
+		//const uint8_t toWrite[2] = { static_cast<uint8_t>(op | (addr & ADDR_MASK)), data };
+		//gsl::span<const uint8_t> buffers[] = { toWrite };
+		//{
+		//	CS(*csPin_);
+		//	dev_->Write({ buffers });
+		//}
+		ENC28J60_Write_Op(op, addr, data);
 	}
 
 	uint8_t ReadOp(operation_t op, uint8_t addr)
@@ -336,7 +342,9 @@ private:
 	uint8_t Read(uint8_t addr)
 	{
 		SetBank(static_cast<bank_t>(addr & BANK_MASK));
-		return ReadOp(READ_CTRL_REG, addr);
+		//ENC28J60_Set_Bank(addr);
+		//return ReadOp(READ_CTRL_REG, addr);
+		return ENC28J60_Read_Op(READ_CTRL_REG, addr);
 	}
 
 	void Write(uint8_t addr, uint8_t data)

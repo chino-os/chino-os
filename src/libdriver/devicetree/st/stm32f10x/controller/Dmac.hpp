@@ -26,20 +26,26 @@ namespace Chino
 			SPI2_RX
 		};
 
+		struct DmaSessionHandler
+		{
+			virtual void OnStart() = 0;
+			virtual void OnStop() = 0;
+		};
+
 		class DmaChannel : public Object
 		{
 		public:
 			virtual ObjectPtr<IAsyncAction> StartAsync() = 0;
 
 			template<class TSource, class TDest>
-			void Configure(DmaTransmition type, BufferList<const TSource> source, BufferList<TDest> dest, size_t count = 0)
+			void Configure(DmaTransmition type, BufferList<const TSource> source, BufferList<TDest> dest, size_t count = 0, DmaSessionHandler* handler = nullptr)
 			{
 				auto srcCast = source.Select().template Cast<const volatile uint8_t>();
 				auto destCast = dest.Select().template Cast<volatile uint8_t>();
-				ConfigureImpl(type, srcCast.AsBufferList(), destCast.AsBufferList(), sizeof(TSource), sizeof(TDest), count);
+				ConfigureImpl(type, srcCast.AsBufferList(), destCast.AsBufferList(), sizeof(TSource), sizeof(TDest), count, handler);
 			}
 		protected:
-			virtual void ConfigureImpl(DmaTransmition type, BufferList<const volatile uint8_t> source, BufferList<volatile uint8_t> dest, size_t sourceByteWidth, size_t destByteWidth, size_t count) = 0;
+			virtual void ConfigureImpl(DmaTransmition type, BufferList<const volatile uint8_t> source, BufferList<volatile uint8_t> dest, size_t sourceByteWidth, size_t destByteWidth, size_t count, DmaSessionHandler* handler) = 0;
 		};
 
 		class DmaController : public Device

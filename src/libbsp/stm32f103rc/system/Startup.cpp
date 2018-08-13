@@ -21,7 +21,7 @@ using namespace Chino::Device;
 using namespace Chino::Graphics;
 using namespace Chino::Threading;
 
-#define RW_TEST 0
+#define RW_TEST 1
 
 class App
 {
@@ -45,7 +45,7 @@ void Chino::BSPSystemStartup()
 	auto pin0 = gpio->OpenPin(0, access);
 	pin0->SetDriveMode(GpioPinDriveMode::Output);
 
-	auto eth0 = g_ObjectMgr->GetDirectory(WKD_Device).Open("eth0", access);
+	//auto eth0 = g_ObjectMgr->GetDirectory(WKD_Device).Open("eth0", access);
 
 	auto proc = g_ProcessMgr->GetCurrentThread()->GetProcess();
 

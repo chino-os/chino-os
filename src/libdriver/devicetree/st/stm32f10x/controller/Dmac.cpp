@@ -254,6 +254,7 @@ class Stm32DmaChannel : public DmaChannel
 	{
 		DmaTransferOptions Options;
 		ObjectPtr<AsyncActionCompletionEvent> CompletionEvent;
+		DmaSessionHandler* Handler;
 		Chino::details::BufferListSelect<const volatile uint8_t> RestSource;
 		Chino::details::BufferListSelect<volatile uint8_t> RestDest;
 		size_t SourceByteWidth, DestByteWidth;
@@ -287,7 +288,7 @@ public:
 		}
 	}
 
-	virtual void ConfigureImpl(DmaTransmition type, BufferList<const volatile uint8_t> source, BufferList<volatile uint8_t> dest, size_t sourceByteWidth, size_t destByteWidth, size_t count) override
+	virtual void ConfigureImpl(DmaTransmition type, BufferList<const volatile uint8_t> source, BufferList<volatile uint8_t> dest, size_t sourceByteWidth, size_t destByteWidth, size_t count, DmaSessionHandler* handler) override
 	{
 		auto srcSize = source.GetTotalSize() / sourceByteWidth;
 		auto destSize = dest.GetTotalSize() / destByteWidth;
@@ -310,14 +311,19 @@ public:
 		options.Count = count;
 
 		auto event = MakeObject<AsyncActionCompletionEvent>();
-		currentSession_ = { options, event, source.Select(), dest.Select(), sourceByteWidth, destByteWidth };
+		currentSession_ = { options, event, handler, source.Select(), dest.Select(), sourceByteWidth, destByteWidth };
 		StartNextTransmition();
 	}
 
-	virtual ObjectPtr<IAsyncAction> StartAsync()
+	virtual ObjectPtr<IAsyncAction> StartAsync() override
 	{
 		auto event = currentSession_->CompletionEvent;
-		dmac_->StartAsync(channelId_);
+		{
+			kernel_critical kc;
+			if (currentSession_->Handler)
+				currentSession_->Handler->OnStart();
+			dmac_->StartAsync(channelId_);
+		}
 		return event;
 	}
 private:
@@ -353,6 +359,8 @@ private:
 			if (disable)
 			{
 				dmac->Channel[channelId].CCR.EN = 0;
+				if (currentSession_->Handler)
+					currentSession_->Handler->OnStop();
 				currentSession_.reset();
 			}
 		}

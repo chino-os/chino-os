@@ -115,8 +115,8 @@ class Stm32SpiController;
 class Stm32SpiDevice : public SpiDevice, public ExclusiveObjectAccess
 {
 public:
-	Stm32SpiDevice(ObjectAccessor<Stm32SpiController>&& controller, uint32_t chipSelectMask, SpiMode mode, uint32_t dataBitLength)
-		:controller_(std::move(controller)), chipSelectMask_(chipSelectMask), mode_(mode), dataBitLength_(dataBitLength)
+	Stm32SpiDevice(ObjectAccessor<Stm32SpiController>&& controller, ChipSelectPin& csPin, SpiMode mode, uint32_t dataBitLength)
+		:controller_(std::move(controller)), csPin_(csPin), mode_(mode), dataBitLength_(dataBitLength)
 	{
 
 	}
@@ -128,13 +128,32 @@ private:
 	friend class Stm32SpiController;
 
 	ObjectAccessor<Stm32SpiController> controller_;
-	uint32_t chipSelectMask_;
+	ChipSelectPin& csPin_;
 	SpiMode mode_;
 	uint32_t dataBitLength_;
 };
 
 class Stm32SpiController : public SpiController, public FreeObjectAccess
 {
+	struct DmaCSPin : DmaSessionHandler
+	{
+		ChipSelectPin& Pin;
+		size_t CountToStop;
+
+		DmaCSPin(ChipSelectPin& pin, size_t countToStop)
+			:Pin(pin), CountToStop(countToStop) {}
+
+		virtual void OnStart() override
+		{
+			Pin.Activate();
+		}
+
+		virtual void OnStop() override
+		{
+			if (--CountToStop == 0)
+				Pin.Deactivate();
+		}
+	};
 public:
 	Stm32SpiController(const FDTDevice& fdt)
 		:fdt_(fdt)
@@ -146,10 +165,15 @@ public:
 		periph_ = static_cast<RccPeriph>(size_t(RccPeriph::SPI1) + fdt.GetName().back() - '1');
 	}
 
-	ObjectAccessor<SpiDevice> OpenDevice(uint32_t chipSelectMask, SpiMode mode, uint32_t dataBitLength, ObjectAccess access) override
+	virtual ObjectAccessor<SpiDevice> OpenDevice(uint32_t chipSelectMask, SpiMode mode, uint32_t dataBitLength, ObjectAccess access) override
+	{
+		throw std::runtime_error("Not supported.");
+	}
+
+	virtual ObjectAccessor<SpiDevice> OpenDevice(ChipSelectPin& csPin, SpiMode mode, uint32_t dataBitLength, ObjectAccess access) override
 	{
 		return MakeAccessor(MakeObject<Stm32SpiDevice>(
-			MakeAccessor<Stm32SpiController>(this, OA_Read | OA_Write), chipSelectMask, mode, dataBitLength), access);
+			MakeAccessor<Stm32SpiController>(this, OA_Read | OA_Write), csPin, mode, dataBitLength), access);
 	}
 
 	void Write(Stm32SpiDevice& device, BufferList<const uint8_t> bufferList)
@@ -236,7 +260,7 @@ private:
 
 		cr1.MSTR = 1;
 		cr1.SSI = 1;
-		cr1.SSM = device.chipSelectMask_ == 0 ? 1 : 0;
+		cr1.SSM = 1;
 		cr1.BIDIMODE = SPI_BM_2LineBidir;
 		cr1.RXONLY = 0;
 
@@ -261,17 +285,19 @@ private:
 	{
 		if (device.dataBitLength_ == 8)
 		{
+			DmaCSPin pin(device.csPin_, 2);
+
 			uint8_t dummy[1];
 			gsl::span<uint8_t> readDestBuffers[] = { dummy };
 			gsl::span<const volatile uint8_t> readSrcBuffers[] = { { reinterpret_cast<const volatile uint8_t*>(&spi_->DR), 1 } };
 
 			auto dmac = g_ObjectMgr->GetDirectory(WKD_Device).Open("dmac1", OA_Read | OA_Write).MoveAs<DmaController>();
 			auto readDma = dmac->OpenChannel(DmaRequestLine::SPI2_RX);
-			readDma->Configure<volatile uint8_t, uint8_t>(DmaTransmition::Perip2Mem, { readSrcBuffers }, { readDestBuffers }, bufferList.GetTotalSize());
+			readDma->Configure<volatile uint8_t, uint8_t>(DmaTransmition::Perip2Mem, { readSrcBuffers }, { readDestBuffers }, bufferList.GetTotalSize(), &pin);
 
 			gsl::span<volatile uint8_t> writeDestBuffers[] = { { reinterpret_cast<volatile uint8_t*>(&spi_->DR), 1 } };
 			auto writeDma = dmac->OpenChannel(DmaRequestLine::SPI2_TX);
-			writeDma->Configure<uint8_t, volatile uint8_t>(DmaTransmition::Mem2Periph, bufferList, { writeDestBuffers });
+			writeDma->Configure<uint8_t, volatile uint8_t>(DmaTransmition::Mem2Periph, bufferList, { writeDestBuffers }, 0, &pin);
 
 			auto readEvent = readDma->StartAsync();
 			auto writeEvent = writeDma->StartAsync();
@@ -279,8 +305,8 @@ private:
 			spi_->CR2.RXDMAEN = 1;
 			spi_->CR2.TXDMAEN = 1;
 
-			readEvent->Wait();
-			writeEvent->Wait();
+			readEvent->GetResult();
+			writeEvent->GetResult();
 
 			spi_->CR2.RXDMAEN = 0;
 			spi_->CR2.TXDMAEN = 0;
@@ -307,17 +333,19 @@ private:
 	{
 		if (device.dataBitLength_ == 8)
 		{
+			DmaCSPin pin(device.csPin_, 2);
+
 			uint8_t dummy[1] = { 0xFF };
 			gsl::span<const uint8_t> writeSrcBuffers[] = { dummy };
 			gsl::span<volatile uint8_t> writeDestBuffers[] = { { reinterpret_cast<volatile uint8_t*>(&spi_->DR), 1 } };
 
 			auto dmac = g_ObjectMgr->GetDirectory(WKD_Device).Open("dmac1", OA_Read | OA_Write).MoveAs<DmaController>();
 			auto readDma = dmac->OpenChannel(DmaRequestLine::SPI2_TX);
-			readDma->Configure<uint8_t, volatile uint8_t>(DmaTransmition::Mem2Periph, { writeSrcBuffers }, { writeDestBuffers }, bufferList.GetTotalSize());
+			readDma->Configure<uint8_t, volatile uint8_t>(DmaTransmition::Mem2Periph, { writeSrcBuffers }, { writeDestBuffers }, bufferList.GetTotalSize(), &pin);
 
 			gsl::span<const volatile uint8_t> readSrcBuffers[] = { { reinterpret_cast<const volatile uint8_t*>(&spi_->DR), 1 } };
 			auto writeDma = dmac->OpenChannel(DmaRequestLine::SPI2_RX);
-			writeDma->Configure<volatile uint8_t, uint8_t>(DmaTransmition::Perip2Mem, { readSrcBuffers }, bufferList);
+			writeDma->Configure<volatile uint8_t, uint8_t>(DmaTransmition::Perip2Mem, { readSrcBuffers }, bufferList, 0, &pin);
 
 			auto readEvent = readDma->StartAsync();
 			auto writeEvent = writeDma->StartAsync();
@@ -325,8 +353,8 @@ private:
 			spi_->CR2.RXDMAEN = 1;
 			spi_->CR2.TXDMAEN = 1;
 
-			readEvent->Wait();
-			writeEvent->Wait();
+			readEvent->GetResult();
+			writeEvent->GetResult();
 
 			spi_->CR2.RXDMAEN = 0;
 			spi_->CR2.TXDMAEN = 0;
