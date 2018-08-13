@@ -283,12 +283,8 @@ public:
 
 	virtual void Reset(const MacAddress& macAddress) override
 	{
-		g_Logger->PutFormat("Reset\n");
 		WriteOp(SOFT_RESET, 0, SOFT_RESET);
 		while (!(Read(ESTAT) & ESTAT_CLKRDY));
-
-		auto id = Read(EREVID);
-		g_Logger->PutFormat("ID: %x\n", id);
 
 		packetPtr_ = 0;
 		SetPacketPtr(0);

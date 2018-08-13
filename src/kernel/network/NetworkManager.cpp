@@ -359,14 +359,14 @@ void NetworkManager::Test()
 		// TCP 定时处理
 		if (timer_expired(&tcp_timer)) {
 			timer_set(&tcp_timer, CLOCK_SECOND / 4);
-			g_Logger->PutFormat("TCP ");
+			//g_Logger->PutFormat("TCP ");
 			tcp_tmr();
 		}
 
 		// ARP 定时处理
 		if (timer_expired(&arp_timer)) {
 			timer_set(&arp_timer, CLOCK_SECOND * 5);
-			g_Logger->PutFormat("ARP ");
+			//g_Logger->PutFormat("ARP ");
 			etharp_tmr();
 		}
 	}

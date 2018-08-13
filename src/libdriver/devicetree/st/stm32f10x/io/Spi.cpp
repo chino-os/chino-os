@@ -288,7 +288,7 @@ private:
 			throw std::invalid_argument("Invalid data bit length.");
 		}
 
-		cr1.BR = spi_baud_rate::SPI_BD_Div4;
+		cr1.BR = spi_baud_rate::SPI_BD_Div2;
 		while (spi_->SR.BSY);
 		spi_->CR1.Value = cr1.Value;
 	}
