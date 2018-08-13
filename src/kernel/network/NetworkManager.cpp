@@ -18,6 +18,8 @@
 #include <netif/ethernet.h>
 #include <lwip/priv/tcp_priv.h>
 #include "../threading/timer.h"
+#include "../device/network/Ethernet.hpp"
+#include "../object/ObjectManager.hpp"
 
 using namespace Chino;
 using namespace Chino::Device;
@@ -25,16 +27,7 @@ using namespace Chino::Network;
 
 #define PHLCON           0x14
 
-extern uint8_t ENC28J60_Init(uint8_t* macaddr);
-extern void ENC28J60_Write(uint8_t addr, uint8_t data);
-extern void ENC28J60_Read_Buf(uint32_t len, uint8_t* data);
-extern void ENC28J60_PHY_Write(uint8_t addr, uint32_t data);
-extern void enc28j60_init_send(int len);
-extern void ENC28J60_Write_Buf(uint32_t len, uint8_t* data);
-extern void enc28j60_start_send(void);
-extern int enc28j60_packet_getcount(void);
-extern int enc28j60_packet_getlen(void);
-extern void enc28j60_finish_receive(void);
+ObjectAccessor<EthernetController> eth0;
 
 /* Define those to better describe your network interface. */
 #define IFNAME0 'e'
@@ -97,8 +90,16 @@ static void low_level_init(struct netif *netif)
 #endif /* LWIP_IPV6 && LWIP_IPV6_MLD */
 
 	/* Do whatever else is needed to initialize interface. */
-	ENC28J60_Init(netif->hwaddr);
-	ENC28J60_PHY_Write(PHLCON, 0x0476);
+
+	MacAddress mac;
+	mac[0] = 0x04;
+	mac[1] = 0x02;
+	mac[2] = 0x35;
+	mac[3] = 0x00;
+	mac[4] = 0x00;
+	mac[5] = 0x01;
+
+	eth0->Reset(mac);
 }
 
 /**
@@ -122,7 +123,7 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p)
 	auto ethernetif = reinterpret_cast<struct ethernetif*>(netif->state);
 	struct pbuf *q;
 
-	enc28j60_init_send(p->tot_len);
+	eth0->StartSend(p->tot_len);
 
 #if ETH_PAD_SIZE
 	pbuf_remove_header(p, ETH_PAD_SIZE); /* drop the padding word */
@@ -132,10 +133,10 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p)
 		/* Send the data from the pbuf to the interface, one pbuf at a
 		time. The size of the data in each pbuf is kept in the ->len
 		variable. */
-		ENC28J60_Write_Buf(q->len, (uint8_t*)q->payload);
+		eth0->WriteSendBuffer({ (uint8_t*)q->payload,q->len });
 	}
 
-	enc28j60_start_send();
+	eth0->CommitSend();
 
 	MIB2_STATS_NETIF_ADD(netif, ifoutoctets, p->tot_len);
 	if (((u8_t *)p->payload)[0] & 1) {
@@ -173,7 +174,7 @@ static struct pbuf * low_level_input(struct netif *netif)
 
 	/* Obtain the size of the packet and put it into the "len"
 	variable. */
-	len = enc28j60_packet_getlen();
+	len = eth0->StartReceive();
 
 #if ETH_PAD_SIZE
 	len += ETH_PAD_SIZE; /* allow room for Ethernet padding */
@@ -200,9 +201,9 @@ static struct pbuf * low_level_input(struct netif *netif)
 			* pbuf is the sum of the chained pbuf len members.
 			*/
 			//read data into(q->payload, q->len);
-			ENC28J60_Read_Buf(q->len, (uint8_t*)q->payload);
+			eth0->ReadReceiveBuffer({ (uint8_t*)q->payload,q->len });
 		}
-		enc28j60_finish_receive();
+		eth0->FinishReceive();
 
 		MIB2_STATS_NETIF_ADD(netif, ifinoctets, p->tot_len);
 		if (((u8_t *)p->payload)[0] & 1) {
@@ -220,7 +221,7 @@ static struct pbuf * low_level_input(struct netif *netif)
 		LINK_STATS_INC(link.recv);
 	}
 	else {
-		enc28j60_finish_receive();
+		eth0->FinishReceive();
 
 		LINK_STATS_INC(link.memerr);
 		LINK_STATS_INC(link.drop);
@@ -328,6 +329,8 @@ NetworkManager::NetworkManager()
 
 void NetworkManager::Test()
 {
+	eth0 = g_ObjectMgr->GetDirectory(WKD_Device).Open("eth0", OA_Read | OA_Write).MoveAs<EthernetController>();
+
 	struct netif netif;
 	kassert(ethernetif_init(&netif) == ERR_OK);
 
@@ -349,7 +352,7 @@ void NetworkManager::Test()
 
 	while (1) {
 
-		if (enc28j60_packet_getcount() != 0) {
+		if (eth0->IsPacketAvailable()) {
 			ethernetif_input(&netif);
 		}
 

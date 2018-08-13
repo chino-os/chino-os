@@ -159,6 +159,11 @@ class Stm32SpiController : public SpiController, public FreeObjectAccess
 
 		}
 	};
+
+	enum
+	{
+		DMAThreshold = 5
+	};
 public:
 	Stm32SpiController(const FDTDevice& fdt)
 		:fdt_(fdt)
@@ -290,43 +295,78 @@ private:
 
 	void WriteData(Stm32SpiDevice& device, BufferList<const uint8_t> bufferList, CSPin& cs)
 	{
-		if (device.dataBitLength_ == 8)
+		if (bufferList.GetTotalSize() < DMAThreshold)
 		{
-			uint8_t dummy[1];
-			gsl::span<uint8_t> readDestBuffers[] = { dummy };
-			gsl::span<const volatile uint8_t> readSrcBuffers[] = { { reinterpret_cast<const volatile uint8_t*>(&spi_->DR), 1 } };
-
-			auto dmac = g_ObjectMgr->GetDirectory(WKD_Device).Open("dmac1", OA_Read | OA_Write).MoveAs<DmaController>();
-			auto readDma = dmac->OpenChannel(DmaRequestLine::SPI2_RX);
-			readDma->Configure<volatile uint8_t, uint8_t>(DmaTransmition::Perip2Mem, { readSrcBuffers }, { readDestBuffers }, bufferList.GetTotalSize(), &cs);
-
-			gsl::span<volatile uint8_t> writeDestBuffers[] = { { reinterpret_cast<volatile uint8_t*>(&spi_->DR), 1 } };
-			auto writeDma = dmac->OpenChannel(DmaRequestLine::SPI2_TX);
-			writeDma->Configure<uint8_t, volatile uint8_t>(DmaTransmition::Mem2Periph, bufferList, { writeDestBuffers }, 0, &cs);
-
-			auto readEvent = readDma->StartAsync();
-			auto writeEvent = writeDma->StartAsync();
-
-			spi_->CR2.RXDMAEN = 1;
-			spi_->CR2.TXDMAEN = 1;
-
-			readEvent->GetResult();
-			writeEvent->GetResult();
-
-			spi_->CR2.RXDMAEN = 0;
-			spi_->CR2.TXDMAEN = 0;
+			kernel_critical kc;
+			cs.OnStart();
+			if (device.dataBitLength_ == 8)
+			{
+				for (auto& buffer : bufferList.Buffers)
+				{
+					for (auto data : buffer)
+					{
+						while (!spi_->SR.TXE);
+						spi_->DR = data;
+						while (!spi_->SR.RXNE);
+						auto value = spi_->DR;
+					}
+				}
+			}
+			else
+			{
+				for (auto& oriBuffer : bufferList.Buffers)
+				{
+					gsl::span<const uint16_t> buffer(reinterpret_cast<const uint16_t*>(oriBuffer.data()), oriBuffer.size() / 2);
+					for (auto data : buffer)
+					{
+						while (!spi_->SR.TXE);
+						spi_->DR = data;
+						while (!spi_->SR.RXNE);
+						auto value = spi_->DR;
+					}
+				}
+			}
 		}
 		else
 		{
-			for (auto& oriBuffer : bufferList.Buffers)
+			if (device.dataBitLength_ == 8)
 			{
-				gsl::span<const uint16_t> buffer(reinterpret_cast<const uint16_t*>(oriBuffer.data()), oriBuffer.size() / 2);
-				for (auto data : buffer)
+				uint8_t dummy[1];
+				gsl::span<uint8_t> readDestBuffers[] = { dummy };
+				gsl::span<const volatile uint8_t> readSrcBuffers[] = { { reinterpret_cast<const volatile uint8_t*>(&spi_->DR), 1 } };
+
+				auto dmac = g_ObjectMgr->GetDirectory(WKD_Device).Open("dmac1", OA_Read | OA_Write).MoveAs<DmaController>();
+				auto readDma = dmac->OpenChannel(DmaRequestLine::SPI2_RX);
+				readDma->Configure<volatile uint8_t, uint8_t>(DmaTransmition::Perip2Mem, { readSrcBuffers }, { readDestBuffers }, bufferList.GetTotalSize(), &cs);
+
+				gsl::span<volatile uint8_t> writeDestBuffers[] = { { reinterpret_cast<volatile uint8_t*>(&spi_->DR), 1 } };
+				auto writeDma = dmac->OpenChannel(DmaRequestLine::SPI2_TX);
+				writeDma->Configure<uint8_t, volatile uint8_t>(DmaTransmition::Mem2Periph, bufferList, { writeDestBuffers }, 0, &cs);
+
+				auto readEvent = readDma->StartAsync();
+				auto writeEvent = writeDma->StartAsync();
+
+				spi_->CR2.RXDMAEN = 1;
+				spi_->CR2.TXDMAEN = 1;
+
+				readEvent->GetResult();
+				writeEvent->GetResult();
+
+				spi_->CR2.RXDMAEN = 0;
+				spi_->CR2.TXDMAEN = 0;
+			}
+			else
+			{
+				for (auto& oriBuffer : bufferList.Buffers)
 				{
-					while (!spi_->SR.TXE);
-					spi_->DR = data;
-					while (!spi_->SR.RXNE);
-					auto value = spi_->DR;
+					gsl::span<const uint16_t> buffer(reinterpret_cast<const uint16_t*>(oriBuffer.data()), oriBuffer.size() / 2);
+					for (auto data : buffer)
+					{
+						while (!spi_->SR.TXE);
+						spi_->DR = data;
+						while (!spi_->SR.RXNE);
+						auto value = spi_->DR;
+					}
 				}
 			}
 		}
@@ -336,41 +376,76 @@ private:
 
 	void ReadData(Stm32SpiDevice& device, BufferList<uint8_t> bufferList, CSPin& cs)
 	{
-		if (device.dataBitLength_ == 8)
+		if (bufferList.GetTotalSize() < DMAThreshold)
 		{
-			uint8_t dummy[1] = { 0xFF };
-			gsl::span<const uint8_t> writeSrcBuffers[] = { dummy };
-			gsl::span<volatile uint8_t> writeDestBuffers[] = { { reinterpret_cast<volatile uint8_t*>(&spi_->DR), 1 } };
-
-			auto dmac = g_ObjectMgr->GetDirectory(WKD_Device).Open("dmac1", OA_Read | OA_Write).MoveAs<DmaController>();
-			auto readDma = dmac->OpenChannel(DmaRequestLine::SPI2_TX);
-			readDma->Configure<uint8_t, volatile uint8_t>(DmaTransmition::Mem2Periph, { writeSrcBuffers }, { writeDestBuffers }, bufferList.GetTotalSize(), &cs);
-
-			gsl::span<const volatile uint8_t> readSrcBuffers[] = { { reinterpret_cast<const volatile uint8_t*>(&spi_->DR), 1 } };
-			auto writeDma = dmac->OpenChannel(DmaRequestLine::SPI2_RX);
-			writeDma->Configure<volatile uint8_t, uint8_t>(DmaTransmition::Perip2Mem, { readSrcBuffers }, bufferList, 0, &cs);
-
-			auto readEvent = readDma->StartAsync();
-			auto writeEvent = writeDma->StartAsync();
-
-			spi_->CR2.RXDMAEN = 1;
-			spi_->CR2.TXDMAEN = 1;
-
-			readEvent->GetResult();
-			writeEvent->GetResult();
-
-			spi_->CR2.RXDMAEN = 0;
-			spi_->CR2.TXDMAEN = 0;
+			kernel_critical kc;
+			cs.OnStart();
+			if (device.dataBitLength_ == 8)
+			{
+				for (auto& buffer : bufferList.Buffers)
+				{
+					for (auto& data : buffer)
+					{
+						while (!spi_->SR.TXE);
+						spi_->DR = 0xFF;
+						while (!spi_->SR.RXNE);
+						data = spi_->DR;
+					}
+				}
+			}
+			else
+			{
+				for (auto& oriBuffer : bufferList.Buffers)
+				{
+					gsl::span<uint16_t> buffer(reinterpret_cast<uint16_t*>(oriBuffer.data()), oriBuffer.size() / 2);
+					for (auto& data : buffer)
+					{
+						while (!spi_->SR.TXE);
+						spi_->DR = 0xFF;
+						while (!spi_->SR.RXNE);
+						data = spi_->DR;
+					}
+				}
+			}
 		}
 		else
 		{
-			for (auto& oriBuffer : bufferList.Buffers)
+			if (device.dataBitLength_ == 8)
 			{
-				gsl::span<uint16_t> buffer(reinterpret_cast<uint16_t*>(oriBuffer.data()), oriBuffer.size() / 2);
-				for (auto& data : buffer)
+				uint8_t dummy[1] = { 0xFF };
+				gsl::span<const uint8_t> writeSrcBuffers[] = { dummy };
+				gsl::span<volatile uint8_t> writeDestBuffers[] = { { reinterpret_cast<volatile uint8_t*>(&spi_->DR), 1 } };
+
+				auto dmac = g_ObjectMgr->GetDirectory(WKD_Device).Open("dmac1", OA_Read | OA_Write).MoveAs<DmaController>();
+				auto readDma = dmac->OpenChannel(DmaRequestLine::SPI2_TX);
+				readDma->Configure<uint8_t, volatile uint8_t>(DmaTransmition::Mem2Periph, { writeSrcBuffers }, { writeDestBuffers }, bufferList.GetTotalSize(), &cs);
+
+				gsl::span<const volatile uint8_t> readSrcBuffers[] = { { reinterpret_cast<const volatile uint8_t*>(&spi_->DR), 1 } };
+				auto writeDma = dmac->OpenChannel(DmaRequestLine::SPI2_RX);
+				writeDma->Configure<volatile uint8_t, uint8_t>(DmaTransmition::Perip2Mem, { readSrcBuffers }, bufferList, 0, &cs);
+
+				auto readEvent = readDma->StartAsync();
+				auto writeEvent = writeDma->StartAsync();
+
+				spi_->CR2.RXDMAEN = 1;
+				spi_->CR2.TXDMAEN = 1;
+
+				readEvent->GetResult();
+				writeEvent->GetResult();
+
+				spi_->CR2.RXDMAEN = 0;
+				spi_->CR2.TXDMAEN = 0;
+			}
+			else
+			{
+				for (auto& oriBuffer : bufferList.Buffers)
 				{
-					while (!spi_->SR.RXNE);
-					data = spi_->DR;
+					gsl::span<uint16_t> buffer(reinterpret_cast<uint16_t*>(oriBuffer.data()), oriBuffer.size() / 2);
+					for (auto& data : buffer)
+					{
+						while (!spi_->SR.RXNE);
+						data = spi_->DR;
+					}
 				}
 			}
 		}

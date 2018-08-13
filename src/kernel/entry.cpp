@@ -44,7 +44,7 @@ extern "C" void Kernel_Main(const BootParameters* pParams)
 	g_DeviceMgr.construct();
 
 #if 1
-	g_ProcessMgr->CreateProcess("System", 0, [&] {SystemStartup(params); });
+	g_ProcessMgr->CreateProcess("System", 1, [&] {SystemStartup(params); });
 	g_ProcessMgr->StartScheduler();
 
 	while (1)

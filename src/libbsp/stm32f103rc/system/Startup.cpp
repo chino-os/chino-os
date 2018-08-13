@@ -14,6 +14,7 @@
 #include <kernel/device/io/Spi.hpp>
 #include <kernel/device/storage/Storage.hpp>
 #include <kernel/device/sensor/Accelerometer.hpp>
+#include <kernel/device/network/Ethernet.hpp>
 #include <kernel/graphics/DeviceContext.hpp>
 
 using namespace Chino;
@@ -44,8 +45,6 @@ void Chino::BSPSystemStartup()
 	auto gpio = g_ObjectMgr->GetDirectory(WKD_Device).Open("gpio3", access).MoveAs<GpioController>();
 	auto pin0 = gpio->OpenPin(0, access);
 	pin0->SetDriveMode(GpioPinDriveMode::Output);
-
-	auto eth0 = g_ObjectMgr->GetDirectory(WKD_Device).Open("eth0", access);
 
 	auto proc = g_ProcessMgr->GetCurrentThread()->GetProcess();
 
@@ -131,5 +130,5 @@ void App::Start()
 	dc_->Clear(*primarySurface_, { {}, primarySurface_->GetPixelSize() }, { 1, 0, 0 });
 	dc_->CopySubresource(*green, *primarySurface_, { {}, green->GetPixelSize() }, { 100, 100 });
 
-	//g_NetworkMgr->Test();
+	g_NetworkMgr->Test();
 }

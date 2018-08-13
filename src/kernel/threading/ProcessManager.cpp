@@ -114,7 +114,7 @@ void ProcessManager::AttachReadyThread(thread_it thread)
 	auto priority = (*thread)->GetPriority();
 	readyThreads_[priority].attach(thread);
 
-	if (!runningThread_.good() || priority > (*runningThread_)->GetPriority())
+	if (!runningThread_.good() || priority >= (*runningThread_)->GetPriority())
 	{
 		auto nextThread = SelectNextSwitchToThread();
 		nextThread_ = nextThread;

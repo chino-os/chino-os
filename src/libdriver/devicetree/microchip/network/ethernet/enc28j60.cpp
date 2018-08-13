@@ -219,7 +219,7 @@ enum bank_t
 enum operation_t
 {
 	READ_CTRL_REG = 0x00,
-	EAD_BUF_MEM = 0x3A,
+	READ_BUF_MEM = 0x3A,
 	WRITE_CTRL_REG = 0x40,
 	WRITE_BUF_MEM = 0x7A,
 	BIT_FIELD_SET = 0x80,
@@ -231,7 +231,7 @@ enum operation_t
 #define BANK_MASK		0x60
 #define SPRD_MASK		0x80
 
-class ENC28J60Device : public Device, public ExclusiveObjectAccess
+class ENC28J60Device : public EthernetController, public ExclusiveObjectAccess
 {
 	struct CS : public ChipSelectPin
 	{
@@ -252,11 +252,152 @@ class ENC28J60Device : public Device, public ExclusiveObjectAccess
 	private:
 		ObjectAccessor<GpioPin>& pin_;
 	};
+
+	enum
+	{
+		BufferSize = 8 * 1024,	// 8KB,
+		MaxFrameSize = 1518,	// Max MAC frame
+		SendBufferLast = BufferSize - 1,
+		SendBufferSize = MaxFrameSize,
+		SendBufferFirst = SendBufferLast - SendBufferSize,
+		ReceiveBufferFirst = 0,
+		ReceiveBufferLast = SendBufferFirst - 1,
+		ReceiveBufferSize = ReceiveBufferLast - ReceiveBufferFirst + 1
+	};
 public:
 	ENC28J60Device(const FDTDevice& fdt)
 		:fdt_(fdt), cs_(csPin_)
 	{
 		g_ObjectMgr->GetDirectory(WKD_Device).AddItem(fdt.GetName(), *this);
+	}
+
+	virtual void SetHandler(INetworkHandler* handler) override
+	{
+
+	}
+
+	virtual bool IsPacketAvailable() override
+	{
+		return Read(EPKTCNT);
+	}
+
+	virtual void Reset(const MacAddress& macAddress) override
+	{
+		g_Logger->PutFormat("Reset\n");
+		WriteOp(SOFT_RESET, 0, SOFT_RESET);
+		while (!(Read(ESTAT) & ESTAT_CLKRDY));
+
+		auto id = Read(EREVID);
+		g_Logger->PutFormat("ID: %x\n", id);
+
+		packetPtr_ = 0;
+		SetPacketPtr(0);
+		SetReceiveBuffer(ReceiveBufferFirst, ReceiveBufferLast);
+		SetSendBuffer(SendBufferFirst, SendBufferLast);
+		SetReceiveFilter(ERXFCON_UCEN | ERXFCON_CRCEN | ERXFCON_PMEN);
+		Write(EPMM0, 0x3f);
+		Write(EPMM1, 0x30);
+		Write(EPMCSL, 0xf9);
+		Write(EPMCSH, 0xf7);
+
+		Write(MACON1, MACON1_MARXEN | MACON1_TXPAUS | MACON1_RXPAUS);
+		Write(MACON2, 0x00);
+		WriteOp(BIT_FIELD_SET, MACON3, MACON3_PADCFG0 | MACON3_TXCRCEN | MACON3_FRMLNEN | MACON3_FULDPX);
+
+		Write(MAIPGL, 0x12);
+		Write(MAIPGH, 0x0C);
+		Write(MABBIPG, 0x15);
+
+		SetMaxFrameLength(MaxFrameSize);
+		SetMacAddress(macAddress);
+
+		WritePhy(PHCON1, PHCON1_PDPXMD);
+		WritePhy(PHCON2, PHCON2_HDLDIS);
+
+		SetBank(ECON1);
+		WriteOp(BIT_FIELD_SET, EIE, EIE_INTIE | EIE_PKTIE);
+		WriteOp(BIT_FIELD_SET, ECON1, ECON1_RXEN);
+		kassert(Read(MAADR5) == macAddress[0]);
+		WritePhy(PHLCON, 0x0476);;
+	}
+
+	virtual void StartSend(size_t length) override
+	{
+		while ((Read(ECON1) & ECON1_TXRTS) != 0);
+
+		Write(EWRPTL, SendBufferFirst & 0xFF);
+		Write(EWRPTH, SendBufferFirst >> 8);
+
+		/* 设置发送缓冲区结束地址 该值对应发送数据包长度 */
+		Write(ETXNDL, (SendBufferFirst + length) & 0xFF);
+		Write(ETXNDH, (SendBufferFirst + length) >> 8);
+
+		/* 发送控制字节 控制字节为0x00,表示使用macon3设置 */
+		WriteOp(WRITE_BUF_MEM, 0, 0x00);
+	}
+
+	virtual void WriteSendBuffer(gsl::span<const uint8_t> buffer) override
+	{
+		const uint8_t cmd[] = { WRITE_BUF_MEM };
+		gsl::span<const uint8_t> writeBuffers[] = { cmd, buffer };
+		dev_->Write({ writeBuffers });
+	}
+
+	virtual void CommitSend() override
+	{
+		WriteOp(BIT_FIELD_SET, ECON1, ECON1_TXRTS);
+
+		if ((Read(EIR) & EIR_TXERIF))
+		{
+			SetBank(ECON1);
+			WriteOp(BIT_FIELD_CLR, ECON1, ECON1_TXRTS);
+		}
+	}
+
+	virtual size_t StartReceive() override
+	{
+		/* 数据包总长度 */
+		int len = 0;
+		int rxstat;
+
+		Write(ERDPTL, packetPtr_);
+		Write(ERDPTH, packetPtr_ >> 8);
+
+		/* 接收数据包结构示例 数据手册43页 */
+		/* 读下一个包的指针 */
+		packetPtr_ = ReadOp(READ_BUF_MEM, 0);
+		packetPtr_ |= ReadOp(READ_BUF_MEM, 0) << 8;
+
+		/* 读包的长度 */
+		len = ReadOp(READ_BUF_MEM, 0);
+		len |= ReadOp(READ_BUF_MEM, 0) << 8;
+
+		/* 删除CRC计数 */
+		len -= 4;
+
+		/* 读取接收状态 */
+		rxstat = ReadOp(READ_BUF_MEM, 0);
+		rxstat |= ReadOp(READ_BUF_MEM, 0) << 8;
+
+		/* 注意取消了CRC校验检查部分 */
+		/* 返回接收数据包长度 */
+		return len;
+	}
+
+	virtual void ReadReceiveBuffer(gsl::span<uint8_t> buffer) override
+	{
+		const uint8_t cmd[] = { READ_BUF_MEM };
+		gsl::span<const uint8_t> writeBuffers[] = { cmd };
+		gsl::span<uint8_t> readBuffers[] = { buffer };
+		dev_->TransferSequential({ writeBuffers }, { readBuffers });
+	}
+
+	virtual void FinishReceive() override
+	{
+		Write(ERXRDPTL, (packetPtr_));
+		Write(ERXRDPTH, (packetPtr_) >> 8);
+
+		WriteOp(BIT_FIELD_SET, ECON2, ECON2_PKTDEC);
 	}
 protected:
 	virtual void OnFirstOpen() override
@@ -270,8 +411,6 @@ protected:
 		csPin_->Write(GpioPinValue::High);
 
 		lastBank_ = NOBANK;
-
-		Reset();
 	}
 
 	virtual void OnLastClose() override
@@ -280,22 +419,47 @@ protected:
 		csPin_.Reset();
 	}
 private:
-	void Reset()
-	{
-		WriteOp(SOFT_RESET, 0, SOFT_RESET);
-		while (!(Read(ESTAT) & ESTAT_CLKRDY));
-
-		auto id = Read(EREVID);
-		g_Logger->PutFormat("ID: %x\n", id);
-
-		packetPtr_ = 0;
-		SetPacketPtr(0);
-	}
-
 	void SetPacketPtr(uint16_t ptr)
 	{
-		Write(ERXSTL, uint8_t(ptr));
-		Write(ERXSTH, uint8_t(ptr >> 8));
+		Write(ERXRDPTL, uint8_t(ptr));
+		Write(ERXRDPTL, uint8_t(ptr >> 8));
+	}
+
+	void SetReceiveBuffer(uint16_t first, uint16_t last)
+	{
+		Write(ERXSTL, uint8_t(first));
+		Write(ERXSTH, uint8_t(first >> 8));
+		Write(ERXNDL, uint8_t(last));
+		Write(ERXNDH, uint8_t(last >> 8));
+	}
+
+	void SetSendBuffer(uint16_t first, uint16_t last)
+	{
+		Write(ETXSTL, uint8_t(first));
+		Write(ETXSTH, uint8_t(first >> 8));
+		Write(ETXNDL, uint8_t(last));
+		Write(ETXNDH, uint8_t(last >> 8));
+	}
+
+	void SetReceiveFilter(uint8_t filter)
+	{
+		Write(ERXFCON, filter);
+	}
+
+	void SetMaxFrameLength(uint16_t len)
+	{
+		Write(MAMXFLL, uint8_t(len));
+		Write(MAMXFLH, uint8_t(len >> 8));
+	}
+
+	void SetMacAddress(const MacAddress& macAddress)
+	{
+		Write(MAADR5, macAddress[0]);
+		Write(MAADR4, macAddress[1]);
+		Write(MAADR3, macAddress[2]);
+		Write(MAADR2, macAddress[3]);
+		Write(MAADR1, macAddress[4]);
+		Write(MAADR0, macAddress[5]);
 	}
 
 	void SetBank(bank_t bank)
@@ -306,6 +470,14 @@ private:
 			WriteOp(BIT_FIELD_SET, ECON1, bank >> 5);
 			lastBank_ = bank;
 		}
+	}
+
+	void WritePhy(uint8_t addr, uint16_t data)
+	{
+		Write(MIREGADR, addr);
+		Write(MIWRL, data);
+		Write(MIWRH, data >> 8);
+		while (Read(MISTAT) & MISTAT_BUSY);
 	}
 
 	void WriteOp(operation_t op, uint8_t addr, uint8_t data)
