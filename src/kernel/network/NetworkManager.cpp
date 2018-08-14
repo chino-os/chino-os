@@ -19,15 +19,12 @@
 #include <lwip/priv/tcp_priv.h>
 #include "../threading/timer.h"
 #include "../device/network/Ethernet.hpp"
-#include "../object/ObjectManager.hpp"
 
 using namespace Chino;
 using namespace Chino::Device;
 using namespace Chino::Network;
 
 #define PHLCON           0x14
-
-ObjectAccessor<EthernetController> eth0;
 
 /* Define those to better describe your network interface. */
 #define IFNAME0 'e'
@@ -39,9 +36,17 @@ ObjectAccessor<EthernetController> eth0;
 * as it is already kept in the struct netif.
 * But this is only an example, anyway...
 */
-struct ethernetif {
-	struct eth_addr *ethaddr;
-	/* Add whatever per-interface state that is needed here. */
+class EthernetInterface : public NetworkInterface
+{
+public:
+	struct netif netif;
+	ObjectAccessor<EthernetController> eth;
+
+	EthernetInterface()
+		:netif({})
+	{
+
+	}
 };
 
 /* Forward declarations. */
@@ -56,7 +61,7 @@ static void ethernetif_input(struct netif *netif);
 */
 static void low_level_init(struct netif *netif)
 {
-	auto ethernetif = reinterpret_cast<struct ethernetif*>(netif->state);
+	auto ethernetif = reinterpret_cast<EthernetInterface*>(netif->state);
 
 	/* set MAC hardware address length */
 	netif->hwaddr_len = ETHARP_HWADDR_LEN;
@@ -99,7 +104,7 @@ static void low_level_init(struct netif *netif)
 	mac[4] = 0x00;
 	mac[5] = 0x01;
 
-	eth0->Reset(mac);
+	ethernetif->eth->Reset(mac);
 }
 
 /**
@@ -120,10 +125,10 @@ static void low_level_init(struct netif *netif)
 
 static err_t low_level_output(struct netif *netif, struct pbuf *p)
 {
-	auto ethernetif = reinterpret_cast<struct ethernetif*>(netif->state);
+	auto ethernetif = reinterpret_cast<EthernetInterface*>(netif->state);
 	struct pbuf *q;
 
-	eth0->StartSend(p->tot_len);
+	ethernetif->eth->StartSend(p->tot_len);
 
 #if ETH_PAD_SIZE
 	pbuf_remove_header(p, ETH_PAD_SIZE); /* drop the padding word */
@@ -133,10 +138,10 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p)
 		/* Send the data from the pbuf to the interface, one pbuf at a
 		time. The size of the data in each pbuf is kept in the ->len
 		variable. */
-		eth0->WriteSendBuffer({ (uint8_t*)q->payload,q->len });
+		ethernetif->eth->WriteSendBuffer({ (uint8_t*)q->payload,q->len });
 	}
 
-	eth0->CommitSend();
+	ethernetif->eth->CommitSend();
 
 	MIB2_STATS_NETIF_ADD(netif, ifoutoctets, p->tot_len);
 	if (((u8_t *)p->payload)[0] & 1) {
@@ -168,13 +173,13 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p)
 */
 static struct pbuf * low_level_input(struct netif *netif)
 {
-	auto ethernetif = reinterpret_cast<struct ethernetif*>(netif->state);
+	auto ethernetif = reinterpret_cast<EthernetInterface*>(netif->state);
 	struct pbuf *p, *q;
 	u16_t len;
 
 	/* Obtain the size of the packet and put it into the "len"
 	variable. */
-	len = eth0->StartReceive();
+	len = ethernetif->eth->StartReceive();
 
 #if ETH_PAD_SIZE
 	len += ETH_PAD_SIZE; /* allow room for Ethernet padding */
@@ -201,9 +206,9 @@ static struct pbuf * low_level_input(struct netif *netif)
 			* pbuf is the sum of the chained pbuf len members.
 			*/
 			//read data into(q->payload, q->len);
-			eth0->ReadReceiveBuffer({ (uint8_t*)q->payload,q->len });
+			ethernetif->eth->ReadReceiveBuffer({ (uint8_t*)q->payload,q->len });
 		}
-		eth0->FinishReceive();
+		ethernetif->eth->FinishReceive();
 
 		MIB2_STATS_NETIF_ADD(netif, ifinoctets, p->tot_len);
 		if (((u8_t *)p->payload)[0] & 1) {
@@ -221,7 +226,7 @@ static struct pbuf * low_level_input(struct netif *netif)
 		LINK_STATS_INC(link.recv);
 	}
 	else {
-		eth0->FinishReceive();
+		ethernetif->eth->FinishReceive();
 
 		LINK_STATS_INC(link.memerr);
 		LINK_STATS_INC(link.drop);
@@ -274,11 +279,8 @@ static void ethernetif_input(struct netif *netif)
 */
 err_t ethernetif_init(struct netif *netif)
 {
-	struct ethernetif *ethernetif;
+	auto ethernetif = reinterpret_cast<struct ethernetif*>(netif->state);
 
-	LWIP_ASSERT("netif != NULL", (netif != NULL));
-
-	ethernetif = new (std::nothrow) struct ethernetif();
 	if (ethernetif == NULL) {
 		LWIP_DEBUGF(NETIF_DEBUG, ("ethernetif_init: out of memory\n"));
 		return ERR_MEM;
@@ -311,8 +313,6 @@ err_t ethernetif_init(struct netif *netif)
 #endif /* LWIP_IPV6 */
 	netif->linkoutput = low_level_output;
 
-	ethernetif->ethaddr = (struct eth_addr *) & (netif->hwaddr[0]);
-
 	/* initialize the hardware */
 	low_level_init(netif);
 
@@ -329,21 +329,6 @@ NetworkManager::NetworkManager()
 
 void NetworkManager::Test()
 {
-	eth0 = g_ObjectMgr->GetDirectory(WKD_Device).Open("eth0", OA_Read | OA_Write).MoveAs<EthernetController>();
-
-	struct netif netif;
-	kassert(ethernetif_init(&netif) == ERR_OK);
-
-	ip4_addr_t ipaddr, netmask, gw;
-
-	IP4_ADDR(&ipaddr, 192, 168, 1, 16);
-	IP4_ADDR(&netmask, 255, 255, 255, 0);
-	IP4_ADDR(&gw, 192, 168, 1, 1);
-
-	netif_add(&netif, &ipaddr, &netmask, &gw, NULL, ethernetif_init, ethernet_input);
-	netif_set_default(&netif);
-	netif_set_up(&netif);
-
 	timer_typedef tcp_timer, arp_timer;
 
 	/* 设定查询定时器 ARP定时器 */
@@ -352,32 +337,46 @@ void NetworkManager::Test()
 
 	while (1) {
 
-		if (eth0->IsPacketAvailable()) {
-			ethernetif_input(&netif);
+		for (auto& netif : netifs_)
+		{
+			auto ethif = static_cast<EthernetInterface*>(netif.Get());
+			if (ethif->eth->IsPacketAvailable()) {
+				ethernetif_input(&ethif->netif);
+			}
 		}
 
 		// TCP 定时处理
 		if (timer_expired(&tcp_timer)) {
 			timer_set(&tcp_timer, CLOCK_SECOND / 4);
-			//g_Logger->PutFormat("TCP ");
+			g_Logger->PutFormat("TCP ");
 			tcp_tmr();
 		}
 
 		// ARP 定时处理
 		if (timer_expired(&arp_timer)) {
 			timer_set(&arp_timer, CLOCK_SECOND * 5);
-			//g_Logger->PutFormat("ARP ");
+			g_Logger->PutFormat("ARP ");
 			etharp_tmr();
 		}
 	}
 }
 
-void NetworkManager::TryInstallNetworkDevice(ObjectPtr<Device::Device> device)
+ObjectPtr<NetworkInterface> NetworkManager::InstallNetworkDevice(ObjectAccessor<EthernetController> device)
 {
-	auto type = device->GetType();
-	if (type == DeviceType::NetworkAdapter)
-	{
-		//struct netif netif;
-		//netif_add(&netif, IP4_ADDR_ANY, IP4_ADDR_ANY, IP4_ADDR_ANY, NULL, netif_init, tcpip_input);
-	}
+	auto netif = MakeObject<EthernetInterface>();
+	netif->eth = std::move(device);
+
+	ip4_addr_t ipaddr, netmask, gw;
+
+	IP4_ADDR(&ipaddr, 192, 168, 1, 16);
+	IP4_ADDR(&netmask, 255, 255, 255, 0);
+	IP4_ADDR(&gw, 192, 168, 1, 1);
+
+	netif_add(&netif->netif, &ipaddr, &netmask, &gw, netif.Get(), ethernetif_init, ethernet_input);
+	if (netifs_.empty())
+		netif_set_default(&netif->netif);
+	netif_set_up(&netif->netif);
+
+	netifs_.emplace_back(netif);
+	return netif;
 }

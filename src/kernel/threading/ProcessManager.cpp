@@ -16,6 +16,8 @@ using namespace Chino::Threading;
 std::atomic<size_t> kernel_critical::coreTaken_(0);
 std::atomic<size_t> kernel_critical::depth_(0);
 
+#define IdleThreadStackSize 512
+
 static void OnThreadExit();
 static void IdleThreadMain();
 
@@ -25,10 +27,10 @@ ProcessManager::ProcessManager()
 
 }
 
-ObjectPtr<Process> ProcessManager::CreateProcess(std::string_view name, uint32_t mainThreadPriority, std::function<void()> threadMain)
+ObjectPtr<Process> ProcessManager::CreateProcess(std::string_view name, uint32_t mainThreadPriority, std::function<void()> threadMain, size_t mainThreadStackSize)
 {
 	auto it = _processes.emplace_back(MakeObject<Process>(name));
-	it->AddThread(std::move(threadMain), mainThreadPriority);
+	it->AddThread(std::move(threadMain), mainThreadPriority, mainThreadStackSize);
 	return it;
 }
 
@@ -43,7 +45,7 @@ void ProcessManager::AddReadyThread(ObjectPtr<Thread> thread)
 void ProcessManager::StartScheduler()
 {
 	kassert(!idleProcess_);
-	idleProcess_ = CreateProcess("System Idle", 0, IdleThreadMain);
+	idleProcess_ = CreateProcess("System Idle", 0, IdleThreadMain, IdleThreadStackSize);
 
 	BSPSetupSchedulerTimer();
 	ArchHaltProcessor();

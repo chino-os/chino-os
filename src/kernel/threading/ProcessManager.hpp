@@ -55,7 +55,7 @@ namespace Chino
 		public:
 			ProcessManager();
 
-			ObjectPtr<Process> CreateProcess(std::string_view name, uint32_t mainThreadPriority, std::function<void()> threadMain);
+			ObjectPtr<Process> CreateProcess(std::string_view name, uint32_t mainThreadPriority, std::function<void()> threadMain, size_t mainThreadStackSize = DEFAULT_THREAD_STACK_SIZE);
 			void AddReadyThread(ObjectPtr<Thread> thread);
 			void StartScheduler();
 			bool IncrementTick();

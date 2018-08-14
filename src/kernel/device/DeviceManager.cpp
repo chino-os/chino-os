@@ -6,7 +6,6 @@
 #include <libbsp/bsp.hpp>
 #include "controller/Pic.hpp"
 #include "../threading/ThreadSynchronizer.hpp"
-#include "../network/NetworkManager.hpp"
 
 using namespace Chino;
 using namespace Chino::Device;
@@ -33,7 +32,6 @@ void DeviceMananger::InstallDriver(ObjectPtr<Driver> driver)
 void DeviceMananger::InstallDevice(ObjectPtr<Chino::Device::Device> device)
 {
 	devices_.emplace_back(device);
-	g_NetworkMgr->TryInstallNetworkDevice(device);
 
 	auto driver = device->TryLoadDriver();
 	if (driver)

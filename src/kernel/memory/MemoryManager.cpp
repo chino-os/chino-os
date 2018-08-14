@@ -10,7 +10,7 @@ using namespace Chino::Memory;
 #define traceMALLOC(p, size)
 #define traceFREE(p, size)
 
-#define portBYTE_ALIGNMENT	8
+#define portBYTE_ALIGNMENT	4
 
 #if portBYTE_ALIGNMENT == 32
 #define portBYTE_ALIGNMENT_MASK ( 0x001f )

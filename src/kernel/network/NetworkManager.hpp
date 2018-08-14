@@ -3,19 +3,26 @@
 //
 #pragma once
 #include "NetDefs.hpp"
-#include "../device/Device.hpp"
+#include "../device/network/Ethernet.hpp"
 
 namespace Chino
 {
 	namespace Network
 	{
+		struct NetworkInterface : public Object
+		{
+
+		};
+
 		class NetworkManager
 		{
 		public:
 			NetworkManager();
 
-			void TryInstallNetworkDevice(ObjectPtr<Device::Device> device);
+			ObjectPtr<NetworkInterface> InstallNetworkDevice(ObjectAccessor<Device::EthernetController> device);
 			void Test();
+		private:
+			std::vector<ObjectPtr<NetworkInterface>> netifs_;
 		};
 	}
 }

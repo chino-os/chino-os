@@ -107,7 +107,7 @@ void Chino::BSPSystemStartup()
 
 			semp->Take(1);
 		}
-	}, 1, 1024);
+	}, 1, 512);
 
 	proc->AddThread([&]
 	{
@@ -117,7 +117,9 @@ void Chino::BSPSystemStartup()
 				ArchHaltProcessor();
 			semp->Give(1);
 		}
-	}, 1, 1024);
+	}, 1, 512);
+
+	g_Logger->PutFormat(L"Free memory avaliable: %z bytes\n", g_MemoryMgr->GetFreeBytesRemaining());
 
 	while (1)
 		ArchHaltProcessor();
@@ -130,5 +132,6 @@ void App::Start()
 	dc_->Clear(*primarySurface_, { {}, primarySurface_->GetPixelSize() }, { 1, 0, 0 });
 	dc_->CopySubresource(*green, *primarySurface_, { {}, green->GetPixelSize() }, { 100, 100 });
 
+	g_NetworkMgr->InstallNetworkDevice(g_ObjectMgr->GetDirectory(WKD_Device).Open("eth0", OA_Read | OA_Write).MoveAs<EthernetController>());
 	g_NetworkMgr->Test();
 }

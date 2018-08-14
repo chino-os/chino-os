@@ -37,6 +37,7 @@ extern "C" void Kernel_Main(const BootParameters* pParams)
 	atexit(__libc_fini_array);
 	__libc_init_array();
 
+
 	g_MemoryMgr.construct();
 
 	g_ObjectMgr.construct();
