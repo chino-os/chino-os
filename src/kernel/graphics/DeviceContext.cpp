@@ -69,6 +69,9 @@ public:
 		{
 			stride_ = data.Stride;
 			data_ = data.Data;
+
+			auto bytes = stride_ * size.Height;
+			kassert(bytes == data_.size_bytes());
 		}
 		else
 		{
@@ -102,6 +105,8 @@ public:
 
 		if (begin > data_.size_bytes() || end > data_.size_bytes())
 			throw std::out_of_range("Lock rect is out of range.");
+
+		g_Logger->PutFormat("B: %p, E: %p, S: %z\n", data_.data() + begin, data_.data() + end, stride_);
 
 		return { { data_.data() + begin, data_.data() + end }, stride_, rect };
 	}

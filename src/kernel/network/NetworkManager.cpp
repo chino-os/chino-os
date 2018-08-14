@@ -26,6 +26,8 @@ using namespace Chino::Device;
 using namespace Chino::Network;
 using namespace Chino::Threading;
 
+using namespace std::chrono_literals;
+
 #define PHLCON           0x14
 
 /* Define those to better describe your network interface. */
@@ -347,17 +349,24 @@ NetworkManager::NetworkManager()
 #define     TCP_PERIOID     CLOCK_SECOND / 4        // TCP 250ms
 #define     ARP_PERIOID     CLOCK_SECOND * 5        // ARP 5s
 
-void NetworkManager::Test()
+void NetworkManager::Run()
 {
-	while (1) {
-		for (auto& netif : netifs_)
+	g_ProcessMgr->GetCurrentThread()->GetProcess()->AddThread([=]
+	{
+		while (1) 
 		{
-			auto ethif = static_cast<EthernetInterface*>(netif.Get());
-			if (ethif->eth->IsPacketAvailable()) {
-				ethernetif_input(&ethif->netif);
+			for (auto& netif : netifs_)
+			{
+				auto ethif = static_cast<EthernetInterface*>(netif.Get());
+				while (ethif->eth->IsPacketAvailable())
+				{
+					ethernetif_input(&ethif->netif);
+				}
 			}
+
+			g_ProcessMgr->SleepCurrentThread(1ms);
 		}
-	}
+	}, 1, 1024);
 }
 
 ObjectPtr<NetworkInterface> NetworkManager::InstallNetworkDevice(ObjectAccessor<EthernetController> device)

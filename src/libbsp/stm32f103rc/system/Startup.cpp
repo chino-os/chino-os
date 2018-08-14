@@ -135,5 +135,5 @@ void App::Start()
 	auto eth0 = g_NetworkMgr->InstallNetworkDevice(g_ObjectMgr->GetDirectory(WKD_Device).Open("eth0", OA_Read | OA_Write).MoveAs<EthernetController>());
 	eth0->SetAsDefault();
 	eth0->Setup();
-	g_NetworkMgr->Test();
+	g_NetworkMgr->Run();
 }

@@ -21,7 +21,7 @@ namespace Chino
 			NetworkManager();
 
 			ObjectPtr<NetworkInterface> InstallNetworkDevice(ObjectAccessor<Device::EthernetController> device);
-			void Test();
+			void Run();
 		private:
 			std::vector<ObjectPtr<NetworkInterface>> netifs_;
 		};
