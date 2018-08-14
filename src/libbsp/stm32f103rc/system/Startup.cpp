@@ -92,9 +92,6 @@ void Chino::BSPSystemStartup()
 	}, 1, 2048);
 #endif
 
-	App app;
-	app.Start();
-
 	auto semp = MakeObject<Semaphore>(0);
 	auto mutex = MakeObject<Mutex>();
 	proc->AddThread([&]
@@ -121,6 +118,9 @@ void Chino::BSPSystemStartup()
 
 	g_Logger->PutFormat(L"Free memory avaliable: %z bytes\n", g_MemoryMgr->GetFreeBytesRemaining());
 
+	App app;
+	app.Start();
+
 	while (1)
 		g_ProcessMgr->SleepCurrentThread(1s);
 }
@@ -132,8 +132,8 @@ void App::Start()
 	dc_->Clear(*primarySurface_, { {}, primarySurface_->GetPixelSize() }, { 1, 0, 0 });
 	dc_->CopySubresource(*green, *primarySurface_, { {}, green->GetPixelSize() }, { 100, 100 });
 
-	//auto eth0 = g_NetworkMgr->InstallNetworkDevice(g_ObjectMgr->GetDirectory(WKD_Device).Open("eth0", OA_Read | OA_Write).MoveAs<EthernetController>());
-	//eth0->SetAsDefault();
-	//eth0->Setup();
-	//g_NetworkMgr->Test();
+	auto eth0 = g_NetworkMgr->InstallNetworkDevice(g_ObjectMgr->GetDirectory(WKD_Device).Open("eth0", OA_Read | OA_Write).MoveAs<EthernetController>());
+	eth0->SetAsDefault();
+	eth0->Setup();
+	g_NetworkMgr->Test();
 }

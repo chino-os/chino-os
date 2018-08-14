@@ -6,4 +6,6 @@
 #define TCPIP_THREAD_STACKSIZE 512
 #define LWIP_ERRNO_STDINCLUDE
 
+#define LWIP_DEBUG
+
 #endif

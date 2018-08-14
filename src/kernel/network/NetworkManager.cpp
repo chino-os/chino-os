@@ -342,7 +342,6 @@ NetworkManager::NetworkManager()
 	auto doneEvent = MakeObject<Event>();
 	tcpip_init(OnTcpIpInitDone, doneEvent.Get());
 	doneEvent->Wait();
-	g_Logger->PutChar('D');
 }
 
 #define     TCP_PERIOID     CLOCK_SECOND / 4        // TCP 250ms
@@ -350,34 +349,13 @@ NetworkManager::NetworkManager()
 
 void NetworkManager::Test()
 {
-	timer_typedef tcp_timer, arp_timer;
-
-	/* 设定查询定时器 ARP定时器 */
-	timer_set(&tcp_timer, CLOCK_SECOND / 10);       // tcp处理定时器 100ms
-	timer_set(&arp_timer, CLOCK_SECOND * 5);        // arp处理定时器 5S
-
 	while (1) {
-
 		for (auto& netif : netifs_)
 		{
 			auto ethif = static_cast<EthernetInterface*>(netif.Get());
 			if (ethif->eth->IsPacketAvailable()) {
 				ethernetif_input(&ethif->netif);
 			}
-		}
-
-		// TCP 定时处理
-		if (timer_expired(&tcp_timer)) {
-			timer_set(&tcp_timer, CLOCK_SECOND / 4);
-			g_Logger->PutFormat("TCP ");
-			tcp_tmr();
-		}
-
-		// ARP 定时处理
-		if (timer_expired(&arp_timer)) {
-			timer_set(&arp_timer, CLOCK_SECOND * 5);
-			g_Logger->PutFormat("ARP ");
-			etharp_tmr();
 		}
 	}
 }

@@ -52,6 +52,7 @@ extern "C"
 
 	err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg)
 	{
+		//g_Logger->PutFormat("POST: %p\n", msg);
 		auto sysmbox = reinterpret_cast<Mailslot*>(*mbox);
 		gsl::span<const uint8_t> message = { reinterpret_cast<const uint8_t*>(&msg), sizeof(msg) };
 		sysmbox->Send(message);
@@ -60,6 +61,7 @@ extern "C"
 
 	void sys_mbox_post(sys_mbox_t *mbox, void *msg)
 	{
+		//g_Logger->PutFormat("POST: %p\n", msg);
 		auto sysmbox = reinterpret_cast<Mailslot*>(*mbox);
 		gsl::span<const uint8_t> message = { reinterpret_cast<const uint8_t*>(&msg), sizeof(msg) };
 		sysmbox->Send(message);
@@ -67,6 +69,7 @@ extern "C"
 
 	err_t sys_mbox_trypost_fromisr(sys_mbox_t *mbox, void *msg)
 	{
+		//g_Logger->PutFormat("POST: %p\n", msg);
 		auto sysmbox = reinterpret_cast<Mailslot*>(*mbox);
 		gsl::span<const uint8_t> message = { reinterpret_cast<const uint8_t*>(&msg), sizeof(msg) };
 		sysmbox->Send(message);
@@ -75,11 +78,27 @@ extern "C"
 
 	u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
 	{
-		kassert(!timeout);
 		auto sysmbox = reinterpret_cast<Mailslot*>(*mbox);
 		size_t size;
-		sysmbox->Receive(size, { reinterpret_cast<uint8_t*>(msg), sizeof(*msg) });
-		return ERR_OK;
+		if (!timeout)
+		{
+			sysmbox->Receive(size, { reinterpret_cast<uint8_t*>(msg), sizeof(*msg) });
+			//g_Logger->PutFormat("RECV: %p\n", *msg);
+			return ERR_OK;
+		}
+		else
+		{
+			if (sysmbox->TryReceive(size, { reinterpret_cast<uint8_t*>(msg), sizeof(*msg) }, std::chrono::milliseconds(timeout)))
+			{
+				//g_Logger->PutFormat("RECV: %p\n", *msg);
+				return ERR_OK;
+			}
+			else
+			{
+				//g_Logger->PutString("TIMEOUT\n");
+				return SYS_ARCH_TIMEOUT;
+			}
+		}
 	}
 
 	err_t sys_mutex_new(sys_mutex_t *mutex)

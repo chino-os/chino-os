@@ -18,7 +18,7 @@ StaticHolder<NetworkManager> g_NetworkMgr;
 
 void Chino::SystemStartup(const BootParameters& params)
 {
-	//g_NetworkMgr.construct();
+	g_NetworkMgr.construct();
 
 	g_DeviceMgr->InstallDevices(params);
 
