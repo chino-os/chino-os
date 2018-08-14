@@ -7,6 +7,7 @@
 #include <atomic>
 #include "../utils.hpp"
 #include "ProcessManager.hpp"
+#include <optional>
 
 namespace Chino
 {
@@ -17,7 +18,7 @@ namespace Chino
 		public:
 
 		protected:
-			void WaitOne();
+			void WaitOne(std::optional<std::chrono::milliseconds> timeout = std::nullopt);
 
 			void NotifyOne();
 			void NotifyAll();
@@ -31,7 +32,7 @@ namespace Chino
 			Semaphore(size_t initialCount);
 
 			void Take(size_t count);
-			bool TryTake(size_t count);
+			bool TryTake(size_t count, std::optional<std::chrono::milliseconds> timeout = std::nullopt);
 			void Give(size_t count);
 		private:
 			std::atomic<size_t> count_;

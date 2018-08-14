@@ -35,9 +35,9 @@ void Mailslot::Send(gsl::span<const uint8_t> message)
 	avail_->Give(1);
 }
 
-bool Mailslot::TryReceive(size_t& messageSize, gsl::span<uint8_t> message)
+bool Mailslot::TryReceive(size_t& messageSize, gsl::span<uint8_t> message, std::optional<std::chrono::milliseconds> timeout)
 {
-	if (avail_->TryTake(1))
+	if (avail_->TryTake(1, timeout))
 	{
 		ReadMessage(messageSize, message);
 		return true;

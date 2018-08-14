@@ -35,8 +35,14 @@
 /* see https://sourceforge.net/p/predef/wiki/OperatingSystems/ */
 #define LWIP_CHINO
 
+#ifdef _WIN32
+#define LWIP_TIMEVAL_PRIVATE 1
+#else
 #define LWIP_TIMEVAL_PRIVATE 0
 #include <sys/time.h>
+#endif
+
+#include <stddef.h>
 
 #define LWIP_ERRNO_INCLUDE <errno.h>
 

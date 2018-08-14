@@ -16,11 +16,14 @@
 #include <kernel/device/sensor/Accelerometer.hpp>
 #include <kernel/device/network/Ethernet.hpp>
 #include <kernel/graphics/DeviceContext.hpp>
+#include <chrono>
 
 using namespace Chino;
 using namespace Chino::Device;
 using namespace Chino::Graphics;
 using namespace Chino::Threading;
+
+using namespace std::chrono_literals;
 
 #define RW_TEST 0
 
@@ -99,13 +102,11 @@ void Chino::BSPSystemStartup()
 		while (true)
 		{
 			Locker<Mutex> locker(mutex);
-			pin0->Write(GpioPinValue::Low);
 
-			semp->Take(1);
-
-			pin0->Write(GpioPinValue::High);
-
-			semp->Take(1);
+			if (semp->TryTake(1, 1s))
+				pin0->Write(GpioPinValue::High);
+			else
+				pin0->Write(GpioPinValue::Low);
 		}
 	}, 1, 512);
 
@@ -113,8 +114,7 @@ void Chino::BSPSystemStartup()
 	{
 		while (true)
 		{
-			for (size_t i = 0; i < 100; i++)
-				ArchHaltProcessor();
+			g_ProcessMgr->SleepCurrentThread(5s);
 			semp->Give(1);
 		}
 	}, 1, 512);
@@ -122,7 +122,7 @@ void Chino::BSPSystemStartup()
 	g_Logger->PutFormat(L"Free memory avaliable: %z bytes\n", g_MemoryMgr->GetFreeBytesRemaining());
 
 	while (1)
-		ArchHaltProcessor();
+		g_ProcessMgr->SleepCurrentThread(1s);
 }
 
 void App::Start()
@@ -132,6 +132,8 @@ void App::Start()
 	dc_->Clear(*primarySurface_, { {}, primarySurface_->GetPixelSize() }, { 1, 0, 0 });
 	dc_->CopySubresource(*green, *primarySurface_, { {}, green->GetPixelSize() }, { 100, 100 });
 
-	g_NetworkMgr->InstallNetworkDevice(g_ObjectMgr->GetDirectory(WKD_Device).Open("eth0", OA_Read | OA_Write).MoveAs<EthernetController>());
-	g_NetworkMgr->Test();
+	//auto eth0 = g_NetworkMgr->InstallNetworkDevice(g_ObjectMgr->GetDirectory(WKD_Device).Open("eth0", OA_Read | OA_Write).MoveAs<EthernetController>());
+	//eth0->SetAsDefault();
+	//eth0->Setup();
+	//g_NetworkMgr->Test();
 }

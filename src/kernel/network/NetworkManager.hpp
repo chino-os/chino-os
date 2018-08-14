@@ -11,7 +11,8 @@ namespace Chino
 	{
 		struct NetworkInterface : public Object
 		{
-
+			virtual void SetAsDefault() = 0;
+			virtual void Setup() = 0;
 		};
 
 		class NetworkManager

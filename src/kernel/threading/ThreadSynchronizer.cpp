@@ -7,13 +7,14 @@
 using namespace Chino;
 using namespace Chino::Threading;
 
-void Waitable::WaitOne()
+void Waitable::WaitOne(std::optional<std::chrono::milliseconds> timeout)
 {
 	auto it = g_ProcessMgr->DetachCurrentThread();
 	if (std::find(waitingThreads_.begin(), waitingThreads_.end(), it) == waitingThreads_.end())
-	{
 		waitingThreads_.emplace_back(it);
-	}
+
+	if (timeout)
+		g_ProcessMgr->DelayThread(it, timeout.value());
 }
 
 void Waitable::NotifyOne()
@@ -46,7 +47,9 @@ Semaphore::Semaphore(size_t initialCount)
 
 void Semaphore::Take(size_t count)
 {
-	while (count)
+	kassert(count);
+
+	while (true)
 	{
 		kernel_critical kc;
 		auto expected = count_.load(std::memory_order_relaxed);
@@ -62,9 +65,11 @@ void Semaphore::Take(size_t count)
 	}
 }
 
-bool Semaphore::TryTake(size_t count)
+bool Semaphore::TryTake(size_t count, std::optional<std::chrono::milliseconds> timeout)
 {
-	while (count)
+	kassert(count);
+
+	if (!timeout)
 	{
 		kernel_critical kc;
 		auto expected = count_.load(std::memory_order_relaxed);
@@ -76,10 +81,42 @@ bool Semaphore::TryTake(size_t count)
 		{
 			if (count_.compare_exchange_strong(expected, expected - count, std::memory_order_relaxed))
 				return true;
+			return false;
 		}
 	}
-
-	return false;
+	else
+	{
+		bool first = true;
+		while (true)
+		{
+			kernel_critical kc;
+			auto expected = count_.load(std::memory_order_relaxed);
+			if (expected < count)
+			{
+				if (first)
+				{
+					first = false;
+					WaitOne(timeout);
+				}
+				else
+				{
+					if (g_ProcessMgr->GetCurrentThread()->GetWeakupReason() == ThreadWakeupReason::Timeout)
+					{
+						return false;
+					}
+					else
+					{
+						WaitOne();
+					}
+				}
+			}
+			else
+			{
+				if (count_.compare_exchange_strong(expected, expected - count, std::memory_order_relaxed))
+					return true;
+			}
+		}
+	}
 }
 
 void Semaphore::Give(size_t count)

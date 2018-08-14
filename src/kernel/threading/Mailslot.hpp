@@ -17,7 +17,7 @@ namespace Chino
 			Mailslot();
 
 			void Send(gsl::span<const uint8_t> message);
-			bool TryReceive(size_t& messageSize, gsl::span<uint8_t> message);
+			bool TryReceive(size_t& messageSize, gsl::span<uint8_t> message, std::optional<std::chrono::milliseconds> timeout = std::nullopt);
 			void Receive(size_t& messageSize, gsl::span<uint8_t> message);
 		private:
 			void ReadMessage(size_t& messageSize, gsl::span<uint8_t> message);

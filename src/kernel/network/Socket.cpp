@@ -14,7 +14,7 @@ Socket::Socket(AddressFamily addressFamily, SocketType socketType, ProtocolType 
 
 ObjectPtr<Socket> Socket::Accept()
 {
-
+	return nullptr;
 }
 
 void Socket::Bind(const std::shared_ptr<SocketAddress>& address)

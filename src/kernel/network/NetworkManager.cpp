@@ -19,10 +19,12 @@
 #include <lwip/priv/tcp_priv.h>
 #include "../threading/timer.h"
 #include "../device/network/Ethernet.hpp"
+#include "../threading/ThreadSynchronizer.hpp"
 
 using namespace Chino;
 using namespace Chino::Device;
 using namespace Chino::Network;
+using namespace Chino::Threading;
 
 #define PHLCON           0x14
 
@@ -46,6 +48,16 @@ public:
 		:netif({})
 	{
 
+	}
+
+	virtual void SetAsDefault() override
+	{
+		netif_set_default(&netif);
+	}
+
+	virtual void Setup() override
+	{
+		netif_set_up(&netif);
 	}
 };
 
@@ -319,9 +331,18 @@ err_t ethernetif_init(struct netif *netif)
 	return ERR_OK;
 }
 
+static void OnTcpIpInitDone(void* arg)
+{
+	auto doneEvent = reinterpret_cast<Event*>(arg);
+	doneEvent->Signal();
+}
+
 NetworkManager::NetworkManager()
 {
-	lwip_init();
+	auto doneEvent = MakeObject<Event>();
+	tcpip_init(OnTcpIpInitDone, doneEvent.Get());
+	doneEvent->Wait();
+	g_Logger->PutChar('D');
 }
 
 #define     TCP_PERIOID     CLOCK_SECOND / 4        // TCP 250ms
@@ -373,10 +394,6 @@ ObjectPtr<NetworkInterface> NetworkManager::InstallNetworkDevice(ObjectAccessor<
 	IP4_ADDR(&gw, 192, 168, 1, 1);
 
 	netif_add(&netif->netif, &ipaddr, &netmask, &gw, netif.Get(), ethernetif_init, ethernet_input);
-	if (netifs_.empty())
-		netif_set_default(&netif->netif);
-	netif_set_up(&netif->netif);
-
 	netifs_.emplace_back(netif);
 	return netif;
 }
