@@ -324,7 +324,7 @@ private:
 		gsl::span<volatile const uint8_t> sourceBuffers[] = { { reinterpret_cast<volatile uint8_t*>(&i2c->DR), 1 } };
 		auto dmac = g_ObjectMgr->GetDirectory(WKD_Device).Open("dmac1", OA_Read | OA_Write).MoveAs<DmaController>();
 		auto dma = dmac->OpenChannel(DmaRequestLine::I2C1_RX);
-		dma->Configure<volatile uint8_t, uint8_t>(DmaTransmition::Mem2Periph, { sourceBuffers }, bufferList);
+		dma->Configure<volatile uint8_t, uint8_t>(DmaTransmition::Perip2Mem, { sourceBuffers }, bufferList);
 
 		session_.NextState = Session::READ;
 		i2c->CR2.DMAEN = 1;

@@ -9,6 +9,7 @@
 #include <kernel/threading/ThreadSynchronizer.hpp>
 #include "../controller/Rcc.hpp"
 #include "../controller/Port.hpp"
+#include "../controller/Dmac.hpp"
 
 using namespace Chino;
 using namespace Chino::Device;
@@ -114,8 +115,8 @@ class Stm32SpiController;
 class Stm32SpiDevice : public SpiDevice, public ExclusiveObjectAccess
 {
 public:
-	Stm32SpiDevice(ObjectAccessor<Stm32SpiController>&& controller, uint32_t chipSelectMask, SpiMode mode, uint32_t dataBitLength)
-		:controller_(std::move(controller)), chipSelectMask_(chipSelectMask), mode_(mode), dataBitLength_(dataBitLength)
+	Stm32SpiDevice(ObjectAccessor<Stm32SpiController>&& controller, ChipSelectPin& csPin, SpiMode mode, uint32_t dataBitLength)
+		:controller_(std::move(controller)), csPin_(csPin), mode_(mode), dataBitLength_(dataBitLength)
 	{
 
 	}
@@ -127,16 +128,45 @@ private:
 	friend class Stm32SpiController;
 
 	ObjectAccessor<Stm32SpiController> controller_;
-	uint32_t chipSelectMask_;
+	ChipSelectPin& csPin_;
 	SpiMode mode_;
 	uint32_t dataBitLength_;
 };
 
 class Stm32SpiController : public SpiController, public FreeObjectAccess
 {
+	struct CSPin : public DmaSessionHandler
+	{
+		ChipSelectPin& Pin;
+
+		CSPin(ChipSelectPin& pin)
+			:Pin(pin)
+		{
+		}
+
+		~CSPin()
+		{
+			Pin.Deactivate();
+		}
+
+		virtual void OnStart() override
+		{
+			Pin.Activate();
+		}
+
+		virtual void OnStop() override
+		{
+
+		}
+	};
+
+	enum
+	{
+		DMAThreshold = 5
+	};
 public:
 	Stm32SpiController(const FDTDevice& fdt)
-		:fdt_(fdt)
+		:fdt_(fdt), mutex_(MakeObject<Mutex>())
 	{
 		auto regProp = fdt.GetProperty("reg");
 		kassert(regProp.has_value());
@@ -145,23 +175,31 @@ public:
 		periph_ = static_cast<RccPeriph>(size_t(RccPeriph::SPI1) + fdt.GetName().back() - '1');
 	}
 
-	ObjectAccessor<SpiDevice> OpenDevice(uint32_t chipSelectMask, SpiMode mode, uint32_t dataBitLength, ObjectAccess access) override
+	virtual ObjectAccessor<SpiDevice> OpenDevice(uint32_t chipSelectMask, SpiMode mode, uint32_t dataBitLength, ObjectAccess access) override
+	{
+		throw std::runtime_error("Not supported.");
+	}
+
+	virtual ObjectAccessor<SpiDevice> OpenDevice(ChipSelectPin& csPin, SpiMode mode, uint32_t dataBitLength, ObjectAccess access) override
 	{
 		return MakeAccessor(MakeObject<Stm32SpiDevice>(
-			MakeAccessor<Stm32SpiController>(this, OA_Read | OA_Write), chipSelectMask, mode, dataBitLength), access);
+			MakeAccessor<Stm32SpiController>(this, OA_Read | OA_Write), csPin, mode, dataBitLength), access);
 	}
 
 	void Write(Stm32SpiDevice& device, BufferList<const uint8_t> bufferList)
 	{
-		Threading::kernel_critical kc;
+		Locker<Mutex> locker(mutex_);
 
-		spi_->CR1.SPE = 1;
-		SetupDevice(device);
+		{
+			CSPin cs(device.csPin_);
+			spi_->CR1.SPE = 1;
+			SetupDevice(device);
 
-		WriteData(device, bufferList);
+			WriteData(device, bufferList, cs);
 
-		while (spi_->SR.BSY);
-		spi_->CR1.SPE = 0;
+			while (spi_->SR.BSY);
+			spi_->CR1.SPE = 0;
+		}
 	}
 
 	void TransferFullDuplex(Stm32SpiDevice& device, BufferList<const uint8_t> writeBufferList, BufferList<uint8_t> readBufferList)
@@ -171,29 +209,32 @@ public:
 
 	void TransferSequential(Stm32SpiDevice& device, BufferList<const uint8_t> writeBufferList, BufferList<uint8_t> readBufferList)
 	{
-		Threading::kernel_critical kc;
+		Locker<Mutex> locker(mutex_);
 
-		spi_->CR1.SPE = 1;
-		SetupDevice(device);
+		{
+			CSPin cs(device.csPin_);
+			spi_->CR1.SPE = 1;
+			SetupDevice(device);
 
-		WriteData(device, writeBufferList);
-		spi_->CR1.RXONLY = 1;
-		ReadData(device, readBufferList);
+			WriteData(device, writeBufferList, cs);
+			if (!readBufferList.IsEmpty())
+				ReadData(device, readBufferList, cs);
 
-		while (spi_->SR.BSY);
-		spi_->CR1.SPE = 0;
+			while (spi_->SR.BSY);
+			spi_->CR1.SPE = 0;
+		}
 	}
 protected:
 	virtual void OnFirstOpen() override
 	{
 		auto access = OA_Read | OA_Write;
 		auto port = g_ObjectMgr->GetDirectory(WKD_Device).Open(fdt_.GetProperty("port")->GetString(), access).MoveAs<PortDevice>();
-		nssPin_ = port->OpenPin(static_cast<PortPins>(fdt_.GetProperty("nss_pin")->GetUInt32(0)));
+		//nssPin_ = port->OpenPin(static_cast<PortPins>(fdt_.GetProperty("nss_pin")->GetUInt32(0)));
 		sckPin_ = port->OpenPin(static_cast<PortPins>(fdt_.GetProperty("sck_pin")->GetUInt32(0)));
 		misoPin_ = port->OpenPin(static_cast<PortPins>(fdt_.GetProperty("miso_pin")->GetUInt32(0)));
 		mosiPin_ = port->OpenPin(static_cast<PortPins>(fdt_.GetProperty("mosi_pin")->GetUInt32(0)));
 
-		nssPin_->SetMode(PortOutputMode::AF_PushPull, PortOutputSpeed::PS_50MHz);
+		//nssPin_->SetMode(PortOutputMode::AF_PushPull, PortOutputSpeed::PS_50MHz);
 		sckPin_->SetMode(PortOutputMode::AF_PushPull, PortOutputSpeed::PS_50MHz);
 		misoPin_->SetMode(PortOutputMode::AF_PushPull, PortOutputSpeed::PS_50MHz);
 		mosiPin_->SetMode(PortOutputMode::AF_PushPull, PortOutputSpeed::PS_50MHz);
@@ -204,7 +245,7 @@ protected:
 	virtual void OnLastClose() override
 	{
 		RccDevice::Rcc1SetPeriphClockIsEnabled(periph_, false);
-		nssPin_.Reset();
+		//nssPin_.Reset();
 		sckPin_.Reset();
 		misoPin_.Reset();
 		mosiPin_.Reset();
@@ -239,7 +280,7 @@ private:
 
 		cr1.MSTR = 1;
 		cr1.SSI = 1;
-		cr1.SSM = device.chipSelectMask_ == 0 ? 1 : 0;
+		cr1.SSM = 1;
 		cr1.BIDIMODE = SPI_BM_2LineBidir;
 		cr1.RXONLY = 0;
 
@@ -255,37 +296,85 @@ private:
 			throw std::invalid_argument("Invalid data bit length.");
 		}
 
-		cr1.BR = spi_baud_rate::SPI_BD_Div256;
+		cr1.BR = spi_baud_rate::SPI_BD_Div4;
 		while (spi_->SR.BSY);
 		spi_->CR1.Value = cr1.Value;
 	}
 
-	void WriteData(Stm32SpiDevice& device, BufferList<const uint8_t> bufferList)
+	void WriteData(Stm32SpiDevice& device, BufferList<const uint8_t> bufferList, CSPin& cs)
 	{
-		if (device.dataBitLength_ == 8)
+		if (bufferList.GetTotalSize() < DMAThreshold)
 		{
-			for (auto& buffer : bufferList.Buffers)
+			kernel_critical kc;
+			cs.OnStart();
+			if (device.dataBitLength_ == 8)
 			{
-				for (auto data : buffer)
+				for (auto& buffer : bufferList.Buffers)
 				{
-					while (!spi_->SR.TXE);
-					spi_->DR = data;
-					while (!spi_->SR.RXNE);
-					auto value = spi_->DR;
+					for (auto data : buffer)
+					{
+						while (!spi_->SR.TXE);
+						spi_->DR = data;
+						while (!spi_->SR.RXNE);
+						auto value = spi_->DR;
+					}
+				}
+			}
+			else
+			{
+				for (auto& oriBuffer : bufferList.Buffers)
+				{
+					gsl::span<const uint16_t> buffer(reinterpret_cast<const uint16_t*>(oriBuffer.data()), oriBuffer.size() / 2);
+					for (auto data : buffer)
+					{
+						while (!spi_->SR.TXE);
+						spi_->DR = data;
+						while (!spi_->SR.RXNE);
+						auto value = spi_->DR;
+					}
 				}
 			}
 		}
 		else
 		{
-			for (auto& oriBuffer : bufferList.Buffers)
+			if (device.dataBitLength_ == 8)
 			{
-				gsl::span<const uint16_t> buffer(reinterpret_cast<const uint16_t*>(oriBuffer.data()), oriBuffer.size() / 2);
-				for (auto data : buffer)
+				uint8_t dummy[1];
+				gsl::span<uint8_t> readDestBuffers[] = { dummy };
+				gsl::span<const volatile uint8_t> readSrcBuffers[] = { { reinterpret_cast<const volatile uint8_t*>(&spi_->DR), 1 } };
+
+				auto dmac = g_ObjectMgr->GetDirectory(WKD_Device).Open("dmac1", OA_Read | OA_Write).MoveAs<DmaController>();
+				auto readDma = dmac->OpenChannel(DmaRequestLine::SPI2_RX);
+				readDma->Configure<volatile uint8_t, uint8_t>(DmaTransmition::Perip2Mem, { readSrcBuffers }, { readDestBuffers }, bufferList.GetTotalSize(), &cs);
+
+				gsl::span<volatile uint8_t> writeDestBuffers[] = { { reinterpret_cast<volatile uint8_t*>(&spi_->DR), 1 } };
+				auto writeDma = dmac->OpenChannel(DmaRequestLine::SPI2_TX);
+				writeDma->Configure<uint8_t, volatile uint8_t>(DmaTransmition::Mem2Periph, bufferList, { writeDestBuffers }, 0, &cs);
+
+				auto readEvent = readDma->StartAsync();
+				auto writeEvent = writeDma->StartAsync();
+
+				spi_->CR2.RXDMAEN = 1;
+				spi_->CR2.TXDMAEN = 1;
+
+				readEvent->GetResult();
+				writeEvent->GetResult();
+
+				spi_->CR2.RXDMAEN = 0;
+				spi_->CR2.TXDMAEN = 0;
+			}
+			else
+			{
+				for (auto& oriBuffer : bufferList.Buffers)
 				{
-					while (!spi_->SR.TXE);
-					spi_->DR = data;
-					while (!spi_->SR.RXNE);
-					auto value = spi_->DR;
+					gsl::span<const uint16_t> buffer(reinterpret_cast<const uint16_t*>(oriBuffer.data()), oriBuffer.size() / 2);
+					for (auto data : buffer)
+					{
+						while (!spi_->SR.TXE);
+						spi_->DR = data;
+						while (!spi_->SR.RXNE);
+						auto value = spi_->DR;
+					}
 				}
 			}
 		}
@@ -293,28 +382,78 @@ private:
 		while (!spi_->SR.TXE);
 	}
 
-	void ReadData(Stm32SpiDevice& device, BufferList<uint8_t> bufferList)
+	void ReadData(Stm32SpiDevice& device, BufferList<uint8_t> bufferList, CSPin& cs)
 	{
-		if (device.dataBitLength_ == 8)
+		if (bufferList.GetTotalSize() < DMAThreshold)
 		{
-			for (auto& buffer : bufferList.Buffers)
+			kernel_critical kc;
+			cs.OnStart();
+			if (device.dataBitLength_ == 8)
 			{
-				for (auto& data : buffer)
+				for (auto& buffer : bufferList.Buffers)
 				{
-					while (!spi_->SR.RXNE);
-					data = spi_->DR;
+					for (auto& data : buffer)
+					{
+						while (!spi_->SR.TXE);
+						spi_->DR = 0xFF;
+						while (!spi_->SR.RXNE);
+						data = spi_->DR;
+					}
+				}
+			}
+			else
+			{
+				for (auto& oriBuffer : bufferList.Buffers)
+				{
+					gsl::span<uint16_t> buffer(reinterpret_cast<uint16_t*>(oriBuffer.data()), oriBuffer.size() / 2);
+					for (auto& data : buffer)
+					{
+						while (!spi_->SR.TXE);
+						spi_->DR = 0xFF;
+						while (!spi_->SR.RXNE);
+						data = spi_->DR;
+					}
 				}
 			}
 		}
 		else
 		{
-			for (auto& oriBuffer : bufferList.Buffers)
+			if (device.dataBitLength_ == 8)
 			{
-				gsl::span<uint16_t> buffer(reinterpret_cast<uint16_t*>(oriBuffer.data()), oriBuffer.size() / 2);
-				for (auto& data : buffer)
+				uint8_t dummy[1] = { 0xFF };
+				gsl::span<const uint8_t> writeSrcBuffers[] = { dummy };
+				gsl::span<volatile uint8_t> writeDestBuffers[] = { { reinterpret_cast<volatile uint8_t*>(&spi_->DR), 1 } };
+
+				auto dmac = g_ObjectMgr->GetDirectory(WKD_Device).Open("dmac1", OA_Read | OA_Write).MoveAs<DmaController>();
+				auto readDma = dmac->OpenChannel(DmaRequestLine::SPI2_TX);
+				readDma->Configure<uint8_t, volatile uint8_t>(DmaTransmition::Mem2Periph, { writeSrcBuffers }, { writeDestBuffers }, bufferList.GetTotalSize(), &cs);
+
+				gsl::span<const volatile uint8_t> readSrcBuffers[] = { { reinterpret_cast<const volatile uint8_t*>(&spi_->DR), 1 } };
+				auto writeDma = dmac->OpenChannel(DmaRequestLine::SPI2_RX);
+				writeDma->Configure<volatile uint8_t, uint8_t>(DmaTransmition::Perip2Mem, { readSrcBuffers }, bufferList, 0, &cs);
+
+				auto readEvent = readDma->StartAsync();
+				auto writeEvent = writeDma->StartAsync();
+
+				spi_->CR2.RXDMAEN = 1;
+				spi_->CR2.TXDMAEN = 1;
+
+				readEvent->GetResult();
+				writeEvent->GetResult();
+
+				spi_->CR2.RXDMAEN = 0;
+				spi_->CR2.TXDMAEN = 0;
+			}
+			else
+			{
+				for (auto& oriBuffer : bufferList.Buffers)
 				{
-					while (!spi_->SR.RXNE);
-					data = spi_->DR;
+					gsl::span<uint16_t> buffer(reinterpret_cast<uint16_t*>(oriBuffer.data()), oriBuffer.size() / 2);
+					for (auto& data : buffer)
+					{
+						while (!spi_->SR.RXNE);
+						data = spi_->DR;
+					}
 				}
 			}
 		}
@@ -324,6 +463,7 @@ private:
 	SPI_TypeDef* spi_;
 	RccPeriph periph_;
 	ObjectAccessor<PortPin> nssPin_, sckPin_, misoPin_, mosiPin_;
+	ObjectPtr<Mutex> mutex_;
 };
 
 SpiDriver::SpiDriver(const FDTDevice& device)

@@ -37,14 +37,42 @@ void Chino::BSPSystemStartup()
 	App app;
 	app.Start();
 
+	auto proc = g_ProcessMgr->GetCurrentThread()->GetProcess();
+	auto semp = MakeObject<Semaphore>(0);
+	auto mutex = MakeObject<Mutex>();
+	proc->AddThread([&]
+	{
+		while (true)
+		{
+			Locker<Mutex> locker(mutex);
+			g_Logger->PutChar('1');
+
+			semp->Take(1);
+
+			g_Logger->PutChar('0');
+
+			semp->Take(1);
+		}
+	}, 1, 512);
+
+	proc->AddThread([&]
+	{
+		while (true)
+		{
+			for (size_t i = 0; i < 100; i++)
+				ArchHaltProcessor();
+			semp->Give(1);
+		}
+	}, 1, 512);
+
 	while (1)
 		ArchHaltProcessor();
 }
 
 void App::Start()
 {
-	auto green = dc_->CreateOffscreenSurface(ColorFormat::B5G6R5_UNORM, { 10,10 });
-	dc_->Clear(*green, { {}, green->GetPixelSize() }, { 0,1,0 });
-	dc_->Clear(*primarySurface_, { {}, primarySurface_->GetPixelSize() }, { 1, 0, 0 });
+	//auto green = dc_->CreateOffscreenSurface(ColorFormat::B5G6R5_UNORM, { 10,10 });
+	//dc_->Clear(*green, { {}, green->GetPixelSize() }, { 0,1,0 });
+	//dc_->Clear(*primarySurface_, { {}, primarySurface_->GetPixelSize() }, { 1, 0, 0 });
 	//dc_->CopySubresource(*green, *primarySurface_, { {}, green->GetPixelSize() }, { 0,0 });
 }

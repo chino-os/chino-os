@@ -7,13 +7,14 @@
 using namespace Chino;
 using namespace Chino::Threading;
 
-void Waitable::WaitOne()
+void Waitable::WaitOne(std::optional<std::chrono::milliseconds> timeout)
 {
 	auto it = g_ProcessMgr->DetachCurrentThread();
 	if (std::find(waitingThreads_.begin(), waitingThreads_.end(), it) == waitingThreads_.end())
-	{
 		waitingThreads_.emplace_back(it);
-	}
+
+	if (timeout)
+		g_ProcessMgr->DelayThread(it, timeout.value());
 }
 
 void Waitable::NotifyOne()
@@ -46,7 +47,9 @@ Semaphore::Semaphore(size_t initialCount)
 
 void Semaphore::Take(size_t count)
 {
-	while (count)
+	kassert(count);
+
+	while (true)
 	{
 		kernel_critical kc;
 		auto expected = count_.load(std::memory_order_relaxed);
@@ -58,6 +61,60 @@ void Semaphore::Take(size_t count)
 		{
 			if (count_.compare_exchange_strong(expected, expected - count, std::memory_order_relaxed))
 				break;
+		}
+	}
+}
+
+bool Semaphore::TryTake(size_t count, std::optional<std::chrono::milliseconds> timeout)
+{
+	kassert(count);
+
+	if (!timeout)
+	{
+		kernel_critical kc;
+		auto expected = count_.load(std::memory_order_relaxed);
+		if (expected < count)
+		{
+			return false;
+		}
+		else
+		{
+			if (count_.compare_exchange_strong(expected, expected - count, std::memory_order_relaxed))
+				return true;
+			return false;
+		}
+	}
+	else
+	{
+		bool first = true;
+		while (true)
+		{
+			kernel_critical kc;
+			auto expected = count_.load(std::memory_order_relaxed);
+			if (expected < count)
+			{
+				if (first)
+				{
+					first = false;
+					WaitOne(timeout);
+				}
+				else
+				{
+					if (g_ProcessMgr->GetCurrentThread()->GetWeakupReason() == ThreadWakeupReason::Timeout)
+					{
+						return false;
+					}
+					else
+					{
+						WaitOne();
+					}
+				}
+			}
+			else
+			{
+				if (count_.compare_exchange_strong(expected, expected - count, std::memory_order_relaxed))
+					return true;
+			}
 		}
 	}
 }
@@ -101,6 +158,54 @@ void Mutex::Give()
 	kernel_critical kc;
 	avail_.store(true, std::memory_order_relaxed);
 	NotifyOne();
+}
+
+RecursiveMutex::RecursiveMutex()
+	:avail_(true), thread_(nullptr), depth_(0)
+{
+
+}
+
+size_t RecursiveMutex::Take()
+{
+	auto cntThread = g_ProcessMgr->GetCurrentThread().Get();
+	if (thread_.load(std::memory_order_acquire) != cntThread)
+	{
+		while (true)
+		{
+			kernel_critical kc;
+			auto expected = avail_.load(std::memory_order_relaxed);
+			if (!expected)
+			{
+				WaitOne();
+			}
+			else
+			{
+				if (avail_.compare_exchange_strong(expected, false, std::memory_order_relaxed))
+				{
+					thread_.store(cntThread, std::memory_order_release);
+					break;
+				}
+			}
+		}
+	}
+
+	return depth_++;
+}
+
+size_t RecursiveMutex::Give()
+{
+	auto cntThread = g_ProcessMgr->GetCurrentThread().Get();
+	kassert(thread_.load(std::memory_order_acquire) == cntThread);
+	auto depth = depth_--;
+	if (depth == 1)
+	{
+		kernel_critical kc;
+		avail_.store(true, std::memory_order_relaxed);
+		NotifyOne();
+	}
+
+	return depth;
 }
 
 Event::Event(bool initialState, bool autoReset)

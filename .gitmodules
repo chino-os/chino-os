@@ -4,3 +4,6 @@
 [submodule "thirdparty/gnu-efi"]
 	path = thirdparty/gnu-efi
 	url = git://git.code.sf.net/p/gnu-efi/code
+[submodule "thirdparty/lwip"]
+	path = thirdparty/lwip
+	url = https://github.com/chino-os/lwip.git

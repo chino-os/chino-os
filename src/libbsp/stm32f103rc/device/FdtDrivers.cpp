@@ -17,6 +17,7 @@
 #include <libdriver/devicetree/adi/sensor/adxl345.hpp>
 #include <libdriver/devicetree/ilitek/display/lcd/ili9486.hpp>
 #include <libdriver/devicetree/gd/storage/flash/gd25q128.hpp>
+#include <libdriver/devicetree/microchip/network/ethernet/enc28j60.hpp>
 
 using namespace Chino::Device;
 
@@ -47,5 +48,6 @@ const FDTDriverDescriptor* Chino::Device::g_FDTDrivers[] =
 	REF_FDT_DRIVER_DESC(ADXL345Driver),
 	REF_FDT_DRIVER_DESC(ILI9486Driver),
 	REF_FDT_DRIVER_DESC(GD25Q128Driver),
+	REF_FDT_DRIVER_DESC(ENC28J60Driver),
 	nullptr
 };

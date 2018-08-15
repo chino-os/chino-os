@@ -27,10 +27,17 @@ namespace Chino
 			virtual void TransferSequential(BufferList<const uint8_t> writeBufferList, BufferList<uint8_t> readBufferList) = 0;
 		};
 
+		struct ChipSelectPin
+		{
+			virtual void Activate() = 0;
+			virtual void Deactivate() = 0;
+		};
+
 		class SpiController : public Device
 		{
 		public:
 			virtual ObjectAccessor<SpiDevice> OpenDevice(uint32_t chipSelectMask, SpiMode mode, uint32_t dataBitLength, ObjectAccess access) = 0;
+			virtual ObjectAccessor<SpiDevice> OpenDevice(ChipSelectPin& csPin, SpiMode mode, uint32_t dataBitLength, ObjectAccess access) = 0;
 		};
 	}
 }

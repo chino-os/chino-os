@@ -7,6 +7,7 @@
 #include <atomic>
 #include "../utils.hpp"
 #include "ProcessManager.hpp"
+#include <optional>
 
 namespace Chino
 {
@@ -17,7 +18,7 @@ namespace Chino
 		public:
 
 		protected:
-			void WaitOne();
+			void WaitOne(std::optional<std::chrono::milliseconds> timeout = std::nullopt);
 
 			void NotifyOne();
 			void NotifyAll();
@@ -31,6 +32,7 @@ namespace Chino
 			Semaphore(size_t initialCount);
 
 			void Take(size_t count);
+			bool TryTake(size_t count, std::optional<std::chrono::milliseconds> timeout = std::nullopt);
 			void Give(size_t count);
 		private:
 			std::atomic<size_t> count_;
@@ -45,6 +47,19 @@ namespace Chino
 			void Give();
 		private:
 			std::atomic<bool> avail_;
+		};
+
+		class RecursiveMutex : public Waitable
+		{
+		public:
+			RecursiveMutex();
+
+			size_t Take();
+			size_t Give();
+		private:
+			std::atomic<bool> avail_;
+			std::atomic<Thread*> thread_;
+			std::atomic<size_t> depth_;
 		};
 
 		class Event : public Waitable

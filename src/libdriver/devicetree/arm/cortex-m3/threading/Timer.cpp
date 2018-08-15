@@ -25,7 +25,7 @@ using namespace Chino::Threading;
 #define portNVIC_PENDSV_PRI					( ( ( uint32_t ) configKERNEL_INTERRUPT_PRIORITY ) << 16UL )
 #define portNVIC_SYSTICK_PRI				( ( ( uint32_t ) configKERNEL_INTERRUPT_PRIORITY ) << 24UL )
 
-#define configCPU_CLOCK_HZ 12000000
+#define configCPU_CLOCK_HZ 72000000
 #define configTICK_RATE_HZ 10
 
 #define configSYSTICK_CLOCK_HZ configCPU_CLOCK_HZ
@@ -59,6 +59,11 @@ void Chino::Threading::BSPSleepMs(uint32_t ms)
 void Chino::Threading::BSPYield()
 {
 	portNVIC_INT_CTRL_REG |= portNVIC_PENDSVSET_BIT;
+}
+
+size_t Chino::Threading::BSPMsToTicks(size_t ms)
+{
+	return configTICK_RATE_HZ * ms / 1000;
 }
 
 extern "C" void SysTick_Handler()

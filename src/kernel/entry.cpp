@@ -16,9 +16,9 @@ using namespace Chino;
 
 StaticHolder<Diagnostic::KernelLogger> g_Logger;
 StaticHolder<Memory::MemoryManager> g_MemoryMgr;
+StaticHolder<ObjectManager> g_ObjectMgr;
 StaticHolder<Threading::ProcessManager> g_ProcessMgr;
 StaticHolder<Device::DeviceMananger> g_DeviceMgr;
-StaticHolder<ObjectManager> g_ObjectMgr;
 
 extern "C"
 {
@@ -37,6 +37,7 @@ extern "C" void Kernel_Main(const BootParameters* pParams)
 	atexit(__libc_fini_array);
 	__libc_init_array();
 
+
 	g_MemoryMgr.construct();
 
 	g_ObjectMgr.construct();
@@ -44,7 +45,7 @@ extern "C" void Kernel_Main(const BootParameters* pParams)
 	g_DeviceMgr.construct();
 
 #if 1
-	g_ProcessMgr->CreateProcess("System", 0, [&] {SystemStartup(params); });
+	g_ProcessMgr->CreateProcess("System", 1, [&] {SystemStartup(params); });
 	g_ProcessMgr->StartScheduler();
 
 	while (1)

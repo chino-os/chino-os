@@ -92,16 +92,13 @@ public:
 		LCD_WriteCmd(reg);
 	
 		auto src = span.data();
-		for (size_t y = 0; y < surface.Rect.GetSize().Width; y++)
+		for (size_t y = 0; y < surface.Rect.GetSize().Height; y++)
 		{ 
-			for (size_t x = 0; x < surface.Rect.GetSize().Height; x++)
+			for (size_t x = 0; x < surface.Rect.GetSize().Width; x++)
 				LCD_WriteData(src[x]);
 	
-			src += y * surface.Stride / 2;
+			src += surface.Stride / 2;
 		}
-	
-		for (auto data : span)
-			LCD_WriteData(data);
 	}
 
 	virtual void Fill(uint16_t reg, uint16_t value, size_t count)

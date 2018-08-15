@@ -69,6 +69,9 @@ public:
 		{
 			stride_ = data.Stride;
 			data_ = data.Data;
+
+			auto bytes = stride_ * size.Height;
+			kassert(bytes == data_.size_bytes());
 		}
 		else
 		{

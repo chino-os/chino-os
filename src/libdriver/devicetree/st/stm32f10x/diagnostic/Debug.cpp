@@ -10,6 +10,7 @@
 #include <stm32f10x_i2c.h>
 #include <stm32f10x_spi.h>
 #include <stm32f10x_fsmc.h>
+#include <stm32f10x_tim.h>
 
 using namespace Chino;
 
@@ -66,6 +67,11 @@ int uart_putc(int ch)
 	while (USART_GetFlagStatus(USART1, USART_FLAG_TC) != SET);
 
 	return(ch);
+}
+
+static void delay_ms(int ms)
+{
+	Threading::BSPSleepMs(ms * 6);
 }
 
 void Chino::Diagnostic::BSPInitializeDebug(const BootParameters& bootParams)

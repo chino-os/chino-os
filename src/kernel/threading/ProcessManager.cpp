@@ -16,6 +16,8 @@ using namespace Chino::Threading;
 std::atomic<size_t> kernel_critical::coreTaken_(0);
 std::atomic<size_t> kernel_critical::depth_(0);
 
+#define IdleThreadStackSize 512
+
 static void OnThreadExit();
 static void IdleThreadMain();
 
@@ -25,25 +27,29 @@ ProcessManager::ProcessManager()
 
 }
 
-ObjectPtr<Process> ProcessManager::CreateProcess(std::string_view name, uint32_t mainThreadPriority, std::function<void()> threadMain)
+ObjectPtr<Process> ProcessManager::CreateProcess(std::string_view name, uint32_t mainThreadPriority, std::function<void()> threadMain, size_t mainThreadStackSize)
 {
 	auto it = _processes.emplace_back(MakeObject<Process>(name));
-	it->AddThread(std::move(threadMain), mainThreadPriority);
+	it->AddThread(std::move(threadMain), mainThreadPriority, mainThreadStackSize);
 	return it;
 }
 
 void ProcessManager::AddReadyThread(ObjectPtr<Thread> thread)
 {
-	auto priority = thread->GetPriority();
-	kassert(priority < readyThreads_.size());
-	readyThreads_[priority].emplace_back(thread);
-	kassert(!readyThreads_[priority].empty());
+	if (thread->state_ != ThreadState::Ready)
+	{
+		auto priority = thread->GetPriority();
+		kassert(priority < readyThreads_.size());
+		readyThreads_[priority].emplace_back(thread);
+		thread->state_ = ThreadState::Ready;
+		kassert(!readyThreads_[priority].empty());
+	}
 }
 
 void ProcessManager::StartScheduler()
 {
 	kassert(!idleProcess_);
-	idleProcess_ = CreateProcess("System Idle", 0, IdleThreadMain);
+	idleProcess_ = CreateProcess("System Idle", 0, IdleThreadMain, IdleThreadStackSize);
 
 	BSPSetupSchedulerTimer();
 	ArchHaltProcessor();
@@ -73,12 +79,33 @@ thread_it ProcessManager::SelectNextSwitchToThread()
 	}
 
 	kassert(threadSwitchTo.good());
+	(*threadSwitchTo)->ValidateContext();
 	return threadSwitchTo;
 }
 
 bool ProcessManager::IncrementTick()
 {
 	tickCount_++;
+	while (!delayedThreads_.empty())
+	{
+		auto& top = delayedThreads_.top();
+		if (tickCount_ >= top.Tick)
+		{
+			auto thread = top.Thread;
+			if (top.DelayToken == (*thread)->delayToken_)
+			{
+				(*thread)->weakupReason_ = ThreadWakeupReason::Timeout;
+				AttachReadyThread(thread);
+			}
+
+			delayedThreads_.pop();
+		}
+		else
+		{
+			break;
+		}
+	}
+
 	auto nextThread = SelectNextSwitchToThread();
 	nextThread_ = nextThread;
 	return nextThread != runningThread_;
@@ -103,6 +130,8 @@ thread_it ProcessManager::DetachCurrentThread()
 	assert(thread.good());
 	auto priority = (*thread)->GetPriority();
 	readyThreads_[priority].detach(thread);
+	(*thread)->state_ = ThreadState::Blocked;
+	(*thread)->weakupReason_ = ThreadWakeupReason::None;
 	nextThread_ = SelectNextSwitchToThread();
 	BSPYield();
 	return thread;
@@ -111,16 +140,33 @@ thread_it ProcessManager::DetachCurrentThread()
 void ProcessManager::AttachReadyThread(thread_it thread)
 {
 	assert(thread.good());
-	auto priority = (*thread)->GetPriority();
-	readyThreads_[priority].attach(thread);
-
-	if (!runningThread_.good() || priority > (*runningThread_)->GetPriority())
+	if ((*thread)->state_ != ThreadState::Ready)
 	{
-		auto nextThread = SelectNextSwitchToThread();
-		nextThread_ = nextThread;
-		if (nextThread != runningThread_)
-			BSPYield();
+		auto priority = (*thread)->GetPriority();
+		readyThreads_[priority].attach(thread);
+		(*thread)->state_ = ThreadState::Ready;
+
+		if (!runningThread_.good() || priority >= (*runningThread_)->GetPriority())
+		{
+			auto nextThread = SelectNextSwitchToThread();
+			nextThread_ = nextThread;
+			if (nextThread != runningThread_)
+				BSPYield();
+		}
 	}
+}
+
+void ProcessManager::DelayThread(thread_it thread, std::chrono::milliseconds timeout)
+{
+	assert(thread.good());
+	auto ticks = BSPMsToTicks(timeout.count());
+	delayedThreads_.emplace(tickCount_ + ticks, thread, ++(*thread)->delayToken_);
+}
+
+void ProcessManager::SleepCurrentThread(std::chrono::milliseconds timeout)
+{
+	kernel_critical kc;
+	DelayThread(DetachCurrentThread(), timeout);
 }
 
 Process::Process(std::string_view name)
@@ -136,7 +182,8 @@ ObjectPtr<Thread> Process::AddThread(std::function<void()> threadMain, uint32_t 
 }
 
 Thread::Thread(ObjectPtr<Process> process, std::function<void()> threadMain, uint32_t priority, size_t stackSize)
-	:process_(process), priority_(priority), threadContext_({}), threadMain_(std::move(threadMain))
+	:process_(process), priority_(priority), threadContext_({}), threadMain_(std::move(threadMain)), state_(ThreadState::Invalid),
+	stackSize_(stackSize), weakupReason_(ThreadWakeupReason::None), delayToken_(0)
 {
 	kassert(threadMain_ && priority <= MAX_THREAD_PRIORITY);
 	kassert(stackSize && stackSize % sizeof(uintptr_t) == 0);
@@ -149,6 +196,12 @@ void Thread::ThreadMainThunk(Thread* thread)
 {
 	kassert(thread && thread->threadMain_);
 	thread->threadMain_();
+}
+
+void Thread::ValidateContext()
+{
+	if (!ArchValidateThreadContext(&GetContext(), uintptr_t(stack_.get()) + stackSize_, uintptr_t(stack_.get())))
+		kassert(!"Stack overflow.");
 }
 
 static void OnThreadExit()

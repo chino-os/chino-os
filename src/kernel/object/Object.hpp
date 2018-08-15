@@ -92,6 +92,11 @@ namespace Chino
 		{
 		}
 
+		ObjectPtr(std::in_place_t, T* obj) noexcept
+			: obj_(obj)
+		{
+		}
+
 		ObjectPtr(T* obj) noexcept
 			:obj_(obj)
 		{

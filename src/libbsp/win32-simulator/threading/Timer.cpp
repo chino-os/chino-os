@@ -11,6 +11,8 @@ using namespace Chino::Threading;
 
 #define portINITIAL_RFLAGS	0x206u
 
+#define configTICK_RATE_HZ 10
+
 static std::atomic<bool> _switchQueued = false;
 static HANDLE _timerThread, _timer, _workerThread, _wfiEvent;
 
@@ -41,6 +43,11 @@ void Chino::Threading::BSPSleepMs(uint32_t ms)
 void Chino::Threading::BSPYield()
 {
 	ArchQueueContextSwitch();
+}
+
+size_t Chino::Threading::BSPMsToTicks(size_t ms)
+{
+	return configTICK_RATE_HZ * ms / 1000;
 }
 
 struct InterruptService
@@ -169,6 +176,11 @@ extern "C"
 		context->rsp = uintptr_t(stack);
 	}
 
+	bool ArchValidateThreadContext(ThreadContext_Arch* context, uintptr_t stackTop, uintptr_t stackBottom)
+	{
+		return context->rsp <= stackTop && context->rsp >= stackBottom;
+	}
+
 	void ArchDisableInterrupt()
 	{
 		CancelWaitableTimer(_timer);
@@ -178,7 +190,7 @@ extern "C"
 	{
 		LARGE_INTEGER dueTime;
 		dueTime.QuadPart = 0;
-		SetWaitableTimer(_timer, &dueTime, 10, SchedulerTimerCallback, nullptr, FALSE);
+		SetWaitableTimer(_timer, &dueTime, 1000 / configTICK_RATE_HZ, SchedulerTimerCallback, nullptr, FALSE);
 	}
 
 	void ArchHaltProcessor()

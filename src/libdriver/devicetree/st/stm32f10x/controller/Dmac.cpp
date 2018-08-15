@@ -254,8 +254,9 @@ class Stm32DmaChannel : public DmaChannel
 	{
 		DmaTransferOptions Options;
 		ObjectPtr<AsyncActionCompletionEvent> CompletionEvent;
-		Chino::Device::details::BufferListSelect<const volatile uint8_t> RestSource;
-		Chino::Device::details::BufferListSelect<volatile uint8_t> RestDest;
+		DmaSessionHandler* Handler;
+		Chino::details::BufferListSelect<const volatile uint8_t> RestSource;
+		Chino::details::BufferListSelect<volatile uint8_t> RestDest;
 		size_t SourceByteWidth, DestByteWidth;
 	};
 public:
@@ -287,7 +288,7 @@ public:
 		}
 	}
 
-	virtual void ConfigureImpl(DmaTransmition type, BufferList<const volatile uint8_t> source, BufferList<volatile uint8_t> dest, size_t sourceByteWidth, size_t destByteWidth) override
+	virtual void ConfigureImpl(DmaTransmition type, BufferList<const volatile uint8_t> source, BufferList<volatile uint8_t> dest, size_t sourceByteWidth, size_t destByteWidth, size_t count, DmaSessionHandler* handler) override
 	{
 		auto srcSize = source.GetTotalSize() / sourceByteWidth;
 		auto destSize = dest.GetTotalSize() / destByteWidth;
@@ -307,16 +308,22 @@ public:
 		options.DestInc = destSize != 1;
 		options.SourceByteWidth = sourceByteWidth;
 		options.DestByteWidth = destByteWidth;
+		options.Count = count;
 
 		auto event = MakeObject<AsyncActionCompletionEvent>();
-		currentSession_ = { options, event, source.Select(), dest.Select(), sourceByteWidth, destByteWidth };
+		currentSession_ = { options, event, handler, source.Select(), dest.Select(), sourceByteWidth, destByteWidth };
 		StartNextTransmition();
 	}
 
-	virtual ObjectPtr<IAsyncAction> StartAsync()
+	virtual ObjectPtr<IAsyncAction> StartAsync() override
 	{
 		auto event = currentSession_->CompletionEvent;
-		dmac_->StartAsync(channelId_);
+		{
+			kernel_critical kc;
+			if (currentSession_->Handler)
+				currentSession_->Handler->OnStart();
+			dmac_->StartAsync(channelId_);
+		}
 		return event;
 	}
 private:
@@ -352,6 +359,8 @@ private:
 			if (disable)
 			{
 				dmac->Channel[channelId].CCR.EN = 0;
+				if (currentSession_->Handler)
+					currentSession_->Handler->OnStop();
 				currentSession_.reset();
 			}
 		}
@@ -397,7 +406,7 @@ private:
 
 			src = session.RestSource.First();
 			dest = session.RestDest.First();
-			options.Count = 1;
+			if (!options.Count) options.Count = 1;
 			src = src.subspan(0, session.SourceByteWidth);
 			dest = dest.subspan(0, session.DestByteWidth);
 
@@ -453,6 +462,12 @@ public:
 				break;
 			case DmaRequestLine::I2C1_RX:
 				channelId = 6;
+				break;
+			case DmaRequestLine::SPI2_TX:
+				channelId = 4;
+				break;
+			case DmaRequestLine::SPI2_RX:
+				channelId = 3;
 				break;
 			default:
 				throw std::invalid_argument("Invalid peripheral.");

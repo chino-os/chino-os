@@ -135,6 +135,11 @@ void Chino::Threading::BSPYield()
 	__asm volatile(portYIELD_INTERRUPT);
 }
 
+size_t Chino::Threading::BSPMsToTicks(size_t ms)
+{
+	return configTICK_RATE_HZ * ms / 1000;
+}
+
 static void prvSetInterruptGate(uint8_t number, ISR_Handler_t handler, uint8_t flags)
 {
 	uint16_t codeSegment;

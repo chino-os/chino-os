@@ -39,4 +39,9 @@ extern "C"
 
 		context->sp = uintptr_t(stack);
 	}
+
+	bool ArchValidateThreadContext(ThreadContext_Arch* context, uintptr_t stackTop, uintptr_t stackBottom)
+	{
+		return context->sp <= stackTop && context->sp >= stackBottom;
+	}
 }

@@ -11,6 +11,8 @@
 #include <string>
 #include <array>
 #include <atomic>
+#include <queue>
+#include <chrono>
 #include "../object/Object.hpp"
 
 namespace Chino
@@ -18,6 +20,22 @@ namespace Chino
 	namespace Threading
 	{
 		class Process;
+		class ProcessManager;
+
+		enum class ThreadState
+		{
+			Invalid,
+			Ready,
+			Blocked,
+			Running
+		};
+
+		enum class ThreadWakeupReason
+		{
+			None,
+			Signal,
+			Timeout
+		};
 
 		class Thread : public Object, public FreeObjectAccess
 		{
@@ -27,14 +45,22 @@ namespace Chino
 			uint32_t GetPriority() const noexcept { return priority_; }
 			ThreadContext_Arch& GetContext() noexcept { return threadContext_; }
 			ObjectPtr<Process> GetProcess() noexcept { return process_; }
+			ThreadWakeupReason GetWeakupReason() const noexcept { return weakupReason_; }
+			void ValidateContext();
 		private:
 			static void ThreadMainThunk(Thread* thread);
 		private:
+			friend class ProcessManager;
+
 			ObjectPtr<Process> process_;
 			std::function<void()> threadMain_;
 			ThreadContext_Arch threadContext_;
 			uint32_t priority_;
 			std::unique_ptr<uint8_t[]> stack_;
+			size_t stackSize_;
+			ThreadState state_;
+			ThreadWakeupReason weakupReason_;
+			size_t delayToken_;
 		};
 
 		class Process : public Object, public FreeObjectAccess
@@ -52,10 +78,24 @@ namespace Chino
 
 		class ProcessManager
 		{
+			struct DelayedEntry
+			{
+				size_t Tick;
+				thread_it Thread;
+				size_t DelayToken;
+
+				DelayedEntry(size_t tick, thread_it thread, size_t delayToken)
+					:Tick(tick), Thread(thread), DelayToken(delayToken) {}
+
+				bool operator>(const DelayedEntry& other) const noexcept
+				{
+					return Tick > other.Tick;
+				}
+			};
 		public:
 			ProcessManager();
 
-			ObjectPtr<Process> CreateProcess(std::string_view name, uint32_t mainThreadPriority, std::function<void()> threadMain);
+			ObjectPtr<Process> CreateProcess(std::string_view name, uint32_t mainThreadPriority, std::function<void()> threadMain, size_t mainThreadStackSize = DEFAULT_THREAD_STACK_SIZE);
 			void AddReadyThread(ObjectPtr<Thread> thread);
 			void StartScheduler();
 			bool IncrementTick();
@@ -63,12 +103,15 @@ namespace Chino
 
 			ObjectPtr<Thread> GetCurrentThread();
 			thread_it DetachCurrentThread();
+			void SleepCurrentThread(std::chrono::milliseconds timeout);
 			void AttachReadyThread(thread_it thread);
+			void DelayThread(thread_it thread, std::chrono::milliseconds timeout);
 		private:
 			thread_it SelectNextSwitchToThread();
 		private:
 			std::vector<ObjectPtr<Process>> _processes;
 			std::array<Chino::list<ObjectPtr<Thread>>, MAX_THREAD_PRIORITY + 1> readyThreads_;
+			std::priority_queue<DelayedEntry, std::vector<DelayedEntry>, std::greater<DelayedEntry>> delayedThreads_;
 			thread_it runningThread_;
 			thread_it nextThread_;
 			size_t tickCount_;
