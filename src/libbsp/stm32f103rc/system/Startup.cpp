@@ -16,12 +16,14 @@
 #include <kernel/device/sensor/Accelerometer.hpp>
 #include <kernel/device/network/Ethernet.hpp>
 #include <kernel/graphics/DeviceContext.hpp>
+#include <kernel/network/Socket.hpp>
 #include <chrono>
 
 using namespace Chino;
 using namespace Chino::Device;
 using namespace Chino::Graphics;
 using namespace Chino::Threading;
+using namespace Chino::Network;
 
 using namespace std::chrono_literals;
 
@@ -136,4 +138,26 @@ void App::Start()
 	eth0->SetAsDefault();
 	eth0->Setup();
 	g_NetworkMgr->Run();
+
+	auto bindAddr = std::make_shared<IPEndPoint>(IPAddress::IPv4Any, 80);
+	auto socket = MakeObject<Socket>(AddressFamily::IPv4, SocketType::Stream, ProtocolType::Tcp);
+	socket->Bind(bindAddr);
+	socket->Listen(1);
+
+	auto client = socket->Accept();
+	while (true)
+	{
+		const uint8_t text[] = "hello\n";
+		gsl::span<const uint8_t> buffers[] = { {text,6} };
+	
+		try
+		{
+			client->Send({ buffers });
+			g_ProcessMgr->SleepCurrentThread(1s);
+		}
+		catch (...)
+		{
+			break;
+		}
+	}
 }

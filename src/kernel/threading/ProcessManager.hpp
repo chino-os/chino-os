@@ -46,6 +46,7 @@ namespace Chino
 			ThreadContext_Arch& GetContext() noexcept { return threadContext_; }
 			ObjectPtr<Process> GetProcess() noexcept { return process_; }
 			ThreadWakeupReason GetWeakupReason() const noexcept { return weakupReason_; }
+			void ValidateContext();
 		private:
 			static void ThreadMainThunk(Thread* thread);
 		private:
@@ -56,6 +57,7 @@ namespace Chino
 			ThreadContext_Arch threadContext_;
 			uint32_t priority_;
 			std::unique_ptr<uint8_t[]> stack_;
+			size_t stackSize_;
 			ThreadState state_;
 			ThreadWakeupReason weakupReason_;
 			size_t delayToken_;

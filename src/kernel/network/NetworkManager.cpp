@@ -17,7 +17,6 @@
 #include <lwip/ip4_addr.h>
 #include <netif/ethernet.h>
 #include <lwip/priv/tcp_priv.h>
-#include "../threading/timer.h"
 #include "../device/network/Ethernet.hpp"
 #include "../threading/ThreadSynchronizer.hpp"
 
@@ -366,7 +365,7 @@ void NetworkManager::Run()
 
 			g_ProcessMgr->SleepCurrentThread(1ms);
 		}
-	}, 1, 1024);
+	}, 1, 2048);
 }
 
 ObjectPtr<NetworkInterface> NetworkManager::InstallNetworkDevice(ObjectAccessor<EthernetController> device)

@@ -166,7 +166,7 @@ class Stm32SpiController : public SpiController, public FreeObjectAccess
 	};
 public:
 	Stm32SpiController(const FDTDevice& fdt)
-		:fdt_(fdt)
+		:fdt_(fdt), mutex_(MakeObject<Mutex>())
 	{
 		auto regProp = fdt.GetProperty("reg");
 		kassert(regProp.has_value());
@@ -188,14 +188,18 @@ public:
 
 	void Write(Stm32SpiDevice& device, BufferList<const uint8_t> bufferList)
 	{
-		CSPin cs(device.csPin_);
-		spi_->CR1.SPE = 1;
-		SetupDevice(device);
+		Locker<Mutex> locker(mutex_);
 
-		WriteData(device, bufferList, cs);
+		{
+			CSPin cs(device.csPin_);
+			spi_->CR1.SPE = 1;
+			SetupDevice(device);
 
-		while (spi_->SR.BSY);
-		spi_->CR1.SPE = 0;
+			WriteData(device, bufferList, cs);
+
+			while (spi_->SR.BSY);
+			spi_->CR1.SPE = 0;
+		}
 	}
 
 	void TransferFullDuplex(Stm32SpiDevice& device, BufferList<const uint8_t> writeBufferList, BufferList<uint8_t> readBufferList)
@@ -205,16 +209,20 @@ public:
 
 	void TransferSequential(Stm32SpiDevice& device, BufferList<const uint8_t> writeBufferList, BufferList<uint8_t> readBufferList)
 	{
-		CSPin cs(device.csPin_);
-		spi_->CR1.SPE = 1;
-		SetupDevice(device);
+		Locker<Mutex> locker(mutex_);
 
-		WriteData(device, writeBufferList, cs);
-		if (!readBufferList.IsEmpty())
-			ReadData(device, readBufferList, cs);
+		{
+			CSPin cs(device.csPin_);
+			spi_->CR1.SPE = 1;
+			SetupDevice(device);
 
-		while (spi_->SR.BSY);
-		spi_->CR1.SPE = 0;
+			WriteData(device, writeBufferList, cs);
+			if (!readBufferList.IsEmpty())
+				ReadData(device, readBufferList, cs);
+
+			while (spi_->SR.BSY);
+			spi_->CR1.SPE = 0;
+		}
 	}
 protected:
 	virtual void OnFirstOpen() override
@@ -455,6 +463,7 @@ private:
 	SPI_TypeDef* spi_;
 	RccPeriph periph_;
 	ObjectAccessor<PortPin> nssPin_, sckPin_, misoPin_, mosiPin_;
+	ObjectPtr<Mutex> mutex_;
 };
 
 SpiDriver::SpiDriver(const FDTDevice& device)

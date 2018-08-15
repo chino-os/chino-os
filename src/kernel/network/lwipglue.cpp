@@ -50,9 +50,15 @@ extern "C"
 		return ERR_OK;
 	}
 
+	void sys_mbox_free(sys_mbox_t *mbox)
+	{
+		auto sysmbox = reinterpret_cast<Mailslot*>(*mbox);
+		delete sysmbox;
+		*mbox = nullptr;
+	}
+
 	err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg)
 	{
-		//g_Logger->PutFormat("POST: %p\n", msg);
 		auto sysmbox = reinterpret_cast<Mailslot*>(*mbox);
 		gsl::span<const uint8_t> message = { reinterpret_cast<const uint8_t*>(&msg), sizeof(msg) };
 		sysmbox->Send(message);
@@ -61,7 +67,6 @@ extern "C"
 
 	void sys_mbox_post(sys_mbox_t *mbox, void *msg)
 	{
-		//g_Logger->PutFormat("POST: %p\n", msg);
 		auto sysmbox = reinterpret_cast<Mailslot*>(*mbox);
 		gsl::span<const uint8_t> message = { reinterpret_cast<const uint8_t*>(&msg), sizeof(msg) };
 		sysmbox->Send(message);
@@ -69,7 +74,6 @@ extern "C"
 
 	err_t sys_mbox_trypost_fromisr(sys_mbox_t *mbox, void *msg)
 	{
-		//g_Logger->PutFormat("POST: %p\n", msg);
 		auto sysmbox = reinterpret_cast<Mailslot*>(*mbox);
 		gsl::span<const uint8_t> message = { reinterpret_cast<const uint8_t*>(&msg), sizeof(msg) };
 		sysmbox->Send(message);
@@ -83,21 +87,32 @@ extern "C"
 		if (!timeout)
 		{
 			sysmbox->Receive(size, { reinterpret_cast<uint8_t*>(msg), sizeof(*msg) });
-			//g_Logger->PutFormat("RECV: %p\n", *msg);
 			return ERR_OK;
 		}
 		else
 		{
 			if (sysmbox->TryReceive(size, { reinterpret_cast<uint8_t*>(msg), sizeof(*msg) }, std::chrono::milliseconds(timeout)))
 			{
-				//g_Logger->PutFormat("RECV: %p\n", *msg);
 				return ERR_OK;
 			}
 			else
 			{
-				//g_Logger->PutString("TIMEOUT\n");
 				return SYS_ARCH_TIMEOUT;
 			}
+		}
+	}
+
+	u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
+	{
+		auto sysmbox = reinterpret_cast<Mailslot*>(*mbox);
+		size_t size;
+		if (sysmbox->TryReceive(size, { reinterpret_cast<uint8_t*>(msg), sizeof(*msg) }))
+		{
+			return ERR_OK;
+		}
+		else
+		{
+			return SYS_MBOX_EMPTY;
 		}
 	}
 
@@ -121,11 +136,51 @@ extern "C"
 
 	sys_thread_t sys_thread_new(const char *name, lwip_thread_fn thread, void *arg, int stacksize, int prio)
 	{
-		g_Logger->PutFormat("$d\n", stacksize);
 		auto systhread = g_ProcessMgr->GetCurrentThread()->GetProcess()->AddThread([=]
 		{
 			thread(arg);
 		}, prio, stacksize);
 		return reinterpret_cast<sys_thread_t>(systhread.Get());
+	}
+
+	void sys_sem_signal(sys_sem_t *sem)
+	{
+		auto syssem = reinterpret_cast<Semaphore*>(*sem);
+		syssem->Give(1);
+	}
+
+	err_t sys_sem_new(sys_sem_t *sem, u8_t count)
+	{
+		*sem = reinterpret_cast<sys_sem_t>(new Semaphore(count));
+		return ERR_OK;
+	}
+
+	void sys_sem_free(sys_sem_t *sem)
+	{
+		auto syssem = reinterpret_cast<Semaphore*>(*sem);
+		delete syssem;
+		*sem = nullptr;
+	}
+
+	u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout)
+	{
+		auto syssem = reinterpret_cast<Semaphore*>(*sem);
+		size_t size;
+		if (!timeout)
+		{
+			syssem->Take(1);
+			return ERR_OK;
+		}
+		else
+		{
+			if (syssem->TryTake(1, std::chrono::milliseconds(timeout)))
+			{
+				return ERR_OK;
+			}
+			else
+			{
+				return SYS_ARCH_TIMEOUT;
+			}
+		}
 	}
 }
