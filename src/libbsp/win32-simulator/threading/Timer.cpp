@@ -176,6 +176,11 @@ extern "C"
 		context->rsp = uintptr_t(stack);
 	}
 
+	bool ArchValidateThreadContext(ThreadContext_Arch* context, uintptr_t stackTop, uintptr_t stackBottom)
+	{
+		return context->rsp <= stackTop && context->rsp >= stackBottom;
+	}
+
 	void ArchDisableInterrupt()
 	{
 		CancelWaitableTimer(_timer);
