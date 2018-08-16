@@ -15,7 +15,7 @@ chino-os
 - Multitasking (6 levels priority, round robin scheduling)
 - Thread synchronization (Mutex, Recurisve Mutex, Semaphore, Event)
 - Inter process communication (Mailslot)
-- Unified driver model (see "Driver Framework")
+- Unified driver model (see [Driver Framework](#driver-framework))
 - Network (LwIP based Socket API)
 
 ## Supported Archs & Boards

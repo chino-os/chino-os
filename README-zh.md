@@ -15,7 +15,7 @@ chino-os
 - 多任务 (6 个优先级， Round robin 调度)
 - 线程同步 (Mutex, Recurisve Mutex, Semaphore, Event)
 - 进程间通信 (Mailslot)
-- 统一的驱动模型 (见“驱动框架”)
+- 统一的驱动模型 (见 [驱动框架](#驱动框架))
 - 网络支持 (基于 LwIP 的 Socket API)
 
 ## 支持的架构与开发板
