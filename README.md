@@ -41,7 +41,7 @@ Chino predefined a set of driver interfaces to provide a unified API layer to ap
 | -             | Flash           | GD25Q128        |
 | Display       | TFT LCD         | ILI9486L        |
 | Network       | Ethernet        | ENC28J60        |
-| Sensor        | Accelerometer   | ADX345          |
+| Sensor        | Accelerometer   | ADXL345         |
 
 ## Build
 
