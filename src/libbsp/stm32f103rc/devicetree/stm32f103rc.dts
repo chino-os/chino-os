@@ -156,6 +156,12 @@
 			device_type = "lcd8080-driver";
 			compatible = "st,stm32f103-lcd8080-driver-fsmc";
 		};
+
+		sdio1: sdio1 {
+			device_type = "sdio";
+			compatible = "st,stm32f103-sdio";
+			reg = <0x40018000 0x400>;
+		};
 	};
 
 	board-peripherals {

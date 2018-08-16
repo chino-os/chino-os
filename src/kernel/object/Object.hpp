@@ -257,6 +257,11 @@ namespace Chino
 			context_ = {};
 		}
 
+		operator bool() const noexcept
+		{
+			return obj_;
+		}
+
 		ObjectAccessor& operator=(ObjectAccessor&& other) noexcept
 		{
 			if (obj_.Get())
