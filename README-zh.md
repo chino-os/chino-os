@@ -12,10 +12,11 @@ chino-os
 
 ## 特性
 
-- 多任务式
-- 动态链接
-- 支持多种架构
-- 支持在 Windows 下的开发与调试
+- 多任务 (6 个优先级， Round robin 调度)
+- 线程同步 (Mutex, Recurisve Mutex, Semaphore, Event)
+- 进程间通信 (Mailslot)
+- 统一的驱动模型 (见“驱动框架”)
+- 网络支持 (基于 LwIP 的 Socket API)
 
 ## 支持的架构与开发板
 
@@ -24,6 +25,23 @@ chino-os
 win-x86_64    | win32-simulator | exe           |
 x86_64		  | pc			    | iso           |
 cortex-m3	  | stm32f103rc     | hex           |
+
+## 驱动框架
+
+Chino 预定义了一组驱动接口，为应用开发者提供了一个统一的 API 层。
+
+类别          | 子类            | 示例驱动         |
+------------- | --------------- | -----------------
+中断控制器     |                 | cortex-m3, nvic |
+IO / 总线     | GPIO            | stm32f10x, gpio |
+-             | I2C				| stm32f10x, i2c  |
+-             | SPI             | stm32f10x, spi  |
+-             | 串行            | stm32f10x, uart |
+存储          | EEPROM          | AT24C02         |
+-             | Flash           | GD25Q128        |
+显示          | TFT LCD         | ILI9486L        |
+网络          | 以太网           | ENC28J60        |
+传感器        | 加速度计         | ADX345          |
 
 ## 构建
 
