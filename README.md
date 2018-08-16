@@ -15,7 +15,7 @@ chino-os
 - Multitasking (6 levels priority, round robin scheduling)
 - Thread synchronization (Mutex, Recurisve Mutex, Semaphore, Event)
 - Inter process communication (Mailslot)
-- Unified driver model (see "Driver Framework")
+- Unified driver model (see [Driver Framework](#driver-framework))
 - Network (LwIP based Socket API)
 
 ## Supported Archs & Boards
@@ -41,7 +41,7 @@ Chino predefined a set of driver interfaces to provide a unified API layer to ap
 | -             | Flash           | GD25Q128        |
 | Display       | TFT LCD         | ILI9486L        |
 | Network       | Ethernet        | ENC28J60        |
-| Sensor        | Accelerometer   | ADX345          |
+| Sensor        | Accelerometer   | ADXL345         |
 
 ## Build
 

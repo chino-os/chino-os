@@ -15,7 +15,7 @@ chino-os
 - 多任务 (6 个优先级， Round robin 调度)
 - 线程同步 (Mutex, Recurisve Mutex, Semaphore, Event)
 - 进程间通信 (Mailslot)
-- 统一的驱动模型 (见“驱动框架”)
+- 统一的驱动模型 (见 [驱动框架](#驱动框架))
 - 网络支持 (基于 LwIP 的 Socket API)
 
 ## 支持的架构与开发板
@@ -41,7 +41,7 @@ Chino 预定义了一组驱动接口，为应用开发者提供了一个统一�
 | -             | Flash           | GD25Q128        |
 | 显示          | TFT LCD         | ILI9486L        |
 | 网络          | 以太网           | ENC28J60        |
-| 传感器        | 加速度计         | ADX345          |
+| 传感器        | 加速度计         | ADXL345          |
 
 ## 构建
 
