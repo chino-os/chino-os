@@ -30,18 +30,18 @@ cortex-m3	  | stm32f103rc     | hex           |
 
 Chino predefined a set of driver interfaces to provide a unified API layer to application developers.
 
-Class         | Subtype         | Example driver  |
-------------- | --------------- | -----------------
-PIC           |                 | cortex-m3, nvic |
-IO / Bus      | GPIO            | stm32f10x, gpio |
--             | I²C				| stm32f10x, i2c  |
--             | SPI             | stm32f10x, spi  |
--             | Serial          | stm32f10x, uart |
-Storage       | EEPROM          | AT24C02         |
--             | Flash           | GD25Q128        |
-Display       | TFT LCD         | ILI9486L        |
-Network       | Ethernet        | ENC28J60        |
-Sensor        | Accelerometer   | ADX345          |
+| Class         | Subtype         | Example driver  |
+| ------------- | --------------- | -----------------
+| PIC           |                 | cortex-m3, nvic |
+| IO / Bus      | GPIO            | stm32f10x, gpio |
+| -             | I²C				| stm32f10x, i2c  |
+| -             | SPI             | stm32f10x, spi  |
+| -             | Serial          | stm32f10x, uart |
+| Storage       | EEPROM          | AT24C02         |
+| -             | Flash           | GD25Q128        |
+| Display       | TFT LCD         | ILI9486L        |
+| Network       | Ethernet        | ENC28J60        |
+| Sensor        | Accelerometer   | ADX345          |
 
 ## Build
 
