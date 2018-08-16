@@ -34,7 +34,7 @@ Chino 预定义了一组驱动接口，为应用开发者提供了一个统一�
 ------------- | --------------- | -----------------
 中断控制器     |                 | cortex-m3, nvic |
 IO / 总线     | GPIO            | stm32f10x, gpio |
--             | I2C				| stm32f10x, i2c  |
+-             | I²C             | stm32f10x, i2c  |
 -             | SPI             | stm32f10x, spi  |
 -             | 串行            | stm32f10x, uart |
 存储          | EEPROM          | AT24C02         |
