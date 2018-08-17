@@ -195,8 +195,8 @@ struct ahb_enable
 	uint32_t CRCEN : 1;			//!< CRC clock enable
 	uint32_t RESV2 : 1;			//!< Reserved
 	uint32_t FSMCEN : 1;		//!< FSMC clock enable
-	uint32_t SDIOEN : 1;		//!< SDIO clock enable
 	uint32_t RESV3 : 1;			//!< Reserved
+	uint32_t SDIOEN : 1;		//!< SDIO clock enable
 	uint32_t RESV4 : 21;		//!< Reserved
 };
 
