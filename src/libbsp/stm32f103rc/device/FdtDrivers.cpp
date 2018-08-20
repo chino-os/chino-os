@@ -18,6 +18,7 @@
 #include <libdriver/devicetree/ilitek/display/lcd/ili9486.hpp>
 #include <libdriver/devicetree/gd/storage/flash/gd25q128.hpp>
 #include <libdriver/devicetree/microchip/network/ethernet/enc28j60.hpp>
+#include <libdriver/devicetree/davicom/network/ethernet/dm9051.hpp>
 
 using namespace Chino::Device;
 
@@ -49,5 +50,6 @@ const FDTDriverDescriptor* Chino::Device::g_FDTDrivers[] =
 	REF_FDT_DRIVER_DESC(ILI9486Driver),
 	REF_FDT_DRIVER_DESC(GD25Q128Driver),
 	REF_FDT_DRIVER_DESC(ENC28J60Driver),
+	REF_FDT_DRIVER_DESC(DM9051Driver),
 	nullptr
 };
