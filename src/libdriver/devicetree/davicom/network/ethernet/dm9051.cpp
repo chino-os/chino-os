@@ -15,7 +15,7 @@ using namespace Chino;
 using namespace Chino::Device;
 using namespace Chino::Threading;
 
-DEFINE_FDT_DRIVER_DESC_1(DM9051Driver, "ethernet-controller", "microchip,enc28j60");
+DEFINE_FDT_DRIVER_DESC_1(DM9051Driver, "ethernet-controller", "davicom,dm9051");
 /* Private typedef -----------------------------------------------------------------------------------------*/
 enum DM9051_PHY_mode
 {
@@ -111,6 +111,7 @@ static struct DM9051_eth DM9051_device;
 #define DM9051_INTR					(0x39)
 #define DM9051_MPCR					(0x55)
 #define DM9051_MRCMDX       (0x70)
+#define DM9051_MRCMDX1      (0x71)
 #define DM9051_MRCMD        (0x72)
 #define DM9051_MRRL         (0x74)
 #define DM9051_MRRH         (0x75)
@@ -276,122 +277,148 @@ public:
 
 	virtual bool IsPacketAvailable() override
 	{
-		return Read(EPKTCNT);
+		//g_Logger->PutFormat("H: %x\n", Read(DM9051_MRCMDX));
+		return (Read(DM9051_MRCMDX) & 0b11) == 0b1;
 	}
 
 	virtual void Reset(const MacAddress& macAddress) override
 	{
-		WriteOp(SOFT_RESET, 0, SOFT_RESET);
-		while (!(Read(ESTAT) & ESTAT_CLKRDY));
+		Write(DM9051_NCR, DM9051_REG_RESET);
+		while (Read(DM9051_NCR) & DM9051_REG_RESET);
 
-		packetPtr_ = 0;
-		SetPacketPtr(0);
-		SetReceiveBuffer(ReceiveBufferFirst, ReceiveBufferLast);
-		SetSendBuffer(SendBufferFirst, SendBufferLast);
-		SetReceiveFilter(ERXFCON_UCEN | ERXFCON_CRCEN | ERXFCON_PMEN);
-		Write(EPMM0, 0x3f);
-		Write(EPMM1, 0x30);
-		Write(EPMCSL, 0xf9);
-		Write(EPMCSH, 0xf7);
+		Write(DM9051_GPCR, GPCR_GEP_CNTL);
+		Write(DM9051_GPR, 0x00);		//Power on PHY
+		BSPSleepMs(100);
 
-		Write(MACON1, MACON1_MARXEN | MACON1_TXPAUS | MACON1_RXPAUS);
-		Write(MACON2, 0x00);
-		WriteOp(BIT_FIELD_SET, MACON3, MACON3_PADCFG0 | MACON3_TXCRCEN | MACON3_FRMLNEN | MACON3_FULDPX);
-
-		Write(MAIPGL, 0x12);
-		Write(MAIPGH, 0x0C);
-		Write(MABBIPG, 0x15);
-
-		SetMaxFrameLength(MaxFrameSize);
+		SetPhyMode(DM9051_10MFD);
 		SetMacAddress(macAddress);
 
-		WritePhy(PHCON1, PHCON1_PDPXMD);
-		WritePhy(PHCON2, PHCON2_HDLDIS);
+		/* set multicast address */
+		for (size_t i = 0; i < 8; i++)
+		{ /* Clear Multicast set */
+								  /* Set Broadcast */
+			Write(DM9051_MAR + i, (7 == i) ? 0x80 : 0x00);
+		}
 
-		SetBank(ECON1);
-		WriteOp(BIT_FIELD_SET, EIE, EIE_INTIE | EIE_PKTIE);
-		WriteOp(BIT_FIELD_SET, ECON1, ECON1_RXEN);
-		kassert(Read(MAADR5) == macAddress[0]);
-		WritePhy(PHLCON, 0x0476);;
+		/************************************************
+		*** Activate DM9051 and Setup DM9051 Registers **
+		*************************************************/
+		/* Clear DM9051 Set and Disable Wakeup function */
+		Write(DM9051_NCR, NCR_DEFAULT);
+		/* Clear TCR Register set */
+		Write(DM9051_TCR, TCR_DEFAULT);
+		/* Discard long Packet and CRC error Packet */
+		Write(DM9051_RCR, RCR_DEFAULT);
+		/*  Set 1.15 ms Jam Pattern Timer */
+		Write(DM9051_BPTR, BPTR_DEFAULT);
+
+		/* Open / Close Flow Control */
+		//DM9051_Write_Reg(DM9051_FCTR, FCTR_DEAFULT);
+		Write(DM9051_FCTR, 0x3A);
+		Write(DM9051_FCR, FCR_DEFAULT);
+
+		/* Set Memory Conttrol Register，TX = 3K，RX = 13K */
+		Write(DM9051_SMCR, SMCR_DEFAULT);
+		/* Set Send one or two command Packet*/
+		Write(DM9051_TCR2, DM9051_TCR2_SET);
+
+		//DM9051_Write_Reg(DM9051_TCR2, 0x80);
+		Write(DM9051_INTR, 0x1);
+
+		/* Clear status */
+		Write(DM9051_NSR, NSR_CLR_STATUS);
+		Write(DM9051_ISR, ISR_CLR_STATUS);
+
+		kassert(Read(DM9051_PAR) == macAddress[0]);
+
+		Write(DM9051_IMR, IMR_PAR | IMR_PRM);
+		Write(DM9051_RCR, (RCR_DEFAULT | RCR_RXEN));  /* Enable RX */
 	}
 
 	virtual void StartSend(size_t length) override
 	{
-		while ((Read(ECON1) & ECON1_TXRTS) != 0);
+		kassert(length <= std::numeric_limits<uint16_t>::max());
+		while (Read(DM9051_TCR) & DM9051_TCR_SET);
 
-		Write(EWRPTL, SendBufferFirst & 0xFF);
-		Write(EWRPTH, SendBufferFirst >> 8);
+		calcMWR_ = (Read(DM9051_MWRH) << 8) + Read(DM9051_MWRL);
+		calcMWR_ += length;
+		if (calcMWR_ > 0x0bff) calcMWR_ -= 0x0c00;
 
-		/* 设置发送缓冲区结束地址 该值对应发送数据包长度 */
-		Write(ETXNDL, (SendBufferFirst + length) & 0xFF);
-		Write(ETXNDH, (SendBufferFirst + length) >> 8);
+		Write(DM9051_TXPLL, length & 0xff);
+		Write(DM9051_TXPLH, (length >> 8) & 0xff);
 
-		/* 发送控制字节 控制字节为0x00,表示使用macon3设置 */
-		WriteOp(WRITE_BUF_MEM, 0, 0x00);
+		//if (calcMWR_ != ((Read(DM9051_MWRH) << 8) + Read(DM9051_MWRL)))
+		//{
+		//	g_Logger->PutString("WTF\n");
+		//	/*若是指針出錯，將指針移到下一個傳送包的包頭位置  */
+		//	Write(DM9051_MWRH, (calcMWR_ >> 8) & 0xff);
+		//	Write(DM9051_MWRL, calcMWR_ & 0xff);
+		//}
 	}
 
 	virtual void WriteSendBuffer(gsl::span<const uint8_t> buffer) override
 	{
-		const uint8_t cmd[] = { WRITE_BUF_MEM };
-		gsl::span<const uint8_t> writeBuffers[] = { cmd, buffer };
-		dev_->Write({ writeBuffers });
+		gsl::span<const uint8_t> buffers[] = { buffer };
+		WriteMemory({ buffers });
 	}
 
 	virtual void CommitSend() override
 	{
-		WriteOp(BIT_FIELD_SET, ECON1, ECON1_TXRTS);
-
-		if ((Read(EIR) & EIR_TXERIF))
-		{
-			SetBank(ECON1);
-			WriteOp(BIT_FIELD_CLR, ECON1, ECON1_TXRTS);
-		}
+		/* Issue TX polling command */
+		Write(DM9051_TCR, TCR_TXREQ); /* Cleared after TX complete */
 	}
 
 	virtual size_t StartReceive() override
 	{
-		/* 数据包总长度 */
-		int len = 0;
-		int rxstat;
+		/* Check packet ready or not */
+		uint8_t rxbyte = Read(DM9051_MRCMDX);
+		rxbyte = Read(DM9051_MRCMDX);
 
-		Write(ERDPTL, packetPtr_);
-		Write(ERDPTH, packetPtr_ >> 8);
+		if ((rxbyte != 1) && (rxbyte != 0))
+		{
+			/* Reset RX FIFO pointer */
+			Write(DM9051_RCR, RCR_DEFAULT);	//RX disable
+			Write(DM9051_MPCR, 0x01);		//Reset RX FIFO pointer
+			BSPSleepMs(20);
+			Write(DM9051_RCR, (RCR_DEFAULT | RCR_RXEN));		//RX Enable
+			return 0;
+		}
 
-		/* 接收数据包结构示例 数据手册43页 */
-		/* 读下一个包的指针 */
-		packetPtr_ = ReadOp(READ_BUF_MEM, 0);
-		packetPtr_ |= ReadOp(READ_BUF_MEM, 0) << 8;
+		Read(DM9051_MRCMDX);		// dummy read
 
-		/* 读包的长度 */
-		len = ReadOp(READ_BUF_MEM, 0);
-		len |= ReadOp(READ_BUF_MEM, 0) << 8;
+		calcMRR_ = (Read(DM9051_MRRH) << 8) + Read(DM9051_MRRL);	// Save RX SRAM pointer
+		uint16_t status, len;
+		{
+			uint8_t header[4];
+			gsl::span<uint8_t> readBuffers[] = { header };
+			ReadMemory({ readBuffers });
+			status = header[0] | (header[1] << 8);
+			len = header[2] | (header[3] << 8);
+		}
 
-		/* 删除CRC计数 */
-		len -= 4;
-
-		/* 读取接收状态 */
-		rxstat = ReadOp(READ_BUF_MEM, 0);
-		rxstat |= ReadOp(READ_BUF_MEM, 0) << 8;
-
-		/* 注意取消了CRC校验检查部分 */
-		/* 返回接收数据包长度 */
+		calcMRR_ += (len + 4);
+		if (calcMRR_ > 0x3fff) calcMRR_ -= 0x3400;
 		return len;
 	}
 
 	virtual void ReadReceiveBuffer(gsl::span<uint8_t> buffer) override
 	{
-		const uint8_t cmd[] = { READ_BUF_MEM };
-		gsl::span<const uint8_t> writeBuffers[] = { cmd };
 		gsl::span<uint8_t> readBuffers[] = { buffer };
-		dev_->TransferSequential({ writeBuffers }, { readBuffers });
+		ReadMemory({ readBuffers });
 	}
 
 	virtual void FinishReceive() override
 	{
-		Write(ERXRDPTL, (packetPtr_));
-		Write(ERXRDPTH, (packetPtr_) >> 8);
-
-		WriteOp(BIT_FIELD_SET, ECON2, ECON2_PKTDEC);
+		return;
+		//if (calcMRR_ != ((Read(DM9051_MRRH) << 8) + Read(DM9051_MRRL)))
+		//{
+		//	printf("DM9K MRR Error!!\r\n");
+		//	printf("Predicut RX Read pointer = 0x%X, Current pointer = 0x%X\r\n", calcMRR_, ((Read(DM9051_MRRH) << 8) + Read(DM9051_MRRL)));
+		//
+		//	/*若是指針出錯，將指針移到下一個包的包頭位置  */
+		//	Write(DM9051_MRRH, (calcMRR_ >> 8) & 0xff);
+		//	Write(DM9051_MRRL, calcMRR_ & 0xff);
+		//}
 	}
 protected:
 	virtual void OnFirstOpen() override
@@ -404,7 +431,14 @@ protected:
 		csPin_->SetDriveMode(GpioPinDriveMode::Output);
 		csPin_->Write(GpioPinValue::High);
 
-		lastBank_ = NOBANK;
+		//uint32_t value = 0;
+		///* Read DM9051 PID / VID, Check MCU SPI Setting correct */
+		//value |= (uint32_t)Read(DM9051_VIDL);
+		//value |= (uint32_t)Read(DM9051_VIDH) << 8;
+		//value |= (uint32_t)Read(DM9051_PIDL) << 16;
+		//value |= (uint32_t)Read(DM9051_PIDH) << 24;
+
+		//g_Logger->PutFormat("ID: %x\n", value);
 	}
 
 	virtual void OnLastClose() override
@@ -413,79 +447,17 @@ protected:
 		csPin_.Reset();
 	}
 private:
-	void SetPacketPtr(uint16_t ptr)
-	{
-		Write(ERXRDPTL, uint8_t(ptr));
-		Write(ERXRDPTL, uint8_t(ptr >> 8));
-	}
-
-	void SetReceiveBuffer(uint16_t first, uint16_t last)
-	{
-		Write(ERXSTL, uint8_t(first));
-		Write(ERXSTH, uint8_t(first >> 8));
-		Write(ERXNDL, uint8_t(last));
-		Write(ERXNDH, uint8_t(last >> 8));
-	}
-
-	void SetSendBuffer(uint16_t first, uint16_t last)
-	{
-		Write(ETXSTL, uint8_t(first));
-		Write(ETXSTH, uint8_t(first >> 8));
-		Write(ETXNDL, uint8_t(last));
-		Write(ETXNDH, uint8_t(last >> 8));
-	}
-
-	void SetReceiveFilter(uint8_t filter)
-	{
-		Write(ERXFCON, filter);
-	}
-
-	void SetMaxFrameLength(uint16_t len)
-	{
-		Write(MAMXFLL, uint8_t(len));
-		Write(MAMXFLH, uint8_t(len >> 8));
-	}
-
 	void SetMacAddress(const MacAddress& macAddress)
 	{
-		Write(MAADR5, macAddress[0]);
-		Write(MAADR4, macAddress[1]);
-		Write(MAADR3, macAddress[2]);
-		Write(MAADR2, macAddress[3]);
-		Write(MAADR1, macAddress[4]);
-		Write(MAADR0, macAddress[5]);
+		Write(DM9051_PAR + 0, macAddress[0]);
+		Write(DM9051_PAR + 1, macAddress[1]);
+		Write(DM9051_PAR + 2, macAddress[2]);
+		Write(DM9051_PAR + 3, macAddress[3]);
+		Write(DM9051_PAR + 4, macAddress[4]);
+		Write(DM9051_PAR + 5, macAddress[5]);
 	}
 
-	void SetBank(bank_t bank)
-	{
-		if (bank != lastBank_)
-		{
-			WriteOp(BIT_FIELD_CLR, ECON1, (ECON1_BSEL1 | ECON1_BSEL0));
-			WriteOp(BIT_FIELD_SET, ECON1, bank >> 5);
-			lastBank_ = bank;
-		}
-	}
-
-	void WritePhy(uint8_t addr, uint16_t data)
-	{
-		/* Fill the phyxcer register into REG_0C                                                                */
-		DM9051_Write_Reg(DM9051_EPAR, DM9051_PHY | reg);
-
-		/* Fill the written data into REG_0D & REG_0E */
-		DM9051_Write_Reg(DM9051_EPDRL, (value & 0xff));
-		DM9051_Write_Reg(DM9051_EPDRH, ((value >> 8) & 0xff));
-		/* Issue phyxcer write command */
-		DM9051_Write_Reg(DM9051_EPCR, 0xa);
-
-		/* Wait write complete */
-		//_DM9051_Delay_ms(500);                       
-		while (DM9051_Read_Reg(DM9051_EPCR) & 0x1) { _DM9051_Delay(1); }; //Wait complete
-
-																		  /* Clear phyxcer write command */
-		DM9051_Write_Reg(DM9051_EPCR, 0x0);
-	}
-
-	void SetPhyMode(uint32_t mode)
+	void SetPhyMode(uint32_t uMediaMode)
 	{
 		uint16_t phy_reg4 = 0x01e1, phy_reg0 = 0x1000;
 
@@ -526,62 +498,87 @@ private:
 			}
 
 			/* Set PHY media mode */
-			phy_write(4, phy_reg4);
+			WritePhy(4, phy_reg4);
 			/* Write rphy_reg0 to Tmp */
-			phy_write(0, phy_reg0);
-			_DM9051_Delay(10);
+			WritePhy(0, phy_reg0);
+			BSPSleepMs(10);
 		}
 	}
 
-	void WriteOp(operation_t op, uint8_t addr, uint8_t data)
+	void WritePhy(uint8_t addr, uint16_t data)
 	{
-		const uint8_t toWrite[] = { static_cast<uint8_t>(op | (addr & ADDR_MASK)), data };
-		gsl::span<const uint8_t> buffers[] = { toWrite };
-		dev_->Write({ buffers });
+		/* Fill the phyxcer register into REG_0C */
+		Write(DM9051_EPAR, DM9051_PHY | addr);
+
+		/* Fill the written data into REG_0D & REG_0E */
+		Write(DM9051_EPDRL, (data & 0xff));
+		Write(DM9051_EPDRH, ((data >> 8) & 0xff));
+		/* Issue phyxcer write command */
+		Write(DM9051_EPCR, 0xa);
+
+		/* Wait write complete */
+		//_DM9051_Delay_ms(500);                       
+		while (Read(DM9051_EPCR) & 0x1) { BSPSleepMs(1); }; //Wait complete
+
+		/* Clear phyxcer write command */
+		Write(DM9051_EPCR, 0x0);
 	}
 
-	uint8_t ReadOp(operation_t op, uint8_t addr)
+	uint16_t ReadPhy(uint8_t addr)
 	{
-		const uint8_t toWrite[1] = { static_cast<uint8_t>(op | (addr & ADDR_MASK)) };
+		/* Fill the phyxcer register into REG_0C */
+		Write(DM9051_EPAR, DM9051_PHY | addr);
+		/* Issue phyxcer read command */
+		Write(DM9051_EPCR, 0xc);
+
+		/* Wait read complete */
+		//_DM9051_Delay_ms(100);                        
+		while (Read(DM9051_EPCR) & 0x1) { BSPSleepMs(1); }; //Wait complete
+
+		/* Clear phyxcer read command */
+		Write(DM9051_EPCR, 0x0);
+		return (Read(DM9051_EPDRH) << 8) | Read(DM9051_EPDRL);
+	}
+
+	void ReadMemory(BufferList<uint8_t> bufferList)
+	{
+		const uint8_t toWrite[1] = { SPI_RD_BURST };
 		gsl::span<const uint8_t> writeBuffers[] = { toWrite };
 
-		// if MAC/MII the 2nd byte is valid
-		if (addr & 0x80)
-		{
-			uint8_t toRead[2];
-			gsl::span<uint8_t> readBuffers[] = { toRead };
+		dev_->TransferSequential({ writeBuffers }, bufferList);
+	}
 
-			dev_->TransferSequential({ writeBuffers }, { readBuffers });
-			return toRead[1];
-		}
-		else
-		{
-			uint8_t toRead[1];
-			gsl::span<uint8_t> readBuffers[] = { toRead };
-
-			dev_->TransferSequential({ writeBuffers }, { readBuffers });
-			return toRead[0];
-		}
+	void WriteMemory(BufferList<const uint8_t> bufferList)
+	{
+		const uint8_t toWrite[1] = { SPI_WR_BURST };
+		auto buffers = bufferList.Select().Prepend({ toWrite });
+		dev_->Write(buffers.AsBufferList());
 	}
 
 	uint8_t Read(uint8_t addr)
 	{
-		SetBank(static_cast<bank_t>(addr & BANK_MASK));
-		return ReadOp(READ_CTRL_REG, addr);
+		const uint8_t toWrite[1] = { addr };
+		gsl::span<const uint8_t> writeBuffers[] = { toWrite };
+
+		uint8_t toRead[1];
+		gsl::span<uint8_t> readBuffers[] = { toRead };
+
+		dev_->TransferSequential({ writeBuffers }, { readBuffers });
+		return toRead[0];
 	}
 
 	void Write(uint8_t addr, uint8_t data)
 	{
-		SetBank(static_cast<bank_t>(addr & BANK_MASK));
-		WriteOp(WRITE_CTRL_REG, addr, data);
+		const uint8_t toWrite[] = { static_cast<uint8_t>(addr | 0x80), data };
+		gsl::span<const uint8_t> buffers[] = { toWrite };
+		dev_->Write({ buffers });
 	}
 private:
 	const FDTDevice& fdt_;
 	ObjectAccessor<SpiDevice> dev_;
 	ObjectAccessor<GpioPin> csPin_;
 	CS cs_;
-	bank_t lastBank_;
-	uint16_t packetPtr_;
+	uint16_t calcMWR_, calcMRR_;
 };
 
 DM9051Driver::DM9051Driver(const FDTDevice& device)
