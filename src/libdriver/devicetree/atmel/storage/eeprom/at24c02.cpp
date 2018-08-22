@@ -26,7 +26,7 @@ public:
 		g_ObjectMgr->GetDirectory(WKD_Device).AddItem(fdt.GetName(), *this);
 	}
 
-	virtual size_t GetSize() override
+	virtual uint64_t GetSize() override
 	{
 		return AT24C02PageSize * AT24C02Pages;
 	}

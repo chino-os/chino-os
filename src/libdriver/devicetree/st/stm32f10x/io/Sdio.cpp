@@ -35,6 +35,13 @@ union sdio_power
 	uint32_t Value;
 };
 
+enum sdio_widbus
+{
+	SDIO_DBW_1 = 0b00,
+	SDIO_DBW_4 = 0b01,
+	SDIO_DBW_8 = 0b11
+};
+
 union sdio_clkcr
 {
 	struct
@@ -43,7 +50,7 @@ union sdio_clkcr
 		uint32_t CLKEN : 1;				//!< Clock enable bit
 		uint32_t PWRSAV : 1;			//!< Power saving configuration bit
 		uint32_t BYPASS : 1;			//!< Clock divider bypass enable bit
-		uint32_t WIDBUS : 2;			//!< Wide bus mode enable bit
+		sdio_widbus WIDBUS : 2;			//!< Wide bus mode enable bit
 		uint32_t NEGEDGE : 1;			//!< SDIO_CK dephasing selection bit
 		uint32_t HWFC_EN : 1;			//!< HW Flow Control enable
 		uint32_t RESV1 : 17;
@@ -142,6 +149,29 @@ public:
 		BSPSleepMs(10);
 	}
 
+	virtual void SetDatabusWidth(SdioDatabusWidth width) override
+	{
+		sdio_widbus widbus;
+
+		switch (width)
+		{
+		case SdioDatabusWidth::One:
+			widbus = SDIO_DBW_1;
+			break;
+		case SdioDatabusWidth::Four:
+			widbus = SDIO_DBW_4;
+			break;
+		default:
+			throw std::invalid_argument("Invalid sdio databus width.");
+		}
+
+		if (sdio_->CLKCR.WIDBUS != widbus)
+		{
+			sdio_->CLKCR.WIDBUS = widbus;
+			BSPSleepMs(10);
+		}
+	}
+
 	virtual void SendCommand(const SdioCommand& command) override
 	{
 		sdio_->ICR = 0xFFFFFFFF;
@@ -171,7 +201,7 @@ public:
 			while (!sdio_->STA.CMDSENT);
 	}
 
-	virtual void SendCommand(const SdioCommand& command, SdioResponse& response)
+	virtual void SendCommand(const SdioCommand& command, SdioResponse& response) override
 	{
 		SendCommand(command);
 
@@ -202,6 +232,11 @@ public:
 			response.Data[2] = sdio_->RESP[2];
 			response.Data[3] = sdio_->RESP[3];
 		}
+	}
+
+	virtual void ReadDataBlocks(const SdioCommand& command, size_t blockSize, size_t blocksCount, BufferList<uint8_t> bufferList) override
+	{
+
 	}
 protected:
 	virtual void OnFirstOpen() override
@@ -238,6 +273,10 @@ protected:
 		cmdPin_.Reset();
 	}
 private:
+	void SetBlockSize(size_t blockSize)
+	{
+
+	}
 private:
 	const FDTDevice& fdt_;
 	SDIO_TypeDef* sdio_;

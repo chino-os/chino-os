@@ -52,94 +52,9 @@ public:
 		g_ObjectMgr->GetDirectory(WKD_Device).AddItem(fdt.GetName(), *this);
 	}
 
-	virtual size_t GetSize() override
+	virtual uint64_t GetSize() override
 	{
 		return TOTAL_SIZE;
-	}
-
-	virtual size_t Read(size_t offset, BufferList<uint8_t> bufferList) override
-	{
-		if (offset > GetSize())
-			throw std::out_of_range("offset is out of range");
-
-		auto readBuffers = bufferList.Select().Take(GetSize() - offset);
-		const uint8_t cmd[] = { 0x03, uint8_t(offset >> 16), uint8_t(offset >> 8), uint8_t(offset) };
-		gsl::span<const uint8_t> writeBuffers[] = { cmd };
-		{
-			BusyWait();
-			dev_->TransferSequential({ writeBuffers }, readBuffers.AsBufferList());
-		}
-		return readBuffers.Count();
-	}
-
-	virtual void Write(size_t offset, BufferList<const uint8_t> bufferList) override
-	{
-		auto toWrite = bufferList.GetTotalSize();
-		if (offset + toWrite >= GetSize())
-			throw std::out_of_range("offset is out of range");
-
-		if (!tempSector_)
-		{
-			tempSector_ = std::make_unique<uint8_t[]>(SECTOR_SIZE);
-			tempSectorSpan_ = { tempSector_.get(), SECTOR_SIZE };
-		}
-
-		auto startBytes = offset;
-		auto endBytes = offset + toWrite;
-		auto startSector = offset / SECTOR_SIZE;
-		auto endSector = endBytes / SECTOR_SIZE;
-
-		auto restBuffers = bufferList.Select();
-		auto address = offset;
-		// First Sector
-		{
-			auto sectorOffset = startBytes % SECTOR_SIZE;
-			auto sectorAddress = startSector * SECTOR_SIZE;
-			if (sectorOffset != 0 || toWrite < SECTOR_SIZE)
-			{
-				ReadSector(sectorAddress);
-				auto firstSector = restBuffers.Take(SECTOR_SIZE - sectorOffset);
-				firstSector.CopyTo(tempSectorSpan_.subspan(sectorOffset));
-				EraseSectorByAddress(sectorAddress);
-				gsl::span<const uint8_t> writeBuffers[] = { tempSectorSpan_ };
-				WriteSector(sectorAddress, { writeBuffers });
-			}
-			else
-			{
-				auto writeBuffers = restBuffers.Take(SECTOR_SIZE);
-				EraseSectorByAddress(sectorAddress);
-				WriteSector(sectorAddress, writeBuffers.AsBufferList());
-			}
-
-			restBuffers = restBuffers.Skip(SECTOR_SIZE);
-			address = sectorAddress + SECTOR_SIZE;
-		}
-
-		// Middle Sectors
-		for (size_t i = startSector; i < endSector; i++)
-		{
-			auto writeBuffers = restBuffers.Take(SECTOR_SIZE);
-			EraseSectorByAddress(address);
-			WriteSector(address, writeBuffers.AsBufferList());
-			restBuffers = restBuffers.Skip(SECTOR_SIZE);
-			address += SECTOR_SIZE;
-		}
-
-		// Last Sector
-		if (startSector != endSector)
-		{
-			auto sectorOffset = endBytes % SECTOR_SIZE;
-			if (sectorOffset != 0)
-			{
-				ReadSector(address);
-				restBuffers.CopyTo(tempSectorSpan_);
-				EraseSectorByAddress(address);
-				gsl::span<const uint8_t> writeBuffers[] = { tempSectorSpan_ };
-				WriteSector(address, { writeBuffers });
-			}
-		}
-
-		BusyWait();
 	}
 
 	virtual size_t GetSectorSize() override
@@ -180,17 +95,23 @@ protected:
 
 	virtual void OnLastClose() override
 	{
-		tempSector_.reset();
-		tempSectorSpan_ = {};
-
 		dev_.Reset();
 		csPin_.Reset();
 	}
 private:
 	void ReadSector(size_t address)
 	{
-		gsl::span<uint8_t> buffers[] = { tempSectorSpan_ };
-		Read(address, { buffers });
+		kassert(!"Not impl.");
+		//gsl::span<uint8_t> buffers[] = { tempSectorSpan_ };
+		//
+		//auto readBuffers = bufferList.Select().Take(GetSize() - offset);
+		//const uint8_t cmd[] = { 0x03, uint8_t(address >> 16), uint8_t(address >> 8), uint8_t(address) };
+		//gsl::span<const uint8_t> writeBuffers[] = { cmd };
+		//{
+		//	BusyWait();
+		//	dev_->TransferSequential({ writeBuffers }, readBuffers.AsBufferList());
+		//}
+		//return readBuffers.Count();
 	}
 
 	void WriteEnable()
@@ -276,8 +197,6 @@ private:
 	ObjectAccessor<SpiDevice> dev_;
 	ObjectAccessor<GpioPin> csPin_;
 	CS cs_;
-	std::unique_ptr<uint8_t[]> tempSector_;
-	gsl::span<uint8_t> tempSectorSpan_;
 };
 
 GD25Q128Driver::GD25Q128Driver(const FDTDevice& device)

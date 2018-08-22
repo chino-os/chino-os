@@ -5,6 +5,7 @@
 #include <kernel/kdebug.hpp>
 #include <kernel/device/DeviceManager.hpp>
 #include <kernel/device/io/Sdio.hpp>
+#include <kernel/device/storage/Storage.hpp>
 
 using namespace Chino;
 using namespace Chino::Device;
@@ -25,8 +26,10 @@ struct SDCard
 	std::array<uint32_t, 4> CID;
 	uint16_t RCA;
 
-	uint32_t SectorSize;
+	uint32_t EraseSectorSize;
 	uint64_t Capacity;
+	uint32_t ReadBlockSize;
+	uint32_t WriteBlockSize;
 };
 
 #pragma pack(push, 1)
@@ -56,7 +59,8 @@ union sdio_csd
 		uint32_t ERASE_BLK_EN : 1;
 
 		uint32_t RESV5 : 1;
-		uint32_t C_SIZE : 22;
+		uint32_t C_SIZE_L : 16;
+		uint32_t C_SIZE_H : 6;
 
 		uint32_t RESV6 : 6;
 		uint32_t DSR_IMP : 1;
@@ -75,10 +79,57 @@ union sdio_csd
 	};
 
 	std::array<uint32_t, 4> Value;
+
+	uint32_t GetC_Size() const noexcept
+	{
+		return C_SIZE_L | (C_SIZE_H << 16);
+	}
 };
 
-static_assert(sizeof(sdio_csd) == 16, "This pack may work on GCC only.");
+static_assert(sizeof(sdio_csd) == 16, "Invalid CSD layout.");
 #pragma pack(pop)
+
+enum SDDataBusWidth
+{
+	SD_DBW_1 = 0b00,
+	SD_DBW_4 = 0b10
+};
+
+class SdioRootDriver;
+
+class SDMemoryCard : public SDStorage, public ExclusiveObjectAccess
+{
+public:
+	SDMemoryCard(ObjectPtr<SdioRootDriver> sdioRoot, SDCard sdCard)
+		:sdioRoot_(std::move(sdioRoot)), sdCard_(std::move(sdCard))
+	{
+		kassert(sdCard_.ReadBlockSize == sdCard_.WriteBlockSize);
+		g_Logger->PutFormat("Size: %z Mbytes, RBlock: %d, ESector: %d\n", size_t(sdCard_.Capacity / 1024 / 1024), sdCard_.ReadBlockSize, sdCard_.EraseSectorSize);
+	}
+
+	virtual size_t GetReadWriteBlockSize() override
+	{
+		return sdCard_.ReadBlockSize;
+	}
+
+	virtual size_t GetEraseSectorSize() override
+	{
+		return sdCard_.EraseSectorSize;
+	}
+
+	virtual uint64_t GetSize() override
+	{
+		return sdCard_.Capacity;
+	}
+
+	virtual void ReadBlocks(size_t startBlock, size_t blocksCount, BufferList<uint8_t> bufferList) override;
+	virtual void WriteBlocks(size_t startBlock, size_t blocksCount, BufferList<const uint8_t> bufferList) override;
+private:
+	friend class SdioRootDriver;
+
+	ObjectPtr<SdioRootDriver> sdioRoot_;
+	SDCard sdCard_;
+};
 
 class SdioRootDriver : public Driver
 {
@@ -101,6 +152,26 @@ public:
 	{
 		EnumerateDevices();
 	}
+
+	void ReadBlocks(ObjectPtr<SDMemoryCard> sdCard, size_t startBlock, size_t blocksCount, BufferList<uint8_t> bufferList)
+	{
+		SetupDevice(*sdCard);
+
+		if (blocksCount == 1)
+		{
+			SdioCommand cmd{ SdioCommandIndex::READ_SINGLE_BLOCK, SdioResponseType::Short, SdioResponseFormat::R1, uint32_t(startBlock) };
+			sdio_->ReadDataBlocks(cmd, sdCard->sdCard_.ReadBlockSize, 1, bufferList);
+		}
+		else
+		{
+
+		}
+	}
+
+	void WriteBlocks(ObjectPtr<SDMemoryCard> sdCard, size_t startBlock, size_t blocksCount, BufferList<const uint8_t> bufferList)
+	{
+
+	}
 private:
 	void EnumerateDevices()
 	{
@@ -114,7 +185,12 @@ private:
 		GetCSD(contex);
 		AddSDCard(contex);
 	}
-private:
+
+	void SetupDevice(SDMemoryCard& sdCard)
+	{
+		SelectCard(sdCard.sdCard_);
+	}
+
 	void SendGoIdle()
 	{
 		SdioCommand cmd{ SdioCommandIndex::GO_IDLE_STATE, SdioResponseType::None, SdioResponseFormat::None };
@@ -134,9 +210,31 @@ private:
 		csd.Value[3] = contex.CSD[0];
 
 		kassert(csd.CSD_STRUCTURE == 0b01);
-		card.SectorSize = csd.SECTOR_SIZE;
-		card.Capacity = 512ull * 1024 * (csd.C_SIZE + 1);
-		g_Logger->PutFormat("Size: %z Mbytes\n", size_t(card.Capacity / 1024 / 1024));
+		card.Capacity = 512ull * 1024 * (csd.GetC_Size() + 1);
+		card.ReadBlockSize = 1 << csd.READ_BL_LEN;
+		card.WriteBlockSize = 1 << csd.WRITE_BL_LEN;
+		card.EraseSectorSize = card.WriteBlockSize * (csd.SECTOR_SIZE + 1);
+
+		SelectCard(card);
+		SetDataBusWidth(card, SD_DBW_4);
+		sdio_->SetDatabusWidth(SdioDatabusWidth::Four);
+
+		g_DeviceMgr->InstallDevice(MakeObject<SDMemoryCard>(this, card));
+	}
+
+	void SetDataBusWidth(SDCard& sdCard, SDDataBusWidth width)
+	{
+		SendAppCmd(sdCard.RCA);
+		SdioCommand cmd{ SdioCommandIndex::ACMD_SD_SET_BUSWIDTH, SdioResponseType::Short, SdioResponseFormat::R1, width };
+		SdioResponse resp;
+		sdio_->SendCommand(cmd, resp);
+	}
+
+	void SelectCard(SDCard& sdCard)
+	{
+		SdioCommand cmd{ SdioCommandIndex::SEL_DESEL_CARD, SdioResponseType::Short, SdioResponseFormat::R1, uint32_t(sdCard.RCA << 16) };
+		SdioResponse resp;
+		sdio_->SendCommand(cmd, resp);
 	}
 
 	void CheckVersion(IdentContext& contex)
@@ -218,9 +316,9 @@ private:
 			throw std::runtime_error("Invalid voltage.");
 	}
 
-	void SendAppCmd()
+	void SendAppCmd(uint16_t rca = 0)
 	{
-		SdioCommand cmd{ SdioCommandIndex::APP_CMD, SdioResponseType::Short, SdioResponseFormat::R1, 0 };
+		SdioCommand cmd{ SdioCommandIndex::APP_CMD, SdioResponseType::Short, SdioResponseFormat::R1, uint32_t(rca << 16) };
 		SdioResponse resp;
 		sdio_->SendCommand(cmd, resp);
 	}
@@ -231,4 +329,14 @@ private:
 Chino::ObjectPtr<Driver> Chino::Device::BSPInstallSdioRootDriver(ObjectPtr<SdioController> sdio)
 {
 	return MakeObject<SdioRootDriver>(std::move(sdio));
+}
+
+void SDMemoryCard::ReadBlocks(size_t startBlock, size_t blocksCount, BufferList<uint8_t> bufferList)
+{
+	sdioRoot_->ReadBlocks(this, startBlock, blocksCount, bufferList);
+}
+
+void SDMemoryCard::WriteBlocks(size_t startBlock, size_t blocksCount, BufferList<const uint8_t> bufferList)
+{
+	sdioRoot_->WriteBlocks(this, startBlock, blocksCount, bufferList);
 }
