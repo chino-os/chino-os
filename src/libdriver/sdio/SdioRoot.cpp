@@ -4,6 +4,7 @@
 #include <libbsp/bsp.hpp>
 #include <kernel/kdebug.hpp>
 #include <kernel/device/DeviceManager.hpp>
+#include <kernel/object/ObjectManager.hpp>
 #include <kernel/device/io/Sdio.hpp>
 #include <kernel/device/storage/Storage.hpp>
 
@@ -105,6 +106,7 @@ public:
 	{
 		kassert(sdCard_.ReadBlockSize == sdCard_.WriteBlockSize);
 		g_Logger->PutFormat("Size: %z Mbytes, RBlock: %d, ESector: %d\n", size_t(sdCard_.Capacity / 1024 / 1024), sdCard_.ReadBlockSize, sdCard_.EraseSectorSize);
+		g_ObjectMgr->GetDirectory(WKD_Device).AddItem("sd0", *this);
 	}
 
 	virtual size_t GetReadWriteBlockSize() override
@@ -144,7 +146,7 @@ class SdioRootDriver : public Driver
 	};
 public:
 	SdioRootDriver(ObjectPtr<SdioController> sdio)
-		:sdio_(MakeAccessor(std::move(sdio), OA_Read | OA_Write))
+		:sdio_(MakeAccessor(std::move(sdio), OA_Read | OA_Write)), selectedCard_(0)
 	{
 	}
 
@@ -157,6 +159,22 @@ public:
 	{
 		SetupDevice(*sdCard);
 
+		// Wait for data ready
+		while (true)
+		{
+			SdioCommand cmd{ SdioCommandIndex::SEND_STATUS, SdioResponseType::Short, SdioResponseFormat::R1, uint32_t(sdCard->sdCard_.RCA << 16) };
+			SdioResponse resp;
+			sdio_->SendCommand(cmd, resp);
+			if (resp.Data[0] & 0x00000100)
+				break;
+		}
+
+		{
+			SdioCommand cmd{ SdioCommandIndex::SET_BLOCKLEN, SdioResponseType::Short, SdioResponseFormat::R1, sdCard->sdCard_.ReadBlockSize };
+			SdioResponse resp;
+			sdio_->SendCommand(cmd, resp);
+		}
+
 		if (blocksCount == 1)
 		{
 			SdioCommand cmd{ SdioCommandIndex::READ_SINGLE_BLOCK, SdioResponseType::Short, SdioResponseFormat::R1, uint32_t(startBlock) };
@@ -164,13 +182,53 @@ public:
 		}
 		else
 		{
+			{
+				SdioCommand cmd{ SdioCommandIndex::SET_BLOCK_COUNT, SdioResponseType::Short, SdioResponseFormat::R1, blocksCount };
+				SdioResponse resp;
+				sdio_->SendCommand(cmd, resp);
+			}
 
+			SdioCommand cmd{ SdioCommandIndex::READ_MULTIPLE_BLOCK, SdioResponseType::Short, SdioResponseFormat::R1, uint32_t(startBlock) };
+			sdio_->ReadDataBlocks(cmd, sdCard->sdCard_.ReadBlockSize, blocksCount, bufferList);
 		}
 	}
 
 	void WriteBlocks(ObjectPtr<SDMemoryCard> sdCard, size_t startBlock, size_t blocksCount, BufferList<const uint8_t> bufferList)
 	{
+		SetupDevice(*sdCard);
 
+		// Wait for data ready
+		while (true)
+		{
+			SdioCommand cmd{ SdioCommandIndex::SEND_STATUS, SdioResponseType::Short, SdioResponseFormat::R1, uint32_t(sdCard->sdCard_.RCA << 16) };
+			SdioResponse resp;
+			sdio_->SendCommand(cmd, resp);
+			if (resp.Data[0] & 0x00000100)
+				break;
+		}
+
+		{
+			SdioCommand cmd{ SdioCommandIndex::SET_BLOCKLEN, SdioResponseType::Short, SdioResponseFormat::R1, sdCard->sdCard_.ReadBlockSize };
+			SdioResponse resp;
+			sdio_->SendCommand(cmd, resp);
+		}
+
+		if (blocksCount == 1)
+		{
+			SdioCommand cmd{ SdioCommandIndex::WRITE_BLOCK, SdioResponseType::Short, SdioResponseFormat::R1, uint32_t(startBlock) };
+			sdio_->WriteDataBlocks(cmd, sdCard->sdCard_.ReadBlockSize, 1, bufferList);
+		}
+		else
+		{
+			{
+				SdioCommand cmd{ SdioCommandIndex::SET_BLOCK_COUNT, SdioResponseType::Short, SdioResponseFormat::R1, blocksCount };
+				SdioResponse resp;
+				sdio_->SendCommand(cmd, resp);
+			}
+
+			SdioCommand cmd{ SdioCommandIndex::WRITE_MULTIPLE_BLOCK, SdioResponseType::Short, SdioResponseFormat::R1, uint32_t(startBlock) };
+			sdio_->WriteDataBlocks(cmd, sdCard->sdCard_.ReadBlockSize, blocksCount, bufferList);
+		}
 	}
 private:
 	void EnumerateDevices()
@@ -232,9 +290,14 @@ private:
 
 	void SelectCard(SDCard& sdCard)
 	{
-		SdioCommand cmd{ SdioCommandIndex::SEL_DESEL_CARD, SdioResponseType::Short, SdioResponseFormat::R1, uint32_t(sdCard.RCA << 16) };
-		SdioResponse resp;
-		sdio_->SendCommand(cmd, resp);
+		if (selectedCard_ != sdCard.RCA)
+		{
+			SdioCommand cmd{ SdioCommandIndex::SEL_DESEL_CARD, SdioResponseType::Short, SdioResponseFormat::R1, uint32_t(sdCard.RCA << 16) };
+			SdioResponse resp;
+			sdio_->SendCommand(cmd, resp);
+
+			selectedCard_ = sdCard.RCA;
+		}
 	}
 
 	void CheckVersion(IdentContext& contex)
@@ -322,8 +385,16 @@ private:
 		SdioResponse resp;
 		sdio_->SendCommand(cmd, resp);
 	}
+
+	void DeselectCard()
+	{
+		SdioCommand cmd{ SdioCommandIndex::SEL_DESEL_CARD, SdioResponseType::None, SdioResponseFormat::R1, 0 };
+		sdio_->SendCommand(cmd);
+		selectedCard_ = 0;
+	}
 private:
 	ObjectAccessor<SdioController> sdio_;
+	uint16_t selectedCard_;
 };
 
 Chino::ObjectPtr<Driver> Chino::Device::BSPInstallSdioRootDriver(ObjectPtr<SdioController> sdio)

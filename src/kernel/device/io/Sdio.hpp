@@ -16,7 +16,13 @@ namespace Chino
 			SEL_DESEL_CARD = 7,
 			SEND_IF_COND = 8,
 			SEND_CSD = 9,
+			SEND_STATUS = 13,
+			SET_BLOCKLEN = 16,
 			READ_SINGLE_BLOCK = 17,
+			READ_MULTIPLE_BLOCK = 18,
+			SET_BLOCK_COUNT = 23,
+			WRITE_BLOCK = 24,
+			WRITE_MULTIPLE_BLOCK = 25,
 			APP_CMD = 55,
 			ACMD_SD_SET_BUSWIDTH = 6,
 			ACMD_SD_SEND_OP_COND = 41,
@@ -73,6 +79,7 @@ namespace Chino
 			virtual void SendCommand(const SdioCommand& command, SdioResponse& response) = 0;
 
 			virtual void ReadDataBlocks(const SdioCommand& command, size_t blockSize, size_t blocksCount, BufferList<uint8_t> bufferList) = 0;
+			virtual void WriteDataBlocks(const SdioCommand& command, size_t blockSize, size_t blocksCount, BufferList<const uint8_t> bufferList) = 0;
 		};
 	}
 }
