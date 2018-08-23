@@ -203,5 +203,13 @@
 			cs_gpio = "gpio2";
 			cs_pin = <12>;
 		};
+
+		dm9051: eth1 {
+			device_type = "ethernet-controller";
+			compatible = "davicom,dm9051";
+			spi = "spi2";
+			cs_gpio = "gpio2";
+			cs_pin = <10>;
+		};
 	};
 };

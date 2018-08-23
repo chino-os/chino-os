@@ -136,9 +136,9 @@ void App::Start()
 	dc_->Clear(*primarySurface_, { {}, primarySurface_->GetPixelSize() }, { 1, 0, 0 });
 	dc_->CopySubresource(*green, *primarySurface_, { {}, green->GetPixelSize() }, { 100, 100 });
 
-	auto eth0 = g_NetworkMgr->InstallNetworkDevice(g_ObjectMgr->GetDirectory(WKD_Device).Open("eth0", OA_Read | OA_Write).MoveAs<EthernetController>());
-	eth0->SetAsDefault();
-	eth0->Setup();
+	auto eth = g_NetworkMgr->InstallNetworkDevice(g_ObjectMgr->GetDirectory(WKD_Device).Open("eth1", OA_Read | OA_Write).MoveAs<EthernetController>());
+	eth->SetAsDefault();
+	eth->Setup();
 	g_NetworkMgr->Run();
 
 #if FS_TEST
