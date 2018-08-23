@@ -59,6 +59,7 @@ namespace Chino
 
 			virtual size_t GetReadWriteBlockSize() = 0;
 			virtual size_t GetEraseSectorSize() = 0;
+			virtual size_t GetBlocksCount() = 0;
 
 			virtual void ReadBlocks(size_t startBlock, size_t blocksCount, BufferList<uint8_t> bufferList) = 0;
 			virtual void WriteBlocks(size_t startBlock, size_t blocksCount, BufferList<const uint8_t> bufferList) = 0;

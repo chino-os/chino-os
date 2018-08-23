@@ -105,7 +105,6 @@ public:
 		:sdioRoot_(std::move(sdioRoot)), sdCard_(std::move(sdCard))
 	{
 		kassert(sdCard_.ReadBlockSize == sdCard_.WriteBlockSize);
-		g_Logger->PutFormat("Size: %z Mbytes, RBlock: %d, ESector: %d\n", size_t(sdCard_.Capacity / 1024 / 1024), sdCard_.ReadBlockSize, sdCard_.EraseSectorSize);
 		g_ObjectMgr->GetDirectory(WKD_Device).AddItem("sd0", *this);
 	}
 
@@ -122,6 +121,11 @@ public:
 	virtual uint64_t GetSize() override
 	{
 		return sdCard_.Capacity;
+	}
+
+	virtual size_t GetBlocksCount() override
+	{
+		return sdCard_.Capacity / GetReadWriteBlockSize();
 	}
 
 	virtual void ReadBlocks(size_t startBlock, size_t blocksCount, BufferList<uint8_t> bufferList) override;
@@ -316,7 +320,6 @@ private:
 		}
 		catch (std::runtime_error&)
 		{
-			g_Logger->PutFormat("SD V1.0\n");
 			throw std::runtime_error("Not supported.");
 		}
 
@@ -324,7 +327,6 @@ private:
 		{
 			if (resp.Data[0] != SD_CHECK_PATTERN)
 				throw std::runtime_error("Invalid SD card.");
-			g_Logger->PutFormat("SD V2.0: %x\n", resp.Data[0]);
 		}
 
 		SendAppCmd();
@@ -348,7 +350,6 @@ private:
 		if (resp.Data[0] & (SD_R6_GENERAL_UNKNOWN_ERROR | SD_R6_ILLEGAL_CMD | SD_R6_COM_CRC_FAILED))
 			throw std::runtime_error("Failed to get RCA.");
 		contex.RCA = uint16_t(resp.Data[0] >> 16);
-		g_Logger->PutFormat("RCA: %x\n", contex.RCA);
 	}
 
 	void GetCSD(IdentContext& contex)

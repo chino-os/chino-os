@@ -17,6 +17,7 @@
 #include <kernel/device/network/Ethernet.hpp>
 #include <kernel/graphics/DeviceContext.hpp>
 #include <kernel/network/Socket.hpp>
+#include <kernel/device/storage/filesystem/FileSystemManager.hpp>
 #include <chrono>
 
 using namespace Chino;
@@ -28,6 +29,7 @@ using namespace Chino::Network;
 using namespace std::chrono_literals;
 
 #define RW_TEST 0
+#define FS_TEST 0
 
 class App
 {
@@ -138,6 +140,12 @@ void App::Start()
 	eth0->SetAsDefault();
 	eth0->Setup();
 	g_NetworkMgr->Run();
+
+#if FS_TEST
+	g_FileSystemMgr->Mount("0:", g_ObjectMgr->GetDirectory(WKD_Device).Open("sd0", OA_Read | OA_Write).MoveAs<SDStorage>());
+	auto file = g_FileSystemMgr->OpenFile("0:/setup.exe", FileAccess::Read);
+	g_Logger->PutFormat("setup.exe Size: %z bytes\n", file->GetSize());
+#endif
 
 	auto bindAddr = std::make_shared<IPEndPoint>(IPAddress::IPv4Any, 80);
 	auto socket = MakeObject<Socket>(AddressFamily::IPv4, SocketType::Stream, ProtocolType::Tcp);
