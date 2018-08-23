@@ -38,7 +38,7 @@ SET(BSP_SRC ${DT_DIR}/Fdt.cpp
 	${MC_DIR}/network/ethernet/enc28j60.cpp
 	${DM_DIR}/network/ethernet/dm9051.cpp
 	
-	${SD_DIR}/SdioRoot.cpp))
+	${SD_DIR}/SdioRoot.cpp)
 
 FILE(GLOB_RECURSE ST_HAL_SRC "${ST_DIR}/hal/*.c")
 LIST(APPEND BSP_SRC ${ST_HAL_SRC})
