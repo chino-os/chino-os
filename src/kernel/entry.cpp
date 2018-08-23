@@ -9,6 +9,7 @@
 #include "device/DeviceManager.hpp"
 #include "diagnostic/KernelLogger.hpp"
 #include "object/ObjectManager.hpp"
+#include "device/storage/filesystem/FileSystemManager.hpp"
 #include <libbsp/bsp.hpp>
 #include "system/Startup.hpp"
 
@@ -19,6 +20,7 @@ StaticHolder<Memory::MemoryManager> g_MemoryMgr;
 StaticHolder<ObjectManager> g_ObjectMgr;
 StaticHolder<Threading::ProcessManager> g_ProcessMgr;
 StaticHolder<Device::DeviceMananger> g_DeviceMgr;
+StaticHolder<Device::FileSystemManager> g_FileSystemMgr;
 
 extern "C"
 {
@@ -43,6 +45,7 @@ extern "C" void Kernel_Main(const BootParameters* pParams)
 	g_ObjectMgr.construct();
 	g_ProcessMgr.construct();
 	g_DeviceMgr.construct();
+	g_FileSystemMgr.construct();
 
 #if 1
 	g_ProcessMgr->CreateProcess("System", 1, [&] {SystemStartup(params); });

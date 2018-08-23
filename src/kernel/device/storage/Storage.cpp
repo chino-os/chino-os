@@ -21,3 +21,8 @@ StorageType FlashStorage::GetStorageType()
 {
 	return StorageType::Flash;
 }
+
+StorageType SDStorage::GetStorageType()
+{
+	return StorageType::SD;
+}

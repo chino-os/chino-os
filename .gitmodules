@@ -7,3 +7,6 @@
 [submodule "thirdparty/lwip"]
 	path = thirdparty/lwip
 	url = https://github.com/chino-os/lwip.git
+[submodule "thirdparty/fatfs"]
+	path = thirdparty/fatfs
+	url = https://github.com/chino-os/FatFs.git

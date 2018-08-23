@@ -21,7 +21,10 @@ namespace Chino
 
 	namespace Device
 	{
+		class SdioController;
+
 		ObjectPtr<Driver> BSPInstallRootDriver(const BootParameters& bootParams);
+		ObjectPtr<Driver> BSPInstallSdioRootDriver(ObjectPtr<SdioController> sdio);
 	}
 
 	namespace Diagnostic

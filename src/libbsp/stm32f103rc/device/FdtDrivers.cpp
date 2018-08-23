@@ -11,6 +11,7 @@
 #include <libdriver/devicetree/st/stm32f10x/io/Usart.hpp>
 #include <libdriver/devicetree/st/stm32f10x/io/I2c.hpp>
 #include <libdriver/devicetree/st/stm32f10x/io/Spi.hpp>
+#include <libdriver/devicetree/st/stm32f10x/io/Sdio.hpp>
 #include <libdriver/devicetree/st/stm32f10x/display/lcd/lcd8080fsmc.hpp>
 
 #include <libdriver/devicetree/atmel/storage/eeprom/at24c02.hpp>
@@ -43,6 +44,7 @@ const FDTDriverDescriptor* Chino::Device::g_FDTDrivers[] =
 	REF_FDT_DRIVER_DESC(UsartDriver),
 	REF_FDT_DRIVER_DESC(I2cDriver),
 	REF_FDT_DRIVER_DESC(SpiDriver),
+	REF_FDT_DRIVER_DESC(SdioDriver),
 	REF_FDT_DRIVER_DESC(LCD8080FsmcDriver),
 
 	REF_FDT_DRIVER_DESC(AT24C02Driver),
