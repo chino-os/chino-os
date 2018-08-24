@@ -441,6 +441,8 @@ size_t RccDevice::GetClockFrequency(RccPeriph periph)
 	switch (periph)
 	{
 	case RccPeriph::I2C1:
+	case RccPeriph::SPI1:
+	case RccPeriph::SPI2:
 		freq = GetClockFrequency(ClockSource::PCLK1);
 		break;
 	default:

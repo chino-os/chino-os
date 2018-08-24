@@ -8,6 +8,7 @@ SET(ILI_DIR ${DT_DIR}/ilitek)
 SET(GD_DIR ${DT_DIR}/gd)
 SET(MC_DIR ${DT_DIR}/microchip)
 SET(DM_DIR ${DT_DIR}/davicom)
+SET(VS_DIR ${DT_DIR}/vlsi)
 SET(ARM_DIR ${DT_DIR}/arm/cortex-m3)
 
 SET(SD_DIR ${DRIVER_DIR}/sdio)
@@ -37,6 +38,7 @@ SET(BSP_SRC ${DT_DIR}/Fdt.cpp
 	${GD_DIR}/storage/flash/gd25q128.cpp
 	${MC_DIR}/network/ethernet/enc28j60.cpp
 	${DM_DIR}/network/ethernet/dm9051.cpp
+	${VS_DIR}/audio/adapter/vs1053b.cpp
 	
 	${SD_DIR}/SdioRoot.cpp)
 

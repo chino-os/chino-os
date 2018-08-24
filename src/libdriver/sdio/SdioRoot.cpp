@@ -240,12 +240,19 @@ private:
 		sdio_->Reset();
 		SendGoIdle();
 
-		IdentContext contex{};
-		CheckVersion(contex);
-		GetCID(contex);
-		GetRCA(contex);
-		GetCSD(contex);
-		AddSDCard(contex);
+		try
+		{
+			IdentContext contex{};
+			CheckVersion(contex);
+			GetCID(contex);
+			GetRCA(contex);
+			GetCSD(contex);
+			AddSDCard(contex);
+		}
+		catch (...)
+		{
+			g_Logger->PutString("No SD card found.\n");
+		}
 	}
 
 	void SetupDevice(SDMemoryCard& sdCard)

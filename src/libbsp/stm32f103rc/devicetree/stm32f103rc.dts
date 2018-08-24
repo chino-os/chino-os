@@ -204,12 +204,16 @@
 			cs_pin = <12>;
 		};
 
-		dm9051: eth1 {
-			device_type = "ethernet-controller";
-			compatible = "davicom,dm9051";
+		vs1053b: audio0 {
+			device_type = "audio-adapter";
+			compatible = "vlsi,vs1053b";
 			spi = "spi2";
 			cs_gpio = "gpio2";
 			cs_pin = <10>;
+			other_gpio = "gpio7";
+			xdcs_pin = <6>;
+			dreq_pin = <7>;
+			rst_pin = <8>;
 		};
 	};
 };

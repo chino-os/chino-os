@@ -30,6 +30,7 @@ using namespace std::chrono_literals;
 
 #define RW_TEST 0
 #define FS_TEST 0
+#define AUDIO_TEST 1
 
 class App
 {
@@ -136,15 +137,19 @@ void App::Start()
 	dc_->Clear(*primarySurface_, { {}, primarySurface_->GetPixelSize() }, { 1, 0, 0 });
 	dc_->CopySubresource(*green, *primarySurface_, { {}, green->GetPixelSize() }, { 100, 100 });
 
-	auto eth = g_NetworkMgr->InstallNetworkDevice(g_ObjectMgr->GetDirectory(WKD_Device).Open("eth1", OA_Read | OA_Write).MoveAs<EthernetController>());
-	eth->SetAsDefault();
-	eth->Setup();
-	g_NetworkMgr->Run();
+	//auto eth = g_NetworkMgr->InstallNetworkDevice(g_ObjectMgr->GetDirectory(WKD_Device).Open("eth0", OA_Read | OA_Write).MoveAs<EthernetController>());
+	//eth->SetAsDefault();
+	//eth->Setup();
+	//g_NetworkMgr->Run();
 
 #if FS_TEST
 	g_FileSystemMgr->Mount("0:", g_ObjectMgr->GetDirectory(WKD_Device).Open("sd0", OA_Read | OA_Write).MoveAs<SDStorage>());
 	auto file = g_FileSystemMgr->OpenFile("0:/setup.exe", FileAccess::Read);
 	g_Logger->PutFormat("setup.exe Size: %z bytes\n", file->GetSize());
+#endif
+
+#if AUDIO_TEST
+	auto audio = g_ObjectMgr->GetDirectory(WKD_Device).Open("audio0", OA_Read | OA_Write);
 #endif
 
 	auto bindAddr = std::make_shared<IPEndPoint>(IPAddress::IPv4Any, 80);
