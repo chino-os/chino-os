@@ -8,6 +8,7 @@
 #include <kernel/threading/ThreadSynchronizer.hpp>
 #include <kernel/device/io/Spi.hpp>
 #include <kernel/device/io/Gpio.hpp>
+#include <kernel/device/storage/filesystem/FileSystemManager.hpp>
 #include <libbsp/bsp.hpp>
 
 using namespace Chino;
@@ -161,7 +162,23 @@ private:
 		}
 
 		//MemoryTest();
-		SineTest();
+		Write(SCI_BASS, 0);
+		Write(SCI_VOL, 0x5555);
+		g_Logger->PutFormat("SCI_VOL: %x, SCI_STATUS: %x\n", Read(SCI_VOL), Read(SCI_STATUS));
+		//SineTest();
+		g_FileSystemMgr->Mount("0:", g_ObjectMgr->GetDirectory(WKD_Device).Open("sd0", OA_Read | OA_Write).MoveAs<SDStorage>());
+		auto file = g_FileSystemMgr->OpenFile("0:/MUSIC/badapple.mp3", FileAccess::Read);
+		//g_Logger->PutFormat("bad_apple.mp3 Size: %z bytes\n", file->GetSize());
+
+		uint8_t buf[32];
+		auto times = file->GetSize() / 32;
+		for (size_t i = 0; i < times; i++)
+		{
+			gsl::span<uint8_t> rbuf[] = { buf };
+			gsl::span<const uint8_t> wbuf = { buf };
+			file->Read({ rbuf });
+			WriteMusic({ wbuf });
+		}
 	}
 
 	void MemoryTest()
@@ -208,6 +225,18 @@ private:
 
 		dev_->TransferSequential({ writeBuffers }, { readBuffers });
 		return uint16_t((readBuffer[0] << 8) | readBuffer[1]);
+	}
+
+	void WriteMusic(gsl::span<const uint8_t> data)
+	{
+		auto times = data.size() / 32;
+		const uint8_t* first = data.data();
+		for (size_t i = 0; i < times; i++)
+		{
+			gsl::span<const uint8_t> buffers[] = { {first, 32} };
+			WriteData({ buffers });
+			first += 32;
+		}
 	}
 
 	void WriteData(BufferList<const uint8_t> bufferList)
