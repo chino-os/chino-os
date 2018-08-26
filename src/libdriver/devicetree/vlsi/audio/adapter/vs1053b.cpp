@@ -134,7 +134,6 @@ protected:
 		}
 
 		HardwareReset();
-		g_Logger->PutFormat("STATUS: %x\n", Read(SCI_STATUS));
 
 		Initialize();
 	}
@@ -161,14 +160,11 @@ private:
 			BSPSleepMs(10);
 		}
 
-		//MemoryTest();
 		Write(SCI_BASS, 0);
 		Write(SCI_VOL, 0x5555);
-		g_Logger->PutFormat("SCI_VOL: %x, SCI_STATUS: %x\n", Read(SCI_VOL), Read(SCI_STATUS));
-		//SineTest();
 		g_FileSystemMgr->Mount("0:", g_ObjectMgr->GetDirectory(WKD_Device).Open("sd0", OA_Read | OA_Write).MoveAs<SDStorage>());
 		auto file = g_FileSystemMgr->OpenFile("0:/MUSIC/badapple.mp3", FileAccess::Read);
-		//g_Logger->PutFormat("bad_apple.mp3 Size: %z bytes\n", file->GetSize());
+		g_Logger->PutFormat("badapple.mp3 Size: %z bytes\n", file->GetSize());
 
 		uint8_t buf[32];
 		auto times = file->GetSize() / 32;
@@ -244,10 +240,7 @@ private:
 		while (dreqPin_->Read() != GpioPinValue::High);
 		cs_.IsCmd = false;
 		
-		kernel_critical kc;
-		xdcsPin_->Write(GpioPinValue::Low);
 		dev_->Write(bufferList);
-		xdcsPin_->Write(GpioPinValue::High);
 	}
 
 	void HardwareReset()
