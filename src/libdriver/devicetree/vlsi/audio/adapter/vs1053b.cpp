@@ -12,6 +12,7 @@
 #include <libbsp/bsp.hpp>
 
 using namespace Chino;
+using namespace Chino::Audio;
 using namespace Chino::Device;
 using namespace Chino::Threading;
 
@@ -108,6 +109,25 @@ public:
 	{
 		g_ObjectMgr->GetDirectory(WKD_Device).AddItem(fdt.GetName(), *this);
 	}
+
+	void WriteMusic(gsl::span<const uint8_t> data)
+	{
+		auto times = data.size() / 32;
+		const uint8_t* first = data.data();
+		for (size_t i = 0; i < times; i++)
+		{
+			gsl::span<const uint8_t> buffers[] = { {first, 32} };
+			WriteData({ buffers });
+			first += 32;
+		}
+	}
+
+	void Reset()
+	{
+		Write(SCI_MODE, 0x0804);
+		BSPSleepMs(1);
+		while (dreqPin_->Read() != GpioPinValue::High);
+	}
 protected:
 	virtual void OnFirstOpen() override
 	{
@@ -162,19 +182,6 @@ private:
 
 		Write(SCI_BASS, 0);
 		Write(SCI_VOL, 0x5555);
-		g_FileSystemMgr->Mount("0:", g_ObjectMgr->GetDirectory(WKD_Device).Open("sd0", OA_Read | OA_Write).MoveAs<SDStorage>());
-		auto file = g_FileSystemMgr->OpenFile("0:/MUSIC/badapple.mp3", FileAccess::Read);
-		g_Logger->PutFormat("badapple.mp3 Size: %z bytes\n", file->GetSize());
-
-		uint8_t buf[32];
-		auto times = file->GetSize() / 32;
-		for (size_t i = 0; i < times; i++)
-		{
-			gsl::span<uint8_t> rbuf[] = { buf };
-			gsl::span<const uint8_t> wbuf = { buf };
-			file->Read({ rbuf });
-			WriteMusic({ wbuf });
-		}
 	}
 
 	void MemoryTest()
@@ -223,18 +230,6 @@ private:
 		return uint16_t((readBuffer[0] << 8) | readBuffer[1]);
 	}
 
-	void WriteMusic(gsl::span<const uint8_t> data)
-	{
-		auto times = data.size() / 32;
-		const uint8_t* first = data.data();
-		for (size_t i = 0; i < times; i++)
-		{
-			gsl::span<const uint8_t> buffers[] = { {first, 32} };
-			WriteData({ buffers });
-			first += 32;
-		}
-	}
-
 	void WriteData(BufferList<const uint8_t> bufferList)
 	{
 		while (dreqPin_->Read() != GpioPinValue::High);
@@ -268,4 +263,79 @@ VS1053BDriver::VS1053BDriver(const FDTDevice& device)
 void VS1053BDriver::Install()
 {
 	g_DeviceMgr->InstallDevice(MakeObject<VS1053BDevice>(device_));
+}
+
+class VS1053BAudioClient;
+
+class VS1053BAudioRenderClient : public IAudioRenderClient
+{
+public:
+	VS1053BAudioRenderClient(ObjectPtr<VS1053BAudioClient> client)
+		:client_(std::move(client))
+	{
+
+	}
+
+	virtual void GetBuffer(gsl::span<uint8_t>& buffer) override
+	{
+		buffer = buffer_;
+	}
+
+	virtual void ReleaseBuffer() override;
+private:
+	ObjectPtr<VS1053BAudioClient> client_;
+	std::array<uint8_t, 32> buffer_;
+};
+
+class VS1053BAudioClient : public IAudioClient
+{
+public:
+	VS1053BAudioClient(ObjectAccessor<VS1053BDevice>&& device)
+		:device_(std::move(device))
+	{
+
+	}
+
+	virtual bool IsFormatSupported(const AudioFormat& format) override
+	{
+		return format.Tag == AudioFormatTag::AutoDetect;
+	}
+
+	virtual void SetFormat(const AudioFormat& format) override
+	{
+		if (format.Tag != AudioFormatTag::AutoDetect)
+			throw std::invalid_argument("Not supported audio format.");
+	}
+
+	virtual void Start() override
+	{
+		device_->Reset();
+	}
+
+	virtual void Stop() override
+	{
+		device_->Reset();
+	}
+
+	virtual ObjectPtr<IAudioRenderClient> GetRenderClient()
+	{
+		return MakeObject<VS1053BAudioRenderClient>(this);
+	}
+
+	void WriteMusic(gsl::span<const uint8_t> data)
+	{
+		device_->WriteMusic(data);
+	}
+private:
+	ObjectAccessor<VS1053BDevice> device_;
+};
+
+void VS1053BAudioRenderClient::ReleaseBuffer()
+{
+	client_->WriteMusic(buffer_);
+}
+
+ObjectPtr<IAudioClient> Chino::Device::CreateVS1053BAudioClient(ObjectAccessor<Chino::Device::Device>&& device)
+{
+	return MakeObject<VS1053BAudioClient>(device.MoveAs<VS1053BDevice>());
 }

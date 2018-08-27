@@ -19,8 +19,10 @@
 #include <kernel/network/Socket.hpp>
 #include <kernel/device/storage/filesystem/FileSystemManager.hpp>
 #include <chrono>
+#include <libdriver/devicetree/vlsi/audio/adapter/vs1053b.hpp>
 
 using namespace Chino;
+using namespace Chino::Audio;
 using namespace Chino::Device;
 using namespace Chino::Graphics;
 using namespace Chino::Threading;
@@ -29,8 +31,9 @@ using namespace Chino::Network;
 using namespace std::chrono_literals;
 
 #define RW_TEST 0
-#define FS_TEST 0
+#define FS_TEST 1
 #define AUDIO_TEST 1
+#define NET_TEST 0
 
 class App
 {
@@ -137,21 +140,44 @@ void App::Start()
 	dc_->Clear(*primarySurface_, { {}, primarySurface_->GetPixelSize() }, { 1, 0, 0 });
 	dc_->CopySubresource(*green, *primarySurface_, { {}, green->GetPixelSize() }, { 100, 100 });
 
-	//auto eth = g_NetworkMgr->InstallNetworkDevice(g_ObjectMgr->GetDirectory(WKD_Device).Open("eth0", OA_Read | OA_Write).MoveAs<EthernetController>());
-	//eth->SetAsDefault();
-	//eth->Setup();
-	//g_NetworkMgr->Run();
+#if NET_TEST
+	auto eth = g_NetworkMgr->InstallNetworkDevice(g_ObjectMgr->GetDirectory(WKD_Device).Open("eth0", OA_Read | OA_Write).MoveAs<EthernetController>());
+	eth->SetAsDefault();
+	eth->Setup();
+	g_NetworkMgr->Run();
+#endif
 
 #if FS_TEST
 	g_FileSystemMgr->Mount("0:", g_ObjectMgr->GetDirectory(WKD_Device).Open("sd0", OA_Read | OA_Write).MoveAs<SDStorage>());
-	auto file = g_FileSystemMgr->OpenFile("0:/setup.exe", FileAccess::Read);
-	g_Logger->PutFormat("setup.exe Size: %z bytes\n", file->GetSize());
-#endif
+	auto file = g_FileSystemMgr->OpenFile("0:/MUSIC/badapple.mp3", FileAccess::Read);
+	g_Logger->PutFormat("badapple.mp3 Size: %z bytes\n", file->GetSize());
 
 #if AUDIO_TEST
-	auto audio = g_ObjectMgr->GetDirectory(WKD_Device).Open("audio0", OA_Read | OA_Write);
+	AudioFormat format{ AudioFormatTag::AutoDetect };
+	auto audioClient = CreateVS1053BAudioClient(g_ObjectMgr->GetDirectory(WKD_Device).Open("audio0", OA_Read | OA_Write).MoveAs<Chino::Device::Device>());
+	audioClient->SetFormat(format);
+	auto render = audioClient->GetRenderClient();
+
+	// loop
+	while (true)
+	{
+		audioClient->Start();
+		file->SetPosition(0);
+		gsl::span<uint8_t> buffers[1];
+		bool end = false;
+		while (!end)
+		{
+			render->GetBuffer(buffers[0]);
+			if (file->Read({ buffers }) == 0)
+				end = true;
+			render->ReleaseBuffer();
+		}
+		audioClient->Stop();
+	}
+#endif
 #endif
 
+#if NET_TEST
 	auto bindAddr = std::make_shared<IPEndPoint>(IPAddress::IPv4Any, 80);
 	auto socket = MakeObject<Socket>(AddressFamily::IPv4, SocketType::Stream, ProtocolType::Tcp);
 	socket->Bind(bindAddr);
@@ -173,4 +199,5 @@ void App::Start()
 			break;
 		}
 	}
+#endif
 }

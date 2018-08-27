@@ -1,5 +1,5 @@
 //
-// Kernel Device
+// Kernel Graphics
 //
 #pragma once
 #include "../kernel_iface.h"

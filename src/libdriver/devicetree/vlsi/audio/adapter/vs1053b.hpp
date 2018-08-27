@@ -4,6 +4,7 @@
 #pragma once
 
 #include <libdriver/devicetree/Fdt.hpp>
+#include <kernel/audio/AudioDefs.hpp>
 
 namespace Chino
 {
@@ -18,5 +19,7 @@ namespace Chino
 		private:
 			const FDTDevice& device_;
 		};
+
+		ObjectPtr<Audio::IAudioClient> CreateVS1053BAudioClient(ObjectAccessor<Device>&& device);
 	}
 }
