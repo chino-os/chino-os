@@ -22,6 +22,7 @@ namespace Chino
 		class SpiDevice : public Device
 		{
 		public:
+			virtual double SetSpeed(double speed) = 0;
 			virtual void Write(BufferList<const uint8_t> bufferList) = 0;
 			virtual void TransferFullDuplex(BufferList<const uint8_t> writeBufferList, BufferList<uint8_t> readBufferList) = 0;
 			virtual void TransferSequential(BufferList<const uint8_t> writeBufferList, BufferList<uint8_t> readBufferList) = 0;

@@ -401,6 +401,7 @@ protected:
 		auto access = OA_Read | OA_Write;
 		auto spi = g_ObjectMgr->GetDirectory(WKD_Device).Open(fdt_.GetProperty("spi")->GetString(), access).MoveAs<SpiController>();
 		dev_ = spi->OpenDevice(cs_, SpiMode::Mode0, 8, access);
+		dev_->SetSpeed(20000000);
 		auto gpio = g_ObjectMgr->GetDirectory(WKD_Device).Open(fdt_.GetProperty("cs_gpio")->GetString(), access).MoveAs<GpioController>();
 		csPin_ = gpio->OpenPin(fdt_.GetProperty("cs_pin")->GetUInt32(0), access);
 		csPin_->SetDriveMode(GpioPinDriveMode::Output);

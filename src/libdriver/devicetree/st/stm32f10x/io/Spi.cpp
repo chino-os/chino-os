@@ -10,6 +10,7 @@
 #include "../controller/Rcc.hpp"
 #include "../controller/Port.hpp"
 #include "../controller/Dmac.hpp"
+#include <cmath>
 
 using namespace Chino;
 using namespace Chino::Device;
@@ -116,11 +117,12 @@ class Stm32SpiDevice : public SpiDevice, public ExclusiveObjectAccess
 {
 public:
 	Stm32SpiDevice(ObjectAccessor<Stm32SpiController>&& controller, ChipSelectPin& csPin, SpiMode mode, uint32_t dataBitLength)
-		:controller_(std::move(controller)), csPin_(csPin), mode_(mode), dataBitLength_(dataBitLength)
+		:controller_(std::move(controller)), csPin_(csPin), mode_(mode), dataBitLength_(dataBitLength), baudRate_(SPI_BD_Div256)
 	{
 
 	}
 
+	virtual double SetSpeed(double speed) override;
 	virtual void Write(BufferList<const uint8_t> bufferList) override;
 	virtual void TransferFullDuplex(BufferList<const uint8_t> writeBufferList, BufferList<uint8_t> readBufferList) override;
 	virtual void TransferSequential(BufferList<const uint8_t> writeBufferList, BufferList<uint8_t> readBufferList) override;
@@ -131,6 +133,7 @@ private:
 	ChipSelectPin& csPin_;
 	SpiMode mode_;
 	uint32_t dataBitLength_;
+	spi_baud_rate baudRate_;
 };
 
 class Stm32SpiController : public SpiController, public FreeObjectAccess
@@ -162,7 +165,7 @@ class Stm32SpiController : public SpiController, public FreeObjectAccess
 
 	enum
 	{
-		DMAThreshold = 5
+		DMAThreshold = 33
 	};
 public:
 	Stm32SpiController(const FDTDevice& fdt)
@@ -184,6 +187,15 @@ public:
 	{
 		return MakeAccessor(MakeObject<Stm32SpiDevice>(
 			MakeAccessor<Stm32SpiController>(this, OA_Read | OA_Write), csPin, mode, dataBitLength), access);
+	}
+
+	double SetSpeed(Stm32SpiDevice& device, double speed)
+	{
+		double clk = RccDevice::Rcc1GetClockFrequency(periph_);
+		auto div = (uint32_t)std::min(8.0, std::max(1.0, std::ceil(std::log2(clk / speed))));
+		speed = clk / (1 << div);
+		device.baudRate_ = static_cast<spi_baud_rate>(div - 1);
+		return speed;
 	}
 
 	void Write(Stm32SpiDevice& device, BufferList<const uint8_t> bufferList)
@@ -296,7 +308,7 @@ private:
 			throw std::invalid_argument("Invalid data bit length.");
 		}
 
-		cr1.BR = spi_baud_rate::SPI_BD_Div4;
+		cr1.BR = device.baudRate_;
 		while (spi_->SR.BSY);
 		spi_->CR1.Value = cr1.Value;
 	}
@@ -475,6 +487,11 @@ SpiDriver::SpiDriver(const FDTDevice& device)
 void SpiDriver::Install()
 {
 	g_DeviceMgr->InstallDevice(MakeObject<Stm32SpiController>(device_));
+}
+
+double Stm32SpiDevice::SetSpeed(double speed)
+{
+	return controller_->SetSpeed(*this, speed);
 }
 
 void Stm32SpiDevice::Write(BufferList<const uint8_t> bufferList)
