@@ -39,6 +39,7 @@ Chino 预定义了一组驱动接口，为应用开发者提供了一个统一�
 | -             | I²C             | stm32f10x, i2c  |
 | -             | SPI             | stm32f10x, spi  |
 | -             | 串行            | stm32f10x, uart |
+| -             | SDIO            | stm32f10x, sdio |
 | 存储          | EEPROM          | AT24C02         |
 | -             | Flash           | GD25Q128        |
 | -             | SD 存储         | SD V2.0 卡      |

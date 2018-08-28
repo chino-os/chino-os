@@ -39,6 +39,7 @@ Chino predefined a set of driver interfaces to provide a unified API layer to ap
 | -             | I²C				| stm32f10x, i2c  |
 | -             | SPI             | stm32f10x, spi  |
 | -             | Serial          | stm32f10x, uart |
+| -             | SDIO            | stm32f10x, sdio |
 | Storage       | EEPROM          | AT24C02         |
 | -             | Flash           | GD25Q128        |
 | -             | SD Storage      | SD V2.0 Card    |
