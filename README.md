@@ -17,6 +17,8 @@ chino-os
 - Inter process communication (Mailslot)
 - Unified driver model (see [Driver Framework](#driver-framework))
 - Network (LwIP based Socket API)
+- File system (FATFS based)
+- Audio (Simple playback / record API)
 
 ## Supported Archs & Boards
 
@@ -39,7 +41,9 @@ Chino predefined a set of driver interfaces to provide a unified API layer to ap
 | -             | Serial          | stm32f10x, uart |
 | Storage       | EEPROM          | AT24C02         |
 | -             | Flash           | GD25Q128        |
+| -             | SD Storage      | SD V2.0 Card    |
 | Display       | TFT LCD         | ILI9486L        |
+| Audio         | Adapter         | VS1053b         |
 | Network       | Ethernet        | ENC28J60        |
 | Sensor        | Accelerometer   | ADXL345         |
 
