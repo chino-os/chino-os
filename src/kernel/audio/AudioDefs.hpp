@@ -25,9 +25,21 @@ namespace Chino
 			uint16_t BitsPerSample;
 		};
 
+		enum class AudioClientMode
+		{
+			Render,
+			Capture
+		};
+
 		struct IAudioRenderClient : public Object
 		{
 			virtual void GetBuffer(gsl::span<uint8_t>& buffer) = 0;
+			virtual void ReleaseBuffer() = 0;
+		};
+
+		struct IAudioCaptureClient : public Object
+		{
+			virtual void GetBuffer(gsl::span<const uint8_t>& buffer) = 0;
 			virtual void ReleaseBuffer() = 0;
 		};
 
@@ -35,7 +47,10 @@ namespace Chino
 		{
 			virtual bool IsFormatSupported(const AudioFormat& format) = 0;
 			virtual void SetFormat(const AudioFormat& format) = 0;
+			virtual void SetMode(AudioClientMode mode) = 0;
 			virtual ObjectPtr<IAudioRenderClient> GetRenderClient() = 0;
+			virtual ObjectPtr<IAudioCaptureClient> GetCaptureClient() = 0;
+			virtual void SetChannelVolume(size_t channelId, float volume) = 0;
 			virtual void Start() = 0;
 			virtual void Stop() = 0;
 		};

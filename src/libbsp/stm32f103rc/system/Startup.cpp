@@ -33,21 +33,27 @@ using namespace std::chrono_literals;
 #define RW_TEST 0
 #define FS_TEST 1
 #define AUDIO_TEST 1
+#define AUDIO_TEST_RENDER 1
 #define NET_TEST 0
+#define LCD_TEST 0
 
 class App
 {
 public:
 	App()
 	{
+#if LCD_TEST
 		dc_ = MakeObject<DeviceContext>(g_ObjectMgr->GetDirectory(WKD_Device).Open("lcd1", OA_Read | OA_Write).MoveAs<DisplayDevice>());
 		primarySurface_ = dc_->CreatePrimarySurface();
+#endif
 	}
 
 	void Start();
 private:
+#if LCD_TEST
 	ObjectPtr<DeviceContext> dc_;
 	ObjectPtr<Surface> primarySurface_;
+#endif
 };
 
 void Chino::BSPSystemStartup()
@@ -135,12 +141,15 @@ void Chino::BSPSystemStartup()
 
 void App::Start()
 {
+#if LCD_TEST
 	auto green = dc_->CreateOffscreenSurface(ColorFormat::B5G6R5_UNORM, { 30,30 });
 	dc_->Clear(*green, { {}, green->GetPixelSize() }, { 0,1,0 });
 	dc_->Clear(*primarySurface_, { {}, primarySurface_->GetPixelSize() }, { 1, 0, 0 });
 	dc_->CopySubresource(*green, *primarySurface_, { {}, green->GetPixelSize() }, { 100, 100 });
+#endif
 
 #if NET_TEST
+	g_NetworkMgr.construct();
 	auto eth = g_NetworkMgr->InstallNetworkDevice(g_ObjectMgr->GetDirectory(WKD_Device).Open("eth0", OA_Read | OA_Write).MoveAs<EthernetController>());
 	eth->SetAsDefault();
 	eth->Setup();
@@ -148,15 +157,20 @@ void App::Start()
 #endif
 
 #if FS_TEST
+	g_FileSystemMgr.construct();
 	g_FileSystemMgr->Mount("0:", g_ObjectMgr->GetDirectory(WKD_Device).Open("sd0", OA_Read | OA_Write).MoveAs<SDStorage>());
-	auto file = g_FileSystemMgr->OpenFile("0:/MUSIC/badapple.mp3", FileAccess::Read);
-	g_Logger->PutFormat("badapple.mp3 Size: %z bytes\n", file->GetSize());
 
 #if AUDIO_TEST
-	AudioFormat format{ AudioFormatTag::AutoDetect };
 	auto audioClient = CreateVS1053BAudioClient(g_ObjectMgr->GetDirectory(WKD_Device).Open("audio0", OA_Read | OA_Write).MoveAs<Chino::Device::Device>());
+	audioClient->SetChannelVolume(0, 0.6f);
+	audioClient->SetChannelVolume(1, 0.6f);
+#if AUDIO_TEST_RENDER
+	AudioFormat format{ AudioFormatTag::AutoDetect };
+	audioClient->SetMode(AudioClientMode::Render);
 	audioClient->SetFormat(format);
 	auto render = audioClient->GetRenderClient();
+	auto file = g_FileSystemMgr->OpenFile("0:/MUSIC/badapple.flac", FileAccess::Read);
+	g_Logger->PutFormat("badapple.flac Size: %z bytes\n", file->GetSize());
 
 	// loop
 	while (true)
@@ -174,6 +188,70 @@ void App::Start()
 		}
 		audioClient->Stop();
 	}
+#else
+	struct RIFF
+	{
+		uint32_t ChunkID;
+		uint32_t ChunkSize;
+		uint32_t Format;
+		uint32_t SubChunk1ID;
+		uint32_t SubChunk1Size;
+		uint16_t AudioFormat;
+		uint16_t NumOfChannels;
+		uint32_t SampleRate;
+		uint32_t ByteRate;
+		uint16_t BlockAlign;
+		uint16_t BitsPerSample;
+		uint32_t SubChunk3ID;
+		uint32_t SubChunk3Size;
+	} riff;
+
+	riff.ChunkID = 'FFIR';
+	riff.Format = 'EVAW';
+	riff.SubChunk1ID = ' tmf';
+	riff.SubChunk1Size = 0x10;
+	riff.AudioFormat = 1;
+	riff.NumOfChannels = 1;
+	riff.SampleRate = 8000;
+	riff.ByteRate = 8000 * 1 * 2;
+	riff.BlockAlign = 2;
+	riff.BitsPerSample = 16;
+	riff.SubChunk3ID = 'atad';
+
+	gsl::span<const uint8_t> riffbuf[] = { {reinterpret_cast<const uint8_t*>(&riff), sizeof(riff)} };
+
+	AudioFormat format{ AudioFormatTag::PCM, 1, 8000, 2, 16 };
+	audioClient->SetMode(AudioClientMode::Capture);
+	audioClient->SetFormat(format);
+
+	auto capture = audioClient->GetCaptureClient();
+	const auto maxSecs = 5;
+	{
+		auto file = g_FileSystemMgr->OpenFile("0:/MUSIC/record.wav", FileAccess::Write, FileMode::CreateAlways);
+		file->Write({ riffbuf });
+
+		size_t written = 0;
+		gsl::span<const uint8_t> buffers[1];
+		audioClient->Start();
+		while (written < 2 * 8000 * maxSecs)
+		{
+			capture->GetBuffer(buffers[0]);
+			if (!buffers[0].empty())
+			{
+				file->Write({ buffers });
+				written += buffers[0].size();
+			}
+			capture->ReleaseBuffer();
+		}
+		auto size = sizeof(riff) + written;
+		file->SetPosition(0);
+		riff.ChunkSize = size - 8;
+		riff.SubChunk3Size = size - 36;
+		file->Write({ riffbuf });
+	}
+
+	g_Logger->PutString("Capture done.\n");
+#endif
 #endif
 #endif
 
@@ -188,7 +266,7 @@ void App::Start()
 	{
 		const uint8_t text[] = "hello\n";
 		gsl::span<const uint8_t> buffers[] = { {text,6} };
-	
+
 		try
 		{
 			client->Send({ buffers });
@@ -198,6 +276,6 @@ void App::Start()
 		{
 			break;
 		}
-	}
+}
 #endif
 }

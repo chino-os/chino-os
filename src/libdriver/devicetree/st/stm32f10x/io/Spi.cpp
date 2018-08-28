@@ -165,7 +165,7 @@ class Stm32SpiController : public SpiController, public FreeObjectAccess
 
 	enum
 	{
-		DMAThreshold = 8
+		DMAThreshold = 33
 	};
 public:
 	Stm32SpiController(const FDTDevice& fdt)
