@@ -8,6 +8,7 @@
 .global PendSV_Handler
 
 .section .text
+.align 2
 
 ArchHaltProcessor:
 	ret
