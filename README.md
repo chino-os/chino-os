@@ -22,11 +22,11 @@ chino-os
 
 ## Supported Archs & Boards
 
-Architecture  | Board           | Firmware Type |
-------------- | ----------------|----------------
-win-x86_64    | win32-simulator | exe           |
-x86_64		  | pc			    | iso           |
-cortex-m3	  | stm32f103rc     | hex           |
+Architecture  | Board                   | Firmware Type |
+------------- | ------------------------|----------------
+win-x86_64    | generic/win32-simulator | exe           |
+x86_64		  | generic/pc			    | iso           |
+cortex-m3	  | generic/stm32f103rc     | hex           |
 
 ## Driver Framework
 

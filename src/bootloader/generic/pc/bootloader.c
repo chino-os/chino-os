@@ -2,7 +2,7 @@
 // Chino Bootloader
 //
 #include <kernel/kernel_iface.h>
-#include <libbsp/pc/bsp_defines.hpp>
+#include <libbsp/generic/pc/bsp_defines.hpp>
 #include <efi.h>
 #include <efilib.h>
 #include <acpi/Acpi2_0.h>

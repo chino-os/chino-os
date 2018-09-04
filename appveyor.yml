@@ -6,6 +6,6 @@ build_script:
 
     mkdir build && cd build
 
-    cmake .. -G "Visual Studio 15 2017 Win64" -DARCH="win-x86_64"  -DBOARD="win32-simulator"
+    cmake .. -G "Visual Studio 15 2017 Win64" -DARCH="win-x86_64"  -DBOARD="generic/win32-simulator"
 
     msbuild ALL_BUILD.vcxproj
