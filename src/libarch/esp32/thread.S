@@ -8,14 +8,16 @@
 .global PendSV_Handler
 
 .section .text
-.align 2
 
+.align 4
 ArchHaltProcessor:
 	ret
-
+	
+.align 4
 ArchEnableInterrupt:
 	ret
-
+	
+.align 4
 ArchDisableInterrupt:
 	ret
 	

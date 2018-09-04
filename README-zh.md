@@ -22,11 +22,11 @@ chino-os
 
 ## 支持的架构与开发板
 
-架构          | 开发板           | 固件类型 |
-------------- | ----------------|----------------
-win-x86_64    | win32-simulator | exe           |
-x86_64		  | pc			    | iso           |
-cortex-m3	  | stm32f103rc     | hex           |
+架构          | 开发板                  | 固件类型 |
+------------- | ------------------------|----------------
+win-x86_64    | generic/win32-simulator | exe           |
+x86_64		  | generic/pc			    | iso           |
+cortex-m3	  | generic/stm32f103rc     | hex           |
 
 ## 驱动框架
 

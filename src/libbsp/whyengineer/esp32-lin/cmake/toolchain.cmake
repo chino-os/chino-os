@@ -5,6 +5,7 @@ SET(COMMON_FLAGS "\
 -ffunction-sections \
 -fdata-sections \
 -fstrict-volatile-bitfields \
+-mlongcalls \
 -fno-stack-protector")
 
 SET(COMMON_WARNING_FLAGS "-Wall \
