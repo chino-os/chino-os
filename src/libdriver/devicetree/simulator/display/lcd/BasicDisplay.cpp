@@ -275,7 +275,8 @@ public:
 			rect.right = srcRect.Right;
 			rect.bottom = srcRect.Bottom;
 
-			DDSURFACEDESC2 ddsd;
+            DDSURFACEDESC2 ddsd{};
+            ddsd.dwSize = sizeof(ddsd);
 			coassert(devSurface->GetBackSurface()->Lock(&rect, &ddsd, DDLOCK_WAIT | DDLOCK_READONLY, nullptr));
 			devSurface->GetBackSurface()->Unlock(&rect);
 		}
@@ -285,7 +286,8 @@ public:
 		kassert(devSurface);
 		{
 			RECT rect;
-			DDSURFACEDESC2 ddsd;
+            DDSURFACEDESC2 ddsd{};
+            ddsd.dwSize = sizeof(ddsd);
 			rect.left = destPosition.X;
 			rect.top = destPosition.Y;
 			rect.right = destPosition.X + srcRect.GetSize().Width;

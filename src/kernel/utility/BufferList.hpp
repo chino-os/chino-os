@@ -126,6 +126,27 @@ namespace Chino
 				return written;
 			}
 
+            template <class TIn>
+            size_t CopyFrom(gsl::span<TIn> buffer) const noexcept
+            {
+				size_t cnt = 0;
+				size_t written = 0;
+				auto toWrite = std::min(Count(), size_t(buffer.size()));
+				for (size_t i = 0; i < bufferCount_; i++)
+				{
+					auto& dst = buffers_[i];
+					auto cntWrite = std::min(toWrite, size_t(dst.size()));
+                    auto sub = buffer.subspan(cnt, cntWrite);
+					std::copy(sub.begin(), sub.end(), dst.data());
+					cnt += cntWrite;
+					written += cntWrite;
+					toWrite -= cntWrite;
+					if (!toWrite)break;
+				}
+
+				return written;
+            }
+
 			BufferListSelect Prepend(gsl::span<T> buffer) const
 			{
 				if (bufferCount_ >= BufferList<T>::MaxBuffersCount)

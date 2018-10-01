@@ -6,6 +6,7 @@
 #include "../devicetree/resource.h"
 
 #include <libdriver/devicetree/simulator/display/lcd/BasicDisplay.hpp>
+#include <libdriver/devicetree/simulator/storage/SDStorage.hpp>
 
 using namespace Chino::Device;
 
@@ -33,6 +34,7 @@ gsl::span<const uint8_t> Chino::Device::BSPGetFdtData() noexcept
 
 const FDTDriverDescriptor* Chino::Device::g_FDTDrivers[] =
 {
-	REF_FDT_DRIVER_DESC(BasicDisplayDriver),
+    REF_FDT_DRIVER_DESC(BasicDisplayDriver),
+    REF_FDT_DRIVER_DESC(SDStorageDriver),
 	nullptr
 };

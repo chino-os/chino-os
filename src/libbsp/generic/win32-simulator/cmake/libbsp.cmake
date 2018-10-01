@@ -6,7 +6,8 @@ SET(BSP_SRC ${DT_DIR}/Fdt.cpp
 	${DT_DIR}/FdtRoot.cpp
 	
 	${SIM_DIR}/display/lcd/BasicDisplay.cpp
+	${SIM_DIR}/storage/SDStorage.cpp
 
 	${SD_DIR}/DummySdioRoot.cpp)
 
-LIST(APPEND BSP_LIBS fdt ddraw dxguid)
+LIST(APPEND BSP_LIBS fdt ddraw dxguid vhdf)
