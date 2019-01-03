@@ -13,7 +13,7 @@ using namespace Chino::Threading;
 
 #define configTICK_RATE_HZ 10
 
-static std::atomic<bool> _switchQueued = false;
+static std::atomic<bool> _switchQueued = false, _allowSwitch = false;
 static HANDLE _timerThread, _timer, _wfiEvent;
 
 static void ArchQueueContextSwitch();
@@ -58,13 +58,17 @@ static void ArchSwitchContext(ULONG_PTR)
     Kernel_SwitchThreadContext();
     ctx = reinterpret_cast<ThreadContext_Arch*>(g_CurrentThreadContext);
     ResumeThread((HANDLE)ctx->thread);
+    _switchQueued.store(false, std::memory_order_release);
 }
 
 static void ArchQueueContextSwitch()
 {
-    bool exp = false;
-    if (_switchQueued.compare_exchange_strong(exp, true, std::memory_order_acq_rel))
-        QueueUserAPC(ArchSwitchContext, _timerThread, 0);
+    if (_allowSwitch)
+    {
+        bool exp = false;
+        if (_switchQueued.compare_exchange_strong(exp, true, std::memory_order_acq_rel))
+            QueueUserAPC(ArchSwitchContext, _timerThread, 0);
+    }
 }
 
 static void SchedulerTimerCallback(LPVOID lpArg, DWORD dwTimerLowValue, DWORD dwTimerHighValue)
@@ -101,6 +105,7 @@ extern "C"
 
     void ArchDisableInterrupt()
     {
+        _allowSwitch = false;
         CancelWaitableTimer(_timer);
     }
 
@@ -109,6 +114,7 @@ extern "C"
         LARGE_INTEGER dueTime;
         dueTime.QuadPart = 0;
         SetWaitableTimer(_timer, &dueTime, 1000 / configTICK_RATE_HZ, SchedulerTimerCallback, nullptr, FALSE);
+        _allowSwitch = true;
     }
 
     void ArchHaltProcessor()
