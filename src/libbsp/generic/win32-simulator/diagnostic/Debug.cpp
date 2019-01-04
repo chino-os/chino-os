@@ -21,6 +21,7 @@ void Chino::Diagnostic::BSPDebugPutChar(wchar_t chr)
 
 void Chino::Diagnostic::BSPDebugBlueScreen()
 {
+    DebugBreak();
 }
 
 void Chino::Diagnostic::BSPDebugClearScreen()

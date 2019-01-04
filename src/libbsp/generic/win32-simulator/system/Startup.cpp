@@ -9,11 +9,14 @@
 #include <kernel/object/ObjectManager.hpp>
 #include <kernel/threading/ThreadSynchronizer.hpp>
 #include <kernel/graphics/DeviceContext.hpp>
+#include <kernel/device/storage/filesystem/FileSystemManager.hpp>
 
 using namespace Chino;
 using namespace Chino::Device;
 using namespace Chino::Graphics;
 using namespace Chino::Threading;
+
+#define FS_TEST 1
 
 class App
 {
@@ -59,7 +62,7 @@ void Chino::BSPSystemStartup()
 	{
 		while (true)
 		{
-			for (size_t i = 0; i < 100; i++)
+			for (size_t i = 0; i < 10; i++)
 				ArchHaltProcessor();
 			semp->Give(1);
 		}
@@ -71,8 +74,19 @@ void Chino::BSPSystemStartup()
 
 void App::Start()
 {
-	//auto green = dc_->CreateOffscreenSurface(ColorFormat::B5G6R5_UNORM, { 10,10 });
-	//dc_->Clear(*green, { {}, green->GetPixelSize() }, { 0,1,0 });
-	//dc_->Clear(*primarySurface_, { {}, primarySurface_->GetPixelSize() }, { 1, 0, 0 });
-	//dc_->CopySubresource(*green, *primarySurface_, { {}, green->GetPixelSize() }, { 0,0 });
+    g_FileSystemMgr.construct();
+    g_FileSystemMgr->Mount("0:", g_ObjectMgr->GetDirectory(WKD_Device).Open("sd0", OA_Read | OA_Write).MoveAs<SDStorage>());
+
+	auto green = dc_->CreateOffscreenSurface(ColorFormat::B5G6R5_UNORM, { 10,10 });
+	dc_->Clear(*green, { {}, green->GetPixelSize() }, { 0,1,0 });
+	dc_->Clear(*primarySurface_, { {}, primarySurface_->GetPixelSize() }, { 1, 0, 0 });
+	dc_->CopySubresource(*green, *primarySurface_, { {}, green->GetPixelSize() }, { 10,10 });
+
+#if FS_TEST
+    auto file = g_FileSystemMgr->OpenFile("0:/hello.txt", FileAccess::Read);
+    uint8_t buffer[256] = { 0 };
+    gsl::span<uint8_t> buffers[] = { buffer };
+    file->Read({ buffers });
+    g_Logger->PutString(reinterpret_cast<const char*>(buffer));
+#endif
 }

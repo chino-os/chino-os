@@ -370,6 +370,7 @@ void KernelLogger::BlueScreen()
 
 void KernelLogger::FailFast(const char* message, const char* file, size_t line)
 {
+    BlueScreen();
 	PutFormat("Oops!\n\nAssert Failed: %s\nAt: %s:%z", message, file, line);
 	ArchDisableInterrupt();
 	while (1)

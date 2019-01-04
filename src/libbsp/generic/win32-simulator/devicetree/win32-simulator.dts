@@ -23,5 +23,12 @@
 			device_type = "display";
 			compatible = "simulator,basic-display";
 		};
+
+		sdStorage: sd0 {
+			device_type = "storage";
+			compatible = "simulator,sd-storage";
+			filename = "sd0.vhd";
+			size_in_mb = <256>;
+		};
 	};
 };
