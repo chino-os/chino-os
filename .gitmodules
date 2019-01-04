@@ -10,6 +10,6 @@
 [submodule "thirdparty/fatfs"]
 	path = thirdparty/fatfs
 	url = https://github.com/chino-os/FatFs.git
-[submodule "thirdparty\\libvhdf"]
-	path = thirdparty\\libvhdf
+[submodule "thirdparty/libvhdf"]
+	path = thirdparty/libvhdf
 	url = https://github.com/chino-os/libvhdf.git
