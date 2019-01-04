@@ -10,4 +10,4 @@ SET(BSP_SRC ${DT_DIR}/Fdt.cpp
 
 	${SD_DIR}/DummySdioRoot.cpp)
 
-LIST(APPEND BSP_LIBS kernel32 fdt ddraw dxguid vhdf)
+LIST(APPEND BSP_LIBS fdt ddraw dxguid vhdf)

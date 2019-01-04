@@ -24,7 +24,6 @@ static void SchedulerTimerCallback(LPVOID lpArg, DWORD dwTimerLowValue, DWORD dw
 void Chino::Threading::BSPSetupSchedulerTimer()
 {
     DuplicateHandle(GetCurrentProcess(), GetCurrentThread(), GetCurrentProcess(), &_timerThread, 0, FALSE, DUPLICATE_SAME_ACCESS);
-    SetThreadDescription(GetCurrentThread(), L"Scheduler");
     _wfiEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
     _timer = CreateWaitableTimer(nullptr, FALSE, nullptr);
     LARGE_INTEGER dueTime;
@@ -102,9 +101,6 @@ static unsigned int ThreadStartThunk(void* args)
     return 0;
 }
 
-static const wchar_t* names[] = { L"1", L"2", L"3", L"4" };
-static int ii;
-
 extern "C"
 {
     void ArchInitializeThreadContextArch(ThreadContext_Arch* context, uintptr_t stackPointer, uintptr_t entryPoint, uintptr_t returnAddress, uintptr_t parameter)
@@ -114,7 +110,6 @@ extern "C"
         context->returnAddress = returnAddress;
 
         context->thread = _beginthreadex(nullptr, 0, ThreadStartThunk, context, CREATE_SUSPENDED, nullptr);
-        SetThreadDescription((HANDLE)context->thread, names[ii++]);
     }
 
     bool ArchValidateThreadContext(ThreadContext_Arch* context, uintptr_t stackTop, uintptr_t stackBottom)
