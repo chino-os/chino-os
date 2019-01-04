@@ -6,6 +6,7 @@
 #include <libbsp/bsp.hpp>
 #include <mutex>
 #include <process.h>
+#include <vector>
 
 using namespace Chino::Threading;
 
@@ -13,10 +14,12 @@ using namespace Chino::Threading;
 
 #define configTICK_RATE_HZ 10
 
-static std::atomic<bool> _switchQueued = false, _allowSwitch = false, _switchPending = false;
+static std::atomic<bool> _switchQueued = false, _allowSwitch = true, _switchPending = false;
 static HANDLE _timerThread, _timer, _wfiEvent;
+static std::mutex _threadMutex;
 
 static void ArchQueueContextSwitch();
+static void SchedulerTimerCallback(LPVOID lpArg, DWORD dwTimerLowValue, DWORD dwTimerHighValue);
 
 void Chino::Threading::BSPSetupSchedulerTimer()
 {
@@ -24,7 +27,9 @@ void Chino::Threading::BSPSetupSchedulerTimer()
     SetThreadDescription(GetCurrentThread(), L"Scheduler");
     _wfiEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
     _timer = CreateWaitableTimer(nullptr, FALSE, nullptr);
-    ArchEnableInterrupt();
+    LARGE_INTEGER dueTime;
+    dueTime.QuadPart = 0;
+    SetWaitableTimer(_timer, &dueTime, 1000 / configTICK_RATE_HZ, SchedulerTimerCallback, nullptr, FALSE);
     while (true)
         SleepEx(INFINITE, TRUE);
 }
@@ -46,6 +51,8 @@ size_t Chino::Threading::BSPMsToTicks(size_t ms)
 
 static void ArchSwitchContext(ULONG_PTR)
 {
+    std::lock_guard<std::mutex> locker(_threadMutex);
+    SetEvent(_wfiEvent);
     auto ctx = reinterpret_cast<ThreadContext_Arch*>(g_CurrentThreadContext);
     if (ctx)
     {
@@ -59,13 +66,16 @@ static void ArchSwitchContext(ULONG_PTR)
     Kernel_SwitchThreadContext();
     ctx = reinterpret_cast<ThreadContext_Arch*>(g_CurrentThreadContext);
     ResumeThread((HANDLE)ctx->thread);
+    ResetEvent(_wfiEvent);
     _switchQueued.store(false, std::memory_order_release);
 }
 
 static void ArchQueueContextSwitch()
 {
+    std::lock_guard<std::mutex> locker(_threadMutex);
     if (_allowSwitch)
     {
+        _switchPending = false;
         bool exp = false;
         if (_switchQueued.compare_exchange_strong(exp, true, std::memory_order_acq_rel))
             QueueUserAPC(ArchSwitchContext, _timerThread, 0);
@@ -78,7 +88,7 @@ static void ArchQueueContextSwitch()
 
 static void SchedulerTimerCallback(LPVOID lpArg, DWORD dwTimerLowValue, DWORD dwTimerHighValue)
 {
-    if (Kernel_IncrementTick())
+    if (_switchPending || Kernel_IncrementTick())
         ArchQueueContextSwitch();
 }
 
@@ -92,6 +102,9 @@ static unsigned int ThreadStartThunk(void* args)
     return 0;
 }
 
+static const wchar_t* names[] = { L"1", L"2", L"3", L"4" };
+static int ii;
+
 extern "C"
 {
     void ArchInitializeThreadContextArch(ThreadContext_Arch* context, uintptr_t stackPointer, uintptr_t entryPoint, uintptr_t returnAddress, uintptr_t parameter)
@@ -101,6 +114,7 @@ extern "C"
         context->returnAddress = returnAddress;
 
         context->thread = _beginthreadex(nullptr, 0, ThreadStartThunk, context, CREATE_SUSPENDED, nullptr);
+        SetThreadDescription((HANDLE)context->thread, names[ii++]);
     }
 
     bool ArchValidateThreadContext(ThreadContext_Arch* context, uintptr_t stackTop, uintptr_t stackBottom)
@@ -110,21 +124,15 @@ extern "C"
 
     void ArchDisableInterrupt()
     {
+        std::lock_guard<std::mutex> locker(_threadMutex);
         _allowSwitch = false;
-        CancelWaitableTimer(_timer);
     }
 
     void ArchEnableInterrupt()
     {
-        LARGE_INTEGER dueTime;
-        dueTime.QuadPart = 0;
-        SetWaitableTimer(_timer, &dueTime, 1000 / configTICK_RATE_HZ, SchedulerTimerCallback, nullptr, FALSE);
         _allowSwitch = true;
         if (_switchPending)
-        {
-            _switchPending = false;
-            ArchQueueContextSwitch();
-        }
+            WaitForSingleObject(_wfiEvent, INFINITE);
     }
 
     void ArchHaltProcessor()

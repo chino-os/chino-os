@@ -62,7 +62,7 @@ void Chino::BSPSystemStartup()
 	{
 		while (true)
 		{
-			for (size_t i = 0; i < 100; i++)
+			for (size_t i = 0; i < 10; i++)
 				ArchHaltProcessor();
 			semp->Give(1);
 		}
