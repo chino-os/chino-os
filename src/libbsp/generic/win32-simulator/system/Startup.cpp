@@ -87,6 +87,6 @@ void App::Start()
     uint8_t buffer[256] = { 0 };
     gsl::span<uint8_t> buffers[] = { buffer };
     file->Read({ buffers });
-    g_Logger->PutString(reinterpret_cast<const wchar_t*>(buffer) + 1);
+    g_Logger->PutString(reinterpret_cast<const char*>(buffer));
 #endif
 }

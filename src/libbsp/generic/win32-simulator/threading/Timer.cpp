@@ -1,19 +1,19 @@
 //
 // Chino Thread
 //
-#include <libbsp/bsp.hpp>
-#include <libarch/arch.h>
 #include <Windows.h>
-#include <process.h>
+#include <libarch/arch.h>
+#include <libbsp/bsp.hpp>
 #include <mutex>
+#include <process.h>
 
 using namespace Chino::Threading;
 
-#define portINITIAL_RFLAGS	0x206u
+#define portINITIAL_RFLAGS 0x206u
 
 #define configTICK_RATE_HZ 10
 
-static std::atomic<bool> _switchQueued = false, _allowSwitch = false;
+static std::atomic<bool> _switchQueued = false, _allowSwitch = false, _switchPending = false;
 static HANDLE _timerThread, _timer, _wfiEvent;
 
 static void ArchQueueContextSwitch();
@@ -21,6 +21,7 @@ static void ArchQueueContextSwitch();
 void Chino::Threading::BSPSetupSchedulerTimer()
 {
     DuplicateHandle(GetCurrentProcess(), GetCurrentThread(), GetCurrentProcess(), &_timerThread, 0, FALSE, DUPLICATE_SAME_ACCESS);
+    SetThreadDescription(GetCurrentThread(), L"Scheduler");
     _wfiEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
     _timer = CreateWaitableTimer(nullptr, FALSE, nullptr);
     ArchEnableInterrupt();
@@ -69,6 +70,10 @@ static void ArchQueueContextSwitch()
         if (_switchQueued.compare_exchange_strong(exp, true, std::memory_order_acq_rel))
             QueueUserAPC(ArchSwitchContext, _timerThread, 0);
     }
+    else
+    {
+        _switchPending = true;
+    }
 }
 
 static void SchedulerTimerCallback(LPVOID lpArg, DWORD dwTimerLowValue, DWORD dwTimerHighValue)
@@ -80,9 +85,9 @@ static void SchedulerTimerCallback(LPVOID lpArg, DWORD dwTimerLowValue, DWORD dw
 static unsigned int ThreadStartThunk(void* args)
 {
     auto context = reinterpret_cast<ThreadContext_Arch*>(args);
-    auto threadMain = reinterpret_cast<void(*)(uintptr_t)>(context->entryPoint);
+    auto threadMain = reinterpret_cast<void (*)(uintptr_t)>(context->entryPoint);
     threadMain(context->parameter);
-    auto returnAddr = reinterpret_cast<void(*)()>(context->returnAddress);
+    auto returnAddr = reinterpret_cast<void (*)()>(context->returnAddress);
     returnAddr();
     return 0;
 }
@@ -115,6 +120,11 @@ extern "C"
         dueTime.QuadPart = 0;
         SetWaitableTimer(_timer, &dueTime, 1000 / configTICK_RATE_HZ, SchedulerTimerCallback, nullptr, FALSE);
         _allowSwitch = true;
+        if (_switchPending)
+        {
+            _switchPending = false;
+            ArchQueueContextSwitch();
+        }
     }
 
     void ArchHaltProcessor()

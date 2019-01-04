@@ -313,6 +313,7 @@ protected:
 	virtual void OnFirstOpen() override
 	{
 		wndThread_ = _beginthread(NativeWindow::ThreadMain, 1 * 1024 * 1024, &window_);
+        SetThreadDescription((HANDLE)wndThread_, L"Basic display window");
 		WaitForSingleObject(readyEvent_, INFINITE);
 	}
 
