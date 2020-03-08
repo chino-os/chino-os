@@ -10,4 +10,4 @@ Makefile
 .vscode
 CMakeSettings.json
 *.dtb
-/src/apis/dna
+/out

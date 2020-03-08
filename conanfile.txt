@@ -1,0 +1,8 @@
+[generators]
+cmake
+
+[requires]
+
+[options]
+
+[imports]
