@@ -1,6 +1,8 @@
 ﻿cmake_minimum_required (VERSION 3.8)
 
-set(SRCS src/entry.cpp)
+set(SRCS src/entry.cpp
+         src/threading/process.cpp
+         src/threading/scheduler.cpp)
 
 add_executable(kernel ${SRCS})
 target_include_directories(kernel PUBLIC include)
