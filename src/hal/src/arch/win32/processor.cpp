@@ -19,37 +19,13 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include <array>
-#include <chino/board/board.h>
-#include <chino/threading/process.h>
-#include <chino/threading/scheduler.h>
+#include "target.h"
+#include <Windows.h>
+#include <chino/arch/win32/arch.h>
 
-using namespace chino;
-using namespace chino::threading;
-using namespace chino::chip;
 using namespace chino::arch;
 
-namespace
+void win32_arch::yield_processor() noexcept
 {
-template <uint32_t id>
-constexpr scheduler make_scheduler()
-{
-    constexpr scheduler s(id);
-    return s;
-}
-
-template <uint32_t... ids>
-constexpr auto make_schedulers(std::integer_sequence<uint32_t, ids...>)
-    -> std::array<scheduler, chip_t::processors_count>
-{
-    return { make_scheduler<ids>()... };
-}
-
-std::array<scheduler, chip_t::processors_count> schedulers_
-    = make_schedulers(std::make_integer_sequence<uint32_t, chip_t::processors_count>());
-}
-
-scheduler &scheduler::current() noexcept
-{
-    return schedulers_[arch_t::current_processor()];
+    YieldProcessor();
 }

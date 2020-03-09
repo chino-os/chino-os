@@ -27,13 +27,4 @@ namespace chino::threading
 class kprocess
 {
 };
-
-class scheduler
-{
-public:
-    scheduler(uint32_t processor_id);
-
-private:
-    const uint32_t processor_id_;
-};
 }

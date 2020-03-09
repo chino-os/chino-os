@@ -27,6 +27,6 @@ typedef struct _handle
 {
     uintptr_t value;
 
-    static constexpr _handle invalid = {};
+    static constexpr _handle invalid() { return {}; }
 } handle_t;
 }

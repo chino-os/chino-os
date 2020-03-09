@@ -19,37 +19,32 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include <array>
 #include <chino/board/board.h>
-#include <chino/threading/process.h>
-#include <chino/threading/scheduler.h>
+#include <chino/threading.h>
 
 using namespace chino;
-using namespace chino::threading;
-using namespace chino::chip;
 using namespace chino::arch;
+using namespace chino::threading;
 
-namespace
+bool critical_section::try_lock() noexcept
 {
-template <uint32_t id>
-constexpr scheduler make_scheduler()
-{
-    constexpr scheduler s(id);
-    return s;
+    return !taken_.test_and_set(std::memory_order_acq_rel);
 }
 
-template <uint32_t... ids>
-constexpr auto make_schedulers(std::integer_sequence<uint32_t, ids...>)
-    -> std::array<scheduler, chip_t::processors_count>
+void critical_section::lock()
 {
-    return { make_scheduler<ids>()... };
+    while (true)
+    {
+        // take the lock
+        if (!taken_.test_and_set(std::memory_order_acq_rel))
+            break;
+
+        // spin
+        arch_t::yield_processor();
+    }
 }
 
-std::array<scheduler, chip_t::processors_count> schedulers_
-    = make_schedulers(std::make_integer_sequence<uint32_t, chip_t::processors_count>());
-}
-
-scheduler &scheduler::current() noexcept
+void critical_section::unlock()
 {
-    return schedulers_[arch_t::current_processor()];
+    taken_.clear();
 }

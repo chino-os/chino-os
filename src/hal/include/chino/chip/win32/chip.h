@@ -21,6 +21,7 @@
 // SOFTWARE.
 #pragma once
 #include <cstdint>
+#include "../../arch/win32/arch.h"
 
 namespace chino::chip
 {

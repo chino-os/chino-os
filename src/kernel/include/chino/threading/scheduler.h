@@ -27,7 +27,12 @@ namespace chino::threading
 class scheduler
 {
 public:
-    scheduler(uint32_t processor_id);
+    static scheduler &current() noexcept;
+
+    constexpr scheduler(uint32_t processor_id) noexcept
+        : processor_id_(processor_id)
+    {
+    }
 
 private:
     const uint32_t processor_id_;

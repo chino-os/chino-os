@@ -1,5 +1,6 @@
 ﻿cmake_minimum_required (VERSION 3.8)
 
-set(SRCS debug.cpp)
-
-add_library(arch OBJECT ${SRCS})
+set(SRCS debug.cpp
+         processor.cpp)
+list(TRANSFORM SRCS PREPEND "src/arch/win32/")
+target_sources(hal PRIVATE ${SRCS})

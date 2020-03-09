@@ -2,7 +2,8 @@
 
 set(SRCS src/entry.cpp
          src/threading/process.cpp
-         src/threading/scheduler.cpp)
+         src/threading/scheduler.cpp
+         src/threading/synchronize.cpp)
 
 add_executable(kernel ${SRCS})
 target_include_directories(kernel PUBLIC include)

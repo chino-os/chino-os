@@ -44,6 +44,7 @@ if (NOT CHINO_BOARD)
     message(FATAL "Please specify CHINO_BOARD")
 else()
     add_definitions(-DCHINO_BOARD=${CHINO_BOARD})
+    add_definitions(-DCHINO_BOARD_HEADER=<chino/board/${CHINO_BOARD}/board2.h>)
 endif()
 
 include(cmake/boards/${CHINO_BOARD}.cmake)

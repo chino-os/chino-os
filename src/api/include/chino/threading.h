@@ -23,6 +23,7 @@
 #include "error.h"
 #include "handle.h"
 #include "result.h"
+#include <atomic>
 #include <string_view>
 
 namespace chino::threading
@@ -36,10 +37,29 @@ enum class thread_priority : uint32_t
     highest = 4
 };
 
+constexpr size_t thread_priority_count = 5;
+
 enum class create_thread_flags : uint32_t
 {
     none = 0,
     create_suspend = 1
+};
+
+class critical_section
+{
+public:
+    constexpr critical_section() noexcept
+        : taken_() {}
+
+    critical_section(critical_section &) = delete;
+    critical_section &operator=(critical_section &) = delete;
+
+    bool try_lock() noexcept;
+    void lock();
+    void unlock();
+
+private:
+    std::atomic_flag taken_;
 };
 
 typedef int32_t (*chino_startup_t)();
