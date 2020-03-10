@@ -53,3 +53,13 @@ scheduler &scheduler::current() noexcept
 {
     return schedulers_[arch_t::current_processor()];
 }
+
+void scheduler::suspend() noexcept
+{
+    suspend_count_.fetch_add(1, std::memory_order_acq_rel);
+}
+
+void scheduler::resume() noexcept
+{
+    suspend_count_.fetch_sub(1, std::memory_order_acq_rel);
+}

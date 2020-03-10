@@ -25,6 +25,6 @@ namespace chino
 {
 enum class error_code
 {
-    Unknown = 0,
+    unknown = 0,
 };
 }

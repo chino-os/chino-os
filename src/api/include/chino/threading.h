@@ -21,7 +21,7 @@
 // SOFTWARE.
 #pragma once
 #include "error.h"
-#include "handle.h"
+#include "object.h"
 #include "result.h"
 #include <atomic>
 #include <string_view>
@@ -45,18 +45,18 @@ enum class create_thread_flags : uint32_t
     create_suspend = 1
 };
 
-class critical_section
+class sched_spinlock
 {
 public:
-    constexpr critical_section() noexcept
+    constexpr sched_spinlock() noexcept
         : taken_() {}
 
-    critical_section(critical_section &) = delete;
-    critical_section &operator=(critical_section &) = delete;
+    sched_spinlock(sched_spinlock &) = delete;
+    sched_spinlock &operator=(sched_spinlock &) = delete;
 
     bool try_lock() noexcept;
-    void lock();
-    void unlock();
+    void lock() noexcept;
+    void unlock() noexcept;
 
 private:
     std::atomic_flag taken_;

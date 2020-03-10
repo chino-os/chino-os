@@ -21,22 +21,34 @@
 // SOFTWARE.
 #include <chino/board/board.h>
 #include <chino/threading.h>
+#include <chino/threading/scheduler.h>
 
 using namespace chino;
 using namespace chino::arch;
 using namespace chino::threading;
 
-bool critical_section::try_lock() noexcept
+bool sched_spinlock::try_lock() noexcept
 {
-    return !taken_.test_and_set(std::memory_order_acq_rel);
+    // suspend sched
+    auto &sched = scheduler::current();
+    sched.suspend();
+
+    // not taken, resume sched
+    if (taken_.test_and_set(std::memory_order_acq_rel))
+    {
+        sched.resume();
+        return false;
+    }
+
+    return true;
 }
 
-void critical_section::lock()
+void sched_spinlock::lock() noexcept
 {
     while (true)
     {
         // take the lock
-        if (!taken_.test_and_set(std::memory_order_acq_rel))
+        if (!try_lock())
             break;
 
         // spin
@@ -44,7 +56,9 @@ void critical_section::lock()
     }
 }
 
-void critical_section::unlock()
+void sched_spinlock::unlock() noexcept
 {
     taken_.clear();
+    // resume sched
+    scheduler::current().resume();
 }
