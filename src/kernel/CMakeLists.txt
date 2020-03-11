@@ -1,6 +1,7 @@
 ﻿cmake_minimum_required (VERSION 3.8)
 
 set(SRCS src/entry.cpp
+         src/memory/memory_manager.cpp
          src/object/object.cpp
          src/threading/process.cpp
          src/threading/scheduler.cpp

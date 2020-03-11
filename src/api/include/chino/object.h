@@ -22,8 +22,9 @@
 #include "error.h"
 #include "result.h"
 #include <cstdint>
+#include <string_view>
 
-namespace chino
+namespace chino::object
 {
 struct object_type;
 
@@ -47,9 +48,16 @@ enum class access_mask
 };
 DEFINE_ENUM_FLAG_OPERATORS(access_mask);
 
-typedef result<void, error_code> (*object_open_t)(void *object);
+struct access_state
+{
+    access_mask desired_access;
+    access_mask granted_access;
+};
+
+typedef result<void, error_code> (*object_open_t)(void *object, access_state &access);
 typedef result<void, error_code> (*object_close_t)(void *object);
 typedef void (*object_delete_t)(void *object);
+typedef result<void, error_code> (*object_parse_t)(void *object, std::string_view &complete_path, std::string_view &remaining_path, access_state &access);
 
 struct object_header
 {
@@ -58,6 +66,9 @@ struct object_header
 
 struct object
 {
+    object(object &) = delete;
+    object &operator=(object &) = delete;
+
     object_header &header() noexcept
     {
         return *reinterpret_cast<object_header *>(reinterpret_cast<uint8_t *>(this) - sizeof(object_header));
@@ -69,6 +80,7 @@ struct object_type_initializer
     object_open_t open;
     object_close_t close;
     object_delete_t del;
+    object_parse_t parse;
 };
 
 struct object_type : object
@@ -76,6 +88,11 @@ struct object_type : object
     object_type_initializer initializer;
 };
 
+result<object_type &, error_code> create_object_type(std::string_view name, const object_type_initializer &initializer);
+}
+
+namespace chino
+{
 typedef struct _handle
 {
     uintptr_t value;

@@ -29,8 +29,8 @@ class scheduler
 public:
     static scheduler &current() noexcept;
 
-    constexpr scheduler(uint32_t processor_id) noexcept
-        : processor_id_(processor_id), suspend_count_(0)
+    constexpr scheduler() noexcept
+        : suspend_count_(0)
     {
     }
 
@@ -38,7 +38,6 @@ public:
     void resume() noexcept;
 
 private:
-    const uint32_t processor_id_;
     std::atomic<uint32_t> suspend_count_;
 };
 }

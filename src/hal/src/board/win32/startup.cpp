@@ -22,12 +22,24 @@
 #include "../../arch/win32/target.h"
 #include <Windows.h>
 #include <chino/kernel.h>
-#include <mutex>
 
 using namespace chino;
 
+result<int, int> foo()
+{
+    int i;
+    return ok(i);
+}
+
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdLine, int nCmdShow)
 {
-    auto ret = kernel::kernel_main();
+    auto s = ({
+        if (1)
+            return 1;
+        2;
+    });
+
+    auto _ = kernel::memory_manager_init({});
+    auto ret = _.and_then(kernel::kernel_main);
     return ret.is_ok() ? 0 : -1;
 }

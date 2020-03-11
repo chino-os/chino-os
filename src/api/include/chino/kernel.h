@@ -22,8 +22,16 @@
 #pragma once
 #include "error.h"
 #include "result.h"
+#include <gsl/gsl-lite.hpp>
 
 namespace chino::kernel
 {
+struct memory_range
+{
+    uint8_t *start;
+    std::size_t size;
+};
+
+result<void, error_code> memory_manager_init(gsl::span<const memory_range> ranges);
 result<void, error_code> kernel_main();
 }

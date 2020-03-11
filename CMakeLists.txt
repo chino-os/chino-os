@@ -1,4 +1,5 @@
 ﻿cmake_minimum_required(VERSION 3.8)
+set(CMAKE_CXX_STANDARD 20)
 project("chino")
 
 # Download automatically, you can also just copy the conan.cmake file
@@ -19,11 +20,10 @@ else()
 endif()
 conan_cmake_run(CONANFILE conanfile.txt
                 BASIC_SETUP CMAKE_TARGETS
-                SETTINGS compiler.cppstd=17
+                SETTINGS compiler.cppstd=20
                 BUILD missing)
 
 set(THIRD_PARTY ${CMAKE_CURRENT_LIST_DIR}/third_party)
-set(CMAKE_CXX_STANDARD 17)
  
 if (MSVC)
     add_definitions(/D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /DNOMINMAX /DUNICODE /D_UNICODE)

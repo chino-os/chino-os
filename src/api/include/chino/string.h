@@ -19,32 +19,12 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include <array>
-#include <chino/board/board.h>
-#include <chino/threading/process.h>
-#include <chino/threading/scheduler.h>
+#pragma once
+#include <string_view>
 
-using namespace chino;
-using namespace chino::threading;
-using namespace chino::chip;
-using namespace chino::arch;
-
-namespace
+namespace chino
 {
-std::array<scheduler, chip_t::processors_count> schedulers_;
-}
-
-scheduler &scheduler::current() noexcept
+class cstring
 {
-    return schedulers_[arch_t::current_processor()];
-}
-
-void scheduler::suspend() noexcept
-{
-    suspend_count_.fetch_add(1, std::memory_order_acq_rel);
-}
-
-void scheduler::resume() noexcept
-{
-    suspend_count_.fetch_sub(1, std::memory_order_acq_rel);
+};
 }

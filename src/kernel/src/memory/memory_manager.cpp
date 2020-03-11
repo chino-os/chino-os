@@ -19,32 +19,12 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include <array>
-#include <chino/board/board.h>
-#include <chino/threading/process.h>
-#include <chino/threading/scheduler.h>
+#include <chino/kernel.h>
 
 using namespace chino;
-using namespace chino::threading;
-using namespace chino::chip;
-using namespace chino::arch;
+using namespace chino::kernel;
 
-namespace
+result<void, error_code> kernel::memory_manager_init(gsl::span<const memory_range> ranges)
 {
-std::array<scheduler, chip_t::processors_count> schedulers_;
-}
-
-scheduler &scheduler::current() noexcept
-{
-    return schedulers_[arch_t::current_processor()];
-}
-
-void scheduler::suspend() noexcept
-{
-    suspend_count_.fetch_add(1, std::memory_order_acq_rel);
-}
-
-void scheduler::resume() noexcept
-{
-    suspend_count_.fetch_sub(1, std::memory_order_acq_rel);
+    return ok();
 }
