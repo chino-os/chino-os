@@ -30,7 +30,6 @@ namespace chino
 [[noreturn]] void panic(std::string_view message) noexcept;
 
 #define try_(x)                    \
-    \                              \
     {                              \
         auto v = (x);              \
         if (!v.is_ok())            \

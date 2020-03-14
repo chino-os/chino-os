@@ -20,11 +20,20 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #include <chino/kernel.h>
+#include <chino/memory/memory_manager.h>
+#include <bitset>
 
 using namespace chino;
 using namespace chino::kernel;
+using namespace chino::memory;
 
-result<void, error_code> kernel::memory_manager_init(gsl::span<const memory_range> ranges)
+namespace
+{
+physical_memory_desc *phy_mem_desc_;
+
+}
+
+result<void, error_code> kernel::memory_manager_init(const physical_memory_desc &desc)
 {
     return ok();
 }

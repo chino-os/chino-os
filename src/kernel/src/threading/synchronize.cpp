@@ -62,3 +62,39 @@ void sched_spinlock::unlock() noexcept
     // resume sched
     scheduler::current().resume();
 }
+
+bool irq_spinlock::try_lock() noexcept
+{
+    // disable irq
+    auto state = arch_t::disable_irq();
+
+    // not taken, restore irq
+    if (taken_.test_and_set(std::memory_order_acq_rel))
+    {
+        arch_t::restore_irq(state);
+        return false;
+    }
+
+    irq_state_ = state;
+    return true;
+}
+
+void irq_spinlock::lock() noexcept
+{
+    while (true)
+    {
+        // take the lock
+        if (!try_lock())
+            break;
+
+        // spin
+        arch_t::yield_processor();
+    }
+}
+
+void irq_spinlock::unlock() noexcept
+{
+    taken_.clear();
+    // restore irq
+    arch_t::restore_irq(irq_state_);
+}

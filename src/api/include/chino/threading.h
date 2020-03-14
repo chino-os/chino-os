@@ -37,7 +37,7 @@ enum class thread_priority : uint32_t
     highest = 4
 };
 
-constexpr size_t thread_priority_count = 5;
+inline constexpr size_t THREAD_PRIORITY_COUNT = 5;
 
 enum class create_thread_flags : uint32_t
 {
@@ -62,14 +62,32 @@ private:
     std::atomic_flag taken_;
 };
 
+class irq_spinlock
+{
+public:
+    constexpr irq_spinlock() noexcept
+        : taken_(), irq_state_(0) {}
+
+    irq_spinlock(sched_spinlock &) = delete;
+    irq_spinlock &operator=(sched_spinlock &) = delete;
+
+    bool try_lock() noexcept;
+    void lock() noexcept;
+    void unlock() noexcept;
+
+private:
+    std::atomic_flag taken_;
+    uintptr_t irq_state_;
+};
+
 typedef int32_t (*chino_startup_t)();
 typedef int32_t (*thread_start_t)(void *arg);
 
-constexpr int32_t default_stack_size = 4096;
+inline constexpr int32_t DEFAULT_STACK_SIZE = 4096;
 
 result<handle_t, error_code> create_process(chino_startup_t start, std::string_view command_lines, thread_priority prioriy = thread_priority::normal,
-    int32_t stack_size = default_stack_size);
+    int32_t stack_size = DEFAULT_STACK_SIZE);
 
 result<handle_t, error_code> create_thread(thread_start_t start, void *arg, thread_priority prioriy = thread_priority::normal,
-    create_thread_flags flags = create_thread_flags::none, int32_t stack_size = default_stack_size);
+    create_thread_flags flags = create_thread_flags::none, int32_t stack_size = DEFAULT_STACK_SIZE);
 }

@@ -28,6 +28,8 @@ struct win32_arch
 {
     static uint32_t current_processor() noexcept { return 0; }
     static void yield_processor() noexcept;
+    static uintptr_t disable_irq() noexcept;
+    static void restore_irq(uintptr_t state) noexcept;
 };
 
 using arch_t = win32_arch;

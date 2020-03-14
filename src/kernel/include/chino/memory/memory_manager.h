@@ -19,23 +19,20 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include <chino/kernel.h>
-#ifdef _MSC_VER
-#include <intrin.h>
-#endif
+#pragma once
+#include "../threading/process.h"
+#include <chino/memory.h>
 
-using namespace chino;
-
-void chino::panic(std::string_view message) noexcept
+namespace chino::memory
 {
-#ifdef _MSC_VER
-    __debugbreak();
-#endif
-    while (1)
-        ;
-}
-
-result<void, error_code> kernel::kernel_main()
+struct used_pages_node
 {
-    return ok();
+    threading::kprocess &owner;
+    used_pages_node *next;
+};
+
+struct memory_manager
+{
+    static result<void *, error_code> allocate_pages(uint32_t pages) noexcept;
+};
 }

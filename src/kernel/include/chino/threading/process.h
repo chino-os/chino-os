@@ -26,5 +26,9 @@ namespace chino::threading
 {
 class kprocess
 {
+public:
 };
+
+kprocess &current_process() noexcept;
+kprocess &kernel_process() noexcept;
 }

@@ -26,12 +26,19 @@
 
 namespace chino::kernel
 {
-struct memory_range
+struct physical_memory_run
 {
-    uint8_t *start;
-    std::size_t size;
+    void *base;
+    size_t count;
 };
 
-result<void, error_code> memory_manager_init(gsl::span<const memory_range> ranges);
+struct physical_memory_desc
+{
+    size_t runs_count;
+    size_t pages_count;
+    physical_memory_run runs[1];
+};
+
+result<void, error_code> memory_manager_init(const physical_memory_desc& desc);
 result<void, error_code> kernel_main();
 }

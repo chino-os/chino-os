@@ -54,6 +54,12 @@ struct access_state
     access_mask granted_access;
 };
 
+enum class object_attribute
+{
+    none = 0,
+    permanent = 0b001
+};
+
 typedef result<void, error_code> (*object_open_t)(void *object, access_state &access);
 typedef result<void, error_code> (*object_close_t)(void *object);
 typedef void (*object_delete_t)(void *object);
@@ -75,6 +81,13 @@ struct object
     }
 };
 
+template <class TObject>
+struct static_object
+{
+    object_header header;
+    TObject body;
+};
+
 struct object_type_initializer
 {
     object_open_t open;
@@ -89,6 +102,11 @@ struct object_type : object
 };
 
 result<object_type &, error_code> create_object_type(std::string_view name, const object_type_initializer &initializer);
+
+namespace wellknown_types
+{
+    object_type &obj_type() noexcept;
+}
 }
 
 namespace chino

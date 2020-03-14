@@ -22,10 +22,23 @@
 #include "target.h"
 #include <Windows.h>
 #include <chino/arch/win32/arch.h>
+#include <atomic>
 
 using namespace chino::arch;
+
+static std::atomic<uintptr_t> irq_state = 0;
 
 void win32_arch::yield_processor() noexcept
 {
     YieldProcessor();
+}
+
+uintptr_t win32_arch::disable_irq() noexcept
+{
+    return irq_state.exchange(0);
+}
+
+void win32_arch::restore_irq(uintptr_t state) noexcept
+{
+    irq_state.store(state, std::memory_order_release);
 }
