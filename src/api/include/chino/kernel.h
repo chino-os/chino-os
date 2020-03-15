@@ -36,7 +36,7 @@ struct physical_memory_desc
 {
     size_t runs_count;
     size_t pages_count;
-    physical_memory_run runs[1];
+    physical_memory_run runs[0];
 };
 
 result<void, error_code> memory_manager_init(const physical_memory_desc& desc);

@@ -47,6 +47,7 @@ else()
     add_definitions(-DCHINO_BOARD_HEADER=<chino/board/${CHINO_BOARD}/board2.h>)
 endif()
 
+include(cmake/config.cmake)
 include(cmake/boards/${CHINO_BOARD}.cmake)
 include(cmake/definitions.cmake)
 

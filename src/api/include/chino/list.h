@@ -20,25 +20,45 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include "thread.h"
-#include <chino/list.h>
-#include <chino/threading.h>
+#include <cstddef>
+#include <cstdint>
 
-namespace chino::threading
+namespace chino
 {
-class kthread;
+template <class TOwner, ptrdiff_t OwnerOffset>
+class list;
 
-class kprocess : public ob::object
+template <class TOwner, ptrdiff_t OwnerOffset>
+struct list_node
 {
-public:
-    kprocess() = default;
+    using list_t = list<TOwner, OwnerOffset>;
 
-    void attach_new_thread(kthread &thread) noexcept;
+    list_node *prev;
+    list_node *next;
 
-private:
-    list_t_of_node(kthread::process_threads_entry_) threads_list_;
+    constexpr list_node() noexcept
+        : prev(nullptr), next(nullptr) {}
+
+    TOwner *owner() const noexcept
+    {
+        auto addr = reinterpret_cast<ptrdiff_t>(this) - OwnerOffset;
+        return reinterpret_cast<TOwner *>(addr);
+    }
 };
 
-kprocess &current_process() noexcept;
-kprocess &kernel_process() noexcept;
+template <class TOwner, ptrdiff_t OwnerOffset>
+class list
+{
+public:
+    using node_t = list_node<TOwner, OwnerOffset>;
+
+    constexpr list() noexcept
+        : head_(nullptr), tail_(nullptr) {}
+
+private:
+    node_t *head_;
+    node_t *tail_;
+};
+
+#define list_t_of_node(member) typename decltype(member)::list_t
 }

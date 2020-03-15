@@ -20,25 +20,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include "thread.h"
-#include <chino/list.h>
-#include <chino/threading.h>
 
-namespace chino::threading
+namespace chino
 {
-class kthread;
-
-class kprocess : public ob::object
-{
-public:
-    kprocess() = default;
-
-    void attach_new_thread(kthread &thread) noexcept;
-
-private:
-    list_t_of_node(kthread::process_threads_entry_) threads_list_;
-};
-
-kprocess &current_process() noexcept;
-kprocess &kernel_process() noexcept;
+inline constexpr size_t PAGE_SIZE = ${CHINO_PAGE_SIZE};
+inline constexpr size_t KERNEL_STACK_SIZE = ${CHINO_KERNEL_STACK_SIZE};
 }

@@ -25,16 +25,21 @@
 #include <chino/memory.h>
 
 using namespace chino;
+using namespace chino::kernel;
 
 alignas(PAGE_SIZE) static uint8_t memory[1024 * 1024 * 4];
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdLine, int nCmdShow)
 {
-    kernel::physical_memory_run memories[] = {
-        { memory, std::size(memory) / PAGE_SIZE }
+    physical_memory_desc mem_desc = {
+        .runs_count = 1,
+        .pages_count = std::size(memory) / PAGE_SIZE,
+        .runs = {
+            { memory, std::size(memory) / PAGE_SIZE } }
     };
-    kernel::memory_manager_init(memories, std::size(memory) / PAGE_SIZE)
+
+    memory_manager_init(mem_desc)
         .expect("Cannot init memory manager");
-    auto ret = kernel::kernel_main();
+    auto ret = kernel_main();
     return ret.is_ok() ? 0 : -1;
 }

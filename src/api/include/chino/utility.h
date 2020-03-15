@@ -20,25 +20,20 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include "thread.h"
-#include <chino/list.h>
-#include <chino/threading.h>
+#include <type_traits>
 
-namespace chino::threading
+namespace chino
 {
-class kthread;
-
-class kprocess : public ob::object
+template<class T, class U, class = std::enable_if_t<std::is_integral_v<T> && std::is_integral_v<U>>>
+constexpr T align(T value, U alignment) noexcept
 {
-public:
-    kprocess() = default;
+    auto rem = value % alignment;
+    return rem ? value + (alignment - rem) : value;
+}
 
-    void attach_new_thread(kthread &thread) noexcept;
-
-private:
-    list_t_of_node(kthread::process_threads_entry_) threads_list_;
-};
-
-kprocess &current_process() noexcept;
-kprocess &kernel_process() noexcept;
+template <class T, class U, class = std::enable_if_t<std::is_integral_v<T> && std::is_integral_v<U>>>
+constexpr T ceil_div(T numerator, U denominator) noexcept
+{
+    return (numerator + (denominator - 1)) / denominator;
+}
 }

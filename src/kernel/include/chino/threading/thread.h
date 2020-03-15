@@ -20,25 +20,47 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include "thread.h"
 #include <chino/list.h>
+#include <chino/object.h>
 #include <chino/threading.h>
+#include <gsl/gsl-lite.hpp>
 
 namespace chino::threading
 {
-class kthread;
-
-class kprocess : public ob::object
+namespace details
 {
-public:
-    kprocess() = default;
+    struct kthread_checker;
+}
 
-    void attach_new_thread(kthread &thread) noexcept;
+class kprocess;
+
+class kthread : public ob::object
+{
+private:
+    static constexpr ptrdiff_t PROCESS_THREAD_ENTRY_OFFSET = 0;
+
+public:
+    kthread() = default;
 
 private:
-    list_t_of_node(kthread::process_threads_entry_) threads_list_;
+    friend class kprocess;
+    friend struct details::kthread_checker;
+
+    // BEGIN LIST NODES, BE CAREFUL ABOUT THE OFFSETS !!!
+    list_node<kthread, PROCESS_THREAD_ENTRY_OFFSET> process_threads_entry_;
+    // END LIST NODES
+
+    kprocess *owner_ = nullptr;
+    gsl::span<uintptr_t> stack_;
 };
 
-kprocess &current_process() noexcept;
-kprocess &kernel_process() noexcept;
+namespace details
+{
+    struct kthread_checker
+    {
+        static_assert(offsetof(kthread, process_threads_entry_) == kthread::PROCESS_THREAD_ENTRY_OFFSET);
+    };
+}
+
+kthread &current_thread() noexcept;
 }

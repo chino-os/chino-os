@@ -22,10 +22,9 @@
 #pragma once
 #include "error.h"
 #include "result.h"
+#include <chino_config.h>
 
 namespace chino
 {
-inline constexpr size_t PAGE_SIZE = 4096;
-
 result<void *, error_code> heap_alloc();
 }

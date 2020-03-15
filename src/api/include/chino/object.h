@@ -19,12 +19,13 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+#pragma once
 #include "error.h"
 #include "result.h"
 #include <cstdint>
 #include <string_view>
 
-namespace chino::object
+namespace chino::ob
 {
 struct object_type;
 
@@ -54,7 +55,7 @@ struct access_state
     access_mask granted_access;
 };
 
-enum class object_attribute
+enum class object_attributes
 {
     none = 0,
     permanent = 0b001
@@ -67,13 +68,17 @@ typedef result<void, error_code> (*object_parse_t)(void *object, std::string_vie
 
 struct object_header
 {
+    object_attributes attributes;
     object_type *type;
 };
 
 struct object
 {
+    object() = default;
     object(object &) = delete;
+    object(object &&) = default;
     object &operator=(object &) = delete;
+    object &operator=(object &&) = default;
 
     object_header &header() noexcept
     {
@@ -86,6 +91,9 @@ struct static_object
 {
     object_header header;
     TObject body;
+
+    constexpr static_object() noexcept
+        : header { object_attributes::permanent } {}
 };
 
 struct object_type_initializer

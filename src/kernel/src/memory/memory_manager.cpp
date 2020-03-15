@@ -21,19 +21,46 @@
 // SOFTWARE.
 #include <chino/kernel.h>
 #include <chino/memory/memory_manager.h>
-#include <bitset>
+#include <chino/threading/process.h>
+#include <chino/threading/thread.h>
+#include <chino/utility.h>
 
 using namespace chino;
+using namespace chino::ob;
 using namespace chino::kernel;
+using namespace chino::threading;
 using namespace chino::memory;
 
 namespace
 {
-physical_memory_desc *phy_mem_desc_;
+class bitmap_allocator
+{
+public:
+    bitmap_allocator(size_t used_bit)
+    {
+    }
 
+private:
+    uintptr_t storage_[0];
+};
+
+physical_memory_desc *phy_mem_desc_;
+bitmap_allocator *phy_mem_bit_allocator_;
+static_object<kprocess> kernel_process_;
+static_object<kthread> kernel_system_thread_;
+}
+
+kprocess &threading::kernel_process() noexcept
+{
+    return kernel_process_.body;
 }
 
 result<void, error_code> kernel::memory_manager_init(const physical_memory_desc &desc)
 {
+    // 1. Calc initial mem usage
+    auto phy_mem_desc_bytes = sizeof(physical_memory_desc) + sizeof(physical_memory_run) * desc.runs_count;
+    auto phy_mem_bit_alloc_bytes = sizeof(bitmap_allocator) + ceil_div(desc.pages_count, CHAR_BIT * sizeof(uintptr_t)) * sizeof(uintptr_t);
+    auto kernel_system_stack_bytes = KERNEL_STACK_SIZE;
+
     return ok();
 }
