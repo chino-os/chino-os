@@ -24,6 +24,7 @@
 #include <chino/threading/process.h>
 #include <chino/threading/thread.h>
 #include <chino/utility.h>
+#include <numeric>
 
 using namespace chino;
 using namespace chino::ob;
@@ -36,15 +37,28 @@ namespace
 class bitmap_allocator
 {
 public:
-    bitmap_allocator(size_t used_bit)
+    bitmap_allocator *next = nullptr;
+
+    bitmap_allocator(uint8_t *base, size_t pages_count)
+        : base_(base), pages_count_(pages_count)
     {
+        std::fill_n(storage_, elements(), uintptr_t(0));
     }
 
 private:
+    size_t elements() const noexcept
+    {
+        return ceil_div(pages_count_, CHAR_BIT * sizeof(uintptr_t));
+    }
+
+private:
+    uint8_t *base_;
+    size_t pages_count_;
+    sched_spinlock lock_;
     uintptr_t storage_[0];
 };
 
-physical_memory_desc *phy_mem_desc_;
+std::atomic<size_t> avail_pages_;
 bitmap_allocator *phy_mem_bit_allocator_;
 static_object<kprocess> kernel_process_;
 static_object<kthread> kernel_system_thread_;
@@ -57,9 +71,13 @@ kprocess &threading::kernel_process() noexcept
 
 result<void, error_code> kernel::memory_manager_init(const physical_memory_desc &desc)
 {
+    avail_pages_ = desc.pages_count;
+
     // 1. Calc initial mem usage
-    auto phy_mem_desc_bytes = sizeof(physical_memory_desc) + sizeof(physical_memory_run) * desc.runs_count;
-    auto phy_mem_bit_alloc_bytes = sizeof(bitmap_allocator) + ceil_div(desc.pages_count, CHAR_BIT * sizeof(uintptr_t)) * sizeof(uintptr_t);
+    size_t phy_mem_bit_alloc_bytes = std::accumulate(desc.runs, desc.runs + desc.runs_count, size_t(0),
+        [](size_t init, const physical_memory_run &run) {
+            return init + sizeof(bitmap_allocator) + ceil_div(run.count, CHAR_BIT * sizeof(uintptr_t)) * sizeof(uintptr_t);
+        });
     auto kernel_system_stack_bytes = KERNEL_STACK_SIZE;
 
     return ok();

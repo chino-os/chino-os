@@ -28,7 +28,7 @@ namespace chino::kernel
 {
 struct physical_memory_run
 {
-    void *base;
+    uint8_t *base;
     size_t count;
 };
 
