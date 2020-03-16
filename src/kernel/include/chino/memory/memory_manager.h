@@ -20,19 +20,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include "../threading/process.h"
 #include <chino/memory.h>
+
+namespace chino::threading
+{
+class kprocess;
+}
 
 namespace chino::memory
 {
-struct used_pages_node
-{
-    threading::kprocess &owner;
-    used_pages_node *next;
-};
-
-struct memory_manager
-{
-    static result<void *, error_code> allocate_pages(uint32_t pages) noexcept;
-};
+static result<void *, error_code> allocate_pages(threading::kprocess &process, uint32_t pages) noexcept;
+static void free_pages(threading::kprocess &process, void *base, uint32_t pages) noexcept;
 }

@@ -36,14 +36,14 @@ namespace chino
             return v.unwrap_err(); \
     }
 
-#define try_var(name, x)                                         \
-    std::optional<typename decltype((x))::traits::ok_type> name; \
-    {                                                            \
-        auto v = (x);                                            \
-        if (v.is_ok())                                           \
-            name.emplace(v.unwrap());                            \
-        else                                                     \
-            return v.unwrap_err();                               \
+#define try_var(name, x)                          \
+    typename decltype((x))::traits::ok_type name; \
+    {                                             \
+        auto v = (x);                             \
+        if (v.is_ok())                            \
+            name = v.unwrap();                    \
+        else                                      \
+            return v.unwrap_err();                \
     }
 
 template <class T>
@@ -174,6 +174,19 @@ namespace details
     };
 
     template <class T, class E, class Func>
+    struct map_err_traits
+    {
+        using U = std::invoke_result_t<Func, E>;
+        static_assert(!is_result_v<U>, "Cannot map a callback returning result, use and_then instead");
+        using result_t = result<T, U>;
+
+        result_t operator()(Func &&func, Err<E> &value) noexcept
+        {
+            return err(func(value.err));
+        }
+    };
+
+    template <class T, class E, class Func>
     struct and_then_traits
     {
         using result_t = std::invoke_result_t<Func, T>;
@@ -268,6 +281,15 @@ public:
             return Traits()(std::forward<Func>(func), value());
         else
             return err();
+    }
+
+    template <class Func, class Traits = details::map_err_traits<T, E, Func>>
+    constexpr typename Traits::result_t map_err(Func && func) noexcept
+    {
+        if (is_ok())
+            return value();
+        else
+            return Traits()(std::forward<Func>(func), err());
     }
 
     template <class Func, class Traits = details::and_then_traits<T, E, Func>>

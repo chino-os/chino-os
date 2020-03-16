@@ -20,20 +20,33 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include <memory>
+#include <chino/threading.h>
+#include <chino/utility.h>
+#include <utility>
 
-namespace chino
+namespace chino::memory
 {
-template <class T, class Allocator = std::allocator<T>>
-class memory_pool
+class bitmap_allocator
 {
-    class segment
-    {
-    };
-
 public:
-    memory_pool()
+    bitmap_allocator *next = nullptr;
+
+    bitmap_allocator(uint8_t *base, size_t pages_count)
+        : base_(base), pages_count_(pages_count)
     {
+        std::fill_n(storage_, elements(), uintptr_t(0));
     }
+
+private:
+    size_t elements() const noexcept
+    {
+        return ceil_div(pages_count_, CHAR_BIT * sizeof(uintptr_t));
+    }
+
+private:
+    uint8_t *base_;
+    size_t pages_count_;
+    threading::sched_spinlock lock_;
+    uintptr_t storage_[0];
 };
 }

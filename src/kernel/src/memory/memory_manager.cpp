@@ -20,6 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #include <chino/kernel.h>
+#include <chino/memory/bitmap_allocator.h>
 #include <chino/memory/memory_manager.h>
 #include <chino/threading/process.h>
 #include <chino/threading/thread.h>
@@ -34,29 +35,6 @@ using namespace chino::memory;
 
 namespace
 {
-class bitmap_allocator
-{
-public:
-    bitmap_allocator *next = nullptr;
-
-    bitmap_allocator(uint8_t *base, size_t pages_count)
-        : base_(base), pages_count_(pages_count)
-    {
-        std::fill_n(storage_, elements(), uintptr_t(0));
-    }
-
-private:
-    size_t elements() const noexcept
-    {
-        return ceil_div(pages_count_, CHAR_BIT * sizeof(uintptr_t));
-    }
-
-private:
-    uint8_t *base_;
-    size_t pages_count_;
-    sched_spinlock lock_;
-    uintptr_t storage_[0];
-};
 
 std::atomic<size_t> avail_pages_;
 bitmap_allocator *phy_mem_bit_allocator_;

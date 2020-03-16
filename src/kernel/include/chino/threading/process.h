@@ -22,6 +22,7 @@
 #pragma once
 #include "thread.h"
 #include <chino/list.h>
+#include <chino/memory/pool_allocator.h>
 #include <chino/threading.h>
 
 namespace chino::threading
