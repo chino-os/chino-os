@@ -29,6 +29,9 @@ enum class error_code
 {
     unknown = 0,
     argument_null = 1,
-    invalid_argument = 2
+    invalid_argument = 2,
+    out_of_memory = 3,
+    not_found = 4,
+    unavailable = 5,
 };
 }

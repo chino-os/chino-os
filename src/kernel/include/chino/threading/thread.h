@@ -32,22 +32,19 @@ namespace details
     struct kthread_checker;
 }
 
-class kprocess;
+struct kprocess;
 
-class kthread : public ob::object
+struct kthread : public ob::object
 {
-private:
     static constexpr ptrdiff_t PROCESS_THREAD_ENTRY_OFFSET = 0;
 
-public:
     kthread() = default;
 
-private:
     friend class kprocess;
     friend struct details::kthread_checker;
 
     // BEGIN LIST NODES, BE CAREFUL ABOUT THE OFFSETS !!!
-    list_node<kthread, PROCESS_THREAD_ENTRY_OFFSET> process_threads_entry_;
+    list_node<kthread, void, PROCESS_THREAD_ENTRY_OFFSET> process_threads_entry_;
     // END LIST NODES
 
     kprocess *owner_ = nullptr;

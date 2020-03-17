@@ -29,6 +29,16 @@ class kprocess;
 
 namespace chino::memory
 {
+struct used_page_run
+{
+    size_t count;
+
+    threading::kprocess *owner;
+    used_page_run *prev;
+    used_page_run *next;
+    used_page_run *process_next;
+};
+
 static result<void *, error_code> allocate_pages(threading::kprocess &process, uint32_t pages) noexcept;
 static void free_pages(threading::kprocess &process, void *base, uint32_t pages) noexcept;
 }

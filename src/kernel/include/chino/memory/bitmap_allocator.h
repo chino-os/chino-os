@@ -22,6 +22,7 @@
 #pragma once
 #include <chino/threading.h>
 #include <chino/utility.h>
+#include <mutex>
 #include <utility>
 
 namespace chino::memory
@@ -34,7 +35,22 @@ public:
     bitmap_allocator(uint8_t *base, size_t pages_count)
         : base_(base), pages_count_(pages_count)
     {
-        std::fill_n(storage_, elements(), uintptr_t(0));
+        auto rem = pages_count_ % (CHAR_BIT * sizeof(uintptr_t));
+        std::fill_n(storage_, elements() - 1, uintptr_t(-1));
+        storage_[elements() - 1] = rem ? uintptr_t(-1) >> rem : 0;
+    }
+
+    result<void *, error_code> allocate(size_t pages) noexcept
+    {
+        std::unique_lock lock(lock_);
+        auto end = storage_ + elements();
+        auto cnt = storage_;
+        while (cnt < end)
+        {
+            if (*cnt != 0)
+            {
+            }
+        }
     }
 
 private:
@@ -45,7 +61,7 @@ private:
 
 private:
     uint8_t *base_;
-    size_t pages_count_;
+    const size_t pages_count_;
     threading::sched_spinlock lock_;
     uintptr_t storage_[0];
 };

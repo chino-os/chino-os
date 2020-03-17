@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #include <chino/kernel.h>
-#include <chino/memory/bitmap_allocator.h>
+#include <chino/memory/free_page_list.h>
 #include <chino/memory/memory_manager.h>
 #include <chino/threading/process.h>
 #include <chino/threading/thread.h>
@@ -35,11 +35,10 @@ using namespace chino::memory;
 
 namespace
 {
-
-std::atomic<size_t> avail_pages_;
-bitmap_allocator *phy_mem_bit_allocator_;
 static_object<kprocess> kernel_process_;
 static_object<kthread> kernel_system_thread_;
+free_page_list free_page_list_;
+paged_pool_allocator<used_page_run> used_page_alloc_(kernel_process_.body, 4);
 }
 
 kprocess &threading::kernel_process() noexcept
@@ -49,14 +48,14 @@ kprocess &threading::kernel_process() noexcept
 
 result<void, error_code> kernel::memory_manager_init(const physical_memory_desc &desc)
 {
-    avail_pages_ = desc.pages_count;
-
-    // 1. Calc initial mem usage
-    size_t phy_mem_bit_alloc_bytes = std::accumulate(desc.runs, desc.runs + desc.runs_count, size_t(0),
-        [](size_t init, const physical_memory_run &run) {
-            return init + sizeof(bitmap_allocator) + ceil_div(run.count, CHAR_BIT * sizeof(uintptr_t)) * sizeof(uintptr_t);
-        });
-    auto kernel_system_stack_bytes = KERNEL_STACK_SIZE;
+    // 1. Calc free page list
+    free_page_list_.init(desc);
 
     return ok();
+}
+
+result<void *, error_code> memory::allocate_pages(threading::kprocess &process, uint32_t pages) noexcept
+{
+    // 1. Allocate from free list
+    try_var(base, free_page_list_.allocate(pages));
 }

@@ -27,18 +27,33 @@
 
 namespace chino::threading
 {
+namespace details
+{
+    struct kprocess_checker;
+}
+
 class kthread;
 
-class kprocess : public ob::object
+struct kprocess : public ob::object
 {
-public:
     kprocess() = default;
 
     void attach_new_thread(kthread &thread) noexcept;
 
-private:
+    memory::used_page_run *used_page_head_ = nullptr;
+
+    // BEGIN LIST NODES, BE CAREFUL ABOUT THE OFFSETS !!!
+    // END LIST NODES
+
     list_t_of_node(kthread::process_threads_entry_) threads_list_;
 };
+
+namespace details
+{
+    struct kprocess_checker
+    {
+    };
+}
 
 kprocess &current_process() noexcept;
 kprocess &kernel_process() noexcept;

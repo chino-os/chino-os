@@ -25,13 +25,32 @@
 
 namespace chino
 {
-template <class TOwner, ptrdiff_t OwnerOffset>
+template <class TOwner, class TValue, ptrdiff_t OwnerOffset>
 class list;
 
-template <class TOwner, ptrdiff_t OwnerOffset>
+template <class TOwner, class TValue, ptrdiff_t OwnerOffset>
 struct list_node
 {
-    using list_t = list<TOwner, OwnerOffset>;
+    using list_t = list<TOwner, TValue, OwnerOffset>;
+
+    list_node *prev;
+    list_node *next;
+    TValue value;
+
+    constexpr list_node() noexcept
+        : prev(nullptr), next(nullptr) {}
+
+    TOwner *owner() const noexcept
+    {
+        auto addr = reinterpret_cast<ptrdiff_t>(this) - OwnerOffset;
+        return reinterpret_cast<TOwner *>(addr);
+    }
+};
+
+template <class TOwner, ptrdiff_t OwnerOffset>
+struct list_node<TOwner, void, OwnerOffset>
+{
+    using list_t = list<TOwner, void, OwnerOffset>;
 
     list_node *prev;
     list_node *next;
@@ -46,11 +65,11 @@ struct list_node
     }
 };
 
-template <class TOwner, ptrdiff_t OwnerOffset>
+template <class TOwner, class TValue, ptrdiff_t OwnerOffset>
 class list
 {
 public:
-    using node_t = list_node<TOwner, OwnerOffset>;
+    using node_t = list_node<TOwner, TValue, OwnerOffset>;
 
     constexpr list() noexcept
         : head_(nullptr), tail_(nullptr) {}

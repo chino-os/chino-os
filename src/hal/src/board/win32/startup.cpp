@@ -23,6 +23,7 @@
 #include <Windows.h>
 #include <chino/kernel.h>
 #include <chino/memory.h>
+#include <vcruntime_startup.h>
 
 using namespace chino;
 using namespace chino::kernel;
