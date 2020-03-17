@@ -20,31 +20,37 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include <chino/memory.h>
-
-namespace chino::threading
-{
-class kprocess;
-}
+#include <algorithm>
+#include <chino/memory/memory_manager.h>
+#include <chino/memory/pool_allocator.h>
+#include <chino/threading.h>
+#include <chino/utility.h>
+#include <memory>
+#include <mutex>
 
 namespace chino::memory
 {
-struct used_page_node
+class used_page_list
 {
-    uint32_t start;
-    uint32_t count;
-
-    used_page_node *next;
-
-    uint32_t end() noexcept
+public:
+    constexpr used_page_list() noexcept
+        : allocator_(16)
     {
-        return start + count;
     }
+
+    result<void *, error_code> allocate(threading::kprocess &process, void *base, size_t pages) noexcept
+    {
+    }
+
+    void free(threading::kprocess &process, void *base, size_t pages) noexcept
+    {
+    }
+
+private:
+    used_page_node *&head(threading::kprocess &process) noexcept;
+
+private:
+    pool_allocator<used_page_node> allocator_;
+    threading::sched_spinlock lock_;
 };
-
-result<void *, error_code> allocate_pages(threading::kprocess &process, uint32_t pages) noexcept;
-void free_pages(threading::kprocess &process, void *base, uint32_t pages) noexcept;
-
-result<void *, error_code> heap_alloc(threading::kprocess &process, size_t bytes) noexcept;
-void heap_free(threading::kprocess &process, void *ptr) noexcept;
 }

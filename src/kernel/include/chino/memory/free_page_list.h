@@ -53,6 +53,7 @@ public:
         {
             auto &run = desc.runs[i];
             auto node = reinterpret_cast<free_page_node *>(run.base);
+            node->count = run.count;
             if (prev)
                 prev->next = node;
             else
@@ -64,7 +65,7 @@ public:
     result<void *, error_code> allocate(size_t pages) noexcept
     {
         if (avail_pages_ < pages)
-            return err(error_code::unavailable);
+            return err(error_code::out_of_memory);
 
         std::unique_lock lock(lock_);
         free_page_node *prev = nullptr;

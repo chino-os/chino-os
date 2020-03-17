@@ -37,17 +37,17 @@ namespace details
     };
 
     template <size_t EntrySize>
-    class paged_pool_segment
+    class pool_segment
     {
     public:
-        paged_pool_segment *next;
+        pool_segment *next;
 
-        static result<paged_pool_segment *, error_code> init(threading::kprocess &process, size_t min_entries)
+        static result<pool_segment *, error_code> init(size_t entries)
         {
-            auto pages = ceil_div(sizeof(paged_pool_segment) + EntrySize * min_entries, PAGE_SIZE);
-            try_var(base, allocate_pages(process, pages));
-            new (base) paged_pool_segment(pages);
-            return reinterpret_cast<paged_pool_segment *>(base);
+            auto bytes = sizeof(pool_segment) + EntrySize * entries;
+            try_var(base, heap_alloc(kernel_process(), bytes));
+            new (base) pool_segment(entries);
+            return reinterpret_cast<pool_segment *>(base);
         }
 
         result<void *, error_code> allocate() noexcept
@@ -61,7 +61,7 @@ namespace details
             }
             else
             {
-                return err(error_code::unavailable);
+                return err(error_code::out_of_memory);
             }
         }
 
@@ -79,12 +79,12 @@ namespace details
         }
 
     private:
-        paged_pool_segment(size_t pages) noexcept
-            : entries_count_((pages * PAGE_SIZE - sizeof(paged_pool_segment)) / EntrySize), next(nullptr), free_head_(reinterpret_cast<entry_header *>(body))
+        pool_segment(size_t entries) noexcept
+            : entries_(entries), next(nullptr), free_head_(reinterpret_cast<entry_header *>(body))
         {
             // init entry headers
             entry_header *next = nullptr;
-            entry_header *cnt = &entry_at(entries_count_ - 1);
+            entry_header *cnt = &entry_at(entries - 1);
             while (cnt >= reinterpret_cast<entry_header *>(body_))
             {
                 cnt->next = next;
@@ -95,7 +95,7 @@ namespace details
 
         void *end() noexcept
         {
-            return &entry_at(entries_count_);
+            return &entry_at(entries_);
         }
 
         entry_header &entry_at(size_t i) noexcept
@@ -104,7 +104,7 @@ namespace details
         }
 
     private:
-        size_t entries_count_;
+        size_t entries_;
         entry_header *free_head_;
         threading::sched_spinlock lock_;
         uint8_t body_[0];
@@ -112,15 +112,15 @@ namespace details
 }
 
 template <class T>
-class paged_pool_allocator
+class pool_allocator
 {
     static constexpr size_t ENTRY_SIZE = std::max(sizeof(details::entry_header), sizeof(T));
 
 public:
-    using segment_t = details::paged_pool_segment<ENTRY_SIZE>;
+    using segment_t = details::pool_segment<ENTRY_SIZE>;
 
-    constexpr paged_pool_allocator(threading::kprocess &process, size_t min_entries_per_segment) noexcept
-        : process_(process), head_(nullptr), min_entries_per_segment_(min_entries_per_segment)
+    constexpr pool_allocator(size_t entries_per_segment) noexcept
+        : head_(nullptr), entries_per_segment_(entries_per_segment)
     {
     }
 
@@ -159,7 +159,7 @@ private:
 
         // 2. Create new segment
         {
-            try_var(seg, segment_t::init(process_, min_entries_per_segment_));
+            try_var(seg, segment_t::init(process_, entries_per_segment_));
 
             std::unique_lock lock(lock_);
             seg->next = head_;
@@ -193,8 +193,7 @@ private:
     }
 
 private:
-    threading::kprocess &process_;
-    size_t min_entries_per_segment_;
+    size_t entries_per_segment_;
     segment_t *head_;
     threading::sched_spinlock lock_;
 };

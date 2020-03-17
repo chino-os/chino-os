@@ -22,6 +22,8 @@
 #include <chino/kernel.h>
 #include <chino/memory/free_page_list.h>
 #include <chino/memory/memory_manager.h>
+#include <chino/memory/pool_allocator.h>
+#include <chino/memory/used_page_list.h>
 #include <chino/threading/process.h>
 #include <chino/threading/thread.h>
 #include <chino/utility.h>
@@ -37,8 +39,8 @@ namespace
 {
 static_object<kprocess> kernel_process_;
 static_object<kthread> kernel_system_thread_;
+
 free_page_list free_page_list_;
-paged_pool_allocator<used_page_run> used_page_alloc_(kernel_process_.body, 4);
 }
 
 kprocess &threading::kernel_process() noexcept
@@ -54,8 +56,14 @@ result<void, error_code> kernel::memory_manager_init(const physical_memory_desc 
     return ok();
 }
 
-result<void *, error_code> memory::allocate_pages(threading::kprocess &process, uint32_t pages) noexcept
+result<void *, error_code> memory::allocate_pages(kprocess &process, uint32_t pages) noexcept
 {
     // 1. Allocate from free list
     try_var(base, free_page_list_.allocate(pages));
+    // 2. Mark process used list
+}
+
+used_page_node *&used_page_list::head(kprocess &process) noexcept
+{
+    return process.used_page_head_;
 }

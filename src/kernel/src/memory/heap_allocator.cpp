@@ -19,32 +19,32 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#pragma once
-#include <chino/memory.h>
+#include <chino/kernel.h>
+#include <chino/memory/heap_allocator.h>
+#include <chino/memory/memory_manager.h>
+#include <chino/threading/process.h>
+#include <chino/threading/thread.h>
+#include <chino/utility.h>
+#include <numeric>
 
-namespace chino::threading
+using namespace chino;
+using namespace chino::ob;
+using namespace chino::kernel;
+using namespace chino::threading;
+using namespace chino::memory;
+
+kprocess &heap_allocator::owner() noexcept
 {
-class kprocess;
+    auto ptr = reinterpret_cast<uint8_t *>(this) - offsetof(kprocess, heap_allocator_);
+    return *reinterpret_cast<kprocess *>(ptr);
 }
 
-namespace chino::memory
+result<void *, error_code> memory::heap_alloc(kprocess &process, size_t bytes) noexcept
 {
-struct used_page_node
+    return process.heap_allocator_.allocate(bytes);
+}
+
+void memory::heap_free(kprocess &process, void *ptr) noexcept
 {
-    uint32_t start;
-    uint32_t count;
-
-    used_page_node *next;
-
-    uint32_t end() noexcept
-    {
-        return start + count;
-    }
-};
-
-result<void *, error_code> allocate_pages(threading::kprocess &process, uint32_t pages) noexcept;
-void free_pages(threading::kprocess &process, void *base, uint32_t pages) noexcept;
-
-result<void *, error_code> heap_alloc(threading::kprocess &process, size_t bytes) noexcept;
-void heap_free(threading::kprocess &process, void *ptr) noexcept;
+    process.heap_allocator_.free(ptr);
 }

@@ -22,7 +22,7 @@
 #pragma once
 #include "thread.h"
 #include <chino/list.h>
-#include <chino/memory/pool_allocator.h>
+#include <chino/memory/heap_allocator.h>
 #include <chino/threading.h>
 
 namespace chino::threading
@@ -40,9 +40,10 @@ struct kprocess : public ob::object
 
     void attach_new_thread(kthread &thread) noexcept;
 
-    memory::used_page_run *used_page_head_ = nullptr;
+    memory::used_page_node *used_page_head_ = nullptr;
 
     // BEGIN LIST NODES, BE CAREFUL ABOUT THE OFFSETS !!!
+    memory::heap_allocator heap_allocator_;
     // END LIST NODES
 
     list_t_of_node(kthread::process_threads_entry_) threads_list_;
