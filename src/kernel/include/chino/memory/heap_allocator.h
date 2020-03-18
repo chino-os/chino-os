@@ -51,12 +51,10 @@ class heap_allocator
 public:
     result<void *, error_code> allocate(size_t bytes) noexcept
     {
-        if (avail_bytes_ < bytes)
-            return err(error_code::out_of_memory);
-
         auto required_bytes = align(bytes, 8) + sizeof(alloc_header);
 
         // 1. Allocate from free nodes
+        if (avail_bytes_ >= bytes)
         {
             std::unique_lock lock(lock_);
             free_heap_node *prev = nullptr;
@@ -67,32 +65,30 @@ public:
                 bool found = false;
 
                 // 1.1. Split
-                if (avail > required_bytes)
+                if (avail >= required_bytes + sizeof(uintptr_t))
                 {
                     cnt->count -= required_bytes;
-                    found = true;
+                    auto header = reinterpret_cast<alloc_header *>(uintptr_t(cnt) + cnt->count);
+                    header->count = required_bytes;
+                    avail_bytes_ -= required_bytes;
+                    return ok((void *)header->body);
                 }
                 // 1.2. Remove
-                else if (avail == required_bytes)
+                else if (avail >= required_bytes)
                 {
                     if (prev)
                         prev->next = cnt->next;
                     else
                         head_ = cnt->next;
-                    found = true;
-                }
-
-                if (found)
-                {
+                    auto count = cnt->count;
                     auto header = reinterpret_cast<alloc_header *>(cnt);
-                    header->count = required_bytes;
+                    header->count = count;
+                    avail_bytes_ -= count;
                     return ok((void *)header->body);
                 }
-                else
-                {
-                    prev = cnt;
-                    cnt = cnt->next;
-                }
+
+                prev = cnt;
+                cnt = cnt->next;
             }
         }
 
@@ -123,8 +119,9 @@ public:
     }
 
 private:
-    void insert_free_node(void* base, size_t count)
+    void insert_free_node(void *base, size_t count)
     {
+        avail_bytes_ += count;
         std::unique_lock lock(lock_);
 
         // 1. No free

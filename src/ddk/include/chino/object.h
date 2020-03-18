@@ -20,8 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include "error.h"
-#include "result.h"
+#include <chino/error.h>
+#include <chino/result.h>
 #include <cstdint>
 #include <string_view>
 
@@ -115,14 +115,4 @@ namespace wellknown_types
 {
     object_type &obj_type() noexcept;
 }
-}
-
-namespace chino
-{
-typedef struct _handle
-{
-    uintptr_t value;
-
-    static constexpr _handle invalid() { return {}; }
-} handle_t;
 }

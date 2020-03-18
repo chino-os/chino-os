@@ -20,16 +20,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include "error.h"
-#include "object.h"
-#include "result.h"
+#include "chinodef.h"
 #include <atomic>
+#include <chino/error.h>
+#include <chino/result.h>
 #include <string_view>
 
 namespace chino::threading
 {
 typedef uint16_t pid_t;
 inline constexpr pid_t INVALID_PID = -1;
+
+typedef uint32_t tid_t;
+inline constexpr tid_t INVALID_TID = -1;
 
 enum class thread_priority : uint32_t
 {

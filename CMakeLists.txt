@@ -27,7 +27,7 @@ set(THIRD_PARTY ${CMAKE_CURRENT_LIST_DIR}/third_party)
  
 if (MSVC)
     add_definitions(/D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /DNOMINMAX /DUNICODE /D_UNICODE)
-    add_compile_options(/Zc:threadSafeInit- /utf-8)
+    add_compile_options(/Zc:threadSafeInit- /utf-8 /wd4200)
     # Disable C++ exceptions.
     string(REGEX REPLACE "/EH[a-z]+" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHs-c-")
@@ -52,5 +52,6 @@ include(cmake/boards/${CHINO_BOARD}.cmake)
 include(cmake/definitions.cmake)
 
 add_subdirectory(src/api)
+add_subdirectory(src/ddk)
 add_subdirectory(src/hal)
 add_subdirectory(src/kernel)

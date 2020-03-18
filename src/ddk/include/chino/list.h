@@ -20,6 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
+#include <cassert>
 #include <chino/threading.h>
 #include <cstddef>
 #include <cstdint>
@@ -34,6 +35,10 @@ template <class TOwner, class TValue, ptrdiff_t OwnerOffset>
 struct list_node
 {
     using list_t = list<TOwner, TValue, OwnerOffset>;
+
+#ifndef NDEBUG
+    list_t *list;
+#endif
 
     list_node *prev;
     list_node *next;
@@ -53,6 +58,10 @@ template <class TOwner, ptrdiff_t OwnerOffset>
 struct list_node<TOwner, void, OwnerOffset>
 {
     using list_t = list<TOwner, void, OwnerOffset>;
+
+#ifndef NDEBUG
+    list_t *list;
+#endif
 
     list_node *prev;
     list_node *next;
@@ -76,7 +85,70 @@ public:
     constexpr list() noexcept
         : head_(nullptr), tail_(nullptr) {}
 
+    void add_first(node_t *node) noexcept
+    {
+        std::unique_lock lock(lock_);
+#ifndef NDEBUG
+        assert(!node->list);
+        node->list = this;
+#endif
+        node->prev = nullptr;
+        if (head_)
+        {
+            node->next = head_;
+            head_->prev = node;
+            head_ = node;
+        }
+        else
+        {
+            node->next = nullptr;
+            head_ = tail_ = node;
+        }
+    }
+
+    void add_last(node_t *node) noexcept
+    {
+        std::unique_lock lock(lock_);
+#ifndef NDEBUG
+        assert(!node->list);
+        node->list = this;
+#endif
+
+        node->next = nullptr;
+        if (tail_)
+        {
+            node->prev = tail_;
+            tail_->next = node;
+            tail_ = node;
+        }
+        else
+        {
+            node->prev = nullptr;
+            head_ = tail_ = node;
+        }
+    }
+
+    void remove(node_t *node) noexcept
+    {
+        std::unique_lock lock(lock_);
+#ifndef NDEBUG
+        assert(node->list == this);
+        node->list = nullptr;
+#endif
+        if (node->prev)
+            node->prev->next = node->next;
+        if (node->next)
+            node->next->prev = node->prev;
+        if (head_ == node)
+            head_ = node->next;
+        if (tail_ == node)
+            tail_ = node->prev;
+
+        node->prev = node->next = nullptr;
+    }
+
 private:
+    threading::irq_spinlock lock_;
     node_t *head_;
     node_t *tail_;
 };

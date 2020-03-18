@@ -20,49 +20,26 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include <chino/board/board.h>
-#include <chino/list.h>
-#include <chino/object.h>
-#include <chino/threading.h>
+#include <chino/error.h>
+#include <chino/result.h>
 #include <gsl/gsl-lite.hpp>
 
-namespace chino::threading
+namespace chino::kernel
 {
-namespace details
+struct physical_memory_run
 {
-    struct kthread_checker;
-}
-
-struct kprocess;
-
-struct kthread : public ob::object
-{
-    static constexpr ptrdiff_t PROCESS_THREAD_ENTRY_OFFSET = 0;
-
-    kthread() = default;
-
-    void init_stack(gsl::span<uintptr_t> stack, threading::thread_start_t start, void *arg) noexcept;
-
-    friend class kprocess;
-    friend struct details::kthread_checker;
-
-    // BEGIN LIST NODES, BE CAREFUL ABOUT THE OFFSETS !!!
-    list_node<kthread, void, PROCESS_THREAD_ENTRY_OFFSET> process_threads_entry_;
-    // END LIST NODES
-
-    kprocess *owner_ = nullptr;
-    tid_t tid_;
-    gsl::span<uintptr_t> stack_;
-    arch::thread_context_t context_;
+    void *base;
+    size_t count;
 };
 
-namespace details
+struct physical_memory_desc
 {
-    struct kthread_checker
-    {
-        static_assert(offsetof(kthread, process_threads_entry_) == kthread::PROCESS_THREAD_ENTRY_OFFSET);
-    };
-}
+    size_t runs_count;
+    size_t pages_count;
+    physical_memory_run runs[1];
+};
 
-kthread &current_thread() noexcept;
+result<void, error_code> memory_manager_init(const physical_memory_desc &desc);
+result<void, error_code> kernel_main();
+int32_t kernel_system_thread_main(void *arg);
 }

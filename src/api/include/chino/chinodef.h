@@ -20,25 +20,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include "error.h"
-#include "result.h"
-#include <gsl/gsl-lite.hpp>
+#include <cstddef>
+#include <cstdint>
 
-namespace chino::kernel
+namespace chino
 {
-struct physical_memory_run
+typedef struct _handle
 {
-    void *base;
-    size_t count;
-};
+    uintptr_t value;
 
-struct physical_memory_desc
-{
-    size_t runs_count;
-    size_t pages_count;
-    physical_memory_run runs[1];
-};
-
-result<void, error_code> memory_manager_init(const physical_memory_desc &desc);
-result<void, error_code> kernel_main();
+    static constexpr _handle invalid() { return {}; }
+} handle_t;
 }

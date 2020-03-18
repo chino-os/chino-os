@@ -20,16 +20,25 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
+#include <chino/threading.h>
 #include <cstdint>
+#include <gsl/gsl-lite.hpp>
 
 namespace chino::arch
 {
+struct win32_thread_context
+{
+};
+
+using thread_context_t = win32_thread_context;
+
 struct win32_arch
 {
     static uint32_t current_processor() noexcept { return 0; }
     static void yield_processor() noexcept;
     static uintptr_t disable_irq() noexcept;
     static void restore_irq(uintptr_t state) noexcept;
+    static void init_thread_context(thread_context_t &context, gsl::span<uintptr_t> stack, threading::thread_start_t start, void *arg) noexcept;
 };
 
 using arch_t = win32_arch;

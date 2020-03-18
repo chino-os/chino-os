@@ -42,3 +42,8 @@ result<void, error_code> kernel::kernel_main()
     try_(kernel_process_init());
     return ok();
 }
+
+int32_t kernel::kernel_system_thread_main(void *arg)
+{
+    return 0;
+}

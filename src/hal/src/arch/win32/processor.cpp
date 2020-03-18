@@ -21,8 +21,8 @@
 // SOFTWARE.
 #include "target.h"
 #include <Windows.h>
-#include <chino/arch/win32/arch.h>
 #include <atomic>
+#include <chino/arch/win32/arch.h>
 
 using namespace chino::arch;
 
@@ -41,4 +41,9 @@ uintptr_t win32_arch::disable_irq() noexcept
 void win32_arch::restore_irq(uintptr_t state) noexcept
 {
     irq_state.store(state, std::memory_order_release);
+}
+
+void win32_arch::init_thread_context(thread_context_t &context, gsl::span<uintptr_t> stack, threading::thread_start_t start, void *arg) noexcept
+{
+
 }

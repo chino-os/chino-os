@@ -19,9 +19,11 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+#include <chino/kernel.h>
 #include <chino/threading/process.h>
 
 using namespace chino;
+using namespace chino::arch;
 using namespace chino::ob;
 using namespace chino::threading;
 using namespace chino::memory;
@@ -41,7 +43,7 @@ kprocess &threading::kernel_process() noexcept
 
 result<void, error_code> threading::kernel_process_init() noexcept
 {
-    kernel_system_thread_.body.init_stack(kernel_sys_thread_stack_);
+    kernel_system_thread_.body.init_stack(kernel_sys_thread_stack_, kernel::kernel_system_thread_main, nullptr);
     kernel_process_.body.attach_new_thread(kernel_system_thread_.body);
 
     return ok();
@@ -49,10 +51,12 @@ result<void, error_code> threading::kernel_process_init() noexcept
 
 void kprocess::attach_new_thread(kthread &thread) noexcept
 {
-    //threads_list_
+    thread.owner_ = this;
+    threads_list_.add_last(&thread.process_threads_entry_);
 }
 
-void kthread::init_stack(gsl::span<uintptr_t> stack) noexcept
+void kthread::init_stack(gsl::span<uintptr_t> stack, threading::thread_start_t start, void *arg) noexcept
 {
     stack_ = stack;
+    arch_t::init_thread_context(context_, stack, start, arg);
 }
