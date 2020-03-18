@@ -28,6 +28,9 @@
 
 namespace chino::threading
 {
+typedef uint16_t pid_t;
+inline constexpr pid_t INVALID_PID = -1;
+
 enum class thread_priority : uint32_t
 {
     lowest = 0,

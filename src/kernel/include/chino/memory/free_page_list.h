@@ -79,7 +79,8 @@ public:
             if (avail > pages)
             {
                 cnt->count -= pages;
-                found = true;
+                avail_pages_ -= pages;
+                return ok((void *)(reinterpret_cast<uint8_t *>(cnt) + cnt->count * PAGE_SIZE));
             }
             // 2. Remove
             else if (avail == pages)
@@ -88,18 +89,12 @@ public:
                     prev->next = cnt->next;
                 else
                     head_ = cnt->next;
-                found = true;
+                avail_pages_ -= pages;
+                return ok((void *)cnt);
             }
 
-            if (found)
-            {
-                return ok((void *)(reinterpret_cast<uint8_t *>(cnt) + pages * PAGE_SIZE));
-            }
-            else
-            {
-                prev = cnt;
-                cnt = cnt->next;
-            }
+            prev = cnt;
+            cnt = cnt->next;
         }
 
         return err(error_code::out_of_memory);
@@ -107,6 +102,7 @@ public:
 
     void free(void *base, size_t pages) noexcept
     {
+        avail_pages_ += pages;
         std::unique_lock lock(lock_);
 
         // 1. No free

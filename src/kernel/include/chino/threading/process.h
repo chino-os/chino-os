@@ -40,7 +40,7 @@ struct kprocess : public ob::object
 
     void attach_new_thread(kthread &thread) noexcept;
 
-    memory::used_page_node *used_page_head_ = nullptr;
+    pid_t pid_;
 
     // BEGIN LIST NODES, BE CAREFUL ABOUT THE OFFSETS !!!
     memory::heap_allocator heap_allocator_;

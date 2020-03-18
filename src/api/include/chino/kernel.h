@@ -28,7 +28,7 @@ namespace chino::kernel
 {
 struct physical_memory_run
 {
-    uint8_t *base;
+    void *base;
     size_t count;
 };
 
@@ -36,9 +36,9 @@ struct physical_memory_desc
 {
     size_t runs_count;
     size_t pages_count;
-    physical_memory_run runs[0];
+    physical_memory_run runs[1];
 };
 
-result<void, error_code> memory_manager_init(const physical_memory_desc& desc);
+result<void, error_code> memory_manager_init(const physical_memory_desc &desc);
 result<void, error_code> kernel_main();
 }

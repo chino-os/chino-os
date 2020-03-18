@@ -30,27 +30,22 @@
 
 namespace chino::memory
 {
-class used_page_list
+class used_page_bitmap
 {
 public:
-    constexpr used_page_list() noexcept
-        : allocator_(16)
-    {
-    }
+    used_page_bitmap() = default;
 
-    result<void *, error_code> allocate(threading::kprocess &process, void *base, size_t pages) noexcept
-    {
-    }
+    void init(size_t pages) noexcept;
 
-    void free(threading::kprocess &process, void *base, size_t pages) noexcept
-    {
-    }
+    void mark(threading::kprocess &process, void *base, size_t pages) noexcept;
+    result<void *, error_code> allocate(threading::kprocess &process, size_t pages) noexcept;
+    void free(threading::kprocess &process, void *base, size_t pages) noexcept;
 
 private:
-    used_page_node *&head(threading::kprocess &process) noexcept;
+    size_t page_index(void *ptr) noexcept;
 
 private:
-    pool_allocator<used_page_node> allocator_;
     threading::sched_spinlock lock_;
+    threading::pid_t state_[1];
 };
 }
