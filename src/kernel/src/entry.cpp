@@ -20,11 +20,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #include <chino/kernel.h>
+#include <chino/threading/process.h>
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
 
 using namespace chino;
+using namespace chino::threading;
 
 void chino::panic(std::string_view message) noexcept
 {
@@ -37,5 +39,6 @@ void chino::panic(std::string_view message) noexcept
 
 result<void, error_code> kernel::kernel_main()
 {
+    try_(kernel_process_init());
     return ok();
 }

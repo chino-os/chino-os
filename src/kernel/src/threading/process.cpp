@@ -22,5 +22,37 @@
 #include <chino/threading/process.h>
 
 using namespace chino;
+using namespace chino::ob;
 using namespace chino::threading;
+using namespace chino::memory;
 
+namespace
+{
+static uintptr_t kernel_sys_thread_stack_[KERNEL_STACK_SIZE / sizeof(uintptr_t)];
+
+static_object<kprocess> kernel_process_;
+static_object<kthread> kernel_system_thread_;
+}
+
+kprocess &threading::kernel_process() noexcept
+{
+    return kernel_process_.body;
+}
+
+result<void, error_code> threading::kernel_process_init() noexcept
+{
+    kernel_system_thread_.body.init_stack(kernel_sys_thread_stack_);
+    kernel_process_.body.attach_new_thread(kernel_system_thread_.body);
+
+    return ok();
+}
+
+void kprocess::attach_new_thread(kthread &thread) noexcept
+{
+    //threads_list_
+}
+
+void kthread::init_stack(gsl::span<uintptr_t> stack) noexcept
+{
+    stack_ = stack;
+}

@@ -19,6 +19,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+#include <cassert>
 #include <chino/kernel.h>
 #include <chino/memory/free_page_list.h>
 #include <chino/memory/memory_manager.h>
@@ -37,17 +38,9 @@ using namespace chino::memory;
 
 namespace
 {
-static_object<kprocess> kernel_process_;
-static_object<kthread> kernel_system_thread_;
-
 free_page_list free_page_list_;
 physical_memory_desc *phy_mem_desc_;
 used_page_bitmap *used_page_;
-}
-
-kprocess &threading::kernel_process() noexcept
-{
-    return kernel_process_.body;
 }
 
 result<void, error_code> kernel::memory_manager_init(const physical_memory_desc &desc)
@@ -91,6 +84,7 @@ size_t used_page_bitmap::page_index(void *ptr) noexcept
             base_run = &run;
     }
 
+    assert(base_run);
     return (uintptr_t(ptr) - uintptr_t(base_run->base)) / PAGE_SIZE;
 }
 

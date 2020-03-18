@@ -58,4 +58,6 @@ namespace details
 
 kprocess &current_process() noexcept;
 kprocess &kernel_process() noexcept;
+
+result<void, error_code> kernel_process_init() noexcept;
 }

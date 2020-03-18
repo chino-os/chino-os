@@ -40,6 +40,8 @@ struct kthread : public ob::object
 
     kthread() = default;
 
+    void init_stack(gsl::span<uintptr_t> stack) noexcept;
+
     friend class kprocess;
     friend struct details::kthread_checker;
 
