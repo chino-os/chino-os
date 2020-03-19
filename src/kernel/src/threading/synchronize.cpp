@@ -98,3 +98,16 @@ void irq_spinlock::unlock() noexcept
     // restore irq
     arch_t::restore_irq(irq_state_);
 }
+
+sched_lock::sched_lock() noexcept
+{
+    // suspend sched
+    auto &sched = current_sched();
+    sched.suspend();
+}
+
+sched_lock::~sched_lock()
+{
+    // resume sched
+    current_sched().resume();
+}

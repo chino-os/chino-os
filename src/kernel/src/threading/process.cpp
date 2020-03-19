@@ -69,4 +69,5 @@ void kthread::init_stack(gsl::span<uintptr_t> stack, thread_start_t start, void 
 void user_thread_thunk(thread_start_t start, void *arg) noexcept
 {
     auto exit_code = start(arg);
+    exit_thread(exit_code);
 }

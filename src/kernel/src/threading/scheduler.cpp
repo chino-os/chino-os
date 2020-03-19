@@ -34,6 +34,8 @@ namespace
 std::array<scheduler, chip_t::processors_count> schedulers_;
 }
 
+static uint32_t idle_main(scheduler &sched) noexcept;
+
 scheduler &threading::current_sched() noexcept
 {
     return schedulers_[arch_t::current_processor()];
@@ -66,14 +68,41 @@ void scheduler::add_to_ready_list(kthread &thread) noexcept
 {
     ready_list_[(size_t)thread.priority_].add_last(&thread.sched_entry_);
 
-    kthread *expected = nullptr;
-    selected_thread_.compare_exchange_weak(expected, &thread);
+    std::unique_lock lock(selected_thread_lock_);
+    if (!selected_thread_ || selected_thread_->priority_ < thread.priority_)
+        selected_thread_ = &thread;
+}
+
+void scheduler::init_idle_thread() noexcept
+{
+    idle_thread_.body.priority_ = thread_priority::lowest;
+    idle_thread_.body.init_stack(idle_stack_, (thread_start_t)idle_main, this);
+    kernel_process().attach_new_thread(idle_thread_.body);
+    current_sched().add_to_ready_list(idle_thread_.body);
 }
 
 void scheduler::start() noexcept
 {
-    auto selected_thread = selected_thread_.load();
+    init_idle_thread();
+
+    // No lock is needed because of irq is disabled in init
+    auto selected_thread = selected_thread_;
     assert(selected_thread);
     current_thread_ = selected_thread;
     arch_t::start_schedule(selected_thread->context_);
+}
+
+uint32_t idle_main(scheduler &sched) noexcept
+{
+    return 0;
+}
+
+void threading::exit_thread(uint32_t exit_code)
+{
+    sched_lock lock;
+    auto thread = current_thread();
+    assert(thread);
+    thread->exit_code_ = exit_code;
+    while (1)
+        ;
 }
