@@ -21,6 +21,7 @@
 // SOFTWARE.
 #include <chino/kernel.h>
 #include <chino/threading/process.h>
+#include <chino/threading/scheduler.h>
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
@@ -40,10 +41,14 @@ void chino::panic(std::string_view message) noexcept
 result<void, error_code> kernel::kernel_main()
 {
     try_(kernel_process_init());
-    return ok();
+    current_sched().start();
+
+    // Should not reach here
+    while (1)
+        ;
 }
 
-int32_t kernel::kernel_system_thread_main(void *arg)
+uint32_t kernel::kernel_system_thread_main(void *arg)
 {
     return 0;
 }

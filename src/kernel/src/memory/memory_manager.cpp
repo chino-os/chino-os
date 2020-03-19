@@ -64,12 +64,12 @@ result<void, error_code> kernel::memory_manager_init(const physical_memory_desc 
     return ok();
 }
 
-result<void *, error_code> memory::allocate_pages(kprocess &process, uint32_t pages) noexcept
+result<void *, error_code> memory::allocate_pages(kprocess &process, size_t pages) noexcept
 {
     return used_page_->allocate(process, pages);
 }
 
-void memory::free_pages(threading::kprocess &process, void *base, uint32_t pages) noexcept
+void memory::free_pages(threading::kprocess &process, void *base, size_t pages) noexcept
 {
     return used_page_->free(process, base, pages);
 }
@@ -106,6 +106,7 @@ result<void *, error_code> used_page_bitmap::allocate(threading::kprocess &proce
     try_var(base, free_page_list_.allocate(pages));
     // 2. Mark process used list
     mark(process, base, pages);
+    return ok(base);
 }
 
 void used_page_bitmap::free(threading::kprocess &process, void *base, size_t pages) noexcept

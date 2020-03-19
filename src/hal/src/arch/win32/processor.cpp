@@ -22,9 +22,17 @@
 #include "target.h"
 #include <Windows.h>
 #include <atomic>
+#include <cassert>
 #include <chino/arch/win32/arch.h>
 
 using namespace chino::arch;
+using namespace chino::kernel;
+
+extern "C"
+{
+    extern void win32_start_schedule(thread_context_t *ctx);
+    extern void win32_thread_thunk();
+}
 
 static std::atomic<uintptr_t> irq_state = 0;
 
@@ -43,7 +51,21 @@ void win32_arch::restore_irq(uintptr_t state) noexcept
     irq_state.store(state, std::memory_order_release);
 }
 
-void win32_arch::init_thread_context(thread_context_t &context, gsl::span<uintptr_t> stack, threading::thread_start_t start, void *arg) noexcept
+void win32_arch::init_thread_context(thread_context_t &context, gsl::span<uintptr_t> stack, thread_thunk_t start, void *arg0, void *arg1) noexcept
 {
+    // RBX: start
+    // RDI: arg0
+    // RSI: arg1
+    context.rbx = uintptr_t(start);
+    context.rdi = uintptr_t(arg0);
+    context.rsi = uintptr_t(arg1);
 
+    auto *top = stack.end();
+    *--top = uintptr_t(win32_thread_thunk);
+    context.rsp = uintptr_t(top);
+}
+
+void win32_arch::start_schedule(thread_context_t &context) noexcept
+{
+    win32_start_schedule(&context);
 }

@@ -86,8 +86,8 @@ private:
     uintptr_t irq_state_;
 };
 
-typedef int32_t (*chino_startup_t)();
-typedef int32_t (*thread_start_t)(void *arg);
+typedef uint32_t (*chino_startup_t)();
+typedef uint32_t (*thread_start_t)(void *arg);
 
 inline constexpr int32_t DEFAULT_STACK_SIZE = 4096;
 
@@ -96,4 +96,6 @@ result<handle_t, error_code> create_process(chino_startup_t start, std::string_v
 
 result<handle_t, error_code> create_thread(thread_start_t start, void *arg, thread_priority prioriy = thread_priority::normal,
     create_thread_flags flags = create_thread_flags::none, int32_t stack_size = DEFAULT_STACK_SIZE);
+
+[[noreturn]] void exit_thread(uint32_t exit_code);
 }

@@ -30,7 +30,7 @@ using namespace chino::threading;
 bool sched_spinlock::try_lock() noexcept
 {
     // suspend sched
-    auto &sched = scheduler::current();
+    auto &sched = current_sched();
     sched.suspend();
 
     // not taken, resume sched
@@ -60,7 +60,7 @@ void sched_spinlock::unlock() noexcept
 {
     taken_.clear();
     // resume sched
-    scheduler::current().resume();
+    current_sched().resume();
 }
 
 bool irq_spinlock::try_lock() noexcept

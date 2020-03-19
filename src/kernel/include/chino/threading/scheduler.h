@@ -21,23 +21,34 @@
 // SOFTWARE.
 #pragma once
 #include "process.h"
+#include "thread.h"
 
 namespace chino::threading
 {
 class scheduler
 {
 public:
-    static scheduler &current() noexcept;
-
     constexpr scheduler() noexcept
-        : suspend_count_(0)
+        : suspend_count_(0), selected_thread_(nullptr), current_thread_(nullptr), ready_list_ {}
     {
     }
 
     void suspend() noexcept;
     void resume() noexcept;
 
+    kthread *current_thread() const noexcept { return current_thread_.load(); }
+    void add_to_ready_list(kthread &thread) noexcept;
+
+    [[noreturn]] void start() noexcept;
+
 private:
     std::atomic<uint32_t> suspend_count_;
+    std::array<list_t_of_node(kthread::sched_entry_), THREAD_PRIORITY_COUNT> ready_list_;
+    std::atomic<kthread *> selected_thread_;
+    std::atomic<kthread *> current_thread_;
 };
+
+scheduler &current_sched() noexcept;
+kprocess *current_process() noexcept;
+kthread *current_thread() noexcept;
 }

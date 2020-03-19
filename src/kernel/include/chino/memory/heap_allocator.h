@@ -21,6 +21,7 @@
 // SOFTWARE.
 #pragma once
 #include <algorithm>
+#include <chino/board/board.h>
 #include <chino/memory/memory_manager.h>
 #include <chino/threading.h>
 #include <chino/utility.h>
@@ -51,7 +52,7 @@ class heap_allocator
 public:
     result<void *, error_code> allocate(size_t bytes) noexcept
     {
-        auto required_bytes = align(bytes, 8) + sizeof(alloc_header);
+        auto required_bytes = align(bytes, arch::arch_t::ALLOCATE_ALIGNMENT) + sizeof(alloc_header);
 
         // 1. Allocate from free nodes
         if (avail_bytes_ >= bytes)
@@ -65,7 +66,7 @@ public:
                 bool found = false;
 
                 // 1.1. Split
-                if (avail >= required_bytes + sizeof(uintptr_t))
+                if (avail >= required_bytes + sizeof(free_heap_node))
                 {
                     cnt->count -= required_bytes;
                     auto header = reinterpret_cast<alloc_header *>(uintptr_t(cnt) + cnt->count);

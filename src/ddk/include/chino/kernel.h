@@ -39,7 +39,8 @@ struct physical_memory_desc
     physical_memory_run runs[1];
 };
 
+typedef void (*thread_thunk_t)(void *arg0, void *arg1);
 result<void, error_code> memory_manager_init(const physical_memory_desc &desc);
 result<void, error_code> kernel_main();
-int32_t kernel_system_thread_main(void *arg);
+uint32_t kernel_system_thread_main(void *arg);
 }

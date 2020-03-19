@@ -38,20 +38,23 @@ struct kprocess;
 struct kthread : public ob::object
 {
     static constexpr ptrdiff_t PROCESS_THREAD_ENTRY_OFFSET = 0;
+    static constexpr ptrdiff_t SCHED_ENTRY_OFFSET = PROCESS_THREAD_ENTRY_OFFSET + VOID_LIST_NODE_SIZE;
 
     kthread() = default;
 
-    void init_stack(gsl::span<uintptr_t> stack, threading::thread_start_t start, void *arg) noexcept;
+    void init_stack(gsl::span<uintptr_t> stack, thread_start_t start, void *arg) noexcept;
 
-    friend class kprocess;
     friend struct details::kthread_checker;
 
     // BEGIN LIST NODES, BE CAREFUL ABOUT THE OFFSETS !!!
     list_node<kthread, void, PROCESS_THREAD_ENTRY_OFFSET> process_threads_entry_;
+    list_node<kthread, void, SCHED_ENTRY_OFFSET> sched_entry_;
     // END LIST NODES
 
     kprocess *owner_ = nullptr;
     tid_t tid_;
+    thread_priority priority_;
+    std::atomic<uint32_t> exit_code_;
     gsl::span<uintptr_t> stack_;
     arch::thread_context_t context_;
 };
@@ -63,6 +66,4 @@ namespace details
         static_assert(offsetof(kthread, process_threads_entry_) == kthread::PROCESS_THREAD_ENTRY_OFFSET);
     };
 }
-
-kthread &current_thread() noexcept;
 }

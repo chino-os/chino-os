@@ -32,7 +32,7 @@ namespace details
     struct kprocess_checker;
 }
 
-class kthread;
+struct kthread;
 
 struct kprocess : public ob::object
 {
@@ -56,7 +56,6 @@ namespace details
     };
 }
 
-kprocess &current_process() noexcept;
 kprocess &kernel_process() noexcept;
 
 result<void, error_code> kernel_process_init() noexcept;

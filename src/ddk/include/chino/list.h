@@ -28,6 +28,12 @@
 
 namespace chino
 {
+#ifndef NDEBUG
+inline constexpr size_t VOID_LIST_NODE_SIZE = sizeof(uintptr_t) * 3;
+#else
+inline constexpr size_t VOID_LIST_NODE_SIZE = sizeof(uintptr_t) * 2;
+#endif
+
 template <class TOwner, class TValue, ptrdiff_t OwnerOffset>
 class list;
 

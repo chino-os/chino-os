@@ -2,5 +2,7 @@
 
 set(SRCS debug.cpp
          processor.cpp)
+set(ASM_SRCS arch.asm)
 list(TRANSFORM SRCS PREPEND "src/arch/win32/")
-target_sources(hal PRIVATE ${SRCS})
+list(TRANSFORM ASM_SRCS PREPEND "src/arch/win32/")
+target_sources(hal PRIVATE ${SRCS} ${ASM_SRCS})

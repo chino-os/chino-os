@@ -34,9 +34,22 @@ namespace
 std::array<scheduler, chip_t::processors_count> schedulers_;
 }
 
-scheduler &scheduler::current() noexcept
+scheduler &threading::current_sched() noexcept
 {
     return schedulers_[arch_t::current_processor()];
+}
+
+kthread *threading::current_thread() noexcept
+{
+    return current_sched().current_thread();
+}
+
+kprocess *threading::current_process() noexcept
+{
+    auto thread = current_sched().current_thread();
+    if (thread)
+        return thread->owner_;
+    return nullptr;
 }
 
 void scheduler::suspend() noexcept
@@ -47,4 +60,20 @@ void scheduler::suspend() noexcept
 void scheduler::resume() noexcept
 {
     suspend_count_.fetch_sub(1, std::memory_order_acq_rel);
+}
+
+void scheduler::add_to_ready_list(kthread &thread) noexcept
+{
+    ready_list_[(size_t)thread.priority_].add_last(&thread.sched_entry_);
+
+    kthread *expected = nullptr;
+    selected_thread_.compare_exchange_weak(expected, &thread);
+}
+
+void scheduler::start() noexcept
+{
+    auto selected_thread = selected_thread_.load();
+    assert(selected_thread);
+    current_thread_ = selected_thread;
+    arch_t::start_schedule(selected_thread->context_);
 }

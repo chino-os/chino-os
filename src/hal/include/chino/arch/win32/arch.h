@@ -20,25 +20,54 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include <chino/threading.h>
+#include <chino/kernel.h>
 #include <cstdint>
 #include <gsl/gsl-lite.hpp>
+#include <xmmintrin.h>
 
 namespace chino::arch
 {
+// No asynchronous interrupt is supported by this target
+// Only save callee saved registers in context
 struct win32_thread_context
 {
+    uintptr_t rbx;
+    uintptr_t rbp;
+    uintptr_t rdi;
+    uintptr_t rsi;
+    uintptr_t rsp;
+    uintptr_t r12;
+    uintptr_t r13;
+    uintptr_t r14;
+    uintptr_t r15;
+    uintptr_t pad; // Pad to 16byte align
+
+    __m128 xmm6;
+    __m128 xmm7;
+    __m128 xmm8;
+    __m128 xmm9;
+    __m128 xmm10;
+    __m128 xmm11;
+    __m128 xmm12;
+    __m128 xmm13;
+    __m128 xmm14;
+    __m128 xmm15;
 };
 
 using thread_context_t = win32_thread_context;
 
 struct win32_arch
 {
+    static constexpr size_t ALLOCATE_ALIGNMENT = 16;
+
     static uint32_t current_processor() noexcept { return 0; }
     static void yield_processor() noexcept;
+
     static uintptr_t disable_irq() noexcept;
     static void restore_irq(uintptr_t state) noexcept;
-    static void init_thread_context(thread_context_t &context, gsl::span<uintptr_t> stack, threading::thread_start_t start, void *arg) noexcept;
+
+    static void init_thread_context(thread_context_t &context, gsl::span<uintptr_t> stack, kernel::thread_thunk_t start, void *arg0, void *arg1) noexcept;
+    [[noreturn]] static void start_schedule(thread_context_t &context) noexcept;
 };
 
 using arch_t = win32_arch;
