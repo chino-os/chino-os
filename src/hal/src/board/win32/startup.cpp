@@ -21,17 +21,20 @@
 // SOFTWARE.
 #include "../../arch/win32/target.h"
 #include <Windows.h>
+#include <chino/board/board.h>
 #include <chino/kernel.h>
 #include <chino/memory.h>
 #include <vcruntime_startup.h>
 
 using namespace chino;
+using namespace chino::arch;
 using namespace chino::kernel;
 
 alignas(PAGE_SIZE) static uint8_t memory[1024 * 1024 * 4];
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdLine, int nCmdShow)
 {
+    arch_t::init_stack_check();
     physical_memory_desc mem_desc = {
         .runs_count = 1,
         .pages_count = std::size(memory) / PAGE_SIZE,

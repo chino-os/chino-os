@@ -24,8 +24,11 @@
 #include <atomic>
 #include <cassert>
 #include <chino/arch/win32/arch.h>
+#include <chino/board/board.h>
+#include <intrin.h>
 
 using namespace chino::arch;
+using namespace chino::chip;
 using namespace chino::kernel;
 
 extern "C"
@@ -34,7 +37,31 @@ extern "C"
     extern void win32_thread_thunk();
 }
 
+static HANDLE processor_handle[chip_t::processors_count];
+static CONTEXT processor_ctx[chip_t::processors_count];
 static std::atomic<uintptr_t> irq_state = 0;
+
+namespace
+{
+inline void set_bits(DWORD64 &dw, uint64_t low_bit, uint64_t bits, uint64_t new_value)
+{
+    uint64_t mask = (1ULL << bits) - 1; // e.g. 1 becomes 0001, 2 becomes 0011, 3 becomes 0111
+    dw = (dw & ~(mask << low_bit)) | (new_value << low_bit);
+}
+
+void setup_stack_check(thread_context_t &context) noexcept
+{
+    auto hart = arch_t::current_processor();
+    auto &ctx = processor_ctx[hart];
+
+    // Setup stack checker
+    ctx.Dr0 = context.stack_bottom;
+    set_bits(ctx.Dr7, 16, 2, 0b11);
+    set_bits(ctx.Dr7, 24, 2, 0b10);
+    set_bits(ctx.Dr7, 0, 1, 1);
+    assert(SetThreadContext(processor_handle[hart], &ctx));
+}
+}
 
 void win32_arch::yield_processor() noexcept
 {
@@ -59,6 +86,7 @@ void win32_arch::init_thread_context(thread_context_t &context, gsl::span<uintpt
     context.rbx = uintptr_t(start);
     context.rdi = uintptr_t(arg0);
     context.rsi = uintptr_t(arg1);
+    context.stack_bottom = uintptr_t(stack.data());
 
     auto *top = stack.end();
     *--top = uintptr_t(win32_thread_thunk);
@@ -67,5 +95,16 @@ void win32_arch::init_thread_context(thread_context_t &context, gsl::span<uintpt
 
 void win32_arch::start_schedule(thread_context_t &context) noexcept
 {
+    setup_stack_check(context);
     win32_start_schedule(&context);
+}
+
+void win32_arch::init_stack_check() noexcept
+{
+    auto hart = current_processor();
+    processor_handle[hart] = GetCurrentThread();
+    auto &ctx = processor_ctx[hart];
+
+    ctx.ContextFlags = CONTEXT_DEBUG_REGISTERS;
+    assert(GetThreadContext(processor_handle[hart], &ctx));
 }

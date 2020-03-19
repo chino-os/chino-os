@@ -40,7 +40,7 @@ struct win32_thread_context
     uintptr_t r13;
     uintptr_t r14;
     uintptr_t r15;
-    uintptr_t pad; // Pad to 16byte align
+    uintptr_t stack_bottom;
 
     __m128 xmm6;
     __m128 xmm7;
@@ -68,6 +68,8 @@ struct win32_arch
 
     static void init_thread_context(thread_context_t &context, gsl::span<uintptr_t> stack, kernel::thread_thunk_t start, void *arg0, void *arg1) noexcept;
     [[noreturn]] static void start_schedule(thread_context_t &context) noexcept;
+
+    static void init_stack_check() noexcept;
 };
 
 using arch_t = win32_arch;
