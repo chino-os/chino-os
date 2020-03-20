@@ -34,6 +34,7 @@ using namespace chino::kernel;
 extern "C"
 {
     extern void win32_start_schedule(thread_context_t *ctx);
+    extern void win32_yield(thread_context_t *old_ctx, thread_context_t *new_ctx);
     extern void win32_thread_thunk();
 }
 
@@ -97,6 +98,12 @@ void win32_arch::start_schedule(thread_context_t &context) noexcept
 {
     setup_stack_check(context);
     win32_start_schedule(&context);
+}
+
+void win32_arch::yield(thread_context_t &old_context, thread_context_t &new_context) noexcept
+{
+    setup_stack_check(new_context);
+    win32_yield(&old_context, &new_context);
 }
 
 void win32_arch::init_stack_check() noexcept

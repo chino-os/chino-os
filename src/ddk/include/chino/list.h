@@ -28,11 +28,7 @@
 
 namespace chino
 {
-#ifndef NDEBUG
 inline constexpr size_t VOID_LIST_NODE_SIZE = sizeof(uintptr_t) * 3;
-#else
-inline constexpr size_t VOID_LIST_NODE_SIZE = sizeof(uintptr_t) * 2;
-#endif
 
 template <class TOwner, class TValue, ptrdiff_t OwnerOffset>
 class list;
@@ -42,16 +38,13 @@ struct list_node
 {
     using list_t = list<TOwner, TValue, OwnerOffset>;
 
-#ifndef NDEBUG
     list_t *list;
-#endif
-
     list_node *prev;
     list_node *next;
     TValue value;
 
     constexpr list_node() noexcept
-        : prev(nullptr), next(nullptr) {}
+        : list(nullptr), prev(nullptr), next(nullptr) {}
 
     TOwner *owner() const noexcept
     {
@@ -65,15 +58,12 @@ struct list_node<TOwner, void, OwnerOffset>
 {
     using list_t = list<TOwner, void, OwnerOffset>;
 
-#ifndef NDEBUG
     list_t *list;
-#endif
-
     list_node *prev;
     list_node *next;
 
     constexpr list_node() noexcept
-        : prev(nullptr), next(nullptr) {}
+        : list(nullptr), prev(nullptr), next(nullptr) {}
 
     TOwner *owner() const noexcept
     {
@@ -94,10 +84,8 @@ public:
     void add_first(node_t *node) noexcept
     {
         std::unique_lock lock(lock_);
-#ifndef NDEBUG
         assert(!node->list);
         node->list = this;
-#endif
         node->prev = nullptr;
         if (head_)
         {
@@ -115,11 +103,8 @@ public:
     void add_last(node_t *node) noexcept
     {
         std::unique_lock lock(lock_);
-#ifndef NDEBUG
         assert(!node->list);
         node->list = this;
-#endif
-
         node->next = nullptr;
         if (tail_)
         {
@@ -137,10 +122,8 @@ public:
     void remove(node_t *node) noexcept
     {
         std::unique_lock lock(lock_);
-#ifndef NDEBUG
         assert(node->list == this);
         node->list = nullptr;
-#endif
         if (node->prev)
             node->prev->next = node->next;
         if (node->next)
@@ -152,6 +135,9 @@ public:
 
         node->prev = node->next = nullptr;
     }
+
+    node_t *first_nolock() noexcept { return head_; }
+    threading::irq_spinlock &syncroot() noexcept { return lock_; }
 
 private:
     threading::irq_spinlock lock_;

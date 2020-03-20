@@ -61,7 +61,8 @@ void scheduler::suspend() noexcept
 
 void scheduler::resume() noexcept
 {
-    suspend_count_.fetch_sub(1, std::memory_order_acq_rel);
+    if (suspend_count_.fetch_sub(1, std::memory_order_acq_rel) == 1)
+        yield_if_needed();
 }
 
 void scheduler::add_to_ready_list(kthread &thread) noexcept
@@ -92,17 +93,68 @@ void scheduler::start() noexcept
     arch_t::start_schedule(selected_thread->context_);
 }
 
+void scheduler::select_highest_thread() noexcept
+{
+    for (auto it = ready_list_.rbegin(); it != ready_list_.rend(); ++it)
+    {
+        std::unique_lock lock(it->syncroot());
+        if (auto first = it->first_nolock())
+        {
+            selected_thread_ = first->owner();
+            return;
+        }
+    }
+
+    panic("No thread available");
+}
+
+void scheduler::on_thread_exit(kthread &thread) noexcept
+{
+    sched_lock lock;
+    auto &sched_entry = thread.sched_entry_;
+    sched_entry.list->remove(&sched_entry);
+    thread.owner_->detach_thread(thread);
+    destroy_list_.add_last(&thread.sched_entry_);
+    if (current_thread_ == &thread)
+        select_highest_thread();
+}
+
+void scheduler::yield_if_needed() noexcept
+{
+    // If started
+    if (idle_thread_.body.owner_)
+    {
+        auto selected_thread = selected_thread_;
+        assert(selected_thread);
+        auto old_thread = current_thread_.load();
+        if (selected_thread != old_thread)
+        {
+            current_thread_ = selected_thread;
+            arch_t::yield(old_thread->context_, selected_thread->context_);
+        }
+    }
+}
+
 uint32_t idle_main(scheduler &sched) noexcept
 {
+    while (true)
+    {
+    }
+
     return 0;
 }
 
 void threading::exit_thread(uint32_t exit_code)
 {
-    sched_lock lock;
-    auto thread = current_thread();
-    assert(thread);
-    thread->exit_code_ = exit_code;
+    {
+        sched_lock lock;
+        auto thread = current_thread();
+        assert(thread);
+        thread->exit_code_ = exit_code;
+        current_sched().on_thread_exit(*thread);
+    }
+
+    // Should not reach here
     while (1)
         ;
 }

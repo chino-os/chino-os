@@ -60,6 +60,12 @@ void kprocess::attach_new_thread(kthread &thread) noexcept
     threads_list_.add_last(&thread.process_threads_entry_);
 }
 
+void kprocess::detach_thread(kthread &thread) noexcept
+{
+    assert(thread.owner_ == this);
+    threads_list_.remove(&thread.process_threads_entry_);
+}
+
 void kthread::init_stack(gsl::span<uintptr_t> stack, thread_start_t start, void *arg) noexcept
 {
     stack_ = stack;

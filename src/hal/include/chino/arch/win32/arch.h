@@ -68,6 +68,7 @@ struct win32_arch
 
     static void init_thread_context(thread_context_t &context, gsl::span<uintptr_t> stack, kernel::thread_thunk_t start, void *arg0, void *arg1) noexcept;
     [[noreturn]] static void start_schedule(thread_context_t &context) noexcept;
+    static void yield(thread_context_t &old_context, thread_context_t &new_context) noexcept;
 
     static void init_stack_check() noexcept;
 };

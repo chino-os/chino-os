@@ -39,6 +39,7 @@ struct kprocess : public ob::object
     kprocess() = default;
 
     void attach_new_thread(kthread &thread) noexcept;
+    void detach_thread(kthread &thread) noexcept;
 
     pid_t pid_;
 

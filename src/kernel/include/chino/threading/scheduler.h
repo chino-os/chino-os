@@ -30,7 +30,7 @@ class scheduler
 {
 public:
     constexpr scheduler() noexcept
-        : suspend_count_(0), selected_thread_(nullptr), current_thread_(nullptr), ready_list_ {}, idle_thread_ {}
+        : suspend_count_(0), selected_thread_(nullptr), current_thread_(nullptr), ready_list_ {}, idle_thread_ {}, idle_stack_ {}
     {
     }
 
@@ -44,10 +44,16 @@ public:
 
 private:
     void init_idle_thread() noexcept;
+    void select_highest_thread() noexcept;
+
+    friend void threading::exit_thread(uint32_t exit_code);
+    void on_thread_exit(kthread &thread) noexcept;
+    void yield_if_needed() noexcept;
 
 private:
     std::atomic<uint32_t> suspend_count_;
     std::array<list_t_of_node(kthread::sched_entry_), THREAD_PRIORITY_COUNT> ready_list_;
+    list_t_of_node(kthread::sched_entry_) destroy_list_;
     kthread *selected_thread_;
     std::atomic<kthread *> current_thread_;
     ob::static_object<kthread> idle_thread_;
