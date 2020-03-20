@@ -26,5 +26,6 @@
 
 namespace chino
 {
-result<void *, error_code> heap_alloc();
+result<void *, error_code> heap_alloc(size_t bytes) noexcept;
+void heap_alloc(void *ptr) noexcept;
 }

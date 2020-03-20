@@ -1,1 +1,1 @@
-add_definitions(-DCHINO_ARCH=${CHINO_ARCH})
+add_definitions(-D__chinoos__ -DCHINO_ARCH=${CHINO_ARCH})

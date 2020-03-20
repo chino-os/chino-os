@@ -23,6 +23,7 @@
 #include <chino/memory/heap_allocator.h>
 #include <chino/memory/memory_manager.h>
 #include <chino/threading/process.h>
+#include <chino/threading/scheduler.h>
 #include <chino/threading/thread.h>
 #include <chino/utility.h>
 #include <numeric>
@@ -47,4 +48,14 @@ result<void *, error_code> memory::heap_alloc(kprocess &process, size_t bytes) n
 void memory::heap_free(kprocess &process, void *ptr) noexcept
 {
     process.heap_allocator_.free(ptr);
+}
+
+result<void *, error_code> chino::heap_alloc(size_t bytes) noexcept
+{
+    return memory::heap_alloc(*current_process(), bytes);
+}
+
+void chino::heap_alloc(void *ptr) noexcept
+{
+    memory::heap_free(*current_process(), ptr);
 }
