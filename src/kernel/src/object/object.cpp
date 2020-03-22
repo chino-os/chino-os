@@ -19,6 +19,39 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+#include <chino/memory/memory_manager.h>
 #include <chino/object.h>
+#include <chino/threading/process.h>
 
 using namespace chino;
+using namespace chino::ob;
+using namespace chino::memory;
+using namespace chino::threading;
+
+static result<handle_t, error_code> create_unnamed_handle(object &object, access_mask desired_access) noexcept;
+
+result<object *, error_code> ob::create_object(const object_type &type, size_t body_size) noexcept
+{
+    try_var(base, memory::heap_alloc(kernel_process(), sizeof(object_header) + body_size));
+    auto header = reinterpret_cast<object_header *>(base);
+    new (header) object_header(object_attributes::none, type);
+    return reinterpret_cast<object *>(reinterpret_cast<uintptr_t>(header) + sizeof(object_header));
+}
+
+result<handle_t, error_code> ob::insert_object(object &object, const insert_lookup_object_options &options) noexcept
+{
+    // 1. Unnamed object
+    if (options.name.empty())
+    {
+        return create_unnamed_handle(object, options.desired_access);
+    }
+    else
+    {
+    }
+
+    return err(error_code::not_implemented);
+}
+
+static result<handle_t, error_code> create_unnamed_handle(object &object, access_mask desired_access) noexcept
+{
+}

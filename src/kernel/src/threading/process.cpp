@@ -29,12 +29,15 @@ using namespace chino::ob;
 using namespace chino::threading;
 using namespace chino::memory;
 
+const object_type wellknown_types::process({ .operations = { } });
+const object_type wellknown_types::thread({ .operations = { } });
+
 namespace
 {
-static uintptr_t kernel_sys_thread_stack_[KERNEL_STACK_SIZE / sizeof(uintptr_t)];
+static_object<kprocess> kernel_process_(wellknown_types::process);
+static_object<kthread> kernel_system_thread_(wellknown_types::thread);
 
-static_object<kprocess> kernel_process_;
-static_object<kthread> kernel_system_thread_;
+uintptr_t kernel_sys_thread_stack_[KERNEL_STACK_SIZE / sizeof(uintptr_t)];
 }
 
 [[noreturn]] static void user_thread_thunk(thread_start_t start, void *arg) noexcept;
@@ -76,4 +79,14 @@ void user_thread_thunk(thread_start_t start, void *arg) noexcept
 {
     auto exit_code = start(arg);
     exit_thread(exit_code);
+}
+
+result<void, error_code> process_open(void *object, access_state &access) noexcept
+{
+    return ok();
+}
+
+result<void, error_code> thread_open(void *object, access_state &access) noexcept
+{
+    return ok();
 }

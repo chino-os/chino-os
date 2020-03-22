@@ -52,10 +52,10 @@ void memory::heap_free(kprocess &process, void *ptr) noexcept
 
 result<void *, error_code> chino::heap_alloc(size_t bytes) noexcept
 {
-    return memory::heap_alloc(*current_process(), bytes);
+    return memory::heap_alloc(current_process(), bytes);
 }
 
-void chino::heap_alloc(void *ptr) noexcept
+void chino::heap_free(void *ptr) noexcept
 {
-    memory::heap_free(*current_process(), ptr);
+    memory::heap_free(current_process(), ptr);
 }

@@ -20,12 +20,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include "error.h"
-#include "result.h"
-#include <chino_config.h>
+#include "object.h"
+#include <chino/threading.h>
 
-namespace chino
+namespace chino::ob
 {
-result<void *, error_code> heap_alloc(size_t bytes) noexcept;
-void heap_free(void *ptr) noexcept;
+struct directory : object
+{
+    result<void, error_code> insert_entry_nolock(object_header &header) noexcept;
+
+    list_t_of_node(object_header::directory_entry) entries_;
+};
+
+directory &root_directory() noexcept;
 }

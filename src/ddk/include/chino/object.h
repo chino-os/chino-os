@@ -20,7 +20,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
+#include <atomic>
 #include <chino/error.h>
+#include <chino/list.h>
 #include <chino/result.h>
 #include <cstdint>
 #include <string_view>
@@ -55,11 +57,12 @@ struct access_state
     access_mask granted_access;
 };
 
-enum class object_attributes
+enum class object_attributes : size_t
 {
     none = 0,
     permanent = 0b001
 };
+DEFINE_ENUM_FLAG_OPERATORS(object_attributes);
 
 typedef result<void, error_code> (*object_open_t)(void *object, access_state &access);
 typedef result<void, error_code> (*object_close_t)(void *object);
@@ -68,8 +71,20 @@ typedef result<void, error_code> (*object_parse_t)(void *object, std::string_vie
 
 struct object_header
 {
+    list_node<object_header, void, 0> directory_entry;
+
     object_attributes attributes;
-    object_type *type;
+    const object_type *type;
+    char name[MAX_OBJECT_NAME + 1];
+    std::atomic<uint32_t> refs;
+    std::atomic<uint32_t> handles;
+
+    object_header() = default;
+
+    constexpr object_header(object_attributes attributes, const object_type &type) noexcept
+        : attributes(attributes), type(&type), name {}, refs(1)
+    {
+    }
 };
 
 struct object
@@ -84,6 +99,20 @@ struct object
     {
         return *reinterpret_cast<object_header *>(reinterpret_cast<uint8_t *>(this) - sizeof(object_header));
     }
+
+    size_t inc_ref() noexcept
+    {
+        if ((header().attributes & object_attributes::permanent) != object_attributes::permanent)
+            return header().refs.fetch_add(1);
+        return 1;
+    }
+
+    size_t dec_ref() noexcept
+    {
+        if ((header().attributes & object_attributes::permanent) != object_attributes::permanent)
+            return header().refs.fetch_sub(1);
+        return 2;
+    }
 };
 
 template <class TObject>
@@ -92,11 +121,16 @@ struct static_object
     object_header header;
     TObject body;
 
-    constexpr static_object() noexcept
-        : header { object_attributes::permanent } {}
+    constexpr static_object(const object_type &type) noexcept
+        : header(object_attributes::permanent, type), body {} {}
+
+    constexpr static_object(const object_type &type, TObject &&body) noexcept
+        : header(object_attributes::permanent, type), body(std::move(body)) {}
+
+    constexpr TObject &get() const noexcept { return const_cast<TObject &>(body); }
 };
 
-struct object_type_initializer
+struct object_operations
 {
     object_open_t open;
     object_close_t close;
@@ -104,15 +138,25 @@ struct object_type_initializer
     object_parse_t parse;
 };
 
-struct object_type : object
+struct object_type
 {
-    object_type_initializer initializer;
+    object_operations operations;
 };
-
-result<object_type &, error_code> create_object_type(std::string_view name, const object_type_initializer &initializer);
 
 namespace wellknown_types
 {
-    object_type &obj_type() noexcept;
+    extern const object_type directory;
+    extern const object_type process;
+    extern const object_type thread;
 }
+
+struct insert_lookup_object_options
+{
+    handle_t root;
+    std::string_view name;
+    access_mask desired_access;
+};
+
+result<object *, error_code> create_object(const object_type &type, size_t body_size) noexcept;
+result<handle_t, error_code> insert_object(object &object, const insert_lookup_object_options &options) noexcept;
 }

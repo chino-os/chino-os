@@ -46,12 +46,12 @@ kthread *threading::current_thread() noexcept
     return current_sched().current_thread();
 }
 
-kprocess *threading::current_process() noexcept
+kprocess &threading::current_process() noexcept
 {
     auto thread = current_sched().current_thread();
     if (thread)
-        return thread->owner_;
-    return nullptr;
+        return *thread->owner_;
+    return kernel_process();
 }
 
 void scheduler::suspend() noexcept

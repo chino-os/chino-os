@@ -19,13 +19,37 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#pragma once
-#include "error.h"
-#include "result.h"
-#include <chino_config.h>
+#include <chino/directory.h>
+#include <cstring>
 
-namespace chino
+using namespace chino;
+using namespace chino::ob;
+
+const object_type wellknown_types::directory({ .operations = {} });
+
+namespace
 {
-result<void *, error_code> heap_alloc(size_t bytes) noexcept;
-void heap_free(void *ptr) noexcept;
+static_object<directory> root_directory_(wellknown_types::directory);
+}
+
+result<void, error_code> directory::insert_entry_nolock(object_header &header) noexcept
+{
+    auto node = entries_.first_nolock();
+    while (node)
+    {
+        auto cmp = std::strncmp(node->owner()->name, header.name, MAX_OBJECT_NAME);
+        if (cmp == 0)
+            return err(error_code::key_already_exists);
+        else if (cmp > 0)
+            break;
+        node = node->next;
+    }
+
+    entries_.insert_before_nolock(node, &header.directory_entry);
+    return ok();
+}
+
+directory &ob::root_directory() noexcept
+{
+    return root_directory_.get();
 }

@@ -25,9 +25,11 @@
 
 namespace chino
 {
+inline constexpr size_t MAX_OBJECT_NAME = 7;
+
 typedef struct _handle
 {
-    uintptr_t value;
+    uint16_t value;
 
     static constexpr _handle invalid() { return {}; }
 } handle_t;

@@ -28,22 +28,21 @@
 
 namespace chino
 {
-inline constexpr size_t VOID_LIST_NODE_SIZE = sizeof(uintptr_t) * 3;
+inline constexpr size_t VOID_SLIST_NODE_SIZE = sizeof(uintptr_t) * 2;
 
 template <class TOwner, class TValue, ptrdiff_t OwnerOffset>
-class list;
+class slist;
 
 template <class TOwner, class TValue, ptrdiff_t OwnerOffset>
-struct list_node
+struct slist_node
 {
     using list_t = list<TOwner, TValue, OwnerOffset>;
 
     list_t *list;
-    list_node *prev;
-    list_node *next;
+    slist_node *next;
     TValue value;
 
-    constexpr list_node() noexcept
+    constexpr slist_node() noexcept
         : list(nullptr), prev(nullptr), next(nullptr) {}
 
     TOwner *owner() const noexcept
@@ -54,15 +53,14 @@ struct list_node
 };
 
 template <class TOwner, ptrdiff_t OwnerOffset>
-struct list_node<TOwner, void, OwnerOffset>
+struct slist_node<TOwner, void, OwnerOffset>
 {
     using list_t = list<TOwner, void, OwnerOffset>;
 
     list_t *list;
-    list_node *prev;
-    list_node *next;
+    slist_node *next;
 
-    constexpr list_node() noexcept
+    constexpr slist_node() noexcept
         : list(nullptr), prev(nullptr), next(nullptr) {}
 
     TOwner *owner() const noexcept
@@ -73,23 +71,22 @@ struct list_node<TOwner, void, OwnerOffset>
 };
 
 template <class TOwner, class TValue, ptrdiff_t OwnerOffset>
-class list
+class slist
 {
 public:
-    using node_t = list_node<TOwner, TValue, OwnerOffset>;
+    using node_t = slist_node<TOwner, TValue, OwnerOffset>;
 
-    constexpr list() noexcept
+    constexpr slist() noexcept
         : head_(nullptr), tail_(nullptr) {}
 
-    void add_first_nolock(node_t *node) noexcept
+    void add_first(node_t *node) noexcept
     {
+        std::unique_lock lock(lock_);
         assert(!node->list);
         node->list = this;
-        node->prev = nullptr;
         if (head_)
         {
             node->next = head_;
-            head_->prev = node;
             head_ = node;
         }
         else
@@ -97,12 +94,6 @@ public:
             node->next = nullptr;
             head_ = tail_ = node;
         }
-    }
-
-    void add_first(node_t *node) noexcept
-    {
-        std::unique_lock lock(lock_);
-        add_first_nolock(node);
     }
 
     void add_last(node_t *node) noexcept
@@ -113,13 +104,11 @@ public:
         node->next = nullptr;
         if (tail_)
         {
-            node->prev = tail_;
             tail_->next = node;
             tail_ = node;
         }
         else
         {
-            node->prev = nullptr;
             head_ = tail_ = node;
         }
     }
@@ -139,27 +128,6 @@ public:
             tail_ = node->prev;
 
         node->prev = node->next = nullptr;
-    }
-
-    void insert_before_nolock(node_t *offset, node_t *node) noexcept
-    {
-        if (!offset)
-        {
-            add_first_nolock(node);
-        }
-        else
-        {
-            auto prev = offset->prev;
-            assert(node->list == this);
-            node->list = this;
-            node->prev = prev;
-            node->next = offset;
-            prev->next = node;
-            offset->prev = node;
-
-            if (offset == head_)
-                head_ = node;
-        }
     }
 
     node_t *first_nolock() noexcept { return head_; }

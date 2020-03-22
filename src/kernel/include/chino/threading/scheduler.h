@@ -30,7 +30,7 @@ class scheduler
 {
 public:
     constexpr scheduler() noexcept
-        : suspend_count_(0), selected_thread_(nullptr), current_thread_(nullptr), ready_list_ {}, idle_thread_ {}, idle_stack_ {}
+        : suspend_count_(0), selected_thread_(nullptr), current_thread_(nullptr), ready_list_ {}, idle_thread_(ob::wellknown_types::thread), idle_stack_ {}
     {
     }
 
@@ -68,6 +68,6 @@ struct sched_lock
 };
 
 scheduler &current_sched() noexcept;
-kprocess *current_process() noexcept;
+kprocess &current_process() noexcept;
 kthread *current_thread() noexcept;
 }

@@ -33,5 +33,8 @@ enum class error_code
     out_of_memory = 3,
     not_found = 4,
     unavailable = 5,
+    key_already_exists = 6,
+    not_implemented = 7,
+    not_supported = 8
 };
 }
