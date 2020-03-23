@@ -16,4 +16,5 @@ target_link_libraries(kernel PRIVATE hal)
 
 if (WIN32)
     set_target_properties(kernel PROPERTIES LINK_FLAGS /SUBSYSTEM:WINDOWS)
+    target_link_options(kernel PUBLIC /ENTRY:chinoStartup /NODEFAULTLIB)
 endif()

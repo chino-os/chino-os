@@ -2,14 +2,7 @@
 set(CMAKE_CXX_STANDARD 20)
 project("chino")
 
-# Download automatically, you can also just copy the conan.cmake file
-if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
-   message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
-   file(DOWNLOAD "https://github.com/conan-io/cmake-conan/raw/v0.14/conan.cmake"
-                 "${CMAKE_BINARY_DIR}/conan.cmake")
-endif()
-
-include(${CMAKE_BINARY_DIR}/conan.cmake)
+include(cmake/conan.cmake)
 
 conan_check()
 conan_add_remote(NAME bincrafts URL https://api.bintray.com/conan/bincrafters/public-conan)
@@ -27,10 +20,11 @@ set(THIRD_PARTY ${CMAKE_CURRENT_LIST_DIR}/third_party)
  
 if (MSVC)
     add_definitions(/D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /DNOMINMAX /DUNICODE /D_UNICODE)
-    add_compile_options(/Zc:threadSafeInit- /utf-8 /wd4200)
+    add_compile_options(/Zc:threadSafeInit- /utf-8 /wd4200 /Oi)
     # Disable C++ exceptions.
     string(REGEX REPLACE "/EH[a-z]+" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHs-c-")
+    string(REGEX REPLACE "/RTC[^ ]*" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
     add_definitions(-D_HAS_EXCEPTIONS=0)
 
     # Disable RTTI.

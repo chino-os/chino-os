@@ -29,8 +29,8 @@ using namespace chino::ob;
 using namespace chino::threading;
 using namespace chino::memory;
 
-const object_type wellknown_types::process({ .operations = { } });
-const object_type wellknown_types::thread({ .operations = { } });
+const object_type wellknown_types::process { .operations = {} };
+const object_type wellknown_types::thread { .operations = {} };
 
 namespace
 {

@@ -25,7 +25,7 @@
 using namespace chino;
 using namespace chino::ob;
 
-const object_type wellknown_types::directory({ .operations = {} });
+const object_type wellknown_types::directory { .operations = {} };
 
 namespace
 {

@@ -54,4 +54,5 @@ result<handle_t, error_code> ob::insert_object(object &object, const insert_look
 
 static result<handle_t, error_code> create_unnamed_handle(object &object, access_mask desired_access) noexcept
 {
+    return err(error_code::not_implemented);
 }

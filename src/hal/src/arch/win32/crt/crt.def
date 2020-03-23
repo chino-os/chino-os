@@ -1,0 +1,7 @@
+LIBRARY   CRT
+EXPORTS
+   ;_wassert = ucrtbased._wassert
+   _CrtDbgReport = ucrtbased._CrtDbgReport
+   _invoke_watson = ucrtbased._invoke_watson
+   _invalid_parameter = ucrtbased._invalid_parameter
+   strncmp = ucrtbased.strncmp

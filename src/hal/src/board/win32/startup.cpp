@@ -32,7 +32,7 @@ using namespace chino::kernel;
 
 alignas(PAGE_SIZE) static uint8_t memory[1024 * 1024 * 4];
 
-int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdLine, int nCmdShow)
+extern "C" void chinoStartup()
 {
     arch_t::init_stack_check();
     physical_memory_desc mem_desc = {
@@ -45,5 +45,5 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdLin
     memory_manager_init(mem_desc)
         .expect("Cannot init memory manager");
     auto ret = kernel_main();
-    return ret.is_ok() ? 0 : -1;
+    ExitProcess(ret.is_ok() ? 0 : -1);
 }
