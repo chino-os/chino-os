@@ -22,6 +22,7 @@
 #include <chino/kernel.h>
 #include <chino/threading/process.h>
 #include <chino/threading/scheduler.h>
+#include <chino/object.h>
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
@@ -50,6 +51,5 @@ result<void, error_code> kernel::kernel_main()
 
 uint32_t kernel::kernel_system_thread_main(void *arg)
 {
-    uint8_t arr[3800];
     return 0;
 }

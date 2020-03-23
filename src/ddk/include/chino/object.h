@@ -57,7 +57,7 @@ struct access_state
     access_mask granted_access;
 };
 
-enum class object_attributes : size_t
+enum class object_attributes : uint32_t
 {
     none = 0,
     permanent = 0b001
@@ -73,11 +73,12 @@ struct object_header
 {
     list_node<object_header, void, 0> directory_entry;
 
+    std::atomic<uint16_t> refs;
+    std::atomic<uint16_t> handles;
     object_attributes attributes;
-    const object_type *type;
     char name[MAX_OBJECT_NAME + 1];
-    std::atomic<uint32_t> refs;
-    std::atomic<uint32_t> handles;
+
+    const object_type *type;
 
     object_header() = default;
 
