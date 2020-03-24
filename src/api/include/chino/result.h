@@ -239,7 +239,7 @@ public:
             if constexpr (std::is_same_v<T, void>)
                 return;
             else
-                return std::ref(value().value);
+                return value().value;
         }
         else
         {

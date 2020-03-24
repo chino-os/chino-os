@@ -50,6 +50,9 @@ class heap_allocator
     };
 
 public:
+    constexpr heap_allocator()
+        : avail_bytes_(0) {}
+
     result<void *, error_code> allocate(size_t bytes) noexcept
     {
         auto required_bytes = align(bytes, arch::arch_t::ALLOCATE_ALIGNMENT) + sizeof(alloc_header);

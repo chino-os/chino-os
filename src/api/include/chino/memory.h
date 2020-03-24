@@ -26,6 +26,14 @@
 
 namespace chino
 {
+struct system_memory_info
+{
+    uint32_t page_size;
+    uint32_t used_pages;
+    uint32_t free_pages;
+};
+
 result<void *, error_code> heap_alloc(size_t bytes) noexcept;
 void heap_free(void *ptr) noexcept;
+system_memory_info get_system_mem_info() noexcept;
 }

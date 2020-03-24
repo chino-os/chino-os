@@ -27,10 +27,13 @@ namespace chino::ob
 {
 struct directory : object
 {
-    result<void, error_code> insert_entry_nolock(object_header &header) noexcept;
+    threading::irq_spinlock &syncroot() noexcept { return entries_.syncroot(); }
+    result<void, error_code> insert_nolock(object_header &header) noexcept;
+    result<object_header *, error_code> lookup_nolock(std::string_view name) noexcept;
 
     list_t_of_node(object_header::directory_entry) entries_;
 };
 
 directory &root_directory() noexcept;
+result<directory *, error_code> create_directory(const insert_lookup_object_options &options) noexcept;
 }

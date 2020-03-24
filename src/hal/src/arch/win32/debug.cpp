@@ -20,7 +20,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #include <new>
+#include <stdexcept>
 
 void ::operator delete(void *ptr, size_t size)
 {
 }
+
+_STD_BEGIN
+    [[noreturn]] _CRTIMP2_PURE void __CLRCALL_PURE_OR_CDECL
+    _Xout_of_range(
+        _In_z_ const char *_Message)
+{ // report an out_of_range error
+    _THROW(out_of_range(_Message));
+}
+_STD_END

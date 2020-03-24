@@ -51,7 +51,7 @@ kprocess &threading::current_process() noexcept
     auto thread = current_sched().current_thread();
     if (thread)
         return *thread->owner_;
-    return kernel_process();
+    return kernel::kernel_process();
 }
 
 void scheduler::suspend() noexcept
@@ -78,7 +78,7 @@ void scheduler::init_idle_thread() noexcept
 {
     idle_thread_.body.priority_ = thread_priority::lowest;
     idle_thread_.body.init_stack(idle_stack_, (thread_start_t)idle_main, this);
-    kernel_process().attach_new_thread(idle_thread_.body);
+    kernel::kernel_process().attach_new_thread(idle_thread_.body);
     current_sched().add_to_ready_list(idle_thread_.body);
 }
 

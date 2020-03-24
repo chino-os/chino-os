@@ -35,6 +35,7 @@ enum class error_code
     unavailable = 5,
     key_already_exists = 6,
     not_implemented = 7,
-    not_supported = 8
+    not_supported = 8,
+    invalid_path = 9
 };
 }

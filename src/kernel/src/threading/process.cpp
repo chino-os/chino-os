@@ -42,12 +42,12 @@ uintptr_t kernel_sys_thread_stack_[KERNEL_STACK_SIZE / sizeof(uintptr_t)];
 
 [[noreturn]] static void user_thread_thunk(thread_start_t start, void *arg) noexcept;
 
-kprocess &threading::kernel_process() noexcept
+kprocess &kernel::kernel_process() noexcept
 {
     return kernel_process_.body;
 }
 
-result<void, error_code> threading::kernel_process_init() noexcept
+result<void, error_code> kernel::kernel_process_init() noexcept
 {
     kernel_system_thread_.body.priority_ = thread_priority::normal;
     kernel_system_thread_.body.init_stack(kernel_sys_thread_stack_, kernel::kernel_system_thread_main, nullptr);

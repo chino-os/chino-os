@@ -5,3 +5,6 @@ EXPORTS
    _invoke_watson = ucrtbased._invoke_watson
    _invalid_parameter = ucrtbased._invalid_parameter
    strncmp = ucrtbased.strncmp
+   strncpy = ucrtbased.strncpy
+   memchr = ucrtbased.memchr
+   memmove = ucrtbased.memmove

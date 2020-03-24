@@ -22,15 +22,47 @@
 #pragma once
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 
 namespace chino
 {
+#ifndef DEFINE_ENUM_FLAG_OPERATORS
+#define DEFINE_ENUM_FLAG_OPERATORS(ENUMTYPE)                                                              \
+    inline ENUMTYPE operator|(ENUMTYPE a, ENUMTYPE b) { return ENUMTYPE(((int)a) | ((int)b)); }           \
+    inline ENUMTYPE &operator|=(ENUMTYPE &a, ENUMTYPE b) { return (ENUMTYPE &)(((int &)a) |= ((int)b)); } \
+    inline ENUMTYPE operator&(ENUMTYPE a, ENUMTYPE b) { return ENUMTYPE(((int)a) & ((int)b)); }           \
+    inline ENUMTYPE &operator&=(ENUMTYPE &a, ENUMTYPE b) { return (ENUMTYPE &)(((int &)a) &= ((int)b)); } \
+    inline ENUMTYPE operator~(ENUMTYPE a) { return ENUMTYPE(~((int)a)); }                                 \
+    inline ENUMTYPE operator^(ENUMTYPE a, ENUMTYPE b) { return ENUMTYPE(((int)a) ^ ((int)b)); }           \
+    inline ENUMTYPE &operator^=(ENUMTYPE &a, ENUMTYPE b) { return (ENUMTYPE &)(((int &)a) ^= ((int)b)); }
+#endif
+
 inline constexpr size_t MAX_OBJECT_NAME = 7;
+inline constexpr char DIRECTORY_SEPARATOR = '/';
 
 typedef struct _handle
 {
     uint16_t value;
 
-    static constexpr _handle invalid() { return {}; }
+    static constexpr _handle invalid() { return { std::numeric_limits<uint16_t>::max() }; }
 } handle_t;
+
+static constexpr bool operator==(const _handle &lhs, const _handle &rhs) noexcept
+{
+    return lhs.value == rhs.value;
+}
+
+static constexpr bool operator!=(const _handle &lhs, const _handle &rhs) noexcept
+{
+    return lhs.value != rhs.value;
+}
+
+enum class access_mask : uint32_t
+{
+    none = 0,
+    generic_all = 0b001,
+    generic_read = 0b010,
+    generic_write = 0b100
+};
+DEFINE_ENUM_FLAG_OPERATORS(access_mask);
 }

@@ -74,6 +74,14 @@ void memory::free_pages(threading::kprocess &process, void *base, size_t pages) 
     return used_page_->free(process, base, pages);
 }
 
+system_memory_info chino::get_system_mem_info() noexcept
+{
+    auto total = phy_mem_desc_->pages_count;
+    auto free = free_page_list_.pages();
+    auto used = total - free;
+    return { .page_size = PAGE_SIZE, .used_pages = (uint32_t)used, .free_pages = (uint32_t)free };
+}
+
 size_t used_page_bitmap::page_index(void *ptr) noexcept
 {
     physical_memory_run *base_run = nullptr;

@@ -24,6 +24,11 @@
 #include <chino/result.h>
 #include <gsl/gsl-lite.hpp>
 
+namespace chino::threading
+{
+struct kprocess;
+}
+
 namespace chino::kernel
 {
 struct physical_memory_run
@@ -43,4 +48,7 @@ typedef void (*thread_thunk_t)(void *arg0, void *arg1);
 result<void, error_code> memory_manager_init(const physical_memory_desc &desc);
 result<void, error_code> kernel_main();
 uint32_t kernel_system_thread_main(void *arg);
+
+threading::kprocess &kernel_process() noexcept;
+result<void, error_code> kernel_process_init() noexcept;
 }

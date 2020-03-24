@@ -23,6 +23,7 @@
 #include "thread.h"
 #include <chino/list.h>
 #include <chino/memory/heap_allocator.h>
+#include <chino/object/handle_table.h>
 #include <chino/threading.h>
 
 namespace chino::threading
@@ -36,17 +37,18 @@ struct kthread;
 
 struct kprocess : public ob::object
 {
-    kprocess() = default;
+    constexpr kprocess()
+        : pid_(0), handle_table_(16) {}
 
     void attach_new_thread(kthread &thread) noexcept;
     void detach_thread(kthread &thread) noexcept;
 
-    pid_t pid_;
-
     // BEGIN LIST NODES, BE CAREFUL ABOUT THE OFFSETS !!!
-    memory::heap_allocator heap_allocator_;
     // END LIST NODES
 
+    pid_t pid_;
+    memory::heap_allocator heap_allocator_;
+    ob::handle_table handle_table_;
     list_t_of_node(kthread::process_threads_entry_) threads_list_;
 };
 
@@ -56,8 +58,4 @@ namespace details
     {
     };
 }
-
-kprocess &kernel_process() noexcept;
-
-result<void, error_code> kernel_process_init() noexcept;
 }

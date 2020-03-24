@@ -19,14 +19,17 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+#include <chino/kernel.h>
 #include <chino/memory/memory_manager.h>
 #include <chino/object.h>
 #include <chino/threading/process.h>
+#include <chino/threading/scheduler.h>
 
 using namespace chino;
 using namespace chino::ob;
 using namespace chino::memory;
 using namespace chino::threading;
+using namespace chino::kernel;
 
 static result<handle_t, error_code> create_unnamed_handle(object &object, access_mask desired_access) noexcept;
 
@@ -54,5 +57,12 @@ result<handle_t, error_code> ob::insert_object(object &object, const insert_look
 
 static result<handle_t, error_code> create_unnamed_handle(object &object, access_mask desired_access) noexcept
 {
-    return err(error_code::not_implemented);
+    if (desired_access == access_mask::none)
+        return err(error_code::invalid_argument);
+
+    try_var(entry, current_process().handle_table_.alloc());
+    entry.first->ob = &object.header();
+    entry.first->granted_access = desired_access;
+    assert(entry.second < std::numeric_limits<decltype(handle_t::value)>::max());
+    return ok(handle_t { uint16_t(entry.second) });
 }

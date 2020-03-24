@@ -5,6 +5,7 @@ set(SRCS src/entry.cpp
          src/memory/memory_manager.cpp
          src/object/object.cpp
          src/object/directory.cpp
+         src/object/handle_table.cpp
          src/threading/process.cpp
          src/threading/scheduler.cpp
          src/threading/synchronize.cpp)

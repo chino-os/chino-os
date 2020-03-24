@@ -31,26 +31,6 @@ namespace chino::ob
 {
 struct object_type;
 
-#ifndef DEFINE_ENUM_FLAG_OPERATORS
-#define DEFINE_ENUM_FLAG_OPERATORS(ENUMTYPE)                                                              \
-    inline ENUMTYPE operator|(ENUMTYPE a, ENUMTYPE b) { return ENUMTYPE(((int)a) | ((int)b)); }           \
-    inline ENUMTYPE &operator|=(ENUMTYPE &a, ENUMTYPE b) { return (ENUMTYPE &)(((int &)a) |= ((int)b)); } \
-    inline ENUMTYPE operator&(ENUMTYPE a, ENUMTYPE b) { return ENUMTYPE(((int)a) & ((int)b)); }           \
-    inline ENUMTYPE &operator&=(ENUMTYPE &a, ENUMTYPE b) { return (ENUMTYPE &)(((int &)a) &= ((int)b)); } \
-    inline ENUMTYPE operator~(ENUMTYPE a) { return ENUMTYPE(~((int)a)); }                                 \
-    inline ENUMTYPE operator^(ENUMTYPE a, ENUMTYPE b) { return ENUMTYPE(((int)a) ^ ((int)b)); }           \
-    inline ENUMTYPE &operator^=(ENUMTYPE &a, ENUMTYPE b) { return (ENUMTYPE &)(((int &)a) ^= ((int)b)); }
-#endif
-
-enum class access_mask
-{
-    none = 0,
-    generic_all = 0b001,
-    generic_read = 0b010,
-    generic_write = 0b100
-};
-DEFINE_ENUM_FLAG_OPERATORS(access_mask);
-
 struct access_state
 {
     access_mask desired_access;
@@ -83,7 +63,7 @@ struct object_header
     object_header() = default;
 
     constexpr object_header(object_attributes attributes, const object_type &type) noexcept
-        : attributes(attributes), type(&type), name {}, refs(1)
+        : attributes(attributes), type(&type), name {}, refs(1), handles(0)
     {
     }
 };
@@ -153,7 +133,7 @@ namespace wellknown_types
 
 struct insert_lookup_object_options
 {
-    handle_t root;
+    handle_t root = handle_t::invalid();
     std::string_view name;
     access_mask desired_access;
 };

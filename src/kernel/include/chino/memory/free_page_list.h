@@ -45,6 +45,11 @@ class free_page_list
     static_assert(sizeof(free_page_node) <= PAGE_SIZE);
 
 public:
+    constexpr free_page_list()
+        : avail_pages_(0), head_(nullptr)
+    {
+    }
+
     void init(const kernel::physical_memory_desc &desc) noexcept
     {
         avail_pages_ = desc.pages_count;
@@ -135,6 +140,8 @@ public:
         }
     }
 
+    size_t pages() const noexcept { return avail_pages_.load(); }
+
 private:
     void merge_node(free_page_node *prev, free_page_node *cnt, free_page_node *next) noexcept
     {
@@ -154,6 +161,6 @@ private:
 private:
     std::atomic<size_t> avail_pages_;
     threading::sched_spinlock lock_;
-    free_page_node *head_ = nullptr;
+    free_page_node *head_;
 };
 }

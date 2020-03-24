@@ -19,6 +19,8 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+#define _CRTBLD
+#define CRTDLL2
 #include <stdexcept>
 
 #pragma comment(linker, "/export:_wassert=ucrtbased._wassert")
@@ -29,4 +31,4 @@ static void _cdecl raise_handler(const std::exception &ex)
         ;
 }
 
-std::_Prhand std::_Raise_handler = raise_handler;
+_CRTIMP2_PURE_IMPORT std::_Prhand std::_Raise_handler = raise_handler;
