@@ -35,5 +35,5 @@ struct directory : object
 };
 
 directory &root_directory() noexcept;
-result<directory *, error_code> create_directory(const insert_lookup_object_options &options) noexcept;
+result<handle_t, error_code> create_directory(const insert_lookup_object_options &options) noexcept;
 }

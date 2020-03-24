@@ -37,7 +37,7 @@ struct access_state
     access_mask granted_access;
 };
 
-enum class object_attributes : uint32_t
+enum class object_attributes : uint16_t
 {
     none = 0,
     permanent = 0b001
@@ -54,7 +54,6 @@ struct object_header
     list_node<object_header, void, 0> directory_entry;
 
     std::atomic<uint16_t> refs;
-    std::atomic<uint16_t> handles;
     object_attributes attributes;
     char name[MAX_OBJECT_NAME + 1];
 
@@ -63,7 +62,7 @@ struct object_header
     object_header() = default;
 
     constexpr object_header(object_attributes attributes, const object_type &type) noexcept
-        : attributes(attributes), type(&type), name {}, refs(1), handles(0)
+        : attributes(attributes), type(&type), name {}, refs(1)
     {
     }
 };
@@ -91,9 +90,18 @@ struct object
     size_t dec_ref() noexcept
     {
         if ((header().attributes & object_attributes::permanent) != object_attributes::permanent)
-            return header().refs.fetch_sub(1);
+        {
+            auto ref = header().refs.fetch_sub(1);
+            if (ref == 1)
+                release();
+            return ref;
+        }
+
         return 2;
     }
+
+private:
+    void release() noexcept;
 };
 
 template <class TObject>

@@ -19,42 +19,13 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include <chino/directory.h>
-#include <chino/kernel.h>
-#include <chino/object.h>
-#include <chino/threading/process.h>
-#include <chino/threading/scheduler.h>
-#ifdef _MSC_VER
-#include <intrin.h>
-#endif
+#pragma once
+#include "object.h"
+#include <chino/threading.h>
 
-using namespace chino;
-using namespace chino::threading;
-
-void chino::panic(std::string_view message) noexcept
+namespace chino::io
 {
-#ifdef _MSC_VER
-    __debugbreak();
-#endif
-    while (1)
-        ;
-}
-
-result<void, error_code> kernel::kernel_main()
+struct file : object
 {
-    try_(kernel_process_init());
-    current_sched().start();
-
-    // Should not reach here
-    while (1)
-        ;
-}
-
-uint32_t kernel::kernel_system_thread_main(void *arg)
-{
-    auto dir_dev = ob::create_directory({.name = "/dev", .desired_access = access_mask::generic_all }).unwrap();
-    //auto o = ob::create_object(ob::wellknown_types::directory, 1).unwrap();
-    //auto handle = ob::insert_object(*o, { .desired_access = access_mask::generic_all }).unwrap();
-    auto mem_info = get_system_memory_info();
-    return 0;
+};
 }
