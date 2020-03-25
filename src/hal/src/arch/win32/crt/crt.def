@@ -6,5 +6,8 @@ EXPORTS
    _invalid_parameter = ucrtbased._invalid_parameter
    strncmp = ucrtbased.strncmp
    strncpy = ucrtbased.strncpy
+   strrchr = ucrtbased.strrchr
+   strnlen = ucrtbased.strnlen
    memchr = ucrtbased.memchr
    memmove = ucrtbased.memmove
+   memcmp = ucrtbased.memcmp

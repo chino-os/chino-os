@@ -23,8 +23,9 @@ if (MSVC)
     add_compile_options(/Zc:threadSafeInit- /utf-8 /wd4200 /Oi)
     # Disable C++ exceptions.
     string(REGEX REPLACE "/EH[a-z]+" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHs-c-")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHs-c- /GS-")
     string(REGEX REPLACE "/RTC[^ ]*" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+    string(REGEX REPLACE "/RTC[^ ]*" "" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
     add_definitions(-D_HAS_EXCEPTIONS=0)
 
     # Disable RTTI.
@@ -50,3 +51,4 @@ add_subdirectory(src/ddk)
 add_subdirectory(src/hal)
 add_subdirectory(src/kernel)
 add_subdirectory(src/components)
+add_subdirectory(third_party/libfdt)

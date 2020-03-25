@@ -19,45 +19,27 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#pragma once
-#include "object.h"
-#include <chino/threading.h>
+#include <chino/io.h>
+#include <libfdt.h>
 
-namespace chino::io
+using namespace chino;
+using namespace chino::ob;
+using namespace chino::io;
+
+result<device_property, error_code> device_descriptor::property(std::string_view name) const noexcept
 {
-class device_property
+    int len;
+    if (auto prop = fdt_getprop_namelen(fdt_, node_, name.data(), name.length(), &len))
+        return ok(device_property(prop, len));
+    return err(error_code::not_found);
+}
+
+uint32_t device_property::uint32(size_t index) const noexcept
 {
-public:
-    constexpr device_property(const void *data, int len) noexcept
-        : data_(data), len_(len) {}
+    return fdt32_to_cpu(reinterpret_cast<const fdt32_t *>(data_)[index]);
+}
 
-    size_t len() const noexcept { return len_; }
-    uint32_t uint32(size_t index) const noexcept;
-    std::string_view string(size_t index) const noexcept;
-
-private:
-    const void *data_;
-    int len_;
-};
-
-class device_descriptor
+std::string_view device_property::string(size_t index) const noexcept
 {
-public:
-    constexpr device_descriptor(void *fdt, int node) noexcept
-        : fdt_(fdt), node_(node) {}
-
-    result<device_property, error_code> property(std::string_view name) const noexcept;
-
-private:
-    void *fdt_;
-    int node_;
-};
-
-struct driver
-{
-};
-
-struct file : ob::object
-{
-};
+    return {};
 }

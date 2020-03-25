@@ -19,45 +19,15 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#pragma once
-#include "object.h"
-#include <chino/threading.h>
+#include <chino/directory.h>
+#include <chino/kernel.h>
+#include <chino/memory/memory_manager.h>
+#include <chino/io.h>
+#include <chino/threading/process.h>
+#include <chino/threading/scheduler.h>
 
-namespace chino::io
-{
-class device_property
-{
-public:
-    constexpr device_property(const void *data, int len) noexcept
-        : data_(data), len_(len) {}
-
-    size_t len() const noexcept { return len_; }
-    uint32_t uint32(size_t index) const noexcept;
-    std::string_view string(size_t index) const noexcept;
-
-private:
-    const void *data_;
-    int len_;
-};
-
-class device_descriptor
-{
-public:
-    constexpr device_descriptor(void *fdt, int node) noexcept
-        : fdt_(fdt), node_(node) {}
-
-    result<device_property, error_code> property(std::string_view name) const noexcept;
-
-private:
-    void *fdt_;
-    int node_;
-};
-
-struct driver
-{
-};
-
-struct file : ob::object
-{
-};
-}
+using namespace chino;
+using namespace chino::ob;
+using namespace chino::memory;
+using namespace chino::threading;
+using namespace chino::kernel;
