@@ -30,6 +30,7 @@
 namespace chino::ob
 {
 struct object_type;
+struct object;
 
 struct access_state
 {
@@ -44,10 +45,10 @@ enum class object_attributes : uint16_t
 };
 DEFINE_ENUM_FLAG_OPERATORS(object_attributes);
 
-typedef result<void, error_code> (*object_open_t)(void *object, access_state &access);
-typedef result<void, error_code> (*object_close_t)(void *object);
-typedef void (*object_delete_t)(void *object);
-typedef result<void, error_code> (*object_parse_t)(void *object, std::string_view &complete_path, std::string_view &remaining_path, access_state &access);
+typedef result<void, error_code> (*object_open_t)(object &ob, access_state &access);
+typedef result<void, error_code> (*object_close_t)(object &ob);
+typedef void (*object_delete_t)(object &ob);
+typedef result<void, error_code> (*object_parse_t)(object &ob, std::string_view &complete_path, std::string_view &remaining_path, access_state &access);
 
 struct object_header
 {

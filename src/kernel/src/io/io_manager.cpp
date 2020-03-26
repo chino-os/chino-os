@@ -19,11 +19,28 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#pragma once
-#include <cstdint>
-#include CHINO_BOARD_HEADER
+#include <chino/io/io_manager.h>
+#include <chino/kernel.h>
+#include <libfdt.h>
 
-namespace chino::board
+using namespace chino;
+using namespace chino::ob;
+using namespace chino::io;
+
+#ifdef _MSC_VER
+#pragma section(".CHINO_DRV$A", read) // Begin drivers
+#pragma section(".CHINO_DRV$C", read) // Drivers
+#pragma section(".CHINO_DRV$Z", read) // End drivers
+#pragma comment(linker, "/merge:.CHINO_DRV=.rdata")
+
+__declspec(allocate(".CHINO_DRV$A")) static const ::chino::io::driver drivers_begin_[1];
+__declspec(allocate(".CHINO_DRV$Z")) static const ::chino::io::driver drivers_end_[1];
+#else
+#error "Unsupported compiler"
+#endif
+
+result<void, error_code> kernel::io_manager_init(const void *fdt)
 {
-
+    auto first_node = fdt_next_node(fdt, -1, nullptr);
+    return ok();
 }

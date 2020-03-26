@@ -19,11 +19,21 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#pragma once
-#include <cstdint>
-#include CHINO_BOARD_HEADER
+#include "../../arch/win32/target.h"
+#include "resource.h"
+#include <Windows.h>
+#include <cassert>
+#include <chino/board/board.h>
 
-namespace chino::board
+using namespace chino;
+using namespace chino::board;
+using namespace chino::kernel;
+
+const void *win32_board::device_tree() noexcept
 {
-
+    auto hres = FindResource(nullptr, MAKEINTRESOURCE(IDR_DTB), L"Binary");
+    assert(hres);
+    auto hmem = LoadResource(nullptr, hres);
+    assert(hmem);
+    return LockResource(hmem);
 }

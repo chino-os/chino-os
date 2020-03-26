@@ -22,9 +22,23 @@
 #pragma once
 #include "object.h"
 #include <chino/threading.h>
+#include <gsl/gsl-lite.hpp>
 
 namespace chino::io
 {
+#ifdef _MSC_VER
+#define EXPORT_DRIVER __declspec(allocate(".CHINO_DRV$C")) static const ::chino::io::driver
+#else
+#error "Unsupported compiler"
+#endif
+
+struct driver;
+
+enum class device_type
+{
+    misc = 0,
+};
+
 class device_property
 {
 public:
@@ -53,11 +67,37 @@ private:
     int node_;
 };
 
+struct device_id
+{
+    std::string_view compatible;
+    void *data;
+};
+
+typedef result<void, error_code> (*driver_add_device_t)(driver &drv, const device_descriptor &device_desc);
+
+struct driver_operations
+{
+    driver_add_device_t add_device;
+};
+
 struct driver
 {
+    std::string_view name;
+    driver_operations operations;
+    gsl::span<const device_id> match_table;
+};
+
+struct device : ob::object
+{
+    const driver *drv;
+    device_type type;
+    threading::sched_spinlock syncroot;
 };
 
 struct file : ob::object
 {
+    device *dev;
+    fpos_t offset;
+    threading::sched_spinlock syncroot;
 };
 }

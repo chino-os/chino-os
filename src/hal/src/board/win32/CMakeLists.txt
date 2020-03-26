@@ -1,5 +1,15 @@
 ﻿cmake_minimum_required (VERSION 3.8)
+cmake_policy(SET CMP0079 NEW)
 
-set(SRCS startup.cpp)
-list(TRANSFORM SRCS PREPEND "src/board/win32/")
+DTC_COMPILE_DTB(DTB win32.dts)
+
+set(RES Resource.rc)
+set(SRCS startup.cpp
+         dtb.cpp)
+list(TRANSFORM RES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
+list(TRANSFORM SRCS PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
+
 target_sources(hal PRIVATE ${SRCS})
+target_sources(hal PUBLIC ${RES})
+add_dependencies(hal DTB)
+target_include_directories(hal PUBLIC ${CMAKE_CURRENT_BINARY_DIR})

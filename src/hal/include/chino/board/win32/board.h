@@ -20,10 +20,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include <cstdint>
-#include CHINO_BOARD_HEADER
+#include "../../chip/win32/chip.h"
 
 namespace chino::board
 {
+struct win32_board
+{
+    static const void *device_tree() noexcept;
+};
 
+using board_t = win32_board;
 }

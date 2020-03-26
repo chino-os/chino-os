@@ -17,6 +17,7 @@ conan_cmake_run(CONANFILE conanfile.txt
                 BUILD missing)
 
 set(THIRD_PARTY ${CMAKE_CURRENT_LIST_DIR}/third_party)
+set(TOOLS_DIR ${CMAKE_CURRENT_LIST_DIR}/tools)
  
 if (MSVC)
     add_definitions(/D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /DNOMINMAX /DUNICODE /D_UNICODE)
@@ -39,10 +40,11 @@ if (NOT CHINO_BOARD)
     message(FATAL "Please specify CHINO_BOARD")
 else()
     add_definitions(-DCHINO_BOARD=${CHINO_BOARD})
-    add_definitions(-DCHINO_BOARD_HEADER=<chino/board/${CHINO_BOARD}/board2.h>)
+    add_definitions(-DCHINO_BOARD_HEADER=<chino/board/${CHINO_BOARD}/board.h>)
 endif()
 
 include(cmake/config.cmake)
+include(cmake/dtc.cmake)
 include(cmake/boards/${CHINO_BOARD}.cmake)
 include(cmake/definitions.cmake)
 

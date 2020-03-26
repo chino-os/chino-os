@@ -20,9 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include "../../chip/win32/chip.h"
+#include <chino/io.h>
 
-namespace chino::board
+namespace chino::io
 {
-
 }

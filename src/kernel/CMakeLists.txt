@@ -3,6 +3,7 @@
 set(SRCS src/entry.cpp
          src/io/device_descriptor.cpp
          src/io/file.cpp
+         src/io/io_manager.cpp
          src/memory/heap_allocator.cpp
          src/memory/memory_manager.cpp
          src/object/object.cpp
