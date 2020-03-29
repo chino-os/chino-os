@@ -2,6 +2,7 @@ project(libfdt)
 
 set(SRCS fdt.c
          fdt_addresses.c
+         fdt_check.c
          fdt_empty_tree.c
          fdt_overlay.c
          fdt_ro.c

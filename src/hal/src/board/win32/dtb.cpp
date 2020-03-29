@@ -20,20 +20,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #include "../../arch/win32/target.h"
+#include "board.h"
 #include "resource.h"
 #include <Windows.h>
 #include <cassert>
-#include <chino/board/board.h>
 
 using namespace chino;
 using namespace chino::board;
 using namespace chino::kernel;
 
-const void *win32_board::device_tree() noexcept
+gsl::span<const uint8_t> win32_board::device_tree() noexcept
 {
     auto hres = FindResource(nullptr, MAKEINTRESOURCE(IDR_DTB), L"Binary");
     assert(hres);
+    auto size = SizeofResource(nullptr, hres);
     auto hmem = LoadResource(nullptr, hres);
     assert(hmem);
-    return LockResource(hmem);
+    return { reinterpret_cast<const uint8_t *>(LockResource(hmem)), size };
 }

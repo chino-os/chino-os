@@ -22,7 +22,7 @@
 #pragma once
 #include "process.h"
 #include "thread.h"
-#include <chino/object.h>
+#include <chino/ddk/object.h>
 
 namespace chino::threading
 {

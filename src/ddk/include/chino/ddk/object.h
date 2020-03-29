@@ -21,8 +21,8 @@
 // SOFTWARE.
 #pragma once
 #include <atomic>
+#include <chino/ddk/list.h>
 #include <chino/error.h>
-#include <chino/list.h>
 #include <chino/result.h>
 #include <cstdint>
 #include <string_view>
@@ -130,7 +130,7 @@ struct object_operations
 
 struct object_type
 {
-    object_operations operations;
+    object_operations ops;
 };
 
 namespace wellknown_types

@@ -22,9 +22,9 @@
 #include "target.h"
 #include <Windows.h>
 #include <atomic>
+#include <board.h>
 #include <cassert>
 #include <chino/arch/win32/arch.h>
-#include <chino/board/board.h>
 #include <intrin.h>
 
 using namespace chino::arch;

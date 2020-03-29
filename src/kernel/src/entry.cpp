@@ -19,9 +19,9 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include <chino/directory.h>
-#include <chino/kernel.h>
-#include <chino/object.h>
+#include <chino/ddk/directory.h>
+#include <chino/ddk/kernel.h>
+#include <chino/ddk/object.h>
 #include <chino/threading/process.h>
 #include <chino/threading/scheduler.h>
 #ifdef _MSC_VER

@@ -20,14 +20,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #include <cassert>
-#include <chino/kernel.h>
+#include <chino/ddk/kernel.h>
+#include <chino/ddk/utility.h>
 #include <chino/memory/free_page_list.h>
 #include <chino/memory/memory_manager.h>
 #include <chino/memory/pool_allocator.h>
 #include <chino/memory/used_page_bitmap.h>
 #include <chino/threading/process.h>
 #include <chino/threading/thread.h>
-#include <chino/utility.h>
 #include <numeric>
 
 using namespace chino;

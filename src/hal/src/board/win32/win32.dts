@@ -3,32 +3,38 @@
 / {
     model = "win32,win32-simulator";
     compatible = "intel,x86_64";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	chosen {
+		bootargs = "root=/dev/memory console=ttyS0,115200";
+	};
 
     cpus {
-	    CPU0: cpu@0 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+	    cpu@0 {
 	        device_type = "cpu";
+			reg = <0>;
 	    };
+	};
+
+	memory@0 {
+		device_type = "memory";
+		reg = <0>;
 	};
 	
 	soc {
 		#address-cells = <1>;
-		#size-cells = <1>;
-	};
+		#size-cells = <0>;
 
-	board-peripherals {
-		#address-cells = <1>;
-		#size-cells = <1>;
+		compatible = "simple-bus";
+		ranges = <0 0>;
 
-		basicDisplay: lcd1 {
-			device_type = "display";
-			compatible = "simulator,basic-display";
-		};
-
-		sdStorage: sd0 {
-			device_type = "storage";
-			compatible = "simulator,sd-storage";
-			filename = "sd0.vhd";
-			size_in_mb = <256>;
+		console@0 {
+			compatible = "win32,console";
+			reg = <0>;
 		};
 	};
 };

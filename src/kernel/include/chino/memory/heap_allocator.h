@@ -21,10 +21,10 @@
 // SOFTWARE.
 #pragma once
 #include <algorithm>
-#include <chino/board/board.h>
+#include <board.h>
+#include <chino/ddk/utility.h>
 #include <chino/memory/memory_manager.h>
 #include <chino/threading.h>
-#include <chino/utility.h>
 #include <memory>
 #include <mutex>
 

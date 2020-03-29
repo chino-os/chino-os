@@ -22,9 +22,9 @@
 #include "../../arch/win32/target.h"
 #include "crtinit.inl"
 #include <Windows.h>
-#include <chino/board/board.h>
-#include <chino/kernel.h>
-#include <chino/memory.h>
+#include <board.h>
+#include <chino/ddk/kernel.h>
+#include <chino_config.h>
 
 using namespace chino;
 using namespace chino::arch;

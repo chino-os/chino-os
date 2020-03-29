@@ -19,10 +19,10 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include <chino/directory.h>
-#include <chino/kernel.h>
+#include <chino/ddk/directory.h>
+#include <chino/ddk/io.h>
+#include <chino/ddk/kernel.h>
 #include <chino/memory/memory_manager.h>
-#include <chino/io.h>
 #include <chino/threading/process.h>
 #include <chino/threading/scheduler.h>
 

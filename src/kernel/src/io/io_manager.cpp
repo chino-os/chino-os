@@ -19,8 +19,9 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+#include <chino/ddk/kernel.h>
+#include <chino/io.h>
 #include <chino/io/io_manager.h>
-#include <chino/kernel.h>
 #include <libfdt.h>
 
 using namespace chino;
@@ -39,8 +40,53 @@ __declspec(allocate(".CHINO_DRV$Z")) static const ::chino::io::driver drivers_en
 #error "Unsupported compiler"
 #endif
 
-result<void, error_code> kernel::io_manager_init(const void *fdt)
+machine_desc io::machine_desc_;
+
+static void setup_machine_desc(const void *fdt, int node) noexcept
 {
-    auto first_node = fdt_next_node(fdt, -1, nullptr);
+    device_descriptor root(node);
+    machine_desc_.fdt = fdt;
+    machine_desc_.model = root.property("model").unwrap().string();
+}
+
+static result<void, error_code> create_device_node(const device_descriptor &node) noexcept
+{
+    if (node.has_compatible())
+    {
+    }
+
+    return ok();
+}
+
+static uint32_t calc_total_device_nodes(const device_descriptor &root) noexcept
+{
+    uint32_t count = 0;
+    int child;
+    fdt_for_each_subnode(child, root.fdt(), root.node())
+    {
+        if (device_descriptor(child).has_compatible())
+            count++;
+    }
+
+    return count;
+}
+
+machine_desc io::get_machine_desc() noexcept
+{
+    return machine_desc_;
+}
+
+result<void, error_code> kernel::io_manager_init(gsl::span<const uint8_t> fdt)
+{
+    if (fdt_check_full(fdt.data(), fdt.length_bytes()) != 0)
+        return err(error_code::invalid_argument);
+
+    auto root_node = fdt_next_node(fdt.data(), -1, nullptr);
+    setup_machine_desc(fdt.data(), root_node);
+
+    auto total_nodes = calc_total_device_nodes(root_node);
+    int child;
+    fdt_for_each_subnode(child, fdt.data(), root_node)
+        try_(create_device_node({ child }));
     return ok();
 }

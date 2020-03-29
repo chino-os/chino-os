@@ -45,32 +45,42 @@ public:
     constexpr device_property(const void *data, int len) noexcept
         : data_(data), len_(len) {}
 
+    const void *data() const noexcept { return data_; }
     size_t len() const noexcept { return len_; }
-    uint32_t uint32(size_t index) const noexcept;
-    std::string_view string(size_t index) const noexcept;
+
+    uint32_t uint32(size_t index = 0) const noexcept;
+    uint64_t uint64(size_t index = 0) const noexcept;
+    std::string_view string(size_t index = 0) const noexcept;
 
 private:
     const void *data_;
     int len_;
 };
 
-class device_descriptor
-{
-public:
-    constexpr device_descriptor(void *fdt, int node) noexcept
-        : fdt_(fdt), node_(node) {}
-
-    result<device_property, error_code> property(std::string_view name) const noexcept;
-
-private:
-    void *fdt_;
-    int node_;
-};
-
 struct device_id
 {
     std::string_view compatible;
     void *data;
+};
+
+class device_descriptor
+{
+public:
+    constexpr device_descriptor(int node) noexcept
+        : node_(node) {}
+
+    const void *fdt() const noexcept;
+    int node() const noexcept { return node_; }
+
+    result<device_property, error_code> property(std::string_view name) const noexcept;
+    bool has_compatible() const noexcept;
+
+    const device_id *check_compatible(gsl::span<const device_id> match_table) const noexcept;
+    uint32_t address_cells() const noexcept;
+    uint32_t size_cells() const noexcept;
+
+private:
+    int node_;
 };
 
 typedef result<void, error_code> (*driver_add_device_t)(driver &drv, const device_descriptor &device_desc);
@@ -83,7 +93,7 @@ struct driver_operations
 struct driver
 {
     std::string_view name;
-    driver_operations operations;
+    driver_operations ops;
     gsl::span<const device_id> match_table;
 };
 
@@ -91,6 +101,7 @@ struct device : ob::object
 {
     const driver *drv;
     device_type type;
+    int node;
     threading::sched_spinlock syncroot;
 };
 

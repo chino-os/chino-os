@@ -20,13 +20,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #include <algorithm>
-#include <chino/directory.h>
+#include <chino/ddk/directory.h>
 #include <cstring>
 
 using namespace chino;
 using namespace chino::ob;
 
-const object_type wellknown_types::directory { .operations = {} };
+const object_type wellknown_types::directory { .ops = {} };
 
 namespace
 {

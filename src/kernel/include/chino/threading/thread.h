@@ -20,9 +20,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include <chino/board/board.h>
-#include <chino/list.h>
-#include <chino/object.h>
+#include <board.h>
+#include <chino/ddk/list.h>
+#include <chino/ddk/object.h>
 #include <chino/threading.h>
 #include <gsl/gsl-lite.hpp>
 

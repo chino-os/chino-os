@@ -26,7 +26,7 @@ namespace chino::board
 {
 struct win32_board
 {
-    static const void *device_tree() noexcept;
+    static gsl::span<const uint8_t> device_tree() noexcept;
 };
 
 using board_t = win32_board;

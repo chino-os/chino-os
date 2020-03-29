@@ -20,8 +20,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include <chino/io.h>
+#include <chino/ddk/io.h>
 
 namespace chino::io
 {
+extern machine_desc machine_desc_;
 }

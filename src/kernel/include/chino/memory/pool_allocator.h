@@ -21,9 +21,9 @@
 // SOFTWARE.
 #pragma once
 #include <algorithm>
-#include <chino/memory/memory_manager.h>
+#include <chino/ddk/kernel.h>
+#include <chino/ddk/utility.h>
 #include <chino/threading.h>
-#include <chino/utility.h>
 #include <memory>
 #include <mutex>
 
@@ -45,7 +45,7 @@ namespace details
         static result<pool_segment *, error_code> init(size_t entries)
         {
             auto bytes = sizeof(pool_segment) + EntrySize * entries;
-            try_var(base, heap_alloc(kernel_process(), bytes));
+            try_var(base, kernel::kheap_alloc(bytes));
             new (base) pool_segment(entries);
             return reinterpret_cast<pool_segment *>(base);
         }

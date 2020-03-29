@@ -19,13 +19,13 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include <chino/kernel.h>
+#include <chino/ddk/kernel.h>
+#include <chino/ddk/utility.h>
 #include <chino/memory/heap_allocator.h>
 #include <chino/memory/memory_manager.h>
 #include <chino/threading/process.h>
 #include <chino/threading/scheduler.h>
 #include <chino/threading/thread.h>
-#include <chino/utility.h>
 #include <numeric>
 
 using namespace chino;
@@ -58,4 +58,14 @@ result<void *, error_code> chino::heap_alloc(size_t bytes) noexcept
 void chino::heap_free(void *ptr) noexcept
 {
     memory::heap_free(current_process(), ptr);
+}
+
+result<void *, error_code> kernel::kheap_alloc(size_t bytes) noexcept
+{
+    return memory::heap_alloc(kernel_process(), bytes);
+}
+
+void kernel::kheap_free(void *ptr) noexcept
+{
+    memory::heap_free(kernel_process(), ptr);
 }

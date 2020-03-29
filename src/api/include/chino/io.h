@@ -20,36 +20,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
+#include "chinodef.h"
+#include <atomic>
 #include <chino/error.h>
 #include <chino/result.h>
-#include <gsl/gsl-lite.hpp>
+#include <string_view>
 
-namespace chino::threading
+namespace chino::io
 {
-struct kprocess;
-}
-
-namespace chino::kernel
+struct machine_desc
 {
-struct physical_memory_run
-{
-    void *base;
-    size_t count;
+    const void *fdt;
+    std::string_view model;
 };
 
-struct physical_memory_desc
-{
-    size_t runs_count;
-    size_t pages_count;
-    physical_memory_run runs[1];
-};
-
-typedef void (*thread_thunk_t)(void *arg0, void *arg1);
-result<void, error_code> memory_manager_init(const physical_memory_desc &desc);
-result<void, error_code> kernel_main();
-result<void, error_code> io_manager_init(const void* fdt);
-uint32_t kernel_system_thread_main(void *arg);
-
-threading::kprocess &kernel_process() noexcept;
-result<void, error_code> kernel_process_init() noexcept;
+machine_desc get_machine_desc() noexcept;
 }

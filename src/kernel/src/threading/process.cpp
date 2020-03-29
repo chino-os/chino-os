@@ -19,7 +19,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include <chino/kernel.h>
+#include <chino/ddk/kernel.h>
 #include <chino/threading/process.h>
 #include <chino/threading/scheduler.h>
 
@@ -29,8 +29,8 @@ using namespace chino::ob;
 using namespace chino::threading;
 using namespace chino::memory;
 
-const object_type wellknown_types::process { .operations = {} };
-const object_type wellknown_types::thread { .operations = {} };
+const object_type wellknown_types::process { .ops = {} };
+const object_type wellknown_types::thread { .ops = {} };
 
 namespace
 {
