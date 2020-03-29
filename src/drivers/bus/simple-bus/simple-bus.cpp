@@ -19,40 +19,28 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include <chino/ddk/directory.h>
-#include <chino/ddk/kernel.h>
-#include <chino/ddk/object.h>
-#include <chino/threading/process.h>
-#include <chino/threading/scheduler.h>
-#ifdef _MSC_VER
-#include <intrin.h>
-#endif
+#include <chino/ddk/io.h>
 
 using namespace chino;
-using namespace chino::threading;
+using namespace chino::io;
 
-void chino::panic(std::string_view message) noexcept
+namespace
 {
-#ifdef _MSC_VER
-    __debugbreak();
-#endif
-    while (1)
-        ;
+result<void, error_code> sb_add_device(const driver &drv, const device_id &dev_id);
+
+const driver_id match_table[] = {
+    { .compatible = "simple-bus" }
+};
+
+const driver sb_drv = {
+    .name = "simple-bus",
+    .ops = { .add_device = sb_add_device },
+    .match_table = match_table
+};
+EXPORT_DRIVER(sb_drv);
+
+result<void, error_code> sb_add_device(const driver &drv, const device_id &dev_id)
+{
+    return ok();
 }
-
-result<void, error_code> kernel::kernel_main()
-{
-    try_(kernel_process_init());
-    current_sched().start();
-
-    // Should not reach here
-    while (1)
-        ;
-}
-
-uint32_t kernel::kernel_system_thread_main(void *arg)
-{
-    kernel::io_manager_init(board::board_t::device_tree()).expect("IO system setup failed");
-    auto mem_info = get_system_memory_info();
-    return 0;
 }

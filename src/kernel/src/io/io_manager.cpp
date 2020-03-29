@@ -29,13 +29,10 @@ using namespace chino::ob;
 using namespace chino::io;
 
 #ifdef _MSC_VER
-#pragma section(".CHINO_DRV$A", read) // Begin drivers
-#pragma section(".CHINO_DRV$C", read) // Drivers
-#pragma section(".CHINO_DRV$Z", read) // End drivers
-#pragma comment(linker, "/merge:.CHINO_DRV=.rdata")
+#pragma comment(linker, "/merge:.CHDRV=.rdata")
 
-__declspec(allocate(".CHINO_DRV$A")) static const ::chino::io::driver drivers_begin_[1];
-__declspec(allocate(".CHINO_DRV$Z")) static const ::chino::io::driver drivers_end_[1];
+__declspec(allocate(".CHDRV$A")) const ::chino::io::driver *drivers_begin_[] = { nullptr };
+__declspec(allocate(".CHDRV$Z")) const ::chino::io::driver *drivers_end_[] = { nullptr };
 #else
 #error "Unsupported compiler"
 #endif
@@ -49,31 +46,67 @@ static void setup_machine_desc(const void *fdt, int node) noexcept
     machine_desc_.model = root.property("model").unwrap().string();
 }
 
-static result<void, error_code> create_device_node(const device_descriptor &node) noexcept
+static result<void, error_code> populate_devices(int node) noexcept
 {
-    if (node.has_compatible())
-    {
-    }
-
+    int child;
+    fdt_for_each_subnode(child, machine_desc_.fdt, node)
+        try_(probe_device({ child }, nullptr));
     return ok();
 }
 
-static uint32_t calc_total_device_nodes(const device_descriptor &root) noexcept
+static result<device_id, error_code> create_device_id(const device_descriptor &node) noexcept
 {
-    uint32_t count = 0;
-    int child;
-    fdt_for_each_subnode(child, root.fdt(), root.node())
+    auto compats = node.property("compatible").unwrap();
+    size_t compat_id = 0;
+    const device_id *dev_id = nullptr;
+
+    while (true)
     {
-        if (device_descriptor(child).has_compatible())
-            count++;
+        auto compat = compats.string(compat_id++);
+        if (compat.empty())
+            break;
+        auto drv = drivers_begin_;
+        while (++drv < drivers_end_)
+        {
+            if (*drv)
+            {
+                auto id = (*drv)->check_compatible(compat);
+                if (id)
+                    return ok<device_id>(node.node(), **drv, *id);
+            }
+        }
     }
 
-    return count;
+    return err(error_code::not_found);
 }
 
 machine_desc io::get_machine_desc() noexcept
 {
     return machine_desc_;
+}
+
+result<void, error_code> io::probe_device(const device_descriptor &node, device *parent) noexcept
+{
+    if (node.has_compatible())
+    {
+        auto dev_id_r = create_device_id(node);
+        if (dev_id_r.is_err())
+            return dev_id_r.unwrap_err();
+        auto dev_id = dev_id_r.unwrap();
+        try_(dev_id.drv().ops.add_device(dev_id.drv(), dev_id));
+    }
+
+    return ok();
+}
+
+result<void, error_code> io::populate_sub_devices(device &parent) noexcept
+{
+    auto parent_id = parent.id.node();
+
+    int child;
+    fdt_for_each_subnode(child, machine_desc_.fdt, parent_id)
+        try_(probe_device({ child }, &parent));
+    return ok();
 }
 
 result<void, error_code> kernel::io_manager_init(gsl::span<const uint8_t> fdt)
@@ -83,10 +116,5 @@ result<void, error_code> kernel::io_manager_init(gsl::span<const uint8_t> fdt)
 
     auto root_node = fdt_next_node(fdt.data(), -1, nullptr);
     setup_machine_desc(fdt.data(), root_node);
-
-    auto total_nodes = calc_total_device_nodes(root_node);
-    int child;
-    fdt_for_each_subnode(child, fdt.data(), root_node)
-        try_(create_device_node({ child }));
-    return ok();
+    return populate_devices(root_node);
 }

@@ -24,7 +24,12 @@
 
 namespace chino
 {
-template<class T, class U, class = std::enable_if_t<std::is_integral_v<T> && std::is_integral_v<U>>>
+// clang-format off
+#define CHINO_CONCAT_(a, b) a##b
+#define CHINO_CONCAT(a, b) CHINO_CONCAT_(a,b)
+// clang-format on
+
+template <class T, class U, class = std::enable_if_t<std::is_integral_v<T> && std::is_integral_v<U>>>
 constexpr T align(T value, U alignment) noexcept
 {
     auto rem = value % alignment;

@@ -46,17 +46,6 @@ const void *device_descriptor::fdt() const noexcept
     return machine_desc_.fdt;
 }
 
-const device_id *device_descriptor::check_compatible(gsl::span<const device_id> match_table) const noexcept
-{
-    for (auto &id : match_table)
-    {
-        if (fdt_node_check_compatible(fdt(), node(), id.compatible.data()))
-            return &id;
-    }
-
-    return nullptr;
-}
-
 uint32_t device_descriptor::address_cells() const noexcept
 {
     return fdt_address_cells(fdt(), node());
@@ -65,6 +54,22 @@ uint32_t device_descriptor::address_cells() const noexcept
 uint32_t device_descriptor::size_cells() const noexcept
 {
     return fdt_size_cells(fdt(), node());
+}
+
+result<device_descriptor, error_code> device_descriptor::first_subnode() const noexcept
+{
+    auto child = fdt_first_subnode(fdt(), node());
+    if (child >= 0)
+        return ok<device_descriptor>(child);
+    return err(error_code::not_found);
+}
+
+result<device_descriptor, error_code> device_descriptor::next_subnode(int prev) const noexcept
+{
+    auto child = fdt_next_subnode(fdt(), prev);
+    if (child >= 0)
+        return ok<device_descriptor>(child);
+    return err(error_code::not_found);
 }
 
 uint32_t device_property::uint32(size_t index) const noexcept
@@ -92,4 +97,15 @@ std::string_view device_property::string(size_t index) const noexcept
     }
 
     return {};
+}
+
+const driver_id *driver::check_compatible(std::string_view compatible) const noexcept
+{
+    for (auto &id : match_table)
+    {
+        if (id.compatible == compatible)
+            return &id;
+    }
+
+    return nullptr;
 }

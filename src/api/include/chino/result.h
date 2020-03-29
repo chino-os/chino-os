@@ -243,7 +243,7 @@ public:
         }
         else
         {
-            panic(nullptr);
+            panic(std::string_view {});
         }
     }
 
@@ -251,7 +251,7 @@ public:
     {
         if (is_ok())
         {
-            panic(nullptr);
+            panic(std::string_view {});
         }
         else
         {

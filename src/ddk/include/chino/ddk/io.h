@@ -21,13 +21,17 @@
 // SOFTWARE.
 #pragma once
 #include "object.h"
+#include "utility.h"
 #include <chino/threading.h>
 #include <gsl/gsl-lite.hpp>
 
 namespace chino::io
 {
 #ifdef _MSC_VER
-#define EXPORT_DRIVER __declspec(allocate(".CHINO_DRV$C")) static const ::chino::io::driver
+#pragma section(".CHDRV$A", long, read) // Begin drivers
+#pragma section(".CHDRV$C", long, read) // Drivers
+#pragma section(".CHDRV$Z", long, read) // End drivers
+#define EXPORT_DRIVER(x) __declspec(allocate(".CHDRV$C")) const ::chino::io::driver *CHINO_CONCAT(_drv_, __COUNTER__) = &x
 #else
 #error "Unsupported compiler"
 #endif
@@ -57,10 +61,26 @@ private:
     int len_;
 };
 
-struct device_id
+struct driver_id
 {
     std::string_view compatible;
     void *data;
+};
+
+class device_id
+{
+public:
+    constexpr device_id(int node, const driver &drv, const driver_id &drv_id)
+        : node_(node), drv_(drv), drv_id_(drv_id) {}
+
+    int node() const noexcept { return node_; }
+    const driver &drv() const noexcept { return drv_; }
+    const driver_id &drv_id() const noexcept { return drv_id_; }
+
+private:
+    int node_;
+    const driver &drv_;
+    const driver_id &drv_id_;
 };
 
 class device_descriptor
@@ -71,11 +91,12 @@ public:
 
     const void *fdt() const noexcept;
     int node() const noexcept { return node_; }
+    result<device_descriptor, error_code> first_subnode() const noexcept;
+    result<device_descriptor, error_code> next_subnode(int prev) const noexcept;
 
     result<device_property, error_code> property(std::string_view name) const noexcept;
     bool has_compatible() const noexcept;
 
-    const device_id *check_compatible(gsl::span<const device_id> match_table) const noexcept;
     uint32_t address_cells() const noexcept;
     uint32_t size_cells() const noexcept;
 
@@ -83,7 +104,7 @@ private:
     int node_;
 };
 
-typedef result<void, error_code> (*driver_add_device_t)(driver &drv, const device_descriptor &device_desc);
+typedef result<void, error_code> (*driver_add_device_t)(const driver &drv, const device_id &dev_id);
 
 struct driver_operations
 {
@@ -94,15 +115,18 @@ struct driver
 {
     std::string_view name;
     driver_operations ops;
-    gsl::span<const device_id> match_table;
+    gsl::span<const driver_id> match_table;
+
+    const driver_id *check_compatible(std::string_view compatible) const noexcept;
 };
 
 struct device : ob::object
 {
-    const driver *drv;
+    device_id id;
     device_type type;
-    int node;
     threading::sched_spinlock syncroot;
+
+    device *parent;
 };
 
 struct file : ob::object
@@ -111,4 +135,7 @@ struct file : ob::object
     fpos_t offset;
     threading::sched_spinlock syncroot;
 };
+
+result<void, error_code> populate_sub_devices(device &parent) noexcept;
+result<void, error_code> probe_device(const device_descriptor &node, device *parent) noexcept;
 }
