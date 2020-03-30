@@ -19,12 +19,23 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#pragma once
+#include <board.h>
+#include <chino/ddk/kernel.h>
+#include <ulog.h>
 
-namespace chino
+using namespace chino;
+using namespace chino::threading;
+using namespace chino::kernel;
+
+static void boot_log(ulog_level_t severity, char *msg)
 {
-inline constexpr size_t PAGE_SIZE = ${CHINO_PAGE_SIZE};
-inline constexpr size_t KERNEL_STACK_SIZE = ${CHINO_KERNEL_STACK_SIZE};
-inline constexpr size_t IDLE_STACK_SIZE = ${CHINO_IDLE_STACK_SIZE};
-inline constexpr size_t STACK_ALIGNMENT = ${CHINO_STACK_ALIGNMENT};
+    board::board_t::boot_print(msg);
+}
+
+result<void, error_code> kernel::logging_init()
+{
+    ulog_init();
+    if (ulog_subscribe(boot_log, ULOG_TRACE_LEVEL) == ULOG_ERR_NONE)
+        return ok();
+    return err(error_code::unknown);
 }

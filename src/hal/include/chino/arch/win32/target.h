@@ -20,11 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
+#include <winsdkver.h>
+#define _WIN32_WINNT 0x0A00 // Win10
+#include <sdkddkver.h>
 
-namespace chino
-{
-inline constexpr size_t PAGE_SIZE = ${CHINO_PAGE_SIZE};
-inline constexpr size_t KERNEL_STACK_SIZE = ${CHINO_KERNEL_STACK_SIZE};
-inline constexpr size_t IDLE_STACK_SIZE = ${CHINO_IDLE_STACK_SIZE};
-inline constexpr size_t STACK_ALIGNMENT = ${CHINO_STACK_ALIGNMENT};
-}
+#include <Windows.h>

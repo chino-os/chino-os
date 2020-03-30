@@ -36,6 +36,7 @@ enum class error_code
     key_already_exists = 6,
     not_implemented = 7,
     not_supported = 8,
-    invalid_path = 9
+    invalid_path = 9,
+    insufficient_buffer = 10
 };
 }

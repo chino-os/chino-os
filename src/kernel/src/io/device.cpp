@@ -19,7 +19,16 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#pragma once
-#include <winsdkver.h>
-#define _WIN32_WINNT 0x0A00 // Win10
-#include <sdkddkver.h>
+#include <chino/ddk/directory.h>
+#include <chino/ddk/kernel.h>
+#include <chino/io.h>
+#include <chino/io/io_manager.h>
+
+using namespace chino;
+using namespace chino::ob;
+using namespace chino::io;
+using namespace chino::threading;
+using namespace chino::kernel;
+
+const object_type wellknown_types::device { .ops = {} };
+

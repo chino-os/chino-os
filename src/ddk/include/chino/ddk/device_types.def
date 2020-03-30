@@ -1,0 +1,3 @@
+DEFINE_DEV_TYPE(misc,   0)
+DEFINE_DEV_TYPE(bus,    1)
+DEFINE_DEV_TYPE(serial, 2)

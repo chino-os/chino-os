@@ -67,3 +67,8 @@ extern "C" void chinoStartup()
     auto ret = kernel_main();
     ExitProcess(ret.is_ok() ? 0 : -1);
 }
+
+void board::win32_board::boot_print(const char *message) noexcept
+{
+    OutputDebugStringA(message);
+}

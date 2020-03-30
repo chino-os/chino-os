@@ -66,6 +66,8 @@ struct object_header
         : attributes(attributes), type(&type), name {}, refs(1)
     {
     }
+
+    object &body() noexcept { return *reinterpret_cast<object *>(reinterpret_cast<uintptr_t>(this) + sizeof(object_header)); }
 };
 
 struct object
@@ -138,15 +140,27 @@ namespace wellknown_types
     extern const object_type directory;
     extern const object_type process;
     extern const object_type thread;
+    extern const object_type device;
+    extern const object_type file;
 }
 
 struct insert_lookup_object_options
 {
-    handle_t root = handle_t::invalid();
     std::string_view name;
     access_mask desired_access;
+    handle_t root = handle_t::invalid();
 };
 
 result<object *, error_code> create_object(const object_type &type, size_t body_size) noexcept;
 result<handle_t, error_code> insert_object(object &object, const insert_lookup_object_options &options) noexcept;
+result<object *, error_code> reference_object(handle_t handle) noexcept;
+
+template <class T>
+result<T *, error_code> reference_object(handle_t handle, const object_type &type) noexcept
+{
+    try_var(ob, reference_object(handle));
+    if (ob->header().type == &type)
+        return ok(static_cast<T *>(ob));
+    return err(error_code::not_found);
+}
 }

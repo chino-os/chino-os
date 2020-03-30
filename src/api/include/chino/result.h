@@ -46,6 +46,15 @@ namespace chino
             return v.unwrap_err();                \
     }
 
+#define try_set(name, x)           \
+    {                              \
+        auto v = (x);              \
+        if (v.is_ok())             \
+            name = v.unwrap();     \
+        else                       \
+            return v.unwrap_err(); \
+    }
+
 template <class T>
 struct Ok
 {

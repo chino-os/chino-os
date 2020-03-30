@@ -10,6 +10,7 @@ list(TRANSFORM RES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 list(TRANSFORM SRCS PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 
 target_sources(hal PRIVATE ${SRCS})
-target_sources(hal PUBLIC ${RES})
+
+add_library(winres OBJECT ${RES})
+target_include_directories(winres PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 add_dependencies(hal DTB)
-target_include_directories(hal PUBLIC ${CMAKE_CURRENT_BINARY_DIR})

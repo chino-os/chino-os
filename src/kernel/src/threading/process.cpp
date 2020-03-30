@@ -37,7 +37,7 @@ namespace
 static_object<kprocess> kernel_process_(wellknown_types::process);
 static_object<kthread> kernel_system_thread_(wellknown_types::thread);
 
-uintptr_t kernel_sys_thread_stack_[KERNEL_STACK_SIZE / sizeof(uintptr_t)];
+alignas(STACK_ALIGNMENT) uintptr_t kernel_sys_thread_stack_[KERNEL_STACK_SIZE / sizeof(uintptr_t)];
 }
 
 [[noreturn]] static void user_thread_thunk(thread_start_t start, void *arg) noexcept;

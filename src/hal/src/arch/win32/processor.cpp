@@ -19,12 +19,11 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include "target.h"
-#include <Windows.h>
 #include <atomic>
 #include <board.h>
 #include <cassert>
 #include <chino/arch/win32/arch.h>
+#include <chino/arch/win32/target.h>
 #include <intrin.h>
 
 using namespace chino::arch;
@@ -90,6 +89,8 @@ void win32_arch::init_thread_context(thread_context_t &context, gsl::span<uintpt
     context.stack_bottom = uintptr_t(stack.data());
 
     auto *top = stack.end();
+    // Align as 16
+    --top;
     *--top = uintptr_t(win32_thread_thunk);
     context.rsp = uintptr_t(top);
 }

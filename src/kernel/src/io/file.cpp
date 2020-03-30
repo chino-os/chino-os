@@ -20,14 +20,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #include <chino/ddk/directory.h>
-#include <chino/ddk/io.h>
 #include <chino/ddk/kernel.h>
-#include <chino/memory/memory_manager.h>
-#include <chino/threading/process.h>
-#include <chino/threading/scheduler.h>
+#include <chino/io.h>
+#include <chino/io/io_manager.h>
 
 using namespace chino;
 using namespace chino::ob;
-using namespace chino::memory;
+using namespace chino::io;
 using namespace chino::threading;
 using namespace chino::kernel;
+
+const object_type wellknown_types::file { .ops = {} };

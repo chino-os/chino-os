@@ -42,6 +42,7 @@ void chino::panic(std::string_view message) noexcept
 
 result<void, error_code> kernel::kernel_main()
 {
+    try_(kernel::logging_init());
     try_(kernel_process_init());
     current_sched().start();
 

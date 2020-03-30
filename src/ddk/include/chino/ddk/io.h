@@ -37,11 +37,16 @@ namespace chino::io
 #endif
 
 struct driver;
+struct device;
+struct file;
 
+#define DEFINE_DEV_TYPE(x, v) x = v,
 enum class device_type
 {
-    misc = 0,
+#include "device_types.def"
+    COUNT
 };
+#undef DEFINE_DEV_TYPE
 
 class device_property
 {
@@ -70,15 +75,17 @@ struct driver_id
 class device_id
 {
 public:
-    constexpr device_id(int node, const driver &drv, const driver_id &drv_id)
-        : node_(node), drv_(drv), drv_id_(drv_id) {}
+    constexpr device_id(int node, device *parent, const driver &drv, const driver_id &drv_id)
+        : node_(node), parent_(parent), drv_(drv), drv_id_(drv_id) {}
 
     int node() const noexcept { return node_; }
+    device *parent() const noexcept { return parent_; }
     const driver &drv() const noexcept { return drv_; }
     const driver_id &drv_id() const noexcept { return drv_id_; }
 
 private:
     int node_;
+    device *parent_;
     const driver &drv_;
     const driver_id &drv_id_;
 };
@@ -105,10 +112,12 @@ private:
 };
 
 typedef result<void, error_code> (*driver_add_device_t)(const driver &drv, const device_id &dev_id);
+typedef result<file *, error_code> (*driver_open_device_t)(const driver &drv, device &dev);
 
 struct driver_operations
 {
     driver_add_device_t add_device;
+    driver_open_device_t open_device;
 };
 
 struct driver
@@ -126,16 +135,33 @@ struct device : ob::object
     device_type type;
     threading::sched_spinlock syncroot;
 
-    device *parent;
+    template <class T = uint8_t>
+    T &extension() noexcept { return *reinterpret_cast<T *>(reinterpret_cast<uint8_t *>(this) + sizeof(device)); }
+};
+
+struct device_extension
+{
+    device &dev() noexcept { return *reinterpret_cast<device *>(reinterpret_cast<uint8_t *>(this) - sizeof(device)); }
 };
 
 struct file : ob::object
 {
-    device *dev;
+    device &dev;
     fpos_t offset;
     threading::sched_spinlock syncroot;
+
+    template <class T = uint8_t>
+    T &extension() noexcept { return *reinterpret_cast<T *>(reinterpret_cast<uint8_t *>(this) + sizeof(device)); }
+};
+
+struct file_extension
+{
+    io::file &file() noexcept { return *reinterpret_cast<io::file *>(reinterpret_cast<uint8_t *>(this) - sizeof(device)); }
 };
 
 result<void, error_code> populate_sub_devices(device &parent) noexcept;
 result<void, error_code> probe_device(const device_descriptor &node, device *parent) noexcept;
+
+result<device *, error_code> create_device(const device_id &id, device_type type, size_t extension_size) noexcept;
+result<file *, error_code> create_file(device &dev, size_t extension_size) noexcept;
 }

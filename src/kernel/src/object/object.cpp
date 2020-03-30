@@ -68,6 +68,12 @@ result<handle_t, error_code> ob::insert_object(object &object, const insert_look
     }
 }
 
+result<object *, error_code> ob::reference_object(handle_t handle) noexcept
+{
+    try_var(entry, current_process().handle_table_.at(handle.value));
+    return &entry->ob->body();
+}
+
 static result<handle_t, error_code> create_handle(object &object, access_mask desired_access) noexcept
 {
     if (desired_access == access_mask::none)
@@ -166,7 +172,15 @@ static result<handle_t, error_code> create_named_handle(object &object, const in
     }
     else
     {
-        return err(error_code::invalid_path);
+        // Should not starts with '/'
+        if (!remaining_name.empty() && remaining_name[0] == DIRECTORY_SEPARATOR)
+        {
+            return err(error_code::invalid_path);
+        }
+        else
+        {
+            try_set(root, reference_object<directory>(options.root, wellknown_types::directory));
+        }
     }
 
     try_(insert_or_lookup(complete_name, remaining_name, *root, access, &object.header()));

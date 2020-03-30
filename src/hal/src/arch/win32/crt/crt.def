@@ -11,3 +11,4 @@ EXPORTS
    memchr = ucrtbased.memchr
    memmove = ucrtbased.memmove
    memcmp = ucrtbased.memcmp
+   __stdio_common_vsprintf = ucrtbased.__stdio_common_vsprintf

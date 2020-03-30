@@ -19,12 +19,45 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#pragma once
+#include <chino/arch/win32/target.h>
+#include <chino/ddk/io.h>
 
-namespace chino
+using namespace chino;
+using namespace chino::io;
+
+namespace
 {
-inline constexpr size_t PAGE_SIZE = ${CHINO_PAGE_SIZE};
-inline constexpr size_t KERNEL_STACK_SIZE = ${CHINO_KERNEL_STACK_SIZE};
-inline constexpr size_t IDLE_STACK_SIZE = ${CHINO_IDLE_STACK_SIZE};
-inline constexpr size_t STACK_ALIGNMENT = ${CHINO_STACK_ALIGNMENT};
+class win32_console_dev : public device_extension
+{
+public:
+    win32_console_dev();
+
+private:
+    HANDLE stdin_, stdout_;
+};
+
+result<void, error_code> con_add_device(const driver &drv, const device_id &dev_id);
+
+const driver_id match_table[] = {
+    { .compatible = "win32,console" }
+};
+
+const driver con_drv = {
+    .name = "win32-console",
+    .ops = { .add_device = con_add_device },
+    .match_table = match_table
+};
+EXPORT_DRIVER(con_drv);
+
+result<void, error_code> con_add_device(const driver &drv, const device_id &dev_id)
+{
+    try_var(con, create_device(dev_id, device_type::serial, sizeof(win32_console_dev)));
+    new (&con->extension()) win32_console_dev();
+    return ok();
+}
+}
+
+win32_console_dev::win32_console_dev()
+    : stdin_(GetStdHandle(STD_INPUT_HANDLE)), stdout_(GetStdHandle(STD_OUTPUT_HANDLE))
+{
 }

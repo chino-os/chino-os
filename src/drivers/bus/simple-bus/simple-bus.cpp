@@ -41,6 +41,7 @@ EXPORT_DRIVER(sb_drv);
 
 result<void, error_code> sb_add_device(const driver &drv, const device_id &dev_id)
 {
-    return ok();
+    try_var(bus, create_device(dev_id, device_type::bus, 0));
+    return populate_sub_devices(*bus);
 }
 }
