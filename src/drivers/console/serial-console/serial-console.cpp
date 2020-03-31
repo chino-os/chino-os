@@ -27,36 +27,34 @@ using namespace chino::io;
 
 namespace
 {
-class win32_console_dev : public device_extension
+class serial_console_dev : public device_extension
 {
 public:
-    win32_console_dev();
+    serial_console_dev(file *file)
+        : file_(file) {}
 
     result<void, error_code> write(gsl::span<const gsl::byte> buffer) noexcept;
 
 private:
-    HANDLE stdin_, stdout_;
+    file *file_;
 };
 
-result<void, error_code> con_add_device(const driver &drv, const device_id &dev_id);
+result<void, error_code> con_attach_device(const driver &drv, device &bottom_dev, std::string_view args);
 result<file *, error_code> con_open_device(const driver &drv, device &dev);
 result<void, error_code> con_write_device(const driver &drv, device &dev, file &file, gsl::span<const gsl::byte> buffer);
 
-const driver_id match_table[] = {
-    { .compatible = "win32,console" }
-};
-
 const driver con_drv = {
-    .name = "win32-console",
-    .ops = { .add_device = con_add_device, .open_device = con_open_device, .write_device = con_write_device },
-    .match_table = match_table
+    .type = driver_type::console,
+    .name = "serial-console",
+    .ops = { .attach_device = con_attach_device, .open_device = con_open_device, .write_device = con_write_device },
 };
 EXPORT_DRIVER(con_drv);
 
-result<void, error_code> con_add_device(const driver &drv, const device_id &dev_id)
+result<void, error_code> con_attach_device(const driver &drv, device &bottom_dev, std::string_view args)
 {
-    try_var(con, create_device(dev_id, device_type::serial, sizeof(win32_console_dev)));
-    new (&con->extension()) win32_console_dev();
+    try_var(file, io::open_file(bottom_dev, access_mask::generic_all));
+    try_var(con, create_device("console", drv, device_type::console, sizeof(serial_console_dev)));
+    new (&con->extension()) serial_console_dev(file);
     return ok();
 }
 
@@ -67,24 +65,11 @@ result<file *, error_code> con_open_device(const driver &drv, device &dev)
 
 result<void, error_code> con_write_device(const driver &drv, device &dev, file &file, gsl::span<const gsl::byte> buffer)
 {
-    return dev.extension<win32_console_dev>().write(buffer);
+    return dev.extension<serial_console_dev>().write(buffer);
 }
 }
 
-win32_console_dev::win32_console_dev()
+result<void, error_code> serial_console_dev::write(gsl::span<const gsl::byte> buffer) noexcept
 {
-    if (!AllocConsole())
-        panic("Cannot alloc console");
-
-    SetConsoleTitleA("Chino Terminal");
-    SetConsoleCP(CP_UTF8);
-    stdin_ = GetStdHandle(STD_INPUT_HANDLE);
-    stdout_ = GetStdHandle(STD_OUTPUT_HANDLE);
-}
-
-result<void, error_code> win32_console_dev::write(gsl::span<const gsl::byte> buffer) noexcept
-{
-    if (WriteFile(stdout_, buffer.data(), buffer.length_bytes(), nullptr, nullptr))
-        return ok();
-    return err(error_code::io_error);
+    return write_file(*file_, buffer);
 }

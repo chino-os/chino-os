@@ -38,7 +38,7 @@ struct kthread;
 struct kprocess : public ob::object
 {
     constexpr kprocess()
-        : pid_(0), handle_table_(16) {}
+        : pid_(0), handle_table_(16), stdin_(handle_t::invalid()), stdout_(handle_t::invalid()), stderr_(handle_t::invalid()) {}
 
     void attach_new_thread(kthread &thread) noexcept;
     void detach_thread(kthread &thread) noexcept;
@@ -50,6 +50,9 @@ struct kprocess : public ob::object
     memory::heap_allocator heap_allocator_;
     ob::handle_table handle_table_;
     list_t_of_node(kthread::process_threads_entry_) threads_list_;
+
+    sched_spinlock syncroot;
+    handle_t stdin_, stdout_, stderr_;
 };
 
 namespace details

@@ -22,6 +22,7 @@
 #include <chino/ddk/directory.h>
 #include <chino/ddk/kernel.h>
 #include <chino/ddk/object.h>
+#include <chino/io.h>
 #include <chino/threading/process.h>
 #include <chino/threading/scheduler.h>
 #include <ulog.h>
@@ -60,6 +61,10 @@ result<void, error_code> kernel::kernel_main()
 uint32_t kernel::kernel_system_thread_main(void *arg)
 {
     kernel::io_manager_init(board::board_t::device_tree()).expect("IO system setup failed");
+    io::alloc_console().expect("Cannot allocate console");
+
+    gsl::cstring_span text("Hello Chino!\n");
+    io::write(io::get_std_handle(io::std_handles::out), { (gsl::byte*)text.data(), text.size_bytes() }).expect("Cannot write console");
     auto mem_info = get_system_memory_info();
     return 0;
 }

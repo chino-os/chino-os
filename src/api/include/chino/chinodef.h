@@ -37,7 +37,7 @@ namespace chino
     inline ENUMTYPE &operator^=(ENUMTYPE &a, ENUMTYPE b) { return (ENUMTYPE &)(((int &)a) ^= ((int)b)); }
 #endif
 
-inline constexpr size_t MAX_OBJECT_NAME = 7;
+inline constexpr size_t MAX_OBJECT_NAME = 15;
 inline constexpr char DIRECTORY_SEPARATOR = '/';
 
 typedef struct _handle

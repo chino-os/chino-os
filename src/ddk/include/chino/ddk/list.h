@@ -150,11 +150,12 @@ public:
         else
         {
             auto prev = offset->prev;
-            assert(node->list == this);
+            assert(!node->list);
             node->list = this;
             node->prev = prev;
             node->next = offset;
-            prev->next = node;
+            if (prev)
+                prev->next = node;
             offset->prev = node;
 
             if (offset == head_)

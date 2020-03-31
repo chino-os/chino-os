@@ -10,4 +10,5 @@ if(MSVC)
 endif()
 
 add_subdirectory(bus)
+add_subdirectory(console)
 add_subdirectory(serial)

@@ -23,6 +23,7 @@
 #include <chino/ddk/kernel.h>
 #include <chino/io.h>
 #include <chino/io/io_manager.h>
+#include <chino/threading/scheduler.h>
 #include <libfdt.h>
 #include <ulog.h>
 
@@ -55,6 +56,7 @@ static std::string_view dev_type_prefixes_[] = {
 static std::atomic<uint16_t> device_counts_[(size_t)device_type::COUNT];
 static handle_t dev_root_;
 static default_device default_devs_;
+static driver_id attach_drv_id;
 
 static void setup_machine_desc(const void *fdt, int node) noexcept
 {
@@ -227,6 +229,25 @@ result<device *, error_code> io::create_device(const device_id &id, device_type 
     return ok(static_cast<device *>(dev));
 }
 
+result<device *, error_code> io::create_device(std::string_view name, const driver &drv, device_type type, size_t extension_size) noexcept
+{
+    try_var(ob, create_object(wellknown_types::device, sizeof(device) + extension_size));
+    auto dev = static_cast<device *>(ob);
+    device_id devid(-1, nullptr, drv, attach_drv_id);
+    new (dev) device { {}, devid, type };
+
+    char namebuf[MAX_OBJECT_NAME + 1];
+    if (name.empty())
+        try_var(name, make_dev_name(type, namebuf, std::size(namebuf)));
+    try_(insert_object(*dev, { .root = dev_root_, .name = name, .desired_access = access_mask::generic_all }));
+    return ok(static_cast<device *>(dev));
+}
+
+result<device *, error_code> io::create_device(const driver &drv, device_type type, size_t extension_size) noexcept
+{
+    return create_device({}, type, extension_size);
+}
+
 result<file *, error_code> io::create_file(device &dev, size_t extension_size) noexcept
 {
     try_var(ob, create_object(wellknown_types::file, sizeof(file) + extension_size));
@@ -235,7 +256,17 @@ result<file *, error_code> io::create_file(device &dev, size_t extension_size) n
     return ok(f);
 }
 
-result<void, error_code> io::write_file(file &file, gsl::span<const uint8_t> buffer) noexcept
+result<file *, error_code> io::open_file(device &dev, access_mask access) noexcept
+{
+    auto &drv = dev.id.drv();
+    if (!drv.ops.open_device)
+        return err(error_code::not_supported);
+
+    std::unique_lock lock(dev.syncroot);
+    return drv.ops.open_device(drv, dev);
+}
+
+result<void, error_code> io::write_file(file &file, gsl::span<const gsl::byte> buffer) noexcept
 {
     auto &drv = file.dev.id.drv();
     if (!drv.ops.write_device)
@@ -245,6 +276,45 @@ result<void, error_code> io::write_file(file &file, gsl::span<const uint8_t> buf
     try_(drv.ops.write_device(drv, file.dev, file, buffer));
     file.offset += buffer.length_bytes();
     return ok();
+}
+
+result<void, error_code> io::alloc_console() noexcept
+{
+    auto &ps = threading::current_process();
+
+    std::unique_lock lock(ps.syncroot);
+    if (ps.stdin_ == handle_t::invalid())
+    {
+        try_var(dev, ob::reference_object<device>({ .root = dev_root_, .name = "console", .desired_access = access_mask::generic_all }, wellknown_types::device));
+        try_var(file, open_file(*dev, access_mask::generic_all), { .desired_access = access_mask::generic_all });
+        try_var(handle, insert_object(*file, { .desired_access = access_mask::generic_all }));
+        ps.stdin_ = ps.stdout_ = ps.stderr_ = handle;
+    }
+
+    return ok();
+}
+
+handle_t io::get_std_handle(std_handles type) noexcept
+{
+    auto &ps = threading::current_process();
+
+    switch (type)
+    {
+    case chino::io::std_handles::in:
+        return ps.stdin_;
+    case chino::io::std_handles::out:
+        return ps.stdout_;
+    case chino::io::std_handles::err:
+        return ps.stderr_;
+    default:
+        return handle_t::invalid();
+    }
+}
+
+result<void, error_code> io::write(handle_t file, gsl::span<const gsl::byte> buffer) noexcept
+{
+    try_var(f, ob::reference_object<io::file>(file, wellknown_types::file));
+    return write_file(*f, buffer);
 }
 
 result<void, error_code> kernel::io_manager_init(gsl::span<const uint8_t> fdt)

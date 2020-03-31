@@ -120,7 +120,7 @@ private:
 typedef result<void, error_code> (*driver_add_device_t)(const driver &drv, const device_id &dev_id);
 typedef result<void, error_code> (*driver_attach_device_t)(const driver &drv, device &bottom_dev, std::string_view args);
 typedef result<file *, error_code> (*driver_open_device_t)(const driver &drv, device &dev);
-typedef result<void, error_code> (*driver_write_device_t)(const driver &drv, device &dev, file &file, gsl::span<const uint8_t> buffer);
+typedef result<void, error_code> (*driver_write_device_t)(const driver &drv, device &dev, file &file, gsl::span<const gsl::byte> buffer);
 
 struct driver_operations
 {
@@ -174,6 +174,10 @@ result<void, error_code> populate_sub_devices(device &parent) noexcept;
 result<void, error_code> probe_device(const device_descriptor &node, device *parent) noexcept;
 
 result<device *, error_code> create_device(const device_id &id, device_type type, size_t extension_size) noexcept;
+result<device *, error_code> create_device(const driver &drv, device_type type, size_t extension_size) noexcept;
+result<device *, error_code> create_device(std::string_view name, const driver &drv, device_type type, size_t extension_size) noexcept;
 result<file *, error_code> create_file(device &dev, size_t extension_size) noexcept;
-result<void, error_code> write_file(file &file, gsl::span<const uint8_t> buffer) noexcept;
+
+result<file *, error_code> open_file(device &dev, access_mask access) noexcept;
+result<void, error_code> write_file(file &file, gsl::span<const gsl::byte> buffer) noexcept;
 }

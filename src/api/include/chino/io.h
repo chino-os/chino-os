@@ -35,10 +35,18 @@ struct machine_desc
     std::string_view bootargs;
 };
 
+enum class std_handles
+{
+    in,
+    out,
+    err
+};
+
 machine_desc get_machine_desc() noexcept;
 
-result<void, error_code> alloc_console();
+result<void, error_code> alloc_console() noexcept;
+handle_t get_std_handle(std_handles type) noexcept;
 
 result<handle_t, error_code> open(std::string_view path, access_mask access) noexcept;
-result<void, error_code> write(handle_t file, gsl::span<const uint8_t> buffer) noexcept;
+result<void, error_code> write(handle_t file, gsl::span<const gsl::byte> buffer) noexcept;
 }
