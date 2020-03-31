@@ -48,6 +48,12 @@ enum class device_type
 };
 #undef DEFINE_DEV_TYPE
 
+enum class driver_type
+{
+    hardware,
+    console
+};
+
 class device_property
 {
 public:
@@ -112,16 +118,21 @@ private:
 };
 
 typedef result<void, error_code> (*driver_add_device_t)(const driver &drv, const device_id &dev_id);
+typedef result<void, error_code> (*driver_attach_device_t)(const driver &drv, device &bottom_dev, std::string_view args);
 typedef result<file *, error_code> (*driver_open_device_t)(const driver &drv, device &dev);
+typedef result<void, error_code> (*driver_write_device_t)(const driver &drv, device &dev, file &file, gsl::span<const uint8_t> buffer);
 
 struct driver_operations
 {
     driver_add_device_t add_device;
+    driver_attach_device_t attach_device;
     driver_open_device_t open_device;
+    driver_write_device_t write_device;
 };
 
 struct driver
 {
+    driver_type type = driver_type::hardware;
     std::string_view name;
     driver_operations ops;
     gsl::span<const driver_id> match_table;
@@ -147,7 +158,7 @@ struct device_extension
 struct file : ob::object
 {
     device &dev;
-    fpos_t offset;
+    size_t offset;
     threading::sched_spinlock syncroot;
 
     template <class T = uint8_t>
@@ -164,4 +175,5 @@ result<void, error_code> probe_device(const device_descriptor &node, device *par
 
 result<device *, error_code> create_device(const device_id &id, device_type type, size_t extension_size) noexcept;
 result<file *, error_code> create_file(device &dev, size_t extension_size) noexcept;
+result<void, error_code> write_file(file &file, gsl::span<const uint8_t> buffer) noexcept;
 }

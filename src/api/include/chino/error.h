@@ -37,6 +37,7 @@ enum class error_code
     not_implemented = 7,
     not_supported = 8,
     invalid_path = 9,
-    insufficient_buffer = 10
+    insufficient_buffer = 10,
+    io_error = 11
 };
 }

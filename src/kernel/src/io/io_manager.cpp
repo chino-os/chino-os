@@ -40,6 +40,10 @@ __declspec(allocate(".CHDRV$Z")) const ::chino::io::driver *drivers_end_[] = { n
 #error "Unsupported compiler"
 #endif
 
+struct default_device
+{
+};
+
 machine_desc io::machine_desc_;
 
 #define DEFINE_DEV_TYPE(x, v) CHINO_CONCAT(#x, sv),
@@ -50,12 +54,25 @@ static std::string_view dev_type_prefixes_[] = {
 
 static std::atomic<uint16_t> device_counts_[(size_t)device_type::COUNT];
 static handle_t dev_root_;
+static default_device default_devs_;
 
 static void setup_machine_desc(const void *fdt, int node) noexcept
 {
     device_descriptor root(node);
     machine_desc_.fdt = fdt;
     machine_desc_.model = root.property("model").unwrap().string();
+
+    int child;
+    fdt_for_each_subnode(child, machine_desc_.fdt, node)
+    {
+        device_descriptor cnode(child);
+        auto bootargs = cnode.property("bootargs");
+        if (bootargs.is_ok())
+        {
+            machine_desc_.bootargs = bootargs.unwrap().string();
+            break;
+        }
+    }
 }
 
 static result<void, error_code> populate_devices(int node) noexcept
@@ -114,6 +131,55 @@ static result<std::string_view, error_code> make_dev_name(device_type type, char
     return err(error_code::invalid_argument);
 }
 
+static result<void, error_code> attach_device(device &dev, std::string_view args) noexcept
+{
+    auto type = dev.type;
+    auto drv = drivers_begin_;
+    while (++drv < drivers_end_)
+    {
+        if (*drv && (*drv)->ops.attach_device)
+        {
+            auto ret = (*drv)->ops.attach_device(**drv, dev, args);
+            if (ret.is_ok())
+                return ok();
+        }
+    }
+
+    ULOG_CRITICAL("Cannot attch driver for /dev/%s\n", dev.header().name);
+    return err(error_code::not_supported);
+}
+
+static result<void, error_code> setup_console() noexcept
+{
+    if (!machine_desc_.bootargs.empty())
+    {
+        // find console
+        // split by space
+        auto remaining = machine_desc_.bootargs;
+        while (!remaining.empty())
+        {
+            auto entry_end = remaining.find_first_of(' ');
+            auto entry = entry_end == std::string_view::npos ? remaining : remaining.substr(0, entry_end);
+            remaining = entry_end == std::string_view::npos ? std::string_view {} : remaining.substr(entry_end + 1);
+
+            // split by =
+            auto key_end = entry.find_first_of('=');
+            if (key_end == std::string_view::npos)
+                panic("invalid bootargs");
+            auto key = entry.substr(0, key_end);
+            if (key == "console")
+            {
+                auto value = entry.substr(key_end + 1);
+                auto dev_name_end = value.find_first_of(',');
+                auto dev_name = dev_name_end == std::string_view::npos ? value : value.substr(0, dev_name_end);
+                auto args = dev_name_end == std::string_view::npos ? std::string_view {} : value.substr(dev_name_end + 1);
+                try_var(dev, ob::reference_object<device>({ .root = dev_root_, .name = dev_name, .desired_access = access_mask::generic_all }, wellknown_types::device));
+                return attach_device(*dev, args);
+            }
+        }
+    }
+}
+
 machine_desc io::get_machine_desc() noexcept
 {
     return machine_desc_;
@@ -157,7 +223,7 @@ result<device *, error_code> io::create_device(const device_id &id, device_type 
 
     char namebuf[MAX_OBJECT_NAME + 1];
     try_var(name, make_dev_name(type, namebuf, std::size(namebuf)));
-    try_(insert_object(*dev, { .name = name, .desired_access = access_mask::generic_all, .root = dev_root_ }));
+    try_(insert_object(*dev, { .root = dev_root_, .name = name, .desired_access = access_mask::generic_all }));
     return ok(static_cast<device *>(dev));
 }
 
@@ -169,6 +235,18 @@ result<file *, error_code> io::create_file(device &dev, size_t extension_size) n
     return ok(f);
 }
 
+result<void, error_code> io::write_file(file &file, gsl::span<const uint8_t> buffer) noexcept
+{
+    auto &drv = file.dev.id.drv();
+    if (!drv.ops.write_device)
+        return err(error_code::not_supported);
+
+    std::unique_lock lock(file.syncroot);
+    try_(drv.ops.write_device(drv, file.dev, file, buffer));
+    file.offset += buffer.length_bytes();
+    return ok();
+}
+
 result<void, error_code> kernel::io_manager_init(gsl::span<const uint8_t> fdt)
 {
     try_set(dev_root_, create_directory({ .name = "/dev", .desired_access = access_mask::generic_all }));
@@ -178,5 +256,8 @@ result<void, error_code> kernel::io_manager_init(gsl::span<const uint8_t> fdt)
 
     auto root_node = fdt_next_node(fdt.data(), -1, nullptr);
     setup_machine_desc(fdt.data(), root_node);
-    return populate_devices(root_node);
+    try_(populate_devices(root_node));
+
+    try_(setup_console());
+    return ok();
 }

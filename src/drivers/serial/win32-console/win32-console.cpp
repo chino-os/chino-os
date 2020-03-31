@@ -32,11 +32,15 @@ class win32_console_dev : public device_extension
 public:
     win32_console_dev();
 
+    result<void, error_code> write(gsl::span<const uint8_t> buffer) noexcept;
+
 private:
     HANDLE stdin_, stdout_;
 };
 
 result<void, error_code> con_add_device(const driver &drv, const device_id &dev_id);
+result<file *, error_code> con_open_device(const driver &drv, device &dev);
+result<void, error_code> con_write_device(const driver &drv, device &dev, file &file, gsl::span<const uint8_t> buffer);
 
 const driver_id match_table[] = {
     { .compatible = "win32,console" }
@@ -44,7 +48,7 @@ const driver_id match_table[] = {
 
 const driver con_drv = {
     .name = "win32-console",
-    .ops = { .add_device = con_add_device },
+    .ops = { .add_device = con_add_device, .open_device = con_open_device, .write_device = con_write_device },
     .match_table = match_table
 };
 EXPORT_DRIVER(con_drv);
@@ -55,9 +59,32 @@ result<void, error_code> con_add_device(const driver &drv, const device_id &dev_
     new (&con->extension()) win32_console_dev();
     return ok();
 }
+
+result<file *, error_code> con_open_device(const driver &drv, device &dev)
+{
+    return create_file(dev, 0);
+}
+
+result<void, error_code> con_write_device(const driver &drv, device &dev, file &file, gsl::span<const uint8_t> buffer)
+{
+    return dev.extension<win32_console_dev>().write(buffer);
+}
 }
 
 win32_console_dev::win32_console_dev()
-    : stdin_(GetStdHandle(STD_INPUT_HANDLE)), stdout_(GetStdHandle(STD_OUTPUT_HANDLE))
 {
+    if (!AllocConsole())
+        panic("Cannot alloc console");
+
+    SetConsoleTitleA("Chino Terminal");
+    SetConsoleCP(CP_UTF8);
+    stdin_ = GetStdHandle(STD_INPUT_HANDLE);
+    stdout_ = GetStdHandle(STD_OUTPUT_HANDLE);
+}
+
+result<void, error_code> win32_console_dev::write(gsl::span<const uint8_t> buffer) noexcept
+{
+    if (WriteFile(stdin_, buffer.data(), buffer.length_bytes(), nullptr, nullptr))
+        return ok();
+    return err(error_code::io_error);
 }

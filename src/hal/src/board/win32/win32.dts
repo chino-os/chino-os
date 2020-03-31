@@ -7,7 +7,7 @@
 	#size-cells = <0>;
 
 	chosen {
-		bootargs = "root=/dev/memory console=ttyS0,115200";
+		bootargs = "console=serial0";
 	};
 
     cpus {

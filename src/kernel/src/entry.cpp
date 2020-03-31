@@ -24,6 +24,7 @@
 #include <chino/ddk/object.h>
 #include <chino/threading/process.h>
 #include <chino/threading/scheduler.h>
+#include <ulog.h>
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
@@ -33,6 +34,11 @@ using namespace chino::threading;
 
 void chino::panic(std::string_view message) noexcept
 {
+    if (message.empty())
+        ULOG_CRITICAL("kernel panic!\n");
+    else
+        ULOG_CRITICAL("%s\n", message.data());
+
 #ifdef _MSC_VER
     __debugbreak();
 #endif

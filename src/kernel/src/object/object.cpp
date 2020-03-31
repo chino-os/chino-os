@@ -42,7 +42,7 @@ void object::release() noexcept
 
 result<object *, error_code> ob::create_object(const object_type &type, size_t body_size) noexcept
 {
-    try_var(base, memory::heap_alloc(kernel_process(), sizeof(object_header) + body_size));
+    try_var(base, kernel::kheap_alloc(sizeof(object_header) + body_size));
     auto header = reinterpret_cast<object_header *>(base);
     new (header) object_header(object_attributes::none, type);
     return reinterpret_cast<object *>(reinterpret_cast<uintptr_t>(header) + sizeof(object_header));
@@ -147,7 +147,7 @@ static result<object_header *, error_code> insert_or_lookup(std::string_view &co
     return err(error_code::not_implemented);
 }
 
-static result<handle_t, error_code> create_named_handle(object &object, const insert_lookup_object_options &options) noexcept
+static result<object_header *, error_code> insert_or_lookup(const insert_lookup_object_options &options, object_header *insert)
 {
     if (options.name.empty())
         return err(error_code::invalid_path);
@@ -183,6 +183,18 @@ static result<handle_t, error_code> create_named_handle(object &object, const in
         }
     }
 
-    try_(insert_or_lookup(complete_name, remaining_name, *root, access, &object.header()));
+    return insert_or_lookup(complete_name, remaining_name, *root, access, insert);
+}
+
+static result<handle_t, error_code> create_named_handle(object &object, const insert_lookup_object_options &options) noexcept
+{
+    access_state access { options.desired_access };
+    try_(insert_or_lookup(options, &object.header()));
     return create_handle(object, access.desired_access);
+}
+
+result<object *, error_code> ob::reference_object(const insert_lookup_object_options &options) noexcept
+{
+    try_var(header, insert_or_lookup(options, nullptr));
+    return &header->body();
 }

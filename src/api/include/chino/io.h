@@ -32,7 +32,13 @@ struct machine_desc
 {
     const void *fdt;
     std::string_view model;
+    std::string_view bootargs;
 };
 
 machine_desc get_machine_desc() noexcept;
+
+result<void, error_code> alloc_console();
+
+result<handle_t, error_code> open(std::string_view path, access_mask access) noexcept;
+result<void, error_code> write(handle_t file, gsl::span<const uint8_t> buffer) noexcept;
 }
