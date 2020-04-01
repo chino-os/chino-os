@@ -38,9 +38,16 @@ static_object<kprocess> kernel_process_(wellknown_types::process);
 static_object<kthread> kernel_system_thread_(wellknown_types::thread);
 
 alignas(STACK_ALIGNMENT) uintptr_t kernel_sys_thread_stack_[KERNEL_STACK_SIZE / sizeof(uintptr_t)];
+std::atomic<tid_t> next_tid_ = 0;
 }
 
 [[noreturn]] static void user_thread_thunk(thread_start_t start, void *arg) noexcept;
+[[noreturn]] static void user_process_thunk(chino_startup_t start) noexcept;
+
+uint32_t next_tid() noexcept
+{
+    return next_tid_++;
+}
 
 kprocess &kernel::kernel_process() noexcept
 {
@@ -50,6 +57,7 @@ kprocess &kernel::kernel_process() noexcept
 result<void, error_code> kernel::kernel_process_init() noexcept
 {
     kernel_system_thread_.body.priority_ = thread_priority::normal;
+    kernel_system_thread_.body.tid_ = next_tid();
     kernel_system_thread_.body.init_stack(kernel_sys_thread_stack_, kernel::kernel_system_thread_main, nullptr);
     kernel_process_.body.attach_new_thread(kernel_system_thread_.body);
     current_sched().add_to_ready_list(kernel_system_thread_.body);
@@ -81,6 +89,12 @@ void user_thread_thunk(thread_start_t start, void *arg) noexcept
     exit_thread(exit_code);
 }
 
+void user_process_thunk(chino_startup_t start) noexcept
+{
+    auto exit_code = start();
+    exit_thread(exit_code);
+}
+
 result<void, error_code> process_open(void *object, access_state &access) noexcept
 {
     return ok();
@@ -89,4 +103,29 @@ result<void, error_code> process_open(void *object, access_state &access) noexce
 result<void, error_code> thread_open(void *object, access_state &access) noexcept
 {
     return ok();
+}
+
+result<handle_t, error_code> threading::create_process(chino_startup_t start, std::string_view command_lines, thread_priority prioriy,
+    int32_t stack_size)
+{
+    // 1. Create process
+    try_var(ps_ob, ob::create_object(wellknown_types::process, sizeof(kprocess)));
+    auto ps = static_cast<kprocess *>(ps_ob);
+    new (ps) kprocess();
+    try_var(handle, ob::insert_object(*ps_ob, { .desired_access = access_mask::generic_all }));
+
+    // 2. Create stack
+    stack_size = align(stack_size, STACK_ALIGNMENT);
+    try_var(stack, memory::heap_alloc(*ps, stack_size));
+    try_var(th_ob, ob::create_object(wellknown_types::thread, sizeof(kthread)));
+    auto th = static_cast<kthread *>(th_ob);
+    new (th) kthread();
+    th->tid_ = next_tid();
+    th->priority_ = prioriy;
+    th->init_stack({ reinterpret_cast<uintptr_t *>(stack), stack_size / sizeof(uintptr_t) }, (thread_start_t)user_process_thunk, start);
+
+    // 3. Attach thread
+    ps->attach_new_thread(*th);
+    current_sched().add_to_ready_list(*th);
+    return ok(handle);
 }

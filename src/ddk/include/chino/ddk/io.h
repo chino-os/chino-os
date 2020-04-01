@@ -120,6 +120,7 @@ private:
 typedef result<void, error_code> (*driver_add_device_t)(const driver &drv, const device_id &dev_id);
 typedef result<void, error_code> (*driver_attach_device_t)(const driver &drv, device &bottom_dev, std::string_view args);
 typedef result<file *, error_code> (*driver_open_device_t)(const driver &drv, device &dev);
+typedef result<size_t, error_code> (*driver_read_device_t)(const driver &drv, device &dev, file &file, gsl::span<gsl::byte> buffer);
 typedef result<void, error_code> (*driver_write_device_t)(const driver &drv, device &dev, file &file, gsl::span<const gsl::byte> buffer);
 
 struct driver_operations
@@ -127,6 +128,7 @@ struct driver_operations
     driver_add_device_t add_device;
     driver_attach_device_t attach_device;
     driver_open_device_t open_device;
+    driver_read_device_t read_device;
     driver_write_device_t write_device;
 };
 
@@ -179,5 +181,6 @@ result<device *, error_code> create_device(std::string_view name, const driver &
 result<file *, error_code> create_file(device &dev, size_t extension_size) noexcept;
 
 result<file *, error_code> open_file(device &dev, access_mask access) noexcept;
+result<size_t, error_code> read_file(file &file, gsl::span<gsl::byte> buffer) noexcept;
 result<void, error_code> write_file(file &file, gsl::span<const gsl::byte> buffer) noexcept;
 }

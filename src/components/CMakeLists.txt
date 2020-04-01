@@ -2,3 +2,4 @@
 
 #add_subdirectory(python)
 add_subdirectory(lua)
+add_subdirectory(shell)

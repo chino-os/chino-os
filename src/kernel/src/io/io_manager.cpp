@@ -266,6 +266,18 @@ result<file *, error_code> io::open_file(device &dev, access_mask access) noexce
     return drv.ops.open_device(drv, dev);
 }
 
+result<size_t, error_code> io::read_file(file &file, gsl::span<gsl::byte> buffer) noexcept
+{
+    auto &drv = file.dev.id.drv();
+    if (!drv.ops.read_device)
+        return err(error_code::not_supported);
+
+    std::unique_lock lock(file.syncroot);
+    try_var(ret, drv.ops.read_device(drv, file.dev, file, buffer));
+    file.offset += ret;
+    return ok(ret);
+}
+
 result<void, error_code> io::write_file(file &file, gsl::span<const gsl::byte> buffer) noexcept
 {
     auto &drv = file.dev.id.drv();
@@ -285,7 +297,7 @@ result<void, error_code> io::alloc_console() noexcept
     std::unique_lock lock(ps.syncroot);
     if (ps.stdin_ == handle_t::invalid())
     {
-        try_var(dev, ob::reference_object<device>({ .root = dev_root_, .name = "console", .desired_access = access_mask::generic_all }, wellknown_types::device));
+        try_var(dev, ob::reference_object<device>({ .name = "/dev/console", .desired_access = access_mask::generic_all }, wellknown_types::device));
         try_var(file, open_file(*dev, access_mask::generic_all), { .desired_access = access_mask::generic_all });
         try_var(handle, insert_object(*file, { .desired_access = access_mask::generic_all }));
         ps.stdin_ = ps.stdout_ = ps.stderr_ = handle;
@@ -309,6 +321,12 @@ handle_t io::get_std_handle(std_handles type) noexcept
     default:
         return handle_t::invalid();
     }
+}
+
+result<size_t, error_code> io::read(handle_t file, gsl::span<gsl::byte> buffer) noexcept
+{
+    try_var(f, ob::reference_object<io::file>(file, wellknown_types::file));
+    return read_file(*f, buffer);
 }
 
 result<void, error_code> io::write(handle_t file, gsl::span<const gsl::byte> buffer) noexcept

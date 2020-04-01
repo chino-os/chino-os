@@ -90,7 +90,8 @@ void win32_arch::init_thread_context(thread_context_t &context, gsl::span<uintpt
 
     auto *top = stack.end();
     // Align as 16
-    --top;
+    if ((uintptr_t(top) & 8) == 0)
+        --top;
     *--top = uintptr_t(win32_thread_thunk);
     context.rsp = uintptr_t(top);
 }

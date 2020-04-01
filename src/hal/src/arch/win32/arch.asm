@@ -62,16 +62,16 @@ win32_yield:
     mov [rcx + 38h], r14
     mov [rcx + 40h], r15
 
-    movdqa [rcx + 50h], xmm6
-    movdqa [rcx + 60h], xmm7
-    movdqa [rcx + 70h], xmm8
-    movdqa [rcx + 80h], xmm9
-    movdqa [rcx + 90h], xmm10
-    movdqa [rcx + 0A0h], xmm11
-    movdqa [rcx + 0B0h], xmm12
-    movdqa [rcx + 0C0h], xmm13
-    movdqa [rcx + 0D0h], xmm14
-    movdqa [rcx + 0E0h], xmm15
+    movdqu [rcx + 50h], xmm6
+    movdqu [rcx + 60h], xmm7
+    movdqu [rcx + 70h], xmm8
+    movdqu [rcx + 80h], xmm9
+    movdqu [rcx + 90h], xmm10
+    movdqu [rcx + 0A0h], xmm11
+    movdqu [rcx + 0B0h], xmm12
+    movdqu [rcx + 0C0h], xmm13
+    movdqu [rcx + 0D0h], xmm14
+    movdqu [rcx + 0E0h], xmm15
 
     mov rbx, [rdx]
     mov rbp, [rdx + 08h]
@@ -83,16 +83,16 @@ win32_yield:
     mov r14, [rdx + 38h]
     mov r15, [rdx + 40h]
 
-    movdqa xmm6, [rdx + 50h]
-    movdqa xmm7, [rdx + 60h]
-    movdqa xmm8, [rdx + 70h]
-    movdqa xmm9, [rdx + 80h]
-    movdqa xmm10, [rdx + 90h]
-    movdqa xmm11, [rdx + 0A0h]
-    movdqa xmm12, [rdx + 0B0h]
-    movdqa xmm13, [rdx + 0C0h]
-    movdqa xmm14, [rdx + 0D0h]
-    movdqa xmm15, [rdx + 0E0h]
+    movdqu xmm6, [rdx + 50h]
+    movdqu xmm7, [rdx + 60h]
+    movdqu xmm8, [rdx + 70h]
+    movdqu xmm9, [rdx + 80h]
+    movdqu xmm10, [rdx + 90h]
+    movdqu xmm11, [rdx + 0A0h]
+    movdqu xmm12, [rdx + 0B0h]
+    movdqu xmm13, [rdx + 0C0h]
+    movdqu xmm14, [rdx + 0D0h]
+    movdqu xmm15, [rdx + 0E0h]
     ret
 
 ; RBX: start

@@ -32,6 +32,7 @@ class win32_console_dev : public device_extension
 public:
     win32_console_dev();
 
+    result<size_t, error_code> read(gsl::span<gsl::byte> buffer) noexcept;
     result<void, error_code> write(gsl::span<const gsl::byte> buffer) noexcept;
 
 private:
@@ -40,6 +41,7 @@ private:
 
 result<void, error_code> con_add_device(const driver &drv, const device_id &dev_id);
 result<file *, error_code> con_open_device(const driver &drv, device &dev);
+result<size_t, error_code> con_read_device(const driver &drv, device &dev, file &file, gsl::span<gsl::byte> buffer);
 result<void, error_code> con_write_device(const driver &drv, device &dev, file &file, gsl::span<const gsl::byte> buffer);
 
 const driver_id match_table[] = {
@@ -48,7 +50,7 @@ const driver_id match_table[] = {
 
 const driver con_drv = {
     .name = "win32-console",
-    .ops = { .add_device = con_add_device, .open_device = con_open_device, .write_device = con_write_device },
+    .ops = { .add_device = con_add_device, .open_device = con_open_device, .read_device = con_read_device, .write_device = con_write_device },
     .match_table = match_table
 };
 EXPORT_DRIVER(con_drv);
@@ -63,6 +65,11 @@ result<void, error_code> con_add_device(const driver &drv, const device_id &dev_
 result<file *, error_code> con_open_device(const driver &drv, device &dev)
 {
     return create_file(dev, 0);
+}
+
+result<size_t, error_code> con_read_device(const driver &drv, device &dev, file &file, gsl::span<gsl::byte> buffer)
+{
+    return dev.extension<win32_console_dev>().read(buffer);
 }
 
 result<void, error_code> con_write_device(const driver &drv, device &dev, file &file, gsl::span<const gsl::byte> buffer)
@@ -80,6 +87,17 @@ win32_console_dev::win32_console_dev()
     SetConsoleCP(CP_UTF8);
     stdin_ = GetStdHandle(STD_INPUT_HANDLE);
     stdout_ = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    SetConsoleMode(stdin_, ENABLE_INSERT_MODE | ENABLE_QUICK_EDIT_MODE | ENABLE_VIRTUAL_TERMINAL_INPUT);
+    SetConsoleMode(stdout_, ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+}
+
+result<size_t, error_code> win32_console_dev::read(gsl::span<gsl::byte> buffer) noexcept
+{
+    DWORD read = 0;
+    if (ReadFile(stdin_, buffer.data(), buffer.length_bytes(), &read, nullptr))
+        return ok<size_t>(read);
+    return err(error_code::io_error);
 }
 
 result<void, error_code> win32_console_dev::write(gsl::span<const gsl::byte> buffer) noexcept

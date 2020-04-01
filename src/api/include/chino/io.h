@@ -24,6 +24,7 @@
 #include <atomic>
 #include <chino/error.h>
 #include <chino/result.h>
+#include <gsl/gsl-lite.hpp>
 #include <string_view>
 
 namespace chino::io
@@ -48,5 +49,6 @@ result<void, error_code> alloc_console() noexcept;
 handle_t get_std_handle(std_handles type) noexcept;
 
 result<handle_t, error_code> open(std::string_view path, access_mask access) noexcept;
+result<size_t, error_code> read(handle_t file, gsl::span<gsl::byte> buffer) noexcept;
 result<void, error_code> write(handle_t file, gsl::span<const gsl::byte> buffer) noexcept;
 }

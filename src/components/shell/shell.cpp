@@ -19,50 +19,31 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include <chino/ddk/directory.h>
-#include <chino/ddk/kernel.h>
-#include <chino/ddk/object.h>
 #include <chino/io.h>
-#include <chino/threading/process.h>
-#include <chino/threading/scheduler.h>
-#include <ulog.h>
-#ifdef _MSC_VER
-#include <intrin.h>
-#endif
+#include <chino/threading.h>
+#include <nr_micro_shell.h>
 
 using namespace chino;
-using namespace chino::threading;
 
-extern result<void, error_code> chino_start_shell();
-
-void chino::panic(std::string_view message) noexcept
+namespace
 {
-    if (message.empty())
-        ULOG_CRITICAL("kernel panic!\n");
-    else
-        ULOG_CRITICAL("%s\n", message.data());
+uint32_t shell_main()
+{
+    io::alloc_console().unwrap();
+    shell_init();
 
-#ifdef _MSC_VER
-    __debugbreak();
-#endif
     while (1)
-        ;
-}
+    {
+        auto ch = getchar();
+        shell(ch);
+    }
 
-result<void, error_code> kernel::kernel_main()
-{
-    try_(kernel::logging_init());
-    try_(kernel_process_init());
-    current_sched().start();
-
-    // Should not reach here
-    while (1)
-        ;
-}
-
-uint32_t kernel::kernel_system_thread_main(void *arg)
-{
-    kernel::io_manager_init(board::board_t::device_tree()).expect("IO system setup failed");
-    chino_start_shell().expect("Shell startup failed");
     return 0;
+}
+}
+
+result<void, error_code> chino_start_shell()
+{
+    try_(threading::create_process(shell_main, {}));
+    return ok();
 }

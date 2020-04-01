@@ -8,7 +8,10 @@ EXPORTS
    strncpy = ucrtbased.strncpy
    strrchr = ucrtbased.strrchr
    strnlen = ucrtbased.strnlen
+   isalpha = ucrtbased.isalpha
+   strstr = ucrtbased.strstr
    memchr = ucrtbased.memchr
    memmove = ucrtbased.memmove
    memcmp = ucrtbased.memcmp
    __stdio_common_vsprintf = ucrtbased.__stdio_common_vsprintf
+   __stdio_common_vsprintf_s = ucrtbased.__stdio_common_vsprintf_s

@@ -140,7 +140,15 @@ static result<object_header *, error_code> insert_or_lookup(std::string_view &co
             try_var(component, parent->lookup_nolock(component_name));
 
             // 4.2.1. Lookup in component dir
-            return err(error_code::not_implemented);
+            if (component->type == &wellknown_types::directory)
+            {
+                parent = &static_cast<directory &>(component->body());
+                continue;
+            }
+            else
+            {
+                return err(error_code::not_implemented);
+            }
         }
     }
 

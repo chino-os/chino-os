@@ -33,6 +33,7 @@ public:
     serial_console_dev(file *file)
         : file_(file) {}
 
+    result<size_t, error_code> read(gsl::span<gsl::byte> buffer) noexcept;
     result<void, error_code> write(gsl::span<const gsl::byte> buffer) noexcept;
 
 private:
@@ -41,12 +42,13 @@ private:
 
 result<void, error_code> con_attach_device(const driver &drv, device &bottom_dev, std::string_view args);
 result<file *, error_code> con_open_device(const driver &drv, device &dev);
+result<size_t, error_code> con_read_device(const driver &drv, device &dev, file &file, gsl::span<gsl::byte> buffer);
 result<void, error_code> con_write_device(const driver &drv, device &dev, file &file, gsl::span<const gsl::byte> buffer);
 
 const driver con_drv = {
     .type = driver_type::console,
     .name = "serial-console",
-    .ops = { .attach_device = con_attach_device, .open_device = con_open_device, .write_device = con_write_device },
+    .ops = { .attach_device = con_attach_device, .open_device = con_open_device, .read_device = con_read_device, .write_device = con_write_device },
 };
 EXPORT_DRIVER(con_drv);
 
@@ -63,10 +65,20 @@ result<file *, error_code> con_open_device(const driver &drv, device &dev)
     return create_file(dev, 0);
 }
 
+result<size_t, error_code> con_read_device(const driver &drv, device &dev, file &file, gsl::span<gsl::byte> buffer)
+{
+    return dev.extension<serial_console_dev>().read(buffer);
+}
+
 result<void, error_code> con_write_device(const driver &drv, device &dev, file &file, gsl::span<const gsl::byte> buffer)
 {
     return dev.extension<serial_console_dev>().write(buffer);
 }
+}
+
+result<size_t, error_code> serial_console_dev::read(gsl::span<gsl::byte> buffer) noexcept
+{
+    return read_file(*file_, buffer);
 }
 
 result<void, error_code> serial_console_dev::write(gsl::span<const gsl::byte> buffer) noexcept
