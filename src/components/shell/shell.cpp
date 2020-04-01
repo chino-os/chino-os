@@ -25,6 +25,9 @@
 
 using namespace chino;
 
+#define ESC "\x1b"
+#define CSI "\x1b["
+
 namespace
 {
 uint32_t shell_main()

@@ -84,18 +84,26 @@ win32_console_dev::win32_console_dev()
         panic("Cannot alloc console");
 
     SetConsoleTitleA("Chino Terminal");
-    SetConsoleCP(CP_UTF8);
     stdin_ = GetStdHandle(STD_INPUT_HANDLE);
     stdout_ = GetStdHandle(STD_OUTPUT_HANDLE);
 
+    SetConsoleCP(CP_UTF8);
+    SetConsoleOutputCP(CP_UTF8);
+
     SetConsoleMode(stdin_, ENABLE_INSERT_MODE | ENABLE_QUICK_EDIT_MODE | ENABLE_VIRTUAL_TERMINAL_INPUT);
     SetConsoleMode(stdout_, ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+
+    CONSOLE_FONT_INFOEX font_info {};
+    font_info.cbSize = sizeof(font_info);
+    font_info.dwFontSize = { 9, 18 };
+    wcscpy(font_info.FaceName, L"Consolas");
+    SetCurrentConsoleFontEx(stdout_, FALSE, &font_info);
 }
 
 result<size_t, error_code> win32_console_dev::read(gsl::span<gsl::byte> buffer) noexcept
 {
     DWORD read = 0;
-    if (ReadFile(stdin_, buffer.data(), buffer.length_bytes(), &read, nullptr))
+    if (ReadConsoleA(stdin_, buffer.data(), buffer.length_bytes(), &read, nullptr))
         return ok<size_t>(read);
     return err(error_code::io_error);
 }

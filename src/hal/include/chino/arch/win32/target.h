@@ -24,4 +24,7 @@
 #define _WIN32_WINNT 0x0A00 // Win10
 #include <sdkddkver.h>
 
+// clang-format off
 #include <Windows.h>
+#include <WinUser.h>
+// clang-format on

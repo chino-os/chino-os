@@ -68,7 +68,7 @@ extern "C"
 1: \r
 2: \r\n
 */
-#define NR_SHELL_END_OF_LINE 1
+#define NR_SHELL_END_OF_LINE 0
 
 /* Weather the terminal support all ANSI codes. */
 #define NR_SHLL_FULL_ANSI 1

@@ -78,7 +78,16 @@ result<void, error_code> con_write_device(const driver &drv, device &dev, file &
 
 result<size_t, error_code> serial_console_dev::read(gsl::span<gsl::byte> buffer) noexcept
 {
-    return read_file(*file_, buffer);
+    try_var(ret, read_file(*file_, buffer));
+
+    for (size_t i = 0; i < ret; i++)
+    {
+        if (buffer[i] == gsl::to_byte('\r'))
+            buffer[i] = gsl::to_byte('\n');
+        else if (buffer[i] == gsl::to_byte(127))
+            buffer[i] = gsl::to_byte('\b');
+    }
+    return ok(ret);
 }
 
 result<void, error_code> serial_console_dev::write(gsl::span<const gsl::byte> buffer) noexcept
