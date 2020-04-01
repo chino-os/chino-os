@@ -95,7 +95,8 @@ win32_console_dev::win32_console_dev()
 
     CONSOLE_FONT_INFOEX font_info {};
     font_info.cbSize = sizeof(font_info);
-    font_info.dwFontSize = { 9, 18 };
+    font_info.dwFontSize = { 0, 18 };
+    font_info.FontWeight = FW_NORMAL;
     wcscpy(font_info.FaceName, L"Consolas");
     SetCurrentConsoleFontEx(stdout_, FALSE, &font_info);
 }

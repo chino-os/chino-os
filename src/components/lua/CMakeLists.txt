@@ -36,6 +36,6 @@ set(LUA_SRCS lua/lapi.c
 set(SRCS)
 
 add_library(lua STATIC ${LUA_SRCS} ${SRCS})
-target_include_directories(lua PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(lua PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 #target_include_directories(lua PRIVATE ports/chino)
 target_link_libraries(lua PUBLIC api)

@@ -36,38 +36,37 @@
 
 ansi_st nr_ansi;
 
-const char nr_ansi_in_cmd[] = {'m', 'I', 'A', 'B', 'C', 'D', 'X', 'K', 'M', 'P', 'J', '@', 'L', 'l', 'h', 'n', 'H', 's', 'u', '~','\0'};
-void (*const nr_ansi_in_cmd_fun[])(ansi_st *) =
-    {
-        nr_ansi_in_m_function,
-        nr_ansi_in_I_function,
-        nr_ansi_in_A_function,
-        nr_ansi_in_B_function,
-        nr_ansi_in_C_function,
-        nr_ansi_in_D_function,
-        nr_ansi_in_X_function,
-        nr_ansi_in_K_function,
-        nr_ansi_in_M_function,
-        nr_ansi_in_P_function,
-        nr_ansi_in_J_function,
-        nr_ansi_in_at_function,
-        nr_ansi_in_L_function,
-        nr_ansi_in_l_function,
-        nr_ansi_in_h_function,
-        nr_ansi_in_n_function,
-        nr_ansi_in_H_function,
-        nr_ansi_in_s_function,
-        nr_ansi_in_u_function,
-		nr_ansi_in___function,
-	};
+const char nr_ansi_in_cmd[] = { 'm', 'I', 'A', 'B', 'C', 'D', 'X', 'K', 'M', 'P', 'J', '@', 'L', 'l', 'h', 'n', 'H', 's', 'u', '~', '\0' };
+void (*const nr_ansi_in_cmd_fun[])(ansi_st *) = {
+    nr_ansi_in_m_function,
+    nr_ansi_in_I_function,
+    nr_ansi_in_A_function,
+    nr_ansi_in_B_function,
+    nr_ansi_in_C_function,
+    nr_ansi_in_D_function,
+    nr_ansi_in_X_function,
+    nr_ansi_in_K_function,
+    nr_ansi_in_M_function,
+    nr_ansi_in_P_function,
+    nr_ansi_in_J_function,
+    nr_ansi_in_at_function,
+    nr_ansi_in_L_function,
+    nr_ansi_in_l_function,
+    nr_ansi_in_h_function,
+    nr_ansi_in_n_function,
+    nr_ansi_in_H_function,
+    nr_ansi_in_s_function,
+    nr_ansi_in_u_function,
+    nr_ansi_in___function,
+};
 
-const char nr_ansi_in_special_symbol[] = {'\b', '\n', '\r', '\t', '\0'};
-void (*const nr_ansi_in_special_symbol_fun[])(ansi_st *) =
-    {
-        nr_ansi_in_bsb_function,
-        nr_ansi_in_bsn_function,
-        nr_ansi_in_bsr_function,
-        nr_ansi_in_bst_function};
+const char nr_ansi_in_special_symbol[] = { '\b', '\n', '\r', '\t', '\0' };
+void (*const nr_ansi_in_special_symbol_fun[])(ansi_st *) = {
+    nr_ansi_in_bsb_function,
+    nr_ansi_in_bsn_function,
+    nr_ansi_in_bsr_function,
+    nr_ansi_in_bst_function
+};
 
 int ansi_search_char(char x, const char *buf)
 {
@@ -87,7 +86,7 @@ int ansi_search_char(char x, const char *buf)
 enum
 {
     ANSI_NO_CTRL_CHAR,
-	ANSI_MAYBE_CTRL_CHAR,
+    ANSI_MAYBE_CTRL_CHAR,
     ANSI_WAIT_CTRL_CHAR_END,
 };
 
@@ -128,21 +127,22 @@ char ansi_get_char(char x, ansi_st *ansi)
         {
             ansi->combine_state = ANSI_WAIT_CTRL_CHAR_END;
             ansi->combine_buf[ansi->cmd_num] = x;
-			ansi->cmd_num++;
+            ansi->cmd_num++;
         }
         else
         {
-			nr_ansi_common_char_slover(ansi,x);
+            nr_ansi_common_char_slover(ansi, x);
         }
     }
     else if (ansi->combine_state == ANSI_WAIT_CTRL_CHAR_END)
     {
         ansi->combine_buf[ansi->cmd_num] = x;
 
-        if (('a' <= x && 'z' >= x) || ('A' <= x && 'Z' >= x) || x== '~')
+        if (('a' <= x && 'z' >= x) || ('A' <= x && 'Z' >= x) || x == '~')
         {
             cmd_id = ansi_search_char(x, nr_ansi_in_cmd);
-            nr_ansi_in_cmd_fun[cmd_id](ansi);
+            if (cmd_id != -1)
+                nr_ansi_in_cmd_fun[cmd_id](ansi);
 
             ansi->cmd_num = 0;
             ansi->combine_state = ANSI_NO_CTRL_CHAR;

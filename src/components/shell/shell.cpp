@@ -25,8 +25,7 @@
 
 using namespace chino;
 
-#define ESC "\x1b"
-#define CSI "\x1b["
+extern "C" int lua_main(int argc, char **argv);
 
 namespace
 {
@@ -43,6 +42,19 @@ uint32_t shell_main()
 
     return 0;
 }
+
+void lua_cmd(char argc, char **argv)
+{
+    //lua_main(argc, argv);
+}
+}
+
+extern "C"
+{
+    const static_cmd_st static_cmd[] = {
+        { "lua", lua_cmd },
+        { "\0", NULL }
+    };
 }
 
 result<void, error_code> chino_start_shell()
