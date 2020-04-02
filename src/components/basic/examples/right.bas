@@ -1,0 +1,2 @@
+10 A$="DISK BASIC"
+20 PRINT RIGHT$(A$, 5)

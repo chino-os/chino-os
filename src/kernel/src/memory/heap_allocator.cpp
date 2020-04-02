@@ -45,17 +45,27 @@ result<void *, error_code> memory::heap_alloc(kprocess &process, size_t bytes) n
     return process.heap_allocator_.allocate(bytes);
 }
 
+result<void *, error_code> memory::heap_realloc(threading::kprocess &process, void *ptr, size_t bytes) noexcept
+{
+    return process.heap_allocator_.realloc(ptr, bytes);
+}
+
 void memory::heap_free(kprocess &process, void *ptr) noexcept
 {
     process.heap_allocator_.free(ptr);
 }
 
-result<void *, error_code> chino::heap_alloc(size_t bytes) noexcept
+result<void *, error_code> memory::heap_alloc(size_t bytes) noexcept
 {
     return memory::heap_alloc(current_process(), bytes);
 }
 
-void chino::heap_free(void *ptr) noexcept
+result<void *, error_code> memory::heap_realloc(void *ptr, size_t bytes) noexcept
+{
+    return memory::heap_realloc(current_process(), ptr, bytes);
+}
+
+void memory::heap_free(void *ptr) noexcept
 {
     memory::heap_free(current_process(), ptr);
 }

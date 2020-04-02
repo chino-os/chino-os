@@ -3,4 +3,4 @@
 add_subdirectory(nr)
 
 add_library(shell STATIC shell.cpp)
-target_link_libraries(shell PRIVATE api nr lua)
+target_link_libraries(shell PRIVATE api nr lua basic)

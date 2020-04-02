@@ -22,6 +22,7 @@
 #pragma once
 #include <algorithm>
 #include <board.h>
+#include <cassert>
 #include <chino/ddk/utility.h>
 #include <chino/memory/memory_manager.h>
 #include <chino/threading.h>
@@ -47,6 +48,13 @@ class heap_allocator
     {
         size_t count;
         uint8_t body[0];
+
+        size_t content_len() const noexcept { return count - sizeof(alloc_header); }
+
+        void *end() noexcept
+        {
+            return reinterpret_cast<uint8_t *>(this) + count;
+        }
     };
 
 public:
@@ -72,7 +80,7 @@ public:
                 if (avail >= required_bytes + sizeof(free_heap_node))
                 {
                     cnt->count -= required_bytes;
-                    auto header = reinterpret_cast<alloc_header *>(uintptr_t(cnt) + cnt->count);
+                    auto header = reinterpret_cast<alloc_header *>(cnt->end());
                     header->count = required_bytes;
                     avail_bytes_ -= required_bytes;
                     return ok((void *)header->body);
@@ -118,13 +126,44 @@ public:
         if (!ptr)
             return;
 
-        auto header = reinterpret_cast<alloc_header *>(reinterpret_cast<uint8_t *>(ptr) - sizeof(alloc_header));
-        insert_free_node(header, header->count);
+        auto h = header(ptr);
+        insert_free_node(h, h->count);
+    }
+
+    result<void *, error_code> realloc(void *ptr, size_t bytes) noexcept
+    {
+        if (!bytes)
+        {
+            free(ptr);
+            return ok<void *>(nullptr);
+        }
+
+        if (!ptr)
+            return allocate(bytes);
+
+        auto h = header(ptr);
+        if (bytes <= h->content_len())
+        {
+            return ok(ptr);
+        }
+        else
+        {
+            try_var(new_block, allocate(bytes));
+            std::memcpy(new_block, ptr, std::min(bytes, h->content_len()));
+            free(ptr);
+            return ok(new_block);
+        }
     }
 
 private:
+    alloc_header *header(void *ptr)
+    {
+        return reinterpret_cast<alloc_header *>(reinterpret_cast<uint8_t *>(ptr) - sizeof(alloc_header));
+    }
+
     void insert_free_node(void *base, size_t count)
     {
+        assert(count >= sizeof(free_heap_node));
         avail_bytes_ += count;
         std::unique_lock lock(lock_);
 
@@ -141,7 +180,7 @@ private:
             free_heap_node *prev = nullptr;
             free_heap_node *cnt = head_;
             // 2.1. Skip previous
-            while (base < cnt)
+            while (cnt && base > cnt)
             {
                 prev = cnt;
                 cnt = cnt->next;

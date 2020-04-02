@@ -85,7 +85,7 @@ public:
             {
                 cnt->count -= pages;
                 avail_pages_ -= pages;
-                return ok((void *)(reinterpret_cast<uint8_t *>(cnt) + cnt->count * PAGE_SIZE));
+                return ok(cnt->end());
             }
             // 2. Remove
             else if (avail == pages)

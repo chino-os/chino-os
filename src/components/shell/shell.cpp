@@ -25,7 +25,8 @@
 
 using namespace chino;
 
-extern "C" int lua_main(int argc, char **argv);
+extern "C" int lua_main(int argc, char *argv[]);
+extern "C" int basic_main(int argc, char *argv[]);
 
 namespace
 {
@@ -47,11 +48,17 @@ void lua_cmd(char argc, char **argv)
 {
     //lua_main(argc, argv);
 }
+
+void basic_cmd(char argc, char **argv)
+{
+    basic_main(argc, argv);
+}
 }
 
 extern "C"
 {
     const static_cmd_st static_cmd[] = {
+        { "basic", basic_cmd },
         { "lua", lua_cmd },
         { "\0", NULL }
     };

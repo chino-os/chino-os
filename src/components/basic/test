@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+# command="./build/basic/basic"
+command="valgrind --leak-check=full --show-leak-kinds=all ./build/basic/basic"
+
+cat examples/autolist | while read bas; do echo $bas; $command $bas; done

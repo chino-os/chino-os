@@ -1,0 +1,70 @@
+ARCH = XMEGA
+
+DEVICE = atxmega128a4u
+CLOCK = 32000000
+
+TARGET = basic
+
+BUILD_FOLDER = build/xmega
+
+SOURCE_FOLDERS += ./arch/xmega ./src
+
+CC = avr-gcc
+CFLAGS = -g -Wall -Werror -std=c99 -Os
+CFLAGS += -DF_CPU=$(CLOCK) -mmcu=$(DEVICE) -DARCH_OSX=1 -DARCH_XMEGA=2 -DARCH=2
+CFLAGS += -DBASIC_READLINE_ECHO
+CFLAGS +=  -Wl,-u,vfscanf -lscanf_flt -Wl,-u,vfprintf -lprintf_flt -lm
+
+VPATH = $(SOURCE_FOLDERS)
+
+.PHONY: start end all clean run
+
+all: start $(BUILD_FOLDER) $(TARGET) end
+
+SOURCES = $(foreach folder,$(SOURCE_FOLDERS),$(wildcard $(folder)/*.c))
+
+ifneq "$(strip $(SOURCES))" "" 
+	_OBJECTS = $(patsubst %.c,%.o,$(notdir $(SOURCES)))
+endif
+
+OBJECTS = $(patsubst %,$(BUILD_FOLDER)/%,$(_OBJECTS))
+
+INCLUDE_FLAGS += \
+    $(addprefix -I,$(INCLUDE_FOLDERS)) $(addprefix -I,$(SOURCE_FOLDERS)) -Iinclude
+
+define run-cc
+	@ echo "CC $<"
+	@ $(CC) -c $(CFLAGS) $(INCLUDE_FLAGS) $< -o $(BUILD_FOLDER)/$%
+endef
+
+start:
+	@ echo "-- Creating $(TARGET)..."
+
+end:
+	@ echo "done"
+	@ echo ""
+
+clean:
+	@ echo $@
+	@ rm -rf $(BUILD_FOLDER)
+	@ make -C ./t clean	
+
+$(BUILD_FOLDER):
+	@ mkdir -p $@
+
+(%.o): %.c
+	$(run-cc)
+
+$(TARGET): $(BUILD_FOLDER)/($(_OBJECTS))
+	@ echo "LD $@"
+	@ $(CC) $(OBJECTS) $(CFLAGS) $(LDFLAGS) -L$(BUILD_FOLDER) -o $(BUILD_FOLDER)/$@
+	@ avr-objcopy -j .text -j .data -O ihex $(BUILD_FOLDER)/$@ $(BUILD_FOLDER)/$(TARGET).hex
+	@ avr-objcopy -j .eeprom --change-section-lma .eeprom=0 -O ihex $(BUILD_FOLDER)/$@ $(BUILD_FOLDER)/$(TARGET)_eeprom.hex
+
+flash: all
+	@ dfu-programmer $(DEVICE) erase
+	@ dfu-programmer $(DEVICE) flash  $(BUILD_FOLDER)/$(TARGET).hex
+	@ dfu-programmer $(DEVICE) launch
+
+launch:
+	@ dfu-programmer $(DEVICE) launch

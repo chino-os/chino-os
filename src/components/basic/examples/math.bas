@@ -1,0 +1,10 @@
+10 INPUT"ENTER A NUMBER";N
+20 ?"ABS(N)=";ABS(N)
+25 ?"ATN(N)=";ATN(N)
+30 ?"COS(N)=";COS(N)
+40 ?"EXP(N)=";EXP(N)
+50 ?"INT(N)=";INT(N)
+60 ?"LOG(N)=";LOG(N)
+70 ?"SGN(N)=";SGN(N)
+80 ?"SQR(N)=";SQR(N)
+90 ?"TAN(N)=";TAN(N)

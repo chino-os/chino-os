@@ -20,8 +20,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #include <chino/io.h>
+#include <chino/memory.h>
 #include <new>
 #include <stdexcept>
+
+extern "C" int _fltused = 0x9875;
 
 using namespace chino;
 
@@ -98,5 +101,51 @@ extern "C"
         if (io::read(io::get_std_handle(io::std_handles::out), gsl::byte_span(ch)).is_ok())
             return ch;
         return EOF;
+    }
+
+    void *__cdecl malloc(size_t size)
+    {
+        auto ret = memory::heap_alloc(size);
+        if (ret.is_ok())
+            return ret.unwrap();
+        return nullptr;
+    }
+
+    void *__cdecl realloc(void *ptr, size_t size)
+    {
+        auto ret = memory::heap_realloc(ptr, size);
+        if (ret.is_ok())
+            return ret.unwrap();
+        return nullptr;
+    }
+
+    void __cdecl free(void *ptr)
+    {
+        memory::heap_free(ptr);
+    }
+
+    int __cdecl fflush(
+        _Inout_opt_ FILE *_Stream)
+    {
+        return 0;
+    }
+
+    char *__cdecl strdup(
+        _In_opt_z_ char const *_String)
+    {
+        if (_String == nullptr)
+            return nullptr;
+
+        size_t const size = strlen(_String) + 1;
+        char *const memory = static_cast<char *>(malloc(size));
+        if (memory == nullptr)
+            return nullptr;
+
+        strcpy(memory, _String);
+        return memory;
+    }
+
+    void __chkstk()
+    {
     }
 }

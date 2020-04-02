@@ -33,5 +33,6 @@ result<void *, error_code> allocate_pages(threading::kprocess &process, size_t p
 void free_pages(threading::kprocess &process, void *base, size_t pages) noexcept;
 
 result<void *, error_code> heap_alloc(threading::kprocess &process, size_t bytes) noexcept;
+result<void *, error_code> heap_realloc(threading::kprocess &process, void *ptr, size_t bytes) noexcept;
 void heap_free(threading::kprocess &process, void *ptr) noexcept;
 }

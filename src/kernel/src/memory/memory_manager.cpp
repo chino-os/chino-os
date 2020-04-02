@@ -74,7 +74,7 @@ void memory::free_pages(threading::kprocess &process, void *base, size_t pages) 
     return used_page_->free(process, base, pages);
 }
 
-system_memory_info chino::get_system_memory_info() noexcept
+system_memory_info memory::get_system_memory_info() noexcept
 {
     auto total = phy_mem_desc_->pages_count;
     auto free = free_page_list_.pages();

@@ -24,7 +24,7 @@
 #include "result.h"
 #include <chino_config.h>
 
-namespace chino
+namespace chino::memory
 {
 struct system_memory_info
 {
@@ -34,6 +34,7 @@ struct system_memory_info
 };
 
 result<void *, error_code> heap_alloc(size_t bytes) noexcept;
+result<void *, error_code> heap_realloc(void *ptr, size_t bytes) noexcept;
 void heap_free(void *ptr) noexcept;
 system_memory_info get_system_memory_info() noexcept;
 }
