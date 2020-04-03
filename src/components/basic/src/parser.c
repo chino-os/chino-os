@@ -188,7 +188,7 @@ typedef struct
   uint16_t line;
   char* cursor;
   char* char_pointer;
-  data_state state : 2;
+  uint32_t state : 2;
 } data_pointer;
 
 static data_pointer __data;

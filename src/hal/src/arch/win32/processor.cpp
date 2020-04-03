@@ -59,7 +59,7 @@ void setup_stack_check(thread_context_t &context) noexcept
     set_bits(ctx.Dr7, 16, 2, 0b11);
     set_bits(ctx.Dr7, 24, 2, 0b10);
     set_bits(ctx.Dr7, 0, 1, 1);
-    //assert(SetThreadContext(processor_handle[hart], &ctx));
+    assert(SetThreadContext(processor_handle[hart], &ctx));
 }
 }
 

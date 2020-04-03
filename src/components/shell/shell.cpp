@@ -89,6 +89,6 @@ extern "C"
 
 result<void, error_code> chino_start_shell()
 {
-    try_(threading::create_process(shell_main, {}));
+    try_(threading::create_process(shell_main, {}, threading::thread_priority::normal, 1024 * 24));
     return ok();
 }
