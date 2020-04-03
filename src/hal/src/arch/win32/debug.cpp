@@ -207,10 +207,27 @@ extern "C"
         return _Buffer;
     }
 
+    int __cdecl fputs(
+        _In_z_ char const *_Buffer,
+        _Inout_ FILE *_Stream)
+    {
+        if (!_Buffer)
+            return EOF;
+
+        auto handle = tohandle(_Stream);
+        auto len = strlen(_Buffer);
+        if (io::write(handle, { reinterpret_cast<const gsl::byte *>(_Buffer), len }).is_ok())
+            return len;
+        return EOF;
+    }
+
     int __cdecl fclose(
         _Inout_ FILE *_Stream)
     {
-        return 0;
+        auto ret = io::close(tohandle(_Stream));
+        if (ret.is_ok())
+            return 0;
+        return -1;
     }
 
     void _exit(int code)

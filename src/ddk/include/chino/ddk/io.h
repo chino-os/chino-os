@@ -121,6 +121,7 @@ private:
 typedef result<void, error_code> (*driver_add_device_t)(const driver &drv, const device_id &dev_id);
 typedef result<void, error_code> (*driver_attach_device_t)(const driver &drv, device &bottom_dev, std::string_view args);
 typedef result<file *, error_code> (*driver_open_device_t)(const driver &drv, device &dev, std::string_view filename, create_disposition create_disp);
+typedef result<void, error_code> (*driver_close_device_t)(const driver &drv, device &dev, file &file);
 typedef result<size_t, error_code> (*driver_read_device_t)(const driver &drv, device &dev, file &file, gsl::span<gsl::byte> buffer);
 typedef result<void, error_code> (*driver_write_device_t)(const driver &drv, device &dev, file &file, gsl::span<const gsl::byte> buffer);
 
@@ -129,6 +130,7 @@ struct driver_operations
     driver_add_device_t add_device;
     driver_attach_device_t attach_device;
     driver_open_device_t open_device;
+    driver_close_device_t close_device;
     driver_read_device_t read_device;
     driver_write_device_t write_device;
 };
@@ -184,4 +186,5 @@ result<file *, error_code> create_file(device &dev, size_t extension_size) noexc
 result<file *, error_code> open_file(device &dev, access_mask access, std::string_view filename, create_disposition create_disp = create_disposition::open_existing) noexcept;
 result<size_t, error_code> read_file(file &file, gsl::span<gsl::byte> buffer) noexcept;
 result<void, error_code> write_file(file &file, gsl::span<const gsl::byte> buffer) noexcept;
+result<void, error_code> close_file(file &file) noexcept;
 }

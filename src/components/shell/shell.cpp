@@ -53,6 +53,28 @@ void basic_cmd(char argc, char **argv)
 {
     basic_main(argc, argv);
 }
+
+void cat_cmd(char argc, char **argv)
+{
+    if (argc == 2)
+    {
+        FILE *fp = fopen(argv[1], "r");
+        if (!fp)
+        {
+            printf("Cannot open %s\n", argv[1]);
+            return;
+        }
+
+        char buffer[64];
+        while (fgets(buffer, 64, fp))
+            printf(buffer);
+        fclose(fp);
+    }
+    else
+    {
+        printf("Usage cat <filename>\n");
+    }
+}
 }
 
 extern "C"
@@ -60,6 +82,7 @@ extern "C"
     const static_cmd_st static_cmd[] = {
         { "basic", basic_cmd },
         { "lua", lua_cmd },
+        { "cat", cat_cmd },
         { "\0", NULL }
     };
 }

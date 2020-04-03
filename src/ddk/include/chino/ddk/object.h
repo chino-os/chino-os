@@ -146,6 +146,7 @@ namespace wellknown_types
 
 result<object *, error_code> create_object(const object_type &type, size_t body_size) noexcept;
 result<handle_t, error_code> insert_object(object &object, const insert_lookup_object_options &options) noexcept;
+result<void, error_code> close_handle(handle_t handle) noexcept;
 result<object *, error_code> reference_object(handle_t handle) noexcept;
 result<object *, error_code> reference_object(const insert_lookup_object_options &options) noexcept;
 result<object *, error_code> reference_object_partial(const insert_lookup_object_options &options, std::string_view &remaining_name) noexcept;

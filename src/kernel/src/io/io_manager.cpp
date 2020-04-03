@@ -290,6 +290,16 @@ result<void, error_code> io::write_file(file &file, gsl::span<const gsl::byte> b
     return ok();
 }
 
+result<void, error_code> io::close_file(file &file) noexcept
+{
+    auto &drv = file.dev.id.drv();
+    if (!drv.ops.close_device)
+        return ok();
+
+    std::unique_lock lock(file.syncroot);
+    return drv.ops.close_device(drv, file.dev, file);
+}
+
 result<void, error_code> io::alloc_console() noexcept
 {
     auto &ps = threading::current_process();
@@ -342,6 +352,14 @@ result<void, error_code> io::write(handle_t file, gsl::span<const gsl::byte> buf
 {
     try_var(f, ob::reference_object<io::file>(file, wellknown_types::file));
     return write_file(*f, buffer);
+}
+
+result<void, error_code> io::close(handle_t file) noexcept
+{
+    try_var(f, ob::reference_object<io::file>(file, wellknown_types::file));
+    try_(close_file(*f));
+    try_(close_handle(file));
+    return ok();
 }
 
 result<void, error_code> kernel::io_manager_init(gsl::span<const uint8_t> fdt)

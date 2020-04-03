@@ -86,6 +86,20 @@ static result<handle_t, error_code> create_handle(object &object, access_mask de
     return ok(handle_t { uint16_t(entry.second) });
 }
 
+result<void, error_code> ob::close_handle(handle_t handle) noexcept
+{
+    if (handle != handle_t::invalid())
+    {
+        auto &table = current_process().handle_table_;
+        try_var(entry, table.at(handle.value));
+        entry->ob->body().dec_ref();
+        current_process().handle_table_.free(entry);
+        return ok();
+    }
+
+    return err(error_code::invalid_argument);
+}
+
 static result<object_header *, error_code> insert_or_lookup(std::string_view &complete_name, std::string_view &remaining_name, object &root, access_state &access, object_header *insert_ob) noexcept
 {
     // 1. Empty name

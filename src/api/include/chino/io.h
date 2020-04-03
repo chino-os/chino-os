@@ -60,4 +60,5 @@ handle_t get_std_handle(std_handles type) noexcept;
 result<handle_t, error_code> open(const insert_lookup_object_options &options, create_disposition create_disp = create_disposition::open_existing) noexcept;
 result<size_t, error_code> read(handle_t file, gsl::span<gsl::byte> buffer) noexcept;
 result<void, error_code> write(handle_t file, gsl::span<const gsl::byte> buffer) noexcept;
+result<void, error_code> close(handle_t file) noexcept;
 }
