@@ -22,6 +22,7 @@
 #pragma once
 #include "object.h"
 #include "utility.h"
+#include <chino/io.h>
 #include <chino/threading.h>
 #include <gsl/gsl-lite.hpp>
 
@@ -119,7 +120,7 @@ private:
 
 typedef result<void, error_code> (*driver_add_device_t)(const driver &drv, const device_id &dev_id);
 typedef result<void, error_code> (*driver_attach_device_t)(const driver &drv, device &bottom_dev, std::string_view args);
-typedef result<file *, error_code> (*driver_open_device_t)(const driver &drv, device &dev);
+typedef result<file *, error_code> (*driver_open_device_t)(const driver &drv, device &dev, std::string_view filename, create_disposition create_disp);
 typedef result<size_t, error_code> (*driver_read_device_t)(const driver &drv, device &dev, file &file, gsl::span<gsl::byte> buffer);
 typedef result<void, error_code> (*driver_write_device_t)(const driver &drv, device &dev, file &file, gsl::span<const gsl::byte> buffer);
 
@@ -180,7 +181,7 @@ result<device *, error_code> create_device(const driver &drv, device_type type, 
 result<device *, error_code> create_device(std::string_view name, const driver &drv, device_type type, size_t extension_size) noexcept;
 result<file *, error_code> create_file(device &dev, size_t extension_size) noexcept;
 
-result<file *, error_code> open_file(device &dev, access_mask access) noexcept;
+result<file *, error_code> open_file(device &dev, access_mask access, std::string_view filename, create_disposition create_disp = create_disposition::open_existing) noexcept;
 result<size_t, error_code> read_file(file &file, gsl::span<gsl::byte> buffer) noexcept;
 result<void, error_code> write_file(file &file, gsl::span<const gsl::byte> buffer) noexcept;
 }

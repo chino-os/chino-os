@@ -23,6 +23,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <string_view>
 
 namespace chino
 {
@@ -65,4 +66,11 @@ enum class access_mask : uint32_t
     generic_write = 0b100
 };
 DEFINE_ENUM_FLAG_OPERATORS(access_mask);
+
+struct insert_lookup_object_options
+{
+    handle_t root = handle_t::invalid();
+    std::string_view name;
+    access_mask desired_access;
+};
 }

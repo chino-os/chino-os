@@ -1,0 +1,4 @@
+*.o
+microrl_test
+tags
+*.swp

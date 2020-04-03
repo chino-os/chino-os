@@ -41,7 +41,7 @@ private:
 };
 
 result<void, error_code> con_attach_device(const driver &drv, device &bottom_dev, std::string_view args);
-result<file *, error_code> con_open_device(const driver &drv, device &dev);
+result<file *, error_code> con_open_device(const driver &drv, device &dev, std::string_view filename, create_disposition create_disp);
 result<size_t, error_code> con_read_device(const driver &drv, device &dev, file &file, gsl::span<gsl::byte> buffer);
 result<void, error_code> con_write_device(const driver &drv, device &dev, file &file, gsl::span<const gsl::byte> buffer);
 
@@ -54,13 +54,13 @@ EXPORT_DRIVER(con_drv);
 
 result<void, error_code> con_attach_device(const driver &drv, device &bottom_dev, std::string_view args)
 {
-    try_var(file, io::open_file(bottom_dev, access_mask::generic_all));
+    try_var(file, io::open_file(bottom_dev, access_mask::generic_all, {}));
     try_var(con, create_device("console", drv, device_type::console, sizeof(serial_console_dev)));
     new (&con->extension()) serial_console_dev(file);
     return ok();
 }
 
-result<file *, error_code> con_open_device(const driver &drv, device &dev)
+result<file *, error_code> con_open_device(const driver &drv, device &dev, std::string_view filename, create_disposition create_disp)
 {
     return create_file(dev, 0);
 }

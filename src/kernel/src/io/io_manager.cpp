@@ -256,14 +256,14 @@ result<file *, error_code> io::create_file(device &dev, size_t extension_size) n
     return ok(f);
 }
 
-result<file *, error_code> io::open_file(device &dev, access_mask access) noexcept
+result<file *, error_code> io::open_file(device &dev, access_mask access, std::string_view filename, create_disposition create_disp) noexcept
 {
     auto &drv = dev.id.drv();
     if (!drv.ops.open_device)
         return err(error_code::not_supported);
 
     std::unique_lock lock(dev.syncroot);
-    return drv.ops.open_device(drv, dev);
+    return drv.ops.open_device(drv, dev, filename, create_disp);
 }
 
 result<size_t, error_code> io::read_file(file &file, gsl::span<gsl::byte> buffer) noexcept
@@ -298,7 +298,7 @@ result<void, error_code> io::alloc_console() noexcept
     if (ps.stdin_ == handle_t::invalid())
     {
         try_var(dev, ob::reference_object<device>({ .name = "/dev/console", .desired_access = access_mask::generic_all }, wellknown_types::device));
-        try_var(file, open_file(*dev, access_mask::generic_all), { .desired_access = access_mask::generic_all });
+        try_var(file, open_file(*dev, access_mask::generic_all, {}), { .desired_access = access_mask::generic_all });
         try_var(handle, insert_object(*file, { .desired_access = access_mask::generic_all }));
         ps.stdin_ = ps.stdout_ = ps.stderr_ = handle;
     }
@@ -321,6 +321,15 @@ handle_t io::get_std_handle(std_handles type) noexcept
     default:
         return handle_t::invalid();
     }
+}
+
+result<handle_t, error_code> io::open(const insert_lookup_object_options &options, create_disposition create_disp) noexcept
+{
+    std::string_view remaining_name;
+    try_var(dev, reference_object_partial<device>(options, remaining_name, wellknown_types::device));
+    try_var(file, open_file(*dev, options.desired_access, remaining_name, create_disp), { .desired_access = options.desired_access });
+    try_var(handle, insert_object(*file, { .desired_access = options.desired_access }));
+    return ok(handle);
 }
 
 result<size_t, error_code> io::read(handle_t file, gsl::span<gsl::byte> buffer) noexcept

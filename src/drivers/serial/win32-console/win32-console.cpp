@@ -40,7 +40,7 @@ private:
 };
 
 result<void, error_code> con_add_device(const driver &drv, const device_id &dev_id);
-result<file *, error_code> con_open_device(const driver &drv, device &dev);
+result<file *, error_code> con_open_device(const driver &drv, device &dev, std::string_view filename, create_disposition create_disp);
 result<size_t, error_code> con_read_device(const driver &drv, device &dev, file &file, gsl::span<gsl::byte> buffer);
 result<void, error_code> con_write_device(const driver &drv, device &dev, file &file, gsl::span<const gsl::byte> buffer);
 
@@ -62,9 +62,11 @@ result<void, error_code> con_add_device(const driver &drv, const device_id &dev_
     return ok();
 }
 
-result<file *, error_code> con_open_device(const driver &drv, device &dev)
+result<file *, error_code> con_open_device(const driver &drv, device &dev, std::string_view filename, create_disposition create_disp)
 {
-    return create_file(dev, 0);
+    if (filename.empty())
+        return create_file(dev, 0);
+    return err(error_code::invalid_path);
 }
 
 result<size_t, error_code> con_read_device(const driver &drv, device &dev, file &file, gsl::span<gsl::byte> buffer)
@@ -104,7 +106,7 @@ win32_console_dev::win32_console_dev()
 result<size_t, error_code> win32_console_dev::read(gsl::span<gsl::byte> buffer) noexcept
 {
     DWORD read = 0;
-    if (ReadConsoleA(stdin_, buffer.data(), buffer.length_bytes(), &read, nullptr))
+    if (ReadFile(stdin_, buffer.data(), buffer.length_bytes(), &read, nullptr))
         return ok<size_t>(read);
     return err(error_code::io_error);
 }

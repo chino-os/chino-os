@@ -46,6 +46,22 @@ static FILE *tofile(handle_t handle) noexcept
     return reinterpret_cast<FILE *>(handle.value);
 }
 
+static FILE *tofile(result<handle_t, error_code> handle) noexcept
+{
+    if (handle.is_ok())
+        return reinterpret_cast<FILE *>(handle.unwrap().value);
+    else
+        return nullptr;
+}
+
+static handle_t tohandle(FILE *fp) noexcept
+{
+    if (fp)
+        return { reinterpret_cast<uint16_t>(fp) };
+    else
+        return handle_t::invalid();
+}
+
 extern "C"
 {
     int __cdecl puts(char const *_Buffer)
@@ -143,6 +159,62 @@ extern "C"
 
         strcpy(memory, _String);
         return memory;
+    }
+
+    FILE *__cdecl fopen(
+        _In_z_ char const *_FileName,
+        _In_z_ char const *_Mode)
+    {
+        auto handle = io::open({ .name = _FileName, .desired_access = access_mask::generic_all });
+        return tofile(handle);
+    }
+
+    char *__cdecl fgets(
+        _Out_writes_z_(_MaxCount) char *_Buffer,
+        _In_ int _MaxCount,
+        _Inout_ FILE *_Stream)
+    {
+        if (!_Buffer || _MaxCount < 1)
+            return nullptr;
+
+        auto handle = tohandle(_Stream);
+        size_t idx = 0;
+
+        while (idx < _MaxCount - 1)
+        {
+            char ch;
+            auto ret = io::read(handle, gsl::byte_span(ch));
+
+            if (ret.is_ok())
+            {
+                if (ret.unwrap() == 0 || ch == 0)
+                    break;
+                else
+                    _Buffer[idx++] = ch;
+
+                if (ch == '\n')
+                    break;
+            }
+            else
+            {
+                return nullptr;
+            }
+        }
+
+        if (idx == 0)
+            return nullptr;
+        _Buffer[idx] = 0;
+        return _Buffer;
+    }
+
+    int __cdecl fclose(
+        _Inout_ FILE *_Stream)
+    {
+        return 0;
+    }
+
+    void _exit(int code)
+    {
     }
 
     void __chkstk()

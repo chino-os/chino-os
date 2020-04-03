@@ -36,5 +36,11 @@
 			compatible = "win32,console";
 			reg = <0>;
 		};
+
+		fs@0 {
+			compatible = "win32,fs";
+			reg = <0>;
+			win32,path = "share";
+		};
 	};
 };

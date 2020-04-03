@@ -14,4 +14,4 @@ set(BASIC_SRCS src/array.c
 
 add_library(basic STATIC ${BASIC_SRCS})
 target_include_directories(basic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(basic PUBLIC api)
+target_link_libraries(basic PUBLIC api microrl)

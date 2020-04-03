@@ -43,12 +43,21 @@ enum class std_handles
     err
 };
 
+enum class create_disposition
+{
+    create_always = 2,
+    create_new = 1,
+    open_always = 4,
+    open_existing = 3,
+    truncate_existing = 5
+};
+
 machine_desc get_machine_desc() noexcept;
 
 result<void, error_code> alloc_console() noexcept;
 handle_t get_std_handle(std_handles type) noexcept;
 
-result<handle_t, error_code> open(std::string_view path, access_mask access) noexcept;
+result<handle_t, error_code> open(const insert_lookup_object_options &options, create_disposition create_disp = create_disposition::open_existing) noexcept;
 result<size_t, error_code> read(handle_t file, gsl::span<gsl::byte> buffer) noexcept;
 result<void, error_code> write(handle_t file, gsl::span<const gsl::byte> buffer) noexcept;
 }

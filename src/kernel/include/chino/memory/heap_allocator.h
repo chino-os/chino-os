@@ -64,11 +64,15 @@ public:
     result<void *, error_code> allocate(size_t bytes) noexcept
     {
         auto required_bytes = align(bytes, arch::arch_t::ALLOCATE_ALIGNMENT) + sizeof(alloc_header);
-
+        {
+            std::unique_lock lock(lock_);
+            sanity_check();
+        }
         // 1. Allocate from free nodes
         if (avail_bytes_ >= bytes)
         {
             std::unique_lock lock(lock_);
+            sanity_check();
             free_heap_node *prev = nullptr;
             free_heap_node *cnt = head_;
             while (cnt)
@@ -83,6 +87,7 @@ public:
                     auto header = reinterpret_cast<alloc_header *>(cnt->end());
                     header->count = required_bytes;
                     avail_bytes_ -= required_bytes;
+                    sanity_check();
                     return ok((void *)header->body);
                 }
                 // 1.2. Remove
@@ -96,6 +101,7 @@ public:
                     auto header = reinterpret_cast<alloc_header *>(cnt);
                     header->count = count;
                     avail_bytes_ -= count;
+                    sanity_check();
                     return ok((void *)header->body);
                 }
 
@@ -149,7 +155,12 @@ public:
         else
         {
             try_var(new_block, allocate(bytes));
-            std::memcpy(new_block, ptr, std::min(bytes, h->content_len()));
+            {
+                std::unique_lock lock(lock_);
+                sanity_check();
+                std::memcpy(new_block, ptr, std::min(bytes, h->content_len()));
+                sanity_check();
+            }
             free(ptr);
             return ok(new_block);
         }
@@ -164,8 +175,9 @@ private:
     void insert_free_node(void *base, size_t count)
     {
         assert(count >= sizeof(free_heap_node));
-        avail_bytes_ += count;
         std::unique_lock lock(lock_);
+        sanity_check();
+        avail_bytes_ += count;
 
         // 1. No free
         if (!head_)
@@ -174,6 +186,7 @@ private:
             node->count = count;
             node->next = nullptr;
             head_ = node;
+            sanity_check();
         }
         else
         {
@@ -193,6 +206,7 @@ private:
                 prev->next = node;
             else
                 head_ = node;
+            sanity_check();
             merge_node(prev, node, cnt);
         }
     }
@@ -210,9 +224,27 @@ private:
             prev->count += cnt->count;
             prev->next = cnt->next;
         }
+
+        sanity_check();
     }
 
     threading::kprocess &owner() noexcept;
+
+private:
+    void sanity_check()
+    {
+        size_t avail = 0;
+        free_heap_node *cnt = head_;
+        // 2.1. Skip previous
+        while (cnt)
+        {
+            avail += cnt->count;
+            cnt = cnt->next;
+        }
+
+        assert(avail_bytes_ == avail);
+        assert(avail_bytes_ < 102400);
+    }
 
 private:
     std::atomic<size_t> avail_bytes_;

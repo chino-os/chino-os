@@ -3,4 +3,5 @@
 #add_subdirectory(python)
 add_subdirectory(basic)
 add_subdirectory(lua)
+add_subdirectory(readline)
 add_subdirectory(shell)

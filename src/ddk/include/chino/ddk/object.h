@@ -144,17 +144,11 @@ namespace wellknown_types
     extern const object_type file;
 }
 
-struct insert_lookup_object_options
-{
-    handle_t root = handle_t::invalid();
-    std::string_view name;
-    access_mask desired_access;
-};
-
 result<object *, error_code> create_object(const object_type &type, size_t body_size) noexcept;
 result<handle_t, error_code> insert_object(object &object, const insert_lookup_object_options &options) noexcept;
 result<object *, error_code> reference_object(handle_t handle) noexcept;
 result<object *, error_code> reference_object(const insert_lookup_object_options &options) noexcept;
+result<object *, error_code> reference_object_partial(const insert_lookup_object_options &options, std::string_view &remaining_name) noexcept;
 
 template <class T>
 result<T *, error_code> reference_object(handle_t handle, const object_type &type) noexcept
@@ -169,6 +163,15 @@ template <class T>
 result<T *, error_code> reference_object(const insert_lookup_object_options &options, const object_type &type) noexcept
 {
     try_var(ob, reference_object(options));
+    if (ob->header().type == &type)
+        return ok(static_cast<T *>(ob));
+    return err(error_code::not_found);
+}
+
+template <class T>
+result<T *, error_code> reference_object_partial(const insert_lookup_object_options &options, std::string_view &remaining_name, const object_type &type) noexcept
+{
+    try_var(ob, reference_object_partial(options, remaining_name));
     if (ob->header().type == &type)
         return ok(static_cast<T *>(ob));
     return err(error_code::not_found);

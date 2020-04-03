@@ -86,7 +86,7 @@ static result<handle_t, error_code> create_handle(object &object, access_mask de
     return ok(handle_t { uint16_t(entry.second) });
 }
 
-static result<object_header *, error_code> insert_or_lookup(std::string_view &complete_name, std::string_view &remaining_name, directory &root, access_state &access, object_header *insert_ob) noexcept
+static result<object_header *, error_code> insert_or_lookup(std::string_view &complete_name, std::string_view &remaining_name, object &root, access_state &access, object_header *insert_ob) noexcept
 {
     // 1. Empty name
     if (remaining_name.empty())
@@ -100,7 +100,7 @@ static result<object_header *, error_code> insert_or_lookup(std::string_view &co
     if (remaining_name[0] == DIRECTORY_SEPARATOR)
         return err(error_code::invalid_path);
 
-    directory *parent = &root;
+    object *parent = &root;
     while (true)
     {
         // 3. Find component name
@@ -118,60 +118,76 @@ static result<object_header *, error_code> insert_or_lookup(std::string_view &co
         // 4.1. No remaing, lookup or insert
         if (remaining_name.empty())
         {
-            std::unique_lock lock(parent->syncroot());
-            if (insert_ob)
+            if (parent->header().type == &wellknown_types::directory)
             {
-                if (component_name.length() > MAX_OBJECT_NAME)
-                    return err(error_code::invalid_path);
+                auto &parent_dir = static_cast<directory &>(*parent);
+                std::unique_lock lock(parent_dir.syncroot());
+                if (insert_ob)
+                {
+                    if (component_name.length() > MAX_OBJECT_NAME)
+                        return err(error_code::invalid_path);
 
-                std::strncpy(insert_ob->name, component_name.data(), component_name.length());
-                try_(parent->insert_nolock(*insert_ob));
-                return ok(insert_ob);
+                    std::strncpy(insert_ob->name, component_name.data(), component_name.length());
+                    try_(parent_dir.insert_nolock(*insert_ob));
+                    return ok(insert_ob);
+                }
+                else
+                {
+                    return parent_dir.lookup_nolock(component_name);
+                }
             }
             else
             {
-                return parent->lookup_nolock(component_name);
+                return err(error_code::not_supported);
             }
         }
         // 4.2. Find the component obj
         else
         {
-            std::unique_lock lock(parent->syncroot());
-            try_var(component, parent->lookup_nolock(component_name));
+            if (parent->header().type == &wellknown_types::directory)
+            {
+                auto &parent_dir = static_cast<directory &>(*parent);
+                std::unique_lock lock(parent_dir.syncroot());
+                try_var(component, parent_dir.lookup_nolock(component_name));
 
-            // 4.2.1. Lookup in component dir
-            if (component->type == &wellknown_types::directory)
-            {
-                parent = &static_cast<directory &>(component->body());
-                continue;
+                // 4.2.1. Lookup in component dir
+                if (component->type == &wellknown_types::directory)
+                {
+                    parent = &static_cast<directory &>(component->body());
+                    continue;
+                }
+                else
+                {
+                    return ok(component);
+                }
             }
-            else
-            {
-                return err(error_code::not_implemented);
-            }
+
+            return err(error_code::not_found);
         }
     }
 
     return err(error_code::not_implemented);
 }
 
-static result<object_header *, error_code> insert_or_lookup(const insert_lookup_object_options &options, object_header *insert)
+static result<object_header *, error_code> insert_or_lookup(const insert_lookup_object_options &options, std::string_view *remaining_name, object_header *insert)
 {
     if (options.name.empty())
         return err(error_code::invalid_path);
 
     auto complete_name = options.name;
-    auto remaining_name = options.name;
+    std::string_view remaining_name_st;
+    auto &remaining_name_ref = remaining_name ? *remaining_name : remaining_name_st;
+    remaining_name_ref = options.name;
     access_state access { options.desired_access };
-    directory *root;
+    object *root;
 
     if (options.root == handle_t::invalid())
     {
         // Should starts with '/'
-        if (remaining_name[0] == DIRECTORY_SEPARATOR)
+        if (remaining_name_ref[0] == DIRECTORY_SEPARATOR)
         {
             root = &root_directory();
-            remaining_name = remaining_name.substr(1);
+            remaining_name_ref = remaining_name_ref.substr(1);
         }
         else
         {
@@ -181,28 +197,37 @@ static result<object_header *, error_code> insert_or_lookup(const insert_lookup_
     else
     {
         // Should not starts with '/'
-        if (!remaining_name.empty() && remaining_name[0] == DIRECTORY_SEPARATOR)
+        if (!remaining_name_ref.empty() && remaining_name_ref[0] == DIRECTORY_SEPARATOR)
         {
             return err(error_code::invalid_path);
         }
         else
         {
-            try_set(root, reference_object<directory>(options.root, wellknown_types::directory));
+            try_set(root, reference_object(options.root));
         }
     }
 
-    return insert_or_lookup(complete_name, remaining_name, *root, access, insert);
+    try_var(ob, insert_or_lookup(complete_name, remaining_name_ref, *root, access, insert));
+    if (remaining_name_ref.empty() || remaining_name)
+        return ok(ob);
+    return err(error_code::not_found);
 }
 
 static result<handle_t, error_code> create_named_handle(object &object, const insert_lookup_object_options &options) noexcept
 {
     access_state access { options.desired_access };
-    try_(insert_or_lookup(options, &object.header()));
+    try_(insert_or_lookup(options, nullptr, &object.header()));
     return create_handle(object, access.desired_access);
+}
+
+result<object *, error_code> ob::reference_object_partial(const insert_lookup_object_options &options, std::string_view &remaining_name) noexcept
+{
+    try_var(header, insert_or_lookup(options, &remaining_name, nullptr));
+    return &header->body();
 }
 
 result<object *, error_code> ob::reference_object(const insert_lookup_object_options &options) noexcept
 {
-    try_var(header, insert_or_lookup(options, nullptr));
+    try_var(header, insert_or_lookup(options, nullptr, nullptr));
     return &header->body();
 }
