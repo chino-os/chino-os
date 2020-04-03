@@ -7,8 +7,6 @@
 #include <stdbool.h>
 #include <time.h>
 
-// #include <readline/readline.h>
-
 #include "arch.h"
 #include "error.h"
 #include "tokenizer.h"
@@ -114,13 +112,13 @@ typedef union
 
 typedef struct {
   token token;
-  basic_function_type type : 3;
-  size_t nr_arguments : 3;
-  kind kind_1 : 1;
-  kind kind_2 : 1;
-  kind kind_3 : 1;
-  kind kind_4 : 1;
-  kind kind_5 : 1;
+  uint32_t type : 3;
+  uint32_t nr_arguments : 3;
+  uint32_t kind_1 : 1;
+  uint32_t kind_2 : 1;
+  uint32_t kind_3 : 1;
+  uint32_t kind_4 : 1;
+  uint32_t kind_5 : 1;
   basic_function_union function; 
 } basic_function;
 
@@ -170,6 +168,9 @@ static size_t __memory_size;
 static size_t __stack_size;
 static size_t __program_size;
 static size_t __stack_p;
+
+basic_putchar __putch = putchar;
+basic_getchar __getch = getchar;
 
 bool __RUNNING = false;
 bool __REPL = true;
@@ -492,7 +493,7 @@ str_chr(basic_type* n, basic_type* rv)
 {
   rv->kind = kind_string;
   char *chr = malloc(2);
-  snprintf(&chr, 2, "%c", (int) n->value.number);
+  snprintf(chr, 2, "%c", (int) n->value.number);
   rv->value.string = chr;
   rv->mallocd = true;
   return 0;
@@ -859,7 +860,7 @@ do_print(basic_type* rv)
 
   if ( sym == T_EOF || sym == T_COLON ) // Just a print stm
   {
-    putchar('\n');
+    __putch('\n');
   }
   else
   {
@@ -889,11 +890,11 @@ do_print(basic_type* rv)
         if (sym == T_COMMA)
         {
           accept(T_COMMA);
-          putchar('\t');
+          __putch('\t');
         }
         else
         {
-            putchar('\n');
+          __putch('\n');
         }
     }
   }
@@ -908,7 +909,7 @@ do_spc(basic_type* n, basic_type* rv)
 {
   for(size_t i=0; i<n->value.number;i++)
   {
-      putchar(' ');
+    __putch(' ');
   }
   rv->kind = kind_numeric;
   rv->value.number = 0;
@@ -920,7 +921,7 @@ do_tab(basic_type* n, basic_type* rv)
 {
   for(size_t i=0; i<n->value.number;i++)
   {
-      putchar(' ');
+    __putch(' ');
   }
   rv->kind = kind_numeric;
   rv->value.number = 0;
@@ -1609,7 +1610,7 @@ _dir_cb(char* name, size_t size, bool label, void* context)
   if (label) {
     printf("-- %-13s --\n", name);
   } else {
-    printf("> %-8s : %6d\n", name, (int)size);
+    printf("> %-8s : %6ld\n", name, (int)size);
   }
 }  
 
@@ -1986,7 +1987,7 @@ do_get(basic_type* rv)
   accept(T_VARIABLE_STRING);
 
   char c[4] = "";
-    int ch = getchar();
+    int ch = __getch();
     if ( ch == 10 ) {
       ch = 13;
     } 
@@ -1999,7 +2000,7 @@ do_get(basic_type* rv)
 int do_sleep(basic_type* delay, basic_type* rv)
 {
   int milliseconds = delay->value.number;
- 
+
   struct timespec ts;
   ts.tv_sec = milliseconds / 1000;
   ts.tv_nsec = (milliseconds % 1000) * 1000000;
@@ -2019,6 +2020,7 @@ parse_line(void)
     {
       break;
     }
+
   }
 }
 
@@ -2175,6 +2177,13 @@ void basic_init(size_t memory_size, size_t stack_size)
   __data.state = data_state_init;
 
   arch_init();
+}
+
+  void
+basic_register_io(basic_putchar putch, basic_getchar getch)
+{
+  __putch = putch;
+  __getch = getch;
 }
 
 
@@ -2538,7 +2547,6 @@ str_str(basic_type* number, basic_type* rv)
 
 void dump_var(variable* var, void* context)
 {
-  //variable_dump(var);
 }
 
 int

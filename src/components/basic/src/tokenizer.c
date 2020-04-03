@@ -151,7 +151,7 @@ token tokenizer_get_next_token(void)
       l++;
       tokenizer_next_p++;
     }
-    char *number = alloca(l + 1);
+    char* number = alloca(l+1);
     memset(number, 0, l+1);
     // strlcpy(number, tokenizer_p, sizeof(number) );
     strncpy(number, tokenizer_p, l );
