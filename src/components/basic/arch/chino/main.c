@@ -38,6 +38,7 @@ static void repl(void)
     microrl_set_newline_callback(&rl, repl_line);
     rl.prompt_str = "\033[32m>\033[0m ";
     rl.prompt_len = 2;
+    quit = false;
 
     puts(" _               _      ");
     puts("| |__   __ _ ___(_) ___ ");

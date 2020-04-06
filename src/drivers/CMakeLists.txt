@@ -1,4 +1,4 @@
-﻿cmake_minimum_required (VERSION 3.8)
+﻿cmake_minimum_required (VERSION 3.13)
 
 add_library(drivers STATIC)
 target_sources(drivers PRIVATE dummy.cpp)

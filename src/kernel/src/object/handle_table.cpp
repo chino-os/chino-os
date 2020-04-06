@@ -33,5 +33,5 @@ result<handle_segment *, error_code> handle_segment::init(size_t entries)
     auto bytes = sizeof(handle_segment) + EntrySize * entries;
     try_var(base, memory::heap_alloc(kernel::kernel_process(), bytes));
     new (base) handle_segment(entries);
-    return reinterpret_cast<handle_segment *>(base);
+    return ok(reinterpret_cast<handle_segment *>(base));
 }

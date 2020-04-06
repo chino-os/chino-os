@@ -38,14 +38,14 @@ static_object<kprocess> kernel_process_(wellknown_types::process);
 static_object<kthread> kernel_system_thread_(wellknown_types::thread);
 
 alignas(STACK_ALIGNMENT) uintptr_t kernel_sys_thread_stack_[KERNEL_STACK_SIZE / sizeof(uintptr_t)];
-std::atomic<pid_t> next_pid_ = 0;
+std::atomic<threading::pid_t> next_pid_ = 0;
 std::atomic<tid_t> next_tid_ = 0;
 }
 
 [[noreturn]] static void user_thread_thunk(thread_start_t start, void *arg) noexcept;
 [[noreturn]] static void user_process_thunk(chino_startup_t start) noexcept;
 
-pid_t next_pid() noexcept
+threading::pid_t next_pid() noexcept
 {
     return next_pid_++;
 }
@@ -87,7 +87,7 @@ void kprocess::detach_thread(kthread &thread) noexcept
 void kthread::init_stack(gsl::span<uintptr_t> stack, thread_start_t start, void *arg) noexcept
 {
     stack_ = stack;
-    arch_t::init_thread_context(context_, stack, (kernel::thread_thunk_t)user_thread_thunk, start, arg);
+    arch_t::init_thread_context(context_, stack, (kernel::thread_thunk_t)user_thread_thunk, (void *)start, arg);
 }
 
 void user_thread_thunk(thread_start_t start, void *arg) noexcept
@@ -131,7 +131,7 @@ result<handle_t, error_code> threading::create_process(chino_startup_t start, st
     th->tid_ = next_tid();
     th->priority_ = prioriy;
     th->stack_ = { reinterpret_cast<uintptr_t *>(stack), stack_size / sizeof(uintptr_t) };
-    arch_t::init_thread_context(th->context_, th->stack_, (kernel::thread_thunk_t)user_process_thunk, start, nullptr);
+    arch_t::init_thread_context(th->context_, th->stack_, (kernel::thread_thunk_t)user_process_thunk, (void *)start, nullptr);
 
     // 3. Attach thread
     ps->attach_new_thread(*th);

@@ -80,7 +80,7 @@ namespace details
 
     private:
         pool_segment(size_t entries) noexcept
-            : entries_(entries), next(nullptr), free_head_(reinterpret_cast<entry_header *>(body))
+            : entries_(entries), next(nullptr), free_head_(reinterpret_cast<entry_header *>(body_))
         {
             // init entry headers
             entry_header *next = nullptr;
@@ -159,7 +159,7 @@ private:
 
         // 2. Create new segment
         {
-            try_var(seg, segment_t::init(process_, entries_per_segment_));
+            try_var(seg, segment_t::init(entries_per_segment_));
 
             std::unique_lock lock(lock_);
             seg->next = head_;

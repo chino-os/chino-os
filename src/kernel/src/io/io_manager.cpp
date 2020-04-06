@@ -32,11 +32,14 @@ using namespace chino::ob;
 using namespace chino::io;
 using namespace std::string_view_literals;
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
 #pragma comment(linker, "/merge:.CHDRV=.rdata")
 
 __declspec(allocate(".CHDRV$A")) const ::chino::io::driver *drivers_begin_[] = { nullptr };
 __declspec(allocate(".CHDRV$Z")) const ::chino::io::driver *drivers_end_[] = { nullptr };
+#elif defined(__GNUC__)
+extern const ::chino::io::driver *drivers_begin_[];
+extern const ::chino::io::driver *drivers_end_[];
 #else
 #error "Unsupported compiler"
 #endif
@@ -115,7 +118,7 @@ static result<device_id, error_code> create_device_id(const device_descriptor &n
 static result<std::string_view, error_code> make_dev_prefix(device_type type) noexcept
 {
     if (size_t(type) < size_t(device_type::COUNT))
-        return dev_type_prefixes_[size_t(type)];
+        return ok(dev_type_prefixes_[size_t(type)]);
     return err(error_code::invalid_argument);
 }
 
@@ -180,6 +183,8 @@ static result<void, error_code> setup_console() noexcept
             }
         }
     }
+
+    return err(error_code::argument_null);
 }
 
 machine_desc io::get_machine_desc() noexcept
@@ -193,7 +198,7 @@ result<void, error_code> io::probe_device(const device_descriptor &node, device 
     {
         auto dev_id_r = create_device_id(node, parent);
         if (dev_id_r.is_err())
-            return dev_id_r.unwrap_err();
+            return err(dev_id_r.unwrap_err());
         auto dev_id = dev_id_r.unwrap();
         try_(dev_id.drv().ops.add_device(dev_id.drv(), dev_id));
     }
@@ -308,7 +313,7 @@ result<void, error_code> io::alloc_console() noexcept
     if (ps.stdin_ == handle_t::invalid())
     {
         try_var(dev, ob::reference_object<device>({ .name = "/dev/console", .desired_access = access_mask::generic_all }, wellknown_types::device));
-        try_var(file, open_file(*dev, access_mask::generic_all, {}), { .desired_access = access_mask::generic_all });
+        try_var(file, open_file(*dev, access_mask::generic_all, {}));
         try_var(handle, insert_object(*file, { .desired_access = access_mask::generic_all }));
         ps.stdin_ = ps.stdout_ = ps.stderr_ = handle;
     }
@@ -337,7 +342,7 @@ result<handle_t, error_code> io::open(const insert_lookup_object_options &option
 {
     std::string_view remaining_name;
     try_var(dev, reference_object_partial<device>(options, remaining_name, wellknown_types::device));
-    try_var(file, open_file(*dev, options.desired_access, remaining_name, create_disp), { .desired_access = options.desired_access });
+    try_var(file, open_file(*dev, options.desired_access, remaining_name, create_disp));
     try_var(handle, insert_object(*file, { .desired_access = options.desired_access }));
     return ok(handle);
 }

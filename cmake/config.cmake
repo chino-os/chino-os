@@ -3,3 +3,10 @@ set(CHINO_PAGE_SIZE "4096" CACHE STRING "Page Size")
 set(CHINO_KERNEL_STACK_SIZE "4096" CACHE STRING "Kernel Stack Size")
 set(CHINO_IDLE_STACK_SIZE "4096" CACHE STRING "Idle thread Stack Size")
 set(CHINO_STACK_ALIGNMENT "16" CACHE STRING "Thread Stack Alignment")
+
+# Drvers
+## serial
+option(CHINO_DRV_WIN32_CONSOLE OFF)
+
+## fs
+option(CHINO_DRV_WIN32_FS OFF)

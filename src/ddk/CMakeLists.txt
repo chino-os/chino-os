@@ -1,4 +1,4 @@
-﻿cmake_minimum_required (VERSION 3.8)
+﻿cmake_minimum_required (VERSION 3.13)
 
 configure_file(include/chino/chino_config.h.in chino_config.h)
 

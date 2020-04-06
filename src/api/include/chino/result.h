@@ -20,6 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
+#include <functional>
 #include <optional>
 #include <string_view>
 #include <type_traits>
@@ -29,11 +30,11 @@ namespace chino
 {
 [[noreturn]] void panic(std::string_view message) noexcept;
 
-#define try_(x)                    \
-    {                              \
-        auto v = (x);              \
-        if (!v.is_ok())            \
-            return v.unwrap_err(); \
+#define try_(x)                                \
+    {                                          \
+        auto v = (x);                          \
+        if (!v.is_ok())                        \
+            return chino::err(v.unwrap_err()); \
     }
 
 #define try_var(name, x)                          \
@@ -43,16 +44,16 @@ namespace chino
         if (v.is_ok())                            \
             name = v.unwrap();                    \
         else                                      \
-            return v.unwrap_err();                \
+            return chino::err(v.unwrap_err());    \
     }
 
-#define try_set(name, x)           \
-    {                              \
-        auto v = (x);              \
-        if (v.is_ok())             \
-            name = v.unwrap();     \
-        else                       \
-            return v.unwrap_err(); \
+#define try_set(name, x)                       \
+    {                                          \
+        auto v = (x);                          \
+        if (v.is_ok())                         \
+            name = v.unwrap();                 \
+        else                                   \
+            return chino::err(v.unwrap_err()); \
     }
 
 template <class T>

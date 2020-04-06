@@ -38,13 +38,13 @@ struct list_node
 {
     using list_t = list<TOwner, TValue, OwnerOffset>;
 
-    list_t *list;
+    list_t *l;
     list_node *prev;
     list_node *next;
     TValue value;
 
     constexpr list_node() noexcept
-        : list(nullptr), prev(nullptr), next(nullptr) {}
+        : l(nullptr), prev(nullptr), next(nullptr) {}
 
     TOwner *owner() const noexcept
     {
@@ -58,12 +58,12 @@ struct list_node<TOwner, void, OwnerOffset>
 {
     using list_t = list<TOwner, void, OwnerOffset>;
 
-    list_t *list;
+    list_t *l;
     list_node *prev;
     list_node *next;
 
     constexpr list_node() noexcept
-        : list(nullptr), prev(nullptr), next(nullptr) {}
+        : l(nullptr), prev(nullptr), next(nullptr) {}
 
     TOwner *owner() const noexcept
     {
@@ -83,8 +83,8 @@ public:
 
     void add_first_nolock(node_t *node) noexcept
     {
-        assert(!node->list);
-        node->list = this;
+        assert(!node->l);
+        node->l = this;
         node->prev = nullptr;
         if (head_)
         {
@@ -108,8 +108,8 @@ public:
     void add_last(node_t *node) noexcept
     {
         std::unique_lock lock(lock_);
-        assert(!node->list);
-        node->list = this;
+        assert(!node->l);
+        node->l = this;
         node->next = nullptr;
         if (tail_)
         {
@@ -127,8 +127,8 @@ public:
     void remove(node_t *node) noexcept
     {
         std::unique_lock lock(lock_);
-        assert(node->list == this);
-        node->list = nullptr;
+        assert(node->l == this);
+        node->l = nullptr;
         if (node->prev)
             node->prev->next = node->next;
         if (node->next)
@@ -150,8 +150,8 @@ public:
         else
         {
             auto prev = offset->prev;
-            assert(!node->list);
-            node->list = this;
+            assert(!node->l);
+            node->l = this;
             node->prev = prev;
             node->next = offset;
             if (prev)

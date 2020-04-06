@@ -28,11 +28,13 @@
 
 namespace chino::io
 {
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
 #pragma section(".CHDRV$A", long, read) // Begin drivers
 #pragma section(".CHDRV$C", long, read) // Drivers
 #pragma section(".CHDRV$Z", long, read) // End drivers
 #define EXPORT_DRIVER(x) __declspec(allocate(".CHDRV$C")) const ::chino::io::driver *CHINO_CONCAT(_drv_, __COUNTER__) = &x
+#elif defined(__GNUC__)
+#define EXPORT_DRIVER(x) __attribute__((unused, section(".chdrv"))) const ::chino::io::driver *CHINO_CONCAT(_drv_, __COUNTER__) = &x
 #else
 #error "Unsupported compiler"
 #endif

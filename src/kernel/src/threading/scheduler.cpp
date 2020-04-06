@@ -112,7 +112,7 @@ void scheduler::on_thread_exit(kthread &thread) noexcept
 {
     sched_lock lock;
     auto &sched_entry = thread.sched_entry_;
-    sched_entry.list->remove(&sched_entry);
+    sched_entry.l->remove(&sched_entry);
     thread.owner_->detach_thread(thread);
     destroy_list_.add_last(&thread.sched_entry_);
     if (current_thread_ == &thread)

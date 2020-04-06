@@ -26,7 +26,7 @@
 #include <chino/ddk/utility.h>
 #include <chino/memory/memory_manager.h>
 #include <chino/threading.h>
-#include <memory>
+#include <cstring>
 #include <mutex>
 
 namespace chino::memory

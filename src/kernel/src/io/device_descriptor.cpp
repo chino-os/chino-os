@@ -22,6 +22,7 @@
 #include <chino/ddk/io.h>
 #include <chino/io.h>
 #include <chino/io/io_manager.h>
+#include <cstring>
 #include <libfdt.h>
 
 using namespace chino;

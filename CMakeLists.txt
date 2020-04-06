@@ -1,5 +1,6 @@
-﻿cmake_minimum_required(VERSION 3.8)
+﻿cmake_minimum_required (VERSION 3.13)
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 project("chino")
 
 include(cmake/conan.cmake)
@@ -34,7 +35,8 @@ if (MSVC)
     string(REGEX REPLACE "/GR" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
 else()
-    add_compile_options(-Wno-multichar)
+    add_compile_options(-Wno-multichar -fno-exceptions)
+    set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -fno-rtti")
 endif()
 
 if (NOT CHINO_BOARD)

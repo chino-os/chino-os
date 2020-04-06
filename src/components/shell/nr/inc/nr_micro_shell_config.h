@@ -80,7 +80,11 @@ extern "C"
 // #define NR_SHELL_USING_EXPORT_CMD
 
 /* If you use RTOS, you may need to do some special processing for printf(). */
+#ifdef _MSC_VER
 #define shell_printf(fmt, ...) printf(fmt, __VA_ARGS__);
+#else
+#define shell_printf(fmt, ...) printf(fmt __VA_OPT__(, ) __VA_ARGS__);
+#endif
 #define ansi_show_char(x) putchar(x)
 
 #ifdef __cplusplus

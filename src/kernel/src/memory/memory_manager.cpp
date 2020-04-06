@@ -49,7 +49,7 @@ result<void, error_code> kernel::memory_manager_init(const physical_memory_desc 
     free_page_list_.init(desc);
     // 2. Calc initial memory usage
     auto phy_mem_desc_bytes = sizeof(physical_memory_desc) + sizeof(physical_memory_run) * (desc.runs_count - 1);
-    auto used_page_bytes = sizeof(used_page_bitmap) + sizeof(pid_t) * (desc.pages_count - 1);
+    auto used_page_bytes = sizeof(used_page_bitmap) + sizeof(threading::pid_t) * (desc.pages_count - 1);
     auto inital_pages_num = ceil_div(phy_mem_desc_bytes + used_page_bytes, PAGE_SIZE);
     // 3. Allocate from free list
     try_var(inital_pages, free_page_list_.allocate(inital_pages_num));

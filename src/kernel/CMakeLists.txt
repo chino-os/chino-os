@@ -1,4 +1,4 @@
-﻿cmake_minimum_required (VERSION 3.8)
+﻿cmake_minimum_required (VERSION 3.13)
 
 set(SRCS src/entry.cpp
          src/diagnostic/logging.cpp
@@ -24,4 +24,7 @@ if (WIN32)
     set_target_properties(kernel PROPERTIES LINK_FLAGS /SUBSYSTEM:WINDOWS)
     target_link_options(kernel PUBLIC /ENTRY:chinoStartup /NODEFAULTLIB)
     target_link_libraries(kernel PRIVATE winres)
+else()
+    target_link_options(kernel PUBLIC -e chinoStartup)
+    #target_link_libraries(kernel PRIVATE -Wl,-start-group c gcc stdc++ -Wl,-end-group)
 endif()

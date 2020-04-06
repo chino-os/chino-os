@@ -109,8 +109,8 @@ extern "C"
 #define NR_ANSI_SHOW_COURSER "\033[?25h"
 
 #define NR_ANSI_SET_FONT(cmd) ((const char *)"\033["##cmd##"I")
-#define NR_ANSI_CLR_R_NCHAR(cmd) ((const char *)"\033["## #cmd##"X")
-#define NR_ANSI_CLR_R_MV_L_NCHAR(cmd) ((const char *)"\033["## #cmd##"P")
+#define NR_ANSI_CLR_R_NCHAR(cmd) ((const char *)"\033["#cmd"X")
+#define NR_ANSI_CLR_R_MV_L_NCHAR(cmd) ((const char *)"\033["#cmd"P")
 
 /** move course code */
 #define NR_ANSI_MV_L_N(n) ((const char *)"\033["## #n##"D")

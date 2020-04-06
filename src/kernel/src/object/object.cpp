@@ -45,7 +45,7 @@ result<object *, error_code> ob::create_object(const object_type &type, size_t b
     try_var(base, kernel::kheap_alloc(sizeof(object_header) + body_size));
     auto header = reinterpret_cast<object_header *>(base);
     new (header) object_header(object_attributes::none, type);
-    return reinterpret_cast<object *>(reinterpret_cast<uintptr_t>(header) + sizeof(object_header));
+    return ok(reinterpret_cast<object *>(reinterpret_cast<uintptr_t>(header) + sizeof(object_header)));
 }
 
 result<handle_t, error_code> ob::insert_object(object &object, const insert_lookup_object_options &options) noexcept
@@ -71,7 +71,7 @@ result<handle_t, error_code> ob::insert_object(object &object, const insert_look
 result<object *, error_code> ob::reference_object(handle_t handle) noexcept
 {
     try_var(entry, current_process().handle_table_.at(handle.value));
-    return &entry->ob->body();
+    return ok(&entry->ob->body());
 }
 
 static result<handle_t, error_code> create_handle(object &object, access_mask desired_access) noexcept
@@ -237,11 +237,11 @@ static result<handle_t, error_code> create_named_handle(object &object, const in
 result<object *, error_code> ob::reference_object_partial(const insert_lookup_object_options &options, std::string_view &remaining_name) noexcept
 {
     try_var(header, insert_or_lookup(options, &remaining_name, nullptr));
-    return &header->body();
+    return ok(&header->body());
 }
 
 result<object *, error_code> ob::reference_object(const insert_lookup_object_options &options) noexcept
 {
     try_var(header, insert_or_lookup(options, nullptr, nullptr));
-    return &header->body();
+    return ok(&header->body());
 }
