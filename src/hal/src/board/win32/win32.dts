@@ -42,5 +42,10 @@
 			reg = <0>;
 			win32,path = "share";
 		};
+
+		netif@0 {
+			compatible = "win32,netif";
+			reg = <0>;
+		};
 	};
 };

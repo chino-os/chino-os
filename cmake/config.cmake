@@ -10,3 +10,6 @@ option(CHINO_DRV_WIN32_CONSOLE OFF)
 
 ## fs
 option(CHINO_DRV_WIN32_FS OFF)
+
+## netif
+option(CHINO_DRV_WIN32_NETIF OFF)

@@ -12,10 +12,25 @@ if (APPLE)
 else()
     conan_add_remote(NAME sunnycase INDEX 0 URL https://conan.sunnycase.moe)
 endif()
-conan_cmake_run(CONANFILE conanfile.txt
-                BASIC_SETUP CMAKE_TARGETS
-                SETTINGS compiler.cppstd=20
-                BUILD missing)
+
+if (NOT CHINO_BOARD)
+    message(FATAL "Please specify CHINO_BOARD")
+else()
+    add_definitions(-DCHINO_BOARD=${CHINO_BOARD})
+    add_definitions(-DCHINO_BOARD_HEADER=<chino/board/${CHINO_BOARD}/board.h>)
+endif()
+
+if ("${CHINO_BOARD}" STREQUAL "win32")
+    conan_cmake_run(CONANFILE conanfile-win32.txt
+                    BASIC_SETUP CMAKE_TARGETS
+                    SETTINGS compiler.cppstd=20
+                    BUILD missing)
+else()
+    conan_cmake_run(CONANFILE conanfile.txt
+                    BASIC_SETUP CMAKE_TARGETS
+                    SETTINGS compiler.cppstd=20
+                    BUILD missing)
+endif()
 
 set(THIRD_PARTY ${CMAKE_CURRENT_LIST_DIR}/third_party)
 set(TOOLS_DIR ${CMAKE_CURRENT_LIST_DIR}/tools)
@@ -37,13 +52,6 @@ if (MSVC)
 else()
     add_compile_options(-Wno-multichar -fno-exceptions)
     set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -fno-rtti")
-endif()
-
-if (NOT CHINO_BOARD)
-    message(FATAL "Please specify CHINO_BOARD")
-else()
-    add_definitions(-DCHINO_BOARD=${CHINO_BOARD})
-    add_definitions(-DCHINO_BOARD_HEADER=<chino/board/${CHINO_BOARD}/board.h>)
 endif()
 
 include(cmake/config.cmake)

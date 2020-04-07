@@ -25,6 +25,7 @@
 #include <sdkddkver.h>
 
 // clang-format off
+#include <WinSock2.h>
 #include <Windows.h>
 #include <WinUser.h>
 // clang-format on
