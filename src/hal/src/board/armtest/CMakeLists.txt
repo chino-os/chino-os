@@ -2,7 +2,7 @@
 
 #DTC_COMPILE_DTB(DTB win32.dts)
 
-set(SRCS startup.cpp)
+set(SRCS ../../arch/arm/startup.cpp)
 
 target_sources(hal PRIVATE ${SRCS})
 

@@ -1,4 +1,8 @@
-set(DTC_EXECUTABLE "${TOOLS_DIR}/win32/dtc.exe")
+if (WIN32)
+  set(DTC_EXECUTABLE "${TOOLS_DIR}/win32/dtc.exe")
+else()
+  set(DTC_EXECUTABLE "dtc")
+endif()
 
 function(DTC_COMPILE_DTB Name)
   set(DTC_OUTPUTS)

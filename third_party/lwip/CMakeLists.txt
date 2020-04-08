@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.7)
 project(lwIP)
 
 set(LWIP_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(LWIP_INCLUDE_DIRS ${LWIP_DIR}/src/include ${LWIP_DIR}/src/chino)
 include(src/Filelists.cmake)
 
 # Package generation
@@ -16,5 +17,5 @@ set(CPACK_SOURCE_PACKAGE_FILE_NAME "lwip-${LWIP_VERSION_MAJOR}.${LWIP_VERSION_MI
 include(CPack)
 
 # Target for package generation
-add_custom_target(dist COMMAND ${CMAKE_MAKE_PROGRAM} package_source)
-add_dependencies(dist lwipdocs)
+# add_custom_target(dist COMMAND ${CMAKE_MAKE_PROGRAM} package_source)
+# add_dependencies(dist lwipdocs)

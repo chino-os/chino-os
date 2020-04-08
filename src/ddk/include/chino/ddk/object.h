@@ -21,6 +21,7 @@
 // SOFTWARE.
 #pragma once
 #include <atomic>
+#include <chino/chinodef.h>
 #include <chino/ddk/list.h>
 #include <chino/error.h>
 #include <chino/result.h>

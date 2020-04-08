@@ -44,46 +44,12 @@ enum class thread_priority : uint32_t
 };
 
 inline constexpr size_t THREAD_PRIORITY_COUNT = 5;
+inline constexpr size_t DEFAULT_MUTEX_SPIN_COUNT = 500;
 
 enum class create_thread_flags : uint32_t
 {
     none = 0,
     create_suspend = 1
-};
-
-class sched_spinlock
-{
-public:
-    constexpr sched_spinlock() noexcept
-        : taken_() {}
-
-    sched_spinlock(sched_spinlock &) = delete;
-    sched_spinlock &operator=(sched_spinlock &) = delete;
-
-    bool try_lock() noexcept;
-    void lock() noexcept;
-    void unlock() noexcept;
-
-private:
-    std::atomic_flag taken_;
-};
-
-class irq_spinlock
-{
-public:
-    constexpr irq_spinlock() noexcept
-        : taken_(), irq_state_(0) {}
-
-    irq_spinlock(sched_spinlock &) = delete;
-    irq_spinlock &operator=(sched_spinlock &) = delete;
-
-    bool try_lock() noexcept;
-    void lock() noexcept;
-    void unlock() noexcept;
-
-private:
-    std::atomic_flag taken_;
-    uintptr_t irq_state_;
 };
 
 typedef uint32_t (*chino_startup_t)();
@@ -98,4 +64,9 @@ result<handle_t, error_code> create_thread(thread_start_t start, void *arg, thre
     create_thread_flags flags = create_thread_flags::none, int32_t stack_size = DEFAULT_STACK_SIZE);
 
 [[noreturn]] void exit_thread(uint32_t exit_code);
+
+result<handle_t, error_code> create_mutex(uint32_t spin_count = DEFAULT_MUTEX_SPIN_COUNT, bool recursive = false) noexcept;
+result<void, error_code> release_mutex(handle_t handle) noexcept;
+
+result<void, error_code> wait(handle_t handle) noexcept;
 }

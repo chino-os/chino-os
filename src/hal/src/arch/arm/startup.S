@@ -19,21 +19,42 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#pragma once
-#include "error.h"
-#include "result.h"
 
-namespace chino::memory
-{
-struct system_memory_info
-{
-    uint32_t page_size;
-    uint32_t used_pages;
-    uint32_t free_pages;
-};
+.syntax unified
+.fpu softvfp
+.thumb
 
-result<void *, error_code> heap_alloc(size_t bytes) noexcept;
-result<void *, error_code> heap_realloc(void *ptr, size_t bytes) noexcept;
-void heap_free(void *ptr) noexcept;
-system_memory_info get_system_memory_info() noexcept;
-}
+.global Reset_Handler
+
+Reset_Handler:
+  /* Copy the data segment initializers from flash to SRAM */  
+  movs  r1, #0
+  b  LoopCopyDataInit
+
+CopyDataInit:
+  ldr  r3, =_sidata
+  ldr  r3, [r3, r1]
+  str  r3, [r0, r1]
+  adds  r1, r1, #4
+    
+LoopCopyDataInit:
+  ldr  r0, =_sdata
+  ldr  r3, =_edata
+  adds  r2, r0, r1
+  cmp  r2, r3
+  bcc  CopyDataInit
+  ldr  r2, =_sbss
+  b  LoopFillZerobss
+/* Zero fill the bss segment. */  
+FillZerobss:
+  movs  r3, #0
+  str  r3, [r2], #4
+    
+LoopFillZerobss:
+  ldr  r3, = _ebss
+  cmp  r2, r3
+  bcc  FillZerobss
+/* Call the application's entry point.*/
+  bl  chinoStartup
+  bx  lr    
+.size  Reset_Handler, .-Reset_Handler

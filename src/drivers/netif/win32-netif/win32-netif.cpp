@@ -22,6 +22,7 @@
 #include <chino/arch/win32/target.h>
 #include <chino/ddk/io.h>
 #include <pcap.h>
+#include <ulog.h>
 
 using namespace chino;
 using namespace chino::io;
@@ -31,19 +32,20 @@ namespace
 class win32_netif_dev : public device_extension
 {
 public:
-    win32_netif_dev(std::string_view root);
+    win32_netif_dev(pcap_if_t *pcap_if)
+        : pcap_if_(pcap_if) {}
 
     result<file *, error_code> open(std::string_view filename, create_disposition create_disp) noexcept;
     result<size_t, error_code> read(file &file, gsl::span<gsl::byte> buffer) noexcept;
     result<void, error_code> write(file &file, gsl::span<const gsl::byte> buffer) noexcept;
 
 private:
-    std::string_view root_;
+    pcap_if_t *pcap_if_;
 };
 
 struct win32_netif_file : public file_extension
 {
-    HANDLE handle;
+    pcap_t *pcap;
 };
 
 result<void, error_code> netif_add_device(const driver &drv, const device_id &dev_id);
@@ -70,10 +72,16 @@ result<void, error_code> netif_add_device(const driver &drv, const device_id &de
 
     if (pcap_findalldevs_ex(PCAP_SRC_IF_STRING, nullptr, &alldevs, errbuf) != 0)
         return err(error_code::unknown);
-    //device_descriptor desc(dev_id.node());
-    //auto root = desc.property("win32,path").unwrap().string();
-    //try_var(con, create_device(dev_id, device_type::fs, sizeof(win32_netif_dev)));
-    //new (&con->extension()) win32_netif_dev(root);
+
+    auto pcap_dev = alldevs;
+    while (pcap_dev)
+    {
+        try_var(netif, create_device(dev_id, device_type::netif, sizeof(win32_netif_dev)));
+        new (&netif->extension()) win32_netif_dev(pcap_dev);
+
+        pcap_dev = pcap_dev->next;
+    }
+
     return ok();
 }
 
@@ -84,9 +92,8 @@ result<file *, error_code> netif_open_device(const driver &drv, device &dev, std
 
 result<void, error_code> netif_close_device(const driver &drv, device &dev, file &file)
 {
-    if (CloseHandle(file.extension<win32_netif_file>().handle))
-        return ok();
-    return err(error_code::unknown);
+    pcap_close(file.extension<win32_netif_file>().pcap);
+    return ok();
 }
 
 result<size_t, error_code> netif_read_device(const driver &drv, device &dev, file &file, gsl::span<gsl::byte> buffer)
@@ -100,44 +107,29 @@ result<void, error_code> netif_write_device(const driver &drv, device &dev, file
 }
 }
 
-win32_netif_dev::win32_netif_dev(std::string_view root)
-{
-    CreateDirectoryA(root.data(), nullptr);
-    auto error = GetLastError();
-    if (error != ERROR_SUCCESS && error != ERROR_ALREADY_EXISTS)
-        panic("cannot create win32 root directory");
-
-    auto len = GetFullPathNameA(root.data(), 0, nullptr, nullptr);
-    auto path = (char *)malloc(len);
-    assert(GetFullPathNameA(root.data(), len, path, nullptr) == len - 1);
-    root_ = { path, len - 1 };
-}
-
 result<file *, error_code> win32_netif_dev::open(std::string_view filename, create_disposition create_disp) noexcept
 {
-    auto len = root_.length() + 1 + filename.length() + 1;
-    auto fullname = (char *)malloc(len);
-    snprintf(fullname, len, "%s\\%s", root_.data(), filename.data());
-    auto handle = CreateFileA(fullname, GENERIC_READ | GENERIC_WRITE, 0, nullptr, (DWORD)create_disp, 0, nullptr);
-    free(fullname);
-    if (handle == INVALID_HANDLE_VALUE)
-        return err(error_code::not_found);
+    char errbuf[PCAP_ERRBUF_SIZE];
+    auto pcap = pcap_open(pcap_if_->name, 65535, PCAP_OPENFLAG_PROMISCUOUS, -1, nullptr, errbuf);
+    if (!pcap)
+    {
+        ULOG_WARNING("Cannot open netif %s, reason: %s\n", pcap_if_->name, errbuf);
+        return err(error_code::io_error);
+    }
+
     try_var(f, io::create_file(dev(), sizeof(win32_netif_file)));
-    f->extension<win32_netif_file>().handle = handle;
+    f->extension<win32_netif_file>().pcap = pcap;
     return ok(f);
 }
 
 result<size_t, error_code> win32_netif_dev::read(file &file, gsl::span<gsl::byte> buffer) noexcept
 {
-    DWORD read = 0;
-    if (ReadFile(file.extension<win32_netif_file>().handle, buffer.data(), buffer.length_bytes(), &read, nullptr))
-        return ok<size_t>(read);
+    pcap_pkthdr *hdr;
+    pcap_next_ex(file.extension<win32_netif_file>().pcap, &hdr, nullptr);
     return err(error_code::io_error);
 }
 
 result<void, error_code> win32_netif_dev::write(file &file, gsl::span<const gsl::byte> buffer) noexcept
 {
-    if (WriteFile(file.extension<win32_netif_file>().handle, buffer.data(), buffer.length_bytes(), nullptr, nullptr))
-        return ok();
     return err(error_code::io_error);
 }

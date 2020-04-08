@@ -23,9 +23,10 @@
 #include <algorithm>
 #include <board.h>
 #include <cassert>
+#include <chino_config.h>
+#include <chino/ddk/threading.h>
 #include <chino/ddk/utility.h>
 #include <chino/memory/memory_manager.h>
-#include <chino/threading.h>
 #include <cstring>
 #include <mutex>
 

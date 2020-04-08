@@ -1,5 +1,6 @@
 set(CHINO_ARCH arm/armv7-m)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mthumb -specs=nosys.specs -march=armv7-m -mcpu=cortex-m3")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mthumb -specs=nosys.specs -march=armv7-m -mcpu=cortex-m3")
+add_compile_options(-mthumb -march=armv7-m -mcpu=cortex-m3 -nostartfiles)
+
+set(CHINO_KERNEL_LDS ${CHINO_ROOT}/src/hal/src/chip/arm/lds/stm32f103rct6.lds)
 
 set(CHINO_KERNEL_STACK_SIZE "8192")

@@ -19,21 +19,11 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#pragma once
-#include "error.h"
-#include "result.h"
+#include <stdexcept>
 
-namespace chino::memory
+#ifndef _MSC_VER
+namespace __cxxabiv1
 {
-struct system_memory_info
-{
-    uint32_t page_size;
-    uint32_t used_pages;
-    uint32_t free_pages;
-};
-
-result<void *, error_code> heap_alloc(size_t bytes) noexcept;
-result<void *, error_code> heap_realloc(void *ptr, size_t bytes) noexcept;
-void heap_free(void *ptr) noexcept;
-system_memory_info get_system_memory_info() noexcept;
+std::terminate_handler __terminate_handler = abort;
 }
+#endif

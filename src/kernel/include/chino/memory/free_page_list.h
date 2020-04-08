@@ -21,9 +21,10 @@
 // SOFTWARE.
 #pragma once
 #include <algorithm>
+#include <chino/ddk/threading.h>
 #include <chino/ddk/utility.h>
+#include <chino_config.h>
 #include <chino/memory/memory_manager.h>
-#include <chino/threading.h>
 #include <memory>
 #include <mutex>
 
