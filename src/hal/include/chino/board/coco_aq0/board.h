@@ -19,13 +19,16 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include <chino/arch/arm/armv7-m/itm.h>
+#pragma once
+#include "../../chip/wm/w600/chip.h"
 
-using namespace chino;
-using namespace chino::arch;
-
-extern "C" void chinoStartup()
+namespace chino::board
 {
-    itm_port_write(0, 'H');
-    while (1);
+struct coco_aq0_board
+{
+    static gsl::span<const uint8_t> device_tree() noexcept;
+    static void boot_print(const char *message) noexcept;
+};
+
+using board_t = coco_aq0_board;
 }

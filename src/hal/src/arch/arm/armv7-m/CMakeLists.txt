@@ -1,6 +1,7 @@
 ﻿cmake_minimum_required (VERSION 3.13)
 
-set(SRCS debug.cpp)
+set(SRCS debug.cpp
+         itm.cpp)
 set(ASM_SRCS ../startup.S
              isr_vector.S)
              

@@ -20,15 +20,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include "../../chip/stm32f103/chip.h"
+#include "platform.h"
 
-namespace chino::board
+namespace chino::arch
 {
-struct armtest_board
-{
-    static gsl::span<const uint8_t> device_tree() noexcept;
-    static void boot_print(const char *message) noexcept;
-};
-
-using board_t = armtest_board;
+bool itm_is_enabled() noexcept;
+bool itm_port_is_enabled(uint32_t port) noexcept;
+void itm_port_write(uint32_t port, uint32_t data) noexcept;
 }

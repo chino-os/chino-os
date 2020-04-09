@@ -19,16 +19,48 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#pragma once
-#include <cstdint>
-#include "../../arch/arm/armv7-m/arch.h"
+//#include <board.h>
+#include <cassert>
+#include <chino/arch/arm/armv7-m/itm.h>
 
-namespace chino::chip
-{
-struct stm32f103_chip
-{
-    static constexpr uint32_t processors_count = 1;
-};
+using namespace chino;
+using namespace chino::arch;
 
-using chip_t = stm32f103_chip;
+typedef union
+{
+    uint8_t u8;
+    uint32_t u32;
+} itm_port_t;
+
+typedef struct
+{
+    itm_port_t port[32];
+    uint32_t _reserved0[864];
+    uint32_t trace_enable;
+    uint32_t _reserved1[15];
+    uint32_t trace_priviledge;
+    uint32_t _reserved2[15];
+    uint32_t trace_ctrl;
+} itm_t;
+
+#define itm reinterpret_cast<volatile itm_t *>(ITM_BASE)
+
+bool arch::itm_is_enabled() noexcept
+{
+    return itm->trace_ctrl & 1;
+}
+
+bool arch::itm_port_is_enabled(uint32_t port) noexcept
+{
+    return itm->trace_enable & (1 << port);
+}
+
+void arch::itm_port_write(uint32_t port, uint32_t data) noexcept
+{
+    //if (itm_is_enabled() && itm_port_is_enabled(port))
+    {
+        while (itm->port[port].u32 == 0)
+            ;
+        itm->port[port].u32 = data;
+    }
 }
