@@ -64,3 +64,9 @@ void arch::itm_port_write(uint32_t port, uint32_t data) noexcept
         itm->port[port].u32 = data;
     }
 }
+
+void arch::itm_port_write_string(uint32_t port, const char *str) noexcept
+{
+    while (*str)
+        itm_port_write(port, *str++);
+}

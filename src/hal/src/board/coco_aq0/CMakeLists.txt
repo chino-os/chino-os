@@ -2,7 +2,8 @@
 
 #DTC_COMPILE_DTB(DTB win32.dts)
 
-set(SRCS ../../arch/arm/startup.cpp)
+set(SRCS ../../arch/arm/startup.cpp
+         ../../chip/wm/w600/boot_print.cpp)
 
 target_sources(hal PRIVATE ${SRCS})
 

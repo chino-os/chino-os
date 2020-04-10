@@ -19,32 +19,43 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#pragma once
-#include <type_traits>
+#include <chino/chip/wm/w600/uart.h>
 
-namespace chino
-{
-// clang-format off
-#define CHINO_CONCAT_(a, b) a##b
-#define CHINO_CONCAT(a, b) CHINO_CONCAT_(a,b)
-// clang-format on
+using namespace chino;
+using namespace chino::chip;
 
-template <class T, class U, class = std::enable_if_t<std::is_integral_v<T> && std::is_integral_v<U>>>
-constexpr T align(T value, U alignment) noexcept
+typedef struct
 {
-    auto rem = value % alignment;
-    return rem ? value + (alignment - rem) : value;
+    uint32_t uart_line_ctrl;
+    uint32_t auto_flow_ctrl;
+    uint32_t dma_ctrl;
+    uint32_t uart_fifo_ctrl;
+    uint32_t baud_rate_ctrl;
+    uint32_t int_mask;
+    uint32_t int_src;
+    uint32_t fifo_status;
+    uint32_t tx_data;
+    uint32_t reserved0[3];
+    uint32_t rx_data;
+} uart_t;
+
+static volatile uart_t &uart_r(uintptr_t base) noexcept { return *reinterpret_cast<volatile uart_t *>(base); }
+
+void uart::set_baud_rate(uintptr_t base, uint32_t apb_clk, uint32_t baudrate) noexcept
+{
+    uart_r(base).uart_line_ctrl = 0x0B;
+    uart_r(base).auto_flow_ctrl = 0x14;
+    auto ubdiv = apb_clk / (16 * baudrate) - 1;
+    auto ubdiv_frac = (apb_clk % (baudrate * 16)) / baudrate;
+    uart_r(base).baud_rate_ctrl = (ubdiv_frac << 16) | ubdiv;
 }
 
-template <class T, class U, class = std::enable_if_t<std::is_integral_v<T> && std::is_integral_v<U>>>
-constexpr T align_down(T value, U alignment) noexcept
+bool uart::is_tx_fifo_full(uintptr_t base) noexcept
 {
-    return value / alignment * alignment;
+    return (uart_r(base).fifo_status & 0x3F) == 0x3F;
 }
 
-template <class T, class U, class = std::enable_if_t<std::is_integral_v<T> && std::is_integral_v<U>>>
-constexpr T ceil_div(T numerator, U denominator) noexcept
+void uart::write(uintptr_t base, uint8_t data) noexcept
 {
-    return (numerator + (denominator - 1)) / denominator;
-}
+    uart_r(base).tx_data = data;
 }

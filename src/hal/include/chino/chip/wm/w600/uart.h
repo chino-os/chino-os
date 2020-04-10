@@ -20,31 +20,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include <type_traits>
+#include <cstdint>
+#include <cstddef>
 
-namespace chino
+namespace chino::chip::uart
 {
-// clang-format off
-#define CHINO_CONCAT_(a, b) a##b
-#define CHINO_CONCAT(a, b) CHINO_CONCAT_(a,b)
-// clang-format on
-
-template <class T, class U, class = std::enable_if_t<std::is_integral_v<T> && std::is_integral_v<U>>>
-constexpr T align(T value, U alignment) noexcept
-{
-    auto rem = value % alignment;
-    return rem ? value + (alignment - rem) : value;
-}
-
-template <class T, class U, class = std::enable_if_t<std::is_integral_v<T> && std::is_integral_v<U>>>
-constexpr T align_down(T value, U alignment) noexcept
-{
-    return value / alignment * alignment;
-}
-
-template <class T, class U, class = std::enable_if_t<std::is_integral_v<T> && std::is_integral_v<U>>>
-constexpr T ceil_div(T numerator, U denominator) noexcept
-{
-    return (numerator + (denominator - 1)) / denominator;
-}
+void set_baud_rate(uintptr_t base, uint32_t apb_clk, uint32_t baud) noexcept;
+bool is_tx_fifo_full(uintptr_t base) noexcept;
+void write(uintptr_t base, uint8_t data) noexcept;
 }

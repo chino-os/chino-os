@@ -27,4 +27,5 @@ namespace chino::arch
 bool itm_is_enabled() noexcept;
 bool itm_port_is_enabled(uint32_t port) noexcept;
 void itm_port_write(uint32_t port, uint32_t data) noexcept;
+void itm_port_write_string(uint32_t port, const char *str) noexcept;
 }

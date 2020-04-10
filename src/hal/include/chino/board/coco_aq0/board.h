@@ -27,6 +27,8 @@ namespace chino::board
 struct coco_aq0_board
 {
     static gsl::span<const uint8_t> device_tree() noexcept;
+    
+    static void boot_print_init() noexcept;
     static void boot_print(const char *message) noexcept;
 };
 

@@ -19,13 +19,41 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include <chino/arch/arm/armv7-m/itm.h>
+#include <board.h>
+#include <chino_config.h>
+#include <chino/ddk/kernel.h>
+#include <chino/ddk/utility.h>
 
 using namespace chino;
 using namespace chino::arch;
+using namespace chino::kernel;
+
+extern "C"
+{
+    extern uint8_t _heap_start[];
+    extern uint8_t _heap_end[];
+	extern void __libc_init_array(void);
+	extern void __libc_fini_array(void);
+}
 
 extern "C" void chinoStartup()
 {
-    itm_port_write(0, 'H');
+	//__libc_init_array();
+    board::board_t::boot_print_init();
+    while (1)
+        board::board_t::boot_print("Hello\n");
+
+    auto mem_beg = (uint8_t *)align(uintptr_t(_heap_start), PAGE_SIZE);
+    auto mem_end = (uint8_t *)align_down(uintptr_t(_heap_end), PAGE_SIZE);
+    
+    //physical_memory_desc mem_desc = {
+    //    .runs_count = 1,
+    //    .pages_count = (mem_end - mem_beg) / PAGE_SIZE,
+    //    .runs = {
+    //        { mem_beg, (mem_end - mem_beg) / PAGE_SIZE } }
+    //};
+//
+    //memory_manager_init(mem_desc)
+    //    .expect("Cannot init memory manager");
     while (1);
 }
