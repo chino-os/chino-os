@@ -20,17 +20,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include "../../chip/st/stm32f1xx_hd/chip.h"
+#include <cstdint>
+#include <chino/arch/arm/armv7-m/arch.h>
 
-namespace chino::board
+namespace chino::chip
 {
-struct coco_aq0_board
+struct stm32f1xx_hd_chip
 {
-    static gsl::span<const uint8_t> device_tree() noexcept;
-    
-    static void boot_print_init() noexcept;
-    static void boot_print(const char *message) noexcept;
+    static constexpr uint32_t processors_count = 1;
 };
 
-using board_t = coco_aq0_board;
+using chip_t = stm32f1xx_hd_chip;
 }

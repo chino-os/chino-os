@@ -20,17 +20,25 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include "../../chip/st/stm32f1xx_hd/chip.h"
+#include <cstdint>
+#include <cstddef>
 
-namespace chino::board
+namespace chino::chip::rcc
 {
-struct coco_aq0_board
+enum class apb2_periph : uint32_t
 {
-    static gsl::span<const uint8_t> device_tree() noexcept;
-    
-    static void boot_print_init() noexcept;
-    static void boot_print(const char *message) noexcept;
+    afio = 0,
+    iop_a = 2,
+    iop_b = 3,
+    iop_c = 4,
+    iop_d = 5,
+    iop_e = 6,
+    adc_1 = 9,
+    adc_2 =10,
+    tim_1 = 11,
+    spi_1 = 12,
+    usart_1 = 14
 };
 
-using board_t = coco_aq0_board;
+void clock_enable(apb2_periph periph) noexcept;
 }

@@ -3,6 +3,7 @@ set(CHINO_PAGE_SIZE "4096" CACHE STRING "Page Size")
 set(CHINO_KERNEL_STACK_SIZE "4096" CACHE STRING "Kernel Stack Size")
 set(CHINO_IDLE_STACK_SIZE "4096" CACHE STRING "Idle thread Stack Size")
 set(CHINO_STACK_ALIGNMENT "16" CACHE STRING "Thread Stack Alignment")
+set(CHINO_BOOT_DEBUG_SERIAL_BAUDRATE "38400" CACHE STRING "Boot debug serial baudrate")
 
 # Drvers
 ## serial

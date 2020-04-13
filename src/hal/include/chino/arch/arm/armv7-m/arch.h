@@ -46,7 +46,7 @@ using thread_context_t = armv7m_thread_context;
 
 struct armv7m_arch
 {
-    static constexpr size_t ALLOCATE_ALIGNMENT = 16;
+    static constexpr size_t ALLOCATE_ALIGNMENT = 8;
 
     static uint32_t current_processor() noexcept { return 0; }
     static void yield_processor() noexcept;

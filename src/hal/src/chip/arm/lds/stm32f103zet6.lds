@@ -130,7 +130,7 @@ SECTIONS
     .stack : 
     {
         . = . + _system_stack_size;
-        . = ALIGN(4);
+        . = ALIGN(8);
         _estack = .;
     } > RAM
 
@@ -138,17 +138,6 @@ SECTIONS
 
 	PROVIDE( _heap_start = ABSOLUTE(.) );
 	PROVIDE( _heap_end = _ram_end );
-    
-    /**
-	 * After that it's only debugging information.
-	 */
-
-	DISCARD :    /* remove the debugging information from the standard libraries */
-	{
-		libc.a ( * )
-		libm.a ( * )
-		libgcc.a ( * )
-	}
 
     /* Stabs debugging sections.  */
     .stab          0 : { *(.stab) }

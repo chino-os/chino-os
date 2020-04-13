@@ -19,41 +19,69 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include <board.h>
-#include <chino_config.h>
-#include <chino/ddk/kernel.h>
-#include <chino/ddk/utility.h>
+#include <chino/arch/reg.h>
+#include <chino/chip/st/stm32f1xx_hd/platform.h>
+#include <chino/chip/st/stm32f1xx_hd/rcc.h>
 
 using namespace chino;
 using namespace chino::arch;
-using namespace chino::kernel;
+using namespace chino::chip;
 
-extern "C"
+typedef struct
 {
-    extern uint8_t _heap_start[];
-    extern uint8_t _heap_end[];
-	extern void __libc_init_array(void);
-	extern void __libc_fini_array(void);
-}
+    uint32_t hsi_on : 1;
+    uint32_t hsi_rdy : 1;
+    uint32_t reserved0 : 1;
+    uint32_t hsi_trim : 5;
+} rcc_cr_t;
 
-extern "C" void chinoStartup()
+typedef struct
 {
-    board::board_t::boot_print_init();
+    uint32_t reserved;
+} rcc_cfgr_t;
 
-    auto mem_beg = (uint8_t *)align(uintptr_t(_heap_start), PAGE_SIZE);
-    auto mem_end = (uint8_t *)align_down(uintptr_t(_heap_end), PAGE_SIZE);
-    
-    physical_memory_desc mem_desc = {
-        .runs_count = 1,
-        .pages_count = (mem_end - mem_beg) / PAGE_SIZE,
-        .runs = {
-            { mem_beg, (mem_end - mem_beg) / PAGE_SIZE } }
-    };
+typedef struct
+{
+    uint32_t reserved;
+} rcc_cir_t;
 
-    board::board_t::boot_print("Init memmgr\n");
-    memory_manager_init(mem_desc)
-        .expect("Cannot init memory manager");
-    board::board_t::boot_print("Run libc init\n");
-	__libc_init_array();
-    while (1);
+typedef struct
+{
+    uint32_t reserved;
+} rcc_apb2_rstr_t;
+
+typedef struct
+{
+    uint32_t reserved;
+} rcc_apb1_rstr_t;
+
+typedef struct
+{
+    uint32_t reserved;
+} rcc_ahb_enr_t;
+
+typedef struct
+{
+    uint32_t afio_en : 1;
+    uint32_t reserved0 : 1;
+    uint32_t iop_a_en : 1;
+    uint32_t iop_b_en : 1;
+} rcc_apb2_enr_t;
+
+typedef struct
+{
+    reg_t<rcc_cr_t> cr;
+    reg_t<rcc_cfgr_t> cfgr;
+    reg_t<rcc_cir_t> cir;
+    reg_t<rcc_apb2_rstr_t> apb2_rstr;
+    reg_t<rcc_apb1_rstr_t> apb1_rstr;
+    reg_t<rcc_ahb_enr_t> ahb_enr;
+    reg_t<rcc_apb2_enr_t> apb2_enr;
+} rcc_t;
+
+static volatile rcc_t &rcc_r() noexcept { return *reinterpret_cast<volatile rcc_t *>(RCC_BASE); }
+
+void rcc::clock_enable(apb2_periph periph) noexcept
+{
+    rcc_r().apb2_enr.set(1 << (uint32_t)periph);
 }

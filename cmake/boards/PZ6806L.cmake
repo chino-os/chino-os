@@ -1,4 +1,5 @@
 set(CHINO_ARCH arm/armv7-m)
+set(CHINO_CHIP st/stm32f1xx_hd)
 add_compile_options(-mthumb -march=armv7-m -mcpu=cortex-m3 -nostartfiles)
 
 set(CHINO_KERNEL_LDS ${CHINO_ROOT}/src/hal/src/chip/arm/lds/stm32f103zet6.lds)

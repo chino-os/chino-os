@@ -20,17 +20,36 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include "../../chip/st/stm32f1xx_hd/chip.h"
+#include <cstddef>
+#include <cstdint>
 
-namespace chino::board
+namespace chino::chip::gpio
 {
-struct coco_aq0_board
+enum class input_mode_t : uint32_t
 {
-    static gsl::span<const uint8_t> device_tree() noexcept;
-    
-    static void boot_print_init() noexcept;
-    static void boot_print(const char *message) noexcept;
+    analog = 0,
+    in_floating = 1,
+    in_pull_up = 2,
+    in_pull_down = 3
 };
 
-using board_t = coco_aq0_board;
+enum class output_mode_t : uint32_t
+{
+    gp_out_push_pull = 0,
+    gp_out_open_drain = 1,
+    af_out_push_pull = 2,
+    af_out_open_drain = 3
+};
+
+enum class speed_t : uint32_t
+{
+    out_10MHz = 0b01,
+    out_2MHz = 0b10,
+    out_50MHz = 0b11
+};
+
+void pin_set_mode(uintptr_t base, uint32_t pin, input_mode_t mode) noexcept;
+void pin_set_mode(uintptr_t base, uint32_t pin, output_mode_t mode, speed_t speed) noexcept;
+void pins_set(uintptr_t base, uint32_t pin_mask) noexcept;
+void pins_clear(uintptr_t base, uint32_t pin_mask) noexcept;
 }

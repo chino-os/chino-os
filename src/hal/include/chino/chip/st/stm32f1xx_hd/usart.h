@@ -20,17 +20,37 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include "../../chip/st/stm32f1xx_hd/chip.h"
+#include <cstdint>
+#include <cstddef>
 
-namespace chino::board
+namespace chino::chip::usart
 {
-struct coco_aq0_board
+enum class parity_t
 {
-    static gsl::span<const uint8_t> device_tree() noexcept;
-    
-    static void boot_print_init() noexcept;
-    static void boot_print(const char *message) noexcept;
+    none = 0,
+    even = 1,
+    odd = 2
 };
 
-using board_t = coco_aq0_board;
+enum class data_bits_t
+{
+    data_8b = 0,
+    data_9b = 1
+};
+
+enum class stop_bits_t
+{
+    stop_1b = 0,
+    stop_0p5b = 1,
+    stop_2b = 2,
+    stop_1p5b = 3
+};
+
+void enable(uintptr_t base) noexcept;
+void set_format(uintptr_t base, data_bits_t data_bits, stop_bits_t stop_bits, parity_t parity) noexcept;
+void set_baud_rate(uintptr_t base, uint32_t apb_clk, uint32_t baud) noexcept;
+
+void tx_enable(uintptr_t base) noexcept;
+bool tx_is_empty(uintptr_t base) noexcept;
+void tx_send(uintptr_t base, uint8_t data) noexcept;
 }

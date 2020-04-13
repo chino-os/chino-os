@@ -11,4 +11,4 @@ Makefile
 CMakeSettings.json
 *.dtb
 /out
-RC*
+src/hal/src/board/win32/RC*
