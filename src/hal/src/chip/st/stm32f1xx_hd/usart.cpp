@@ -147,3 +147,18 @@ void usart::tx_send(uintptr_t base, uint8_t data) noexcept
 {
     usart_r(base).dr.reg({ data });
 }
+
+void usart::rx_enable(uintptr_t base) noexcept
+{
+    usart_r(base).cr1.reg_mut().re = 1;
+}
+
+bool usart::rx_is_not_empty(uintptr_t base) noexcept
+{
+    return usart_r(base).sr.reg().rxne;
+}
+
+uint8_t usart::rx_recv(uintptr_t base) noexcept
+{
+    return usart_r(base).dr.reg().data;
+}

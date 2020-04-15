@@ -19,55 +19,65 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include <board.h>
-#include <chino_config.h>
-#include <chino/ddk/kernel.h>
-#include <chino/ddk/utility.h>
-#include <cstring>
+#include <chino/arch/reg.h>
 #include <chino/arch/arm/armv7-m/core_debug.h>
-#include <chino/arch/arm/armv7-m/dwt.h>
 
 using namespace chino;
 using namespace chino::arch;
-using namespace chino::kernel;
 
-extern "C"
+typedef struct
 {
-    extern uint8_t _sidata[];
-    extern uint8_t _sdata[];
-    extern uint8_t _edata[];
-    extern uint8_t _sbss[];
-    extern uint8_t _ebss[];
-    extern uint8_t _heap_start[];
-    extern uint8_t _heap_end[];
-	extern void __libc_init_array(void);
-	extern void __libc_fini_array(void);
+    uint32_t cdbg_en : 1;
+    uint32_t halt : 1;
+    uint32_t step : 1;
+    uint32_t hsi_trim : 5;
+} cdbg_dhcsr_t;
+
+typedef struct
+{
+    uint32_t vc_core_reset : 1;
+    uint32_t reserved0 : 3;
+    uint32_t vc_mm_err : 1;
+    uint32_t vc_no_cperr : 1;
+    uint32_t vc_chk_err : 1;
+    uint32_t vc_stat_err : 1;
+    uint32_t vc_bus_err : 1;
+    uint32_t vc_int_err : 1;
+    uint32_t vc_hard_err : 1;
+    uint32_t reserved1 : 5;
+    uint32_t mon_en : 1;
+    uint32_t mon_pend : 1;
+    uint32_t mon_step : 1;
+    uint32_t mon_req : 1;
+    uint32_t trace_ena : 1;
+} cdbg_demcr_t;
+
+typedef struct
+{
+    reg_t<cdbg_dhcsr_t> chcsr;
+    reg_t<uint32_t> dcrsr;
+    reg_t<uint32_t> dcrdr;
+    reg_t<cdbg_demcr_t> demcr;
+} cdbg_t;
+
+static volatile cdbg_t &cdbg_r() noexcept { return *reinterpret_cast<volatile cdbg_t *>(CoreDebug_BASE); }
+
+bool core_debug::is_enabled() noexcept
+{
+    return cdbg_r().chcsr.reg_mut().cdbg_en;
 }
 
-extern "C" void _init()
+void core_debug::monitor_enable() noexcept
 {
+    cdbg_r().demcr.reg_mut().mon_en = 1;
 }
 
-extern "C" void chinoStartup()
+void core_debug::monitor_enable_step() noexcept
 {
-    std::memcpy(_sdata, _sidata, _edata - _sdata);
-    std::memset(_sbss, 0, _ebss - _sbss);
+    cdbg_r().demcr.reg_mut().mon_step = 1;
+}
 
-    board::board_t::boot_print_init();
-
-    auto mem_beg = (uint8_t *)align(uintptr_t(_heap_start), PAGE_SIZE);
-    auto mem_end = (uint8_t *)align_down(uintptr_t(_heap_end), PAGE_SIZE);
-    
-    physical_memory_desc mem_desc = {
-        .runs_count = 1,
-        .pages_count = (mem_end - mem_beg) / PAGE_SIZE,
-        .runs = {
-            { mem_beg, (mem_end - mem_beg) / PAGE_SIZE } }
-    };
-
-	__libc_init_array();
-    memory_manager_init(mem_desc)
-        .expect("Cannot init memory manager");
-    kernel_main().unwrap();
-    while (1);
+void core_debug::trace_enable() noexcept
+{
+    cdbg_r().demcr.reg_mut().trace_ena = 1;
 }

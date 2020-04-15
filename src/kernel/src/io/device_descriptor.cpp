@@ -57,6 +57,14 @@ uint32_t device_descriptor::size_cells() const noexcept
     return fdt_size_cells(fdt(), node());
 }
 
+result<device_descriptor, error_code> device_descriptor::parent() const noexcept
+{
+    auto pnode = fdt_parent_offset(fdt(), node());
+    if (pnode >= 0)
+        return ok<device_descriptor>(pnode);
+    return err(error_code::not_found);
+}
+
 result<device_descriptor, error_code> device_descriptor::first_subnode() const noexcept
 {
     auto child = fdt_first_subnode(fdt(), node());
@@ -71,6 +79,23 @@ result<device_descriptor, error_code> device_descriptor::next_subnode(int prev) 
     if (child >= 0)
         return ok<device_descriptor>(child);
     return err(error_code::not_found);
+}
+
+result<std::pair<uint64_t, uint64_t>, error_code> device_descriptor::reg(size_t index) const noexcept
+{
+    try_var(p, parent());
+    auto addr_cells = p.address_cells();
+    auto size_cells = p.size_cells();
+
+    try_var(prop, property("reg"));
+    auto start = reinterpret_cast<const fdt32_t *>(prop.data()) + (addr_cells + size_cells) * index;
+
+    uint64_t addr = 0, size = 0;
+    for (size_t i = 0; i < addr_cells; i++)
+        addr = (addr << 32) | fdt32_to_cpu(*start++);
+    for (size_t i = 0; i < size_cells; i++)
+        size = (size << 32) | fdt32_to_cpu(*start++);
+    return ok<std::pair<uint64_t, uint64_t>>(addr, size);
 }
 
 uint32_t device_property::uint32(size_t index) const noexcept

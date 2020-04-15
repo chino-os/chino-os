@@ -29,9 +29,25 @@
 #include <sys/times.h>
 #include <sys/types.h>
 #include <chino/memory.h>
+#include <chino/io.h>
 
 using namespace chino;
 using namespace chino::memory;
+
+#define STDIN_FILENO 0 /* standard input file descriptor */
+#define STDOUT_FILENO 1 /* standard output file descriptor */
+#define STDERR_FILENO 2 /* standard error file descriptor */
+
+#define FILENO_OFFSET 3
+
+static handle_t tohandle(int fno) noexcept
+{
+    if (fno < 0)
+        return handle_t::invalid();
+    else if (fno < FILENO_OFFSET)
+        return io::get_std_handle((io::std_handles)fno);
+    return handle_t { uint16_t(fno - FILENO_OFFSET) };
+}
 
 extern "C"
 {
@@ -39,23 +55,23 @@ extern "C"
 
     void *malloc(size_t n)
     {
+        auto ret = heap_alloc(n);
+        if (ret.is_ok())
+            return ret.unwrap();
         return nullptr;
     }
 
     void free(void *p)
     {
+        heap_free(p);
     }
 
     void *realloc(void *p, size_t n)
     {
-        auto np = malloc(n);
-        if (p)
-        {
-            memcpy(np, p, n);
-            free(p);
-        }
-
-        return np;
+        auto ret = heap_realloc(p, n);
+        if (ret.is_ok())
+            return ret.unwrap();
+        return nullptr;
     }
 
     void *calloc(size_t num, size_t size)
@@ -86,10 +102,6 @@ extern "C"
     {
         return calloc(num, size);
     }
-
-#define STDIN_FILENO 0 /* standard input file descriptor */
-#define STDOUT_FILENO 1 /* standard output file descriptor */
-#define STDERR_FILENO 2 /* standard error file descriptor */
 
     int _close(int file) __attribute__((alias("close")));
     int _fstat(int file, struct stat *st) __attribute__((alias("fstat")));
@@ -159,8 +171,23 @@ extern "C"
 
     int read(int file, char *ptr, int len)
     {
-        errno = ENOSYS;
-        return -1;
+        auto handle = tohandle(file);
+        if (handle == handle_t::invalid())
+        {
+            errno = EBADF;
+            return -1;
+        }
+        else
+        {
+            auto ret = io::read(handle, { reinterpret_cast<gsl::byte *>(ptr), size_t(len) });
+            if (ret.is_ok())
+                return (int)ret.unwrap();
+            else
+            {
+                errno = EIO;
+                return -1;
+            }
+        }
     }
 
     caddr_t sbrk(int incr);
@@ -171,14 +198,22 @@ extern "C"
 
     int write(int file, char *ptr, int len)
     {
-        if (file == STDOUT_FILENO || file == STDERR_FILENO)
+        auto handle = tohandle(file);
+        if (handle == handle_t::invalid())
         {
-            //g_Logger->PutString({ ptr, size_t(len) });
-            return len;
+            errno = EBADF;
+            return -1;
         }
-
-        errno = ENOSYS;
-        return -1;
+        else
+        {
+            if (io::write(handle, { reinterpret_cast<const gsl::byte *>(ptr), size_t(len) }).is_ok())
+                return len;
+            else
+            {
+                errno = EIO;
+                return -1;
+            }
+        }
     }
 
     int gettimeofday(struct timeval *__restrict p, void *__restrict tz)

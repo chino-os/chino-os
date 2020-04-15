@@ -30,15 +30,16 @@ namespace chino::arch
 // Only save callee saved registers in context
 struct armv7m_thread_context
 {
-    uintptr_t rbx;
-    uintptr_t rbp;
-    uintptr_t rdi;
-    uintptr_t rsi;
-    uintptr_t rsp;
-    uintptr_t r12;
-    uintptr_t r13;
-    uintptr_t r14;
-    uintptr_t r15;
+    uintptr_t r4;
+    uintptr_t r5;
+    uintptr_t r6;
+    uintptr_t r7;
+    uintptr_t r8;
+    uintptr_t r9;
+    uintptr_t r10;
+    uintptr_t r11;
+    uintptr_t lr;
+    uintptr_t sp;
     uintptr_t stack_bottom;
 };
 

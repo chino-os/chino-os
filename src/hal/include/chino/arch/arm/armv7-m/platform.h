@@ -26,5 +26,6 @@
 namespace chino::arch
 {
 inline constexpr uintptr_t CoreDebug_BASE = 0xE000EDF0UL;
+inline constexpr uintptr_t DWT_BASE = 0xE0001000UL;
 inline constexpr uintptr_t ITM_BASE = 0xE0000000UL;
 }

@@ -1,0 +1,39 @@
+/dts-v1/;
+
+/ {
+    model = "st,stm32f103zet6";
+    compatible = "arm,cortex-m3";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	chosen {
+		bootargs = "console=serial0";
+	};
+
+    cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+	    cpu@0 {
+	        device_type = "cpu";
+			reg = <0>;
+	    };
+	};
+
+	memory@0 {
+		device_type = "memory";
+		reg = <0>;
+	};
+	
+	soc {
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		compatible = "simple-bus";
+
+		usart1@40013800 {
+			compatible = "st,stm32f10x-usart";
+			reg = <0x40013800 0x400>;
+		};
+	};
+};

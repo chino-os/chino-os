@@ -53,4 +53,8 @@ void set_baud_rate(uintptr_t base, uint32_t apb_clk, uint32_t baud) noexcept;
 void tx_enable(uintptr_t base) noexcept;
 bool tx_is_empty(uintptr_t base) noexcept;
 void tx_send(uintptr_t base, uint8_t data) noexcept;
+
+void rx_enable(uintptr_t base) noexcept;
+bool rx_is_not_empty(uintptr_t base) noexcept;
+uint8_t rx_recv(uintptr_t base) noexcept;
 }

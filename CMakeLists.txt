@@ -72,3 +72,8 @@ add_subdirectory(src/drivers)
 add_subdirectory(third_party/libfdt)
 add_subdirectory(third_party/ulog)
 add_subdirectory(third_party/lwip)
+add_subdirectory(third_party/incbin)
+
+if (WIN32)
+    add_subdirectory(tools/win32/win32-term)
+endif()

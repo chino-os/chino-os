@@ -237,4 +237,8 @@ extern "C"
     void __chkstk()
     {
     }
+
+    void __cdecl setbuf(FILE *_Stream, char *_Buffer)
+    {
+    }
 }

@@ -24,6 +24,8 @@
 #include <cassert>
 #include <chino/arch/arm/armv7-m/arch.h>
 #include <chino/arch/arm/armv7-m/platform.h>
+#include <chino/arch/arm/armv7-m/core_debug.h>
+#include <chino/arch/arm/armv7-m/dwt.h>
 
 using namespace chino::arch;
 using namespace chino::chip;
@@ -31,24 +33,18 @@ using namespace chino::kernel;
 
 extern "C"
 {
-    extern void win32_start_schedule(thread_context_t *ctx);
-    extern void win32_yield(thread_context_t *old_ctx, thread_context_t *new_ctx);
-    extern void win32_thread_thunk();
+    extern  void arm_start_schedule(thread_context_t *ctx);
+    extern  void arm_yield(thread_context_t *old_ctx, thread_context_t *new_ctx);
+    extern  void arm_thread_thunk();
 }
 
 namespace
 {
 void setup_stack_check(thread_context_t &context) noexcept
 {
-    //auto hart = arch_t::current_processor();
-    //auto &ctx = processor_ctx[hart];
-//
-    //// Setup stack checker
-    //ctx.Dr0 = context.stack_bottom;
-    //set_bits(ctx.Dr7, 16, 2, 0b11);
-    //set_bits(ctx.Dr7, 24, 2, 0b10);
-    //set_bits(ctx.Dr7, 0, 1, 1);
-    //assert(SetThreadContext(processor_handle[hart], &ctx));
+    dwt::slot_set_address(3, context.stack_bottom);
+    dwt::slot_set_mask(3, 0);
+    dwt::slot_set_function(3, dwt::slot_function_t::watchpoint_rw, dwt::data_size_t::word);
 }
 }
 
@@ -76,49 +72,37 @@ void armv7m_arch::restore_irq(uintptr_t state) noexcept
 
 void armv7m_arch::init_thread_context(thread_context_t &context, gsl::span<uintptr_t> stack, thread_thunk_t start, void *arg0, void *arg1) noexcept
 {
-    // RBX: start
-    // RDI: arg0
-    // RSI: arg1
-    context.rbx = uintptr_t(start);
-    context.rdi = uintptr_t(arg0);
-    context.rsi = uintptr_t(arg1);
+    // r4: start
+    // r5: arg0
+    // r6: arg1
+    context.r4 = uintptr_t(start);
+    context.r5 = uintptr_t(arg0);
+    context.r6 = uintptr_t(arg1);
     context.stack_bottom = uintptr_t(stack.data());
 
     auto *top = stack.end();
-    // Align as 16
-    if ((uintptr_t(top) & 8) == 0)
-    {
+    // Align as 8
+    while ((uintptr_t(top) & 4) == 1)
         *--top = 0;
-    }
-    else
-    {
-        // Zero ret
-        *--top = 0;
-        *--top = 0;
-    }
 
-    *--top = uintptr_t(win32_thread_thunk);
-    context.rsp = uintptr_t(top);
+    context.lr = uintptr_t(arm_thread_thunk) | 1;   // thumb
+    context.sp = uintptr_t(top);
 }
 
 void armv7m_arch::start_schedule(thread_context_t &context) noexcept
 {
     setup_stack_check(context);
-    //win32_start_schedule(&context);
+    arm_start_schedule(&context);
 }
 
 void armv7m_arch::yield(thread_context_t &old_context, thread_context_t &new_context) noexcept
 {
     setup_stack_check(new_context);
-    //win32_yield(&old_context, &new_context);
+    arm_yield(&old_context, &new_context);
 }
 
 void armv7m_arch::init_stack_check() noexcept
 {
-    //auto hart = current_processor();
-    //processor_handle[hart] = GetCurrentThread();
-    //auto &ctx = processor_ctx[hart];
-//
-    //ctx.ContextFlags = CONTEXT_DEBUG_REGISTERS;
-    //assert(GetThreadContext(processor_handle[hart], &ctx));
+    core_debug::monitor_enable();
+    core_debug::trace_enable();
 }

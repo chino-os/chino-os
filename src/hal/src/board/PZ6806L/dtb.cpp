@@ -19,18 +19,17 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#pragma once
-#include "../../chip/st/stm32f1xx_hd/chip.h"
+#include <board.h>
+#define INCBIN_STYLE INCBIN_STYLE_SNAKE
+#include <incbin.h>
 
-namespace chino::board
-{
-struct pz6806l_board
-{
-    static gsl::span<const uint8_t> device_tree() noexcept;
-    
-    static void boot_print_init() noexcept;
-    static void boot_print(const char *message) noexcept;
-};
+using namespace chino;
+using namespace chino::board;
+using namespace chino::kernel;
 
-using board_t = pz6806l_board;
+INCBIN(dtb, DTB_PATH);
+
+gsl::span<const uint8_t> pz6806l_board::device_tree() noexcept
+{
+    return { gdtb_data, gdtb_size };
 }

@@ -20,17 +20,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include "../../chip/st/stm32f1xx_hd/chip.h"
+#include "platform.h"
 
-namespace chino::board
+namespace chino::arch::core_debug
 {
-struct pz6806l_board
-{
-    static gsl::span<const uint8_t> device_tree() noexcept;
-    
-    static void boot_print_init() noexcept;
-    static void boot_print(const char *message) noexcept;
-};
+bool is_enabled() noexcept;
 
-using board_t = pz6806l_board;
+void monitor_enable() noexcept;
+void monitor_enable_step() noexcept;
+
+void trace_enable() noexcept;
 }

@@ -55,7 +55,7 @@ enum class create_thread_flags : uint32_t
 typedef uint32_t (*chino_startup_t)();
 typedef uint32_t (*thread_start_t)(void *arg);
 
-inline constexpr int32_t DEFAULT_STACK_SIZE = 4096;
+inline constexpr int32_t DEFAULT_STACK_SIZE = sizeof(uintptr_t) * 128;
 
 result<handle_t, error_code> create_process(chino_startup_t start, std::string_view command_lines, thread_priority prioriy = thread_priority::normal,
     int32_t stack_size = DEFAULT_STACK_SIZE);

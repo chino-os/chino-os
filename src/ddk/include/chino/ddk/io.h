@@ -60,6 +60,7 @@ enum class driver_type
 class device_property
 {
 public:
+    device_property() = default;
     constexpr device_property(const void *data, int len) noexcept
         : data_(data), len_(len) {}
 
@@ -102,11 +103,14 @@ private:
 class device_descriptor
 {
 public:
+    device_descriptor() = default;
     constexpr device_descriptor(int node) noexcept
         : node_(node) {}
 
     const void *fdt() const noexcept;
     int node() const noexcept { return node_; }
+
+    result<device_descriptor, error_code> parent() const noexcept;
     result<device_descriptor, error_code> first_subnode() const noexcept;
     result<device_descriptor, error_code> next_subnode(int prev) const noexcept;
 
@@ -115,6 +119,8 @@ public:
 
     uint32_t address_cells() const noexcept;
     uint32_t size_cells() const noexcept;
+
+    result<std::pair<uint64_t, uint64_t>, error_code> reg(size_t index = 0) const noexcept;
 
 private:
     int node_;

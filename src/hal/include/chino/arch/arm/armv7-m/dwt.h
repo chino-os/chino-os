@@ -19,42 +19,27 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+#pragma once
+#include "platform.h"
 
-.syntax unified
-.fpu softvfp
-.thumb
+namespace chino::arch::dwt
+{
+enum class slot_function_t
+{
+    disabled = 0,
+    watchpoint_read = 0b0101,
+    watchpoint_write = 0b0110,
+    watchpoint_rw = 0b0111
+};
 
-.global Reset_Handler
+enum class data_size_t
+{
+    byte = 0,
+    half_word = 1,
+    word = 2
+};
 
-Reset_Handler:
-  /* Copy the data segment initializers from flash to SRAM */  
-  movs  r1, #0
-  b  LoopCopyDataInit
-
-CopyDataInit:
-  ldr  r3, =_sidata
-  ldr  r3, [r3, r1]
-  str  r3, [r0, r1]
-  adds  r1, r1, #4
-    
-LoopCopyDataInit:
-  ldr  r0, =_sdata
-  ldr  r3, =_edata
-  adds  r2, r0, r1
-  cmp  r2, r3
-  bcc  CopyDataInit
-  ldr  r2, =_sbss
-  b  LoopFillZerobss
-/* Zero fill the bss segment. */  
-FillZerobss:
-  movs  r3, #0
-  str  r3, [r2], #4
-    
-LoopFillZerobss:
-  ldr  r3, = _ebss
-  cmp  r2, r3
-  bcc  FillZerobss
-/* Call the application's entry point.*/
-  bl  chinoStartup
-  bx  lr    
-.size  Reset_Handler, .-Reset_Handler
+void slot_set_address(uint32_t slot, uintptr_t address) noexcept;
+void slot_set_mask(uint32_t slot, uint32_t mask) noexcept;
+void slot_set_function(uint32_t slot, slot_function_t func, data_size_t data_size) noexcept;
+}

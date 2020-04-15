@@ -38,8 +38,11 @@ using namespace std::string_view_literals;
 __declspec(allocate(".CHDRV$A")) const ::chino::io::driver *drivers_begin_[] = { nullptr };
 __declspec(allocate(".CHDRV$Z")) const ::chino::io::driver *drivers_end_[] = { nullptr };
 #elif defined(__GNUC__)
-extern const ::chino::io::driver *drivers_begin_[];
-extern const ::chino::io::driver *drivers_end_[];
+extern "C"
+{
+    extern const ::chino::io::driver *drivers_begin_[];
+    extern const ::chino::io::driver *drivers_end_[];
+}
 #else
 #error "Unsupported compiler"
 #endif
@@ -100,7 +103,7 @@ static result<device_id, error_code> create_device_id(const device_descriptor &n
         if (compat.empty())
             break;
         auto drv = drivers_begin_;
-        while (++drv < drivers_end_)
+        while (drv < drivers_end_)
         {
             if (*drv)
             {
@@ -108,6 +111,8 @@ static result<device_id, error_code> create_device_id(const device_descriptor &n
                 if (id)
                     return ok<device_id>(node.node(), parent, **drv, *id);
             }
+
+            drv++;
         }
     }
 

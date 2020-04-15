@@ -24,10 +24,8 @@
 .fpu softvfp
 .thumb
 
-.thumb_func
-.global Reset_Handler
-
 .global arch_isr_vectors
+.global Reset_Handler
 
 .section .text.Default_Handler,"ax",%progbits
 Default_Handler:
@@ -169,6 +167,8 @@ arch_isr_vectors:
 * this definition.
 * 
 *******************************************************************************/
+  .weak  Reset_Handler
+  .thumb_set Reset_Handler,chinoStartup
     
   .weak  NMI_Handler
   .thumb_set NMI_Handler,Default_Handler

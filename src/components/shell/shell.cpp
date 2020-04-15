@@ -21,6 +21,7 @@
 // SOFTWARE.
 #include <chino/io.h>
 #include <chino/threading.h>
+#include <chino/memory.h>
 #include <nr_micro_shell.h>
 
 using namespace chino;
@@ -33,6 +34,7 @@ namespace
 uint32_t shell_main()
 {
     io::alloc_console().unwrap();
+    setbuf(stdout, nullptr);
     shell_init();
 
     while (1)
@@ -75,12 +77,20 @@ void cat_cmd(char argc, char **argv)
         printf("Usage cat <filename>\n");
     }
 }
+
+void free_cmd(char argc, char **argv)
+{
+    auto info = memory::get_system_memory_info();
+    printf("\ttotal\tused\tfree\n");
+    printf("Mem:\t%d\t%d\t%d\n", (info.used_pages + info.free_pages) * info.page_size, info.used_pages * info.page_size, info.free_pages * info.page_size);
+}
 }
 
 extern "C"
 {
     const static_cmd_st static_cmd[] = {
         { "basic", basic_cmd },
+        { "free", free_cmd },
         { "lua", lua_cmd },
         { "cat", cat_cmd },
         { "\0", NULL }
@@ -89,6 +99,6 @@ extern "C"
 
 result<void, error_code> chino_start_shell()
 {
-    try_(threading::create_process(shell_main, {}, threading::thread_priority::normal, 1024 * 24));
+    try_(threading::create_process(shell_main, {}, threading::thread_priority::normal, 1024 * 3 * sizeof(uintptr_t)));
     return ok();
 }
