@@ -23,7 +23,6 @@
 #include <chino/threading.h>
 #include <chino/memory.h>
 #include <nr_micro_shell.h>
-#include <setjmp.h>
 
 using namespace chino;
 

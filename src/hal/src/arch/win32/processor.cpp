@@ -41,6 +41,13 @@ static HANDLE processor_handle[chip_t::processors_count];
 static CONTEXT processor_ctx[chip_t::processors_count];
 static std::atomic<uintptr_t> irq_state = 0;
 
+struct _TEB
+{
+    uintptr_t reserved0;
+    uintptr_t stack_high;
+    uintptr_t stack_low;
+};
+
 namespace
 {
 inline void set_bits(DWORD64 &dw, uint64_t low_bit, uint64_t bits, uint64_t new_value)
@@ -54,8 +61,12 @@ void setup_stack_check(thread_context_t &context) noexcept
     auto hart = arch_t::current_processor();
     auto &ctx = processor_ctx[hart];
 
+    auto teb = NtCurrentTeb();
+    teb->stack_low = context.stack_low;
+    teb->stack_high = context.stack_high;
+
     // Setup stack checker
-    ctx.Dr0 = context.stack_bottom;
+    ctx.Dr0 = context.stack_low;
     set_bits(ctx.Dr7, 16, 2, 0b11);
     set_bits(ctx.Dr7, 24, 2, 0b10);
     set_bits(ctx.Dr7, 0, 1, 1);
@@ -86,7 +97,8 @@ void win32_arch::init_thread_context(thread_context_t &context, gsl::span<uintpt
     context.rbx = uintptr_t(start);
     context.rdi = uintptr_t(arg0);
     context.rsi = uintptr_t(arg1);
-    context.stack_bottom = uintptr_t(stack.data());
+    context.stack_low = uintptr_t(stack.begin());
+    context.stack_high = uintptr_t(stack.end());
 
     auto *top = stack.end();
     // Align as 16

@@ -40,7 +40,7 @@ struct win32_thread_context
     uintptr_t r13;
     uintptr_t r14;
     uintptr_t r15;
-    uintptr_t stack_bottom;
+    uintptr_t reserved0;
 
     __m128 xmm6;
     __m128 xmm7;
@@ -52,6 +52,9 @@ struct win32_thread_context
     __m128 xmm13;
     __m128 xmm14;
     __m128 xmm15;
+
+    uintptr_t stack_low;
+    uintptr_t stack_high;
 };
 
 using thread_context_t = win32_thread_context;
