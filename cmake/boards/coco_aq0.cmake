@@ -1,6 +1,5 @@
-set(CHINO_ARCH arm/armv7-m)
+include(${CHINO_ROOT}/src/hal/src/arch/arm/armv7-m/arch.cmake)
 set(CHINO_CHIP wm/w600)
-add_compile_options(-mthumb -march=armv7-m -mcpu=cortex-m3 -nostartfiles)
 
 set(CHINO_KERNEL_LDS ${CHINO_ROOT}/src/hal/src/chip/wm/w600/w600.lds)
 

@@ -11,7 +11,7 @@ MEMORY
 }
 
 /* Program Entry, set to mark it as "used" and avoid gc */
-ENTRY(Reset_Handler)
+ENTRY(chinoStartup)
 _system_stack_size = 0x400;
 _ram_end = ORIGIN(RAM) + LENGTH(RAM);
 
@@ -54,6 +54,14 @@ SECTIONS
       *(.rodata .rodata.*)
       *(.gnu.linkonce.r.*)
     } > FLASH
+
+    /* Drivers */
+    drivers_begin_ = .;
+    .chino.driver :
+    {
+      KEEP (*(.chdrv .chdrv.*))
+    } > FLASH
+    drivers_end_ = .;
 
 	.ARM.extab : /* exception unwinding information */
     {

@@ -1,6 +1,10 @@
 #ifndef _MICRORL_H_
 #define _MICRORL_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "config.h"
 
 #define true  1
@@ -82,6 +86,7 @@ typedef struct {
 	int cursor;                        // input cursor
 	int (*execute) (int argc, const char * const * argv );            // ptr to 'execute' callback
 	int (*newline) (const char * line );                              // ptr to 'newline' callback
+	int wait_newline;
 	char ** (*get_completion) (int argc, const char * const * argv ); // ptr to 'completion' callback
 #ifdef _USE_CTLR_C
 	void (*sigint) (void);
@@ -111,6 +116,9 @@ void microrl_set_execute_callback (microrl_t * pThis, int (*execute)(int, const 
 
 void microrl_set_newline_callback (microrl_t * pThis, int (*newline)(const char*));
 
+char *microrl_readline(microrl_t *pThis, const char* prompt);
+void microrl_free(microrl_t *pThis);
+
 // set callback for Ctrl+C terminal signal
 #ifdef _USE_CTLR_C
 void microrl_set_sigint_callback (microrl_t * pThis, void (*sigintf)(void));
@@ -119,4 +127,8 @@ void microrl_set_sigint_callback (microrl_t * pThis, void (*sigintf)(void));
 // insert char to cmdline (for example call in usart RX interrupt)
 void microrl_insert_char (microrl_t * pThis, int ch);
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif

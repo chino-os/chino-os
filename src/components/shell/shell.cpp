@@ -23,10 +23,11 @@
 #include <chino/threading.h>
 #include <chino/memory.h>
 #include <nr_micro_shell.h>
+#include <setjmp.h>
 
 using namespace chino;
 
-extern "C" int lua_main(int argc, char *argv[]);
+extern int lua_main(int argc, char **argv);
 extern "C" int basic_main(int argc, char *argv[]);
 
 namespace
@@ -48,7 +49,7 @@ uint32_t shell_main()
 
 void lua_cmd(char argc, char **argv)
 {
-    //lua_main(argc, argv);
+    lua_main(argc, argv);
 }
 
 void basic_cmd(char argc, char **argv)

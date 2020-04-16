@@ -43,11 +43,13 @@ static volatile uart_t &uart_r(uintptr_t base) noexcept { return *reinterpret_ca
 
 void uart::set_baud_rate(uintptr_t base, uint32_t apb_clk, uint32_t baudrate) noexcept
 {
-    uart_r(base).uart_line_ctrl = 0x0B;
+    uart_r(base).uart_line_ctrl = 0xC3;
     uart_r(base).auto_flow_ctrl = 0x14;
-    auto ubdiv = apb_clk / (16 * baudrate) - 1;
-    auto ubdiv_frac = (apb_clk % (baudrate * 16)) / baudrate;
-    uart_r(base).baud_rate_ctrl = (ubdiv_frac << 16) | ubdiv;
+    uart_r(base).dma_ctrl = 0x0;
+    uart_r(base).baud_rate_ctrl = 0x81;
+    //auto ubdiv = apb_clk / (16 * baudrate) - 1;
+    //auto ubdiv_frac = (apb_clk % (baudrate * 16)) / baudrate;
+    //uart_r(base).baud_rate_ctrl = (ubdiv_frac << 16) | ubdiv;
 }
 
 bool uart::is_tx_fifo_full(uintptr_t base) noexcept

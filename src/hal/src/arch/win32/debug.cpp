@@ -22,9 +22,14 @@
 #include <chino/io.h>
 #include <chino/memory.h>
 #include <new>
+#include <setjmp.h>
 #include <stdexcept>
 
 extern "C" int _fltused = 0x9875;
+extern "C" int _except_list = 0;
+extern "C" int _ldused = 0x9876;
+
+#define FILENO_OFFSET 3
 
 using namespace chino;
 
@@ -43,13 +48,13 @@ _STD_END
 
 static FILE *tofile(handle_t handle) noexcept
 {
-    return reinterpret_cast<FILE *>(handle.value);
+    return reinterpret_cast<FILE *>(handle.value + FILENO_OFFSET);
 }
 
 static FILE *tofile(result<handle_t, error_code> handle) noexcept
 {
     if (handle.is_ok())
-        return reinterpret_cast<FILE *>(handle.unwrap().value);
+        return reinterpret_cast<FILE *>(handle.unwrap().value + FILENO_OFFSET);
     else
         return nullptr;
 }
@@ -57,7 +62,7 @@ static FILE *tofile(result<handle_t, error_code> handle) noexcept
 static handle_t tohandle(FILE *fp) noexcept
 {
     if (fp)
-        return { reinterpret_cast<uint16_t>(fp) };
+        return { static_cast<uint16_t>((intptr_t)fp - FILENO_OFFSET) };
     else
         return handle_t::invalid();
 }
@@ -169,6 +174,22 @@ extern "C"
         return tofile(handle);
     }
 
+    int __cdecl getc(
+        _Inout_ FILE *_Stream)
+    {
+        auto handle = tohandle(_Stream);
+        char ch;
+        auto ret = io::read(handle, gsl::byte_span(ch));
+        if (ret.is_ok())
+        {
+            return ch;
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
     char *__cdecl fgets(
         _Out_writes_z_(_MaxCount) char *_Buffer,
         _In_ int _MaxCount,
@@ -221,6 +242,38 @@ extern "C"
         return EOF;
     }
 
+    size_t __cdecl fread(
+        _Out_writes_bytes_(_ElementSize *_ElementCount) void *_Buffer,
+        _In_ size_t _ElementSize,
+        _In_ size_t _ElementCount,
+        _Inout_ FILE *_Stream)
+    {
+        if (!_Buffer)
+            return 0;
+
+        auto handle = tohandle(_Stream);
+        auto len = _ElementSize * _ElementCount;
+        if (io::read(handle, { reinterpret_cast<gsl::byte *>(_Buffer), len }).is_ok())
+            return len;
+        return 0;
+    }
+
+    size_t __cdecl fwrite(
+        _In_reads_bytes_(_ElementSize *_ElementCount) void const *_Buffer,
+        _In_ size_t _ElementSize,
+        _In_ size_t _ElementCount,
+        _Inout_ FILE *_Stream)
+    {
+        if (!_Buffer)
+            return 0;
+
+        auto handle = tohandle(_Stream);
+        auto len = _ElementSize * _ElementCount;
+        if (io::write(handle, { reinterpret_cast<const gsl::byte *>(_Buffer), len }).is_ok())
+            return len;
+        return 0;
+    }
+
     int __cdecl fclose(
         _Inout_ FILE *_Stream)
     {
@@ -230,8 +283,36 @@ extern "C"
         return -1;
     }
 
+    int __cdecl ferror(
+        _In_ FILE *_Stream)
+    {
+        return 0;
+    }
+
+    FILE *__cdecl freopen(
+        _In_z_ char const *_FileName,
+        _In_z_ char const *_Mode,
+        _Inout_ FILE *_Stream)
+    {
+        return nullptr;
+    }
+
+    int __cdecl feof(
+        _In_ FILE *_Stream)
+    {
+        return 0;
+    }
+
     void _exit(int code)
     {
+        while (1)
+            ;
+    }
+
+    void abort()
+    {
+        while (1)
+            ;
     }
 
     void __chkstk()

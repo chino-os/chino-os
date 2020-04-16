@@ -28,6 +28,7 @@
 #include <sys/time.h>
 #include <sys/times.h>
 #include <sys/types.h>
+#include <sys/signal.h>
 #include <chino/memory.h>
 #include <chino/io.h>
 
@@ -225,5 +226,15 @@ extern "C"
     void *_sbrk(ptrdiff_t incr)
     {
         return nullptr;
+    }
+
+    _sig_func_ptr signal (int, _sig_func_ptr p)
+    {
+        return p;
+    }
+
+    clock_t _times (struct tms *)
+    {
+        return 0;
     }
 }

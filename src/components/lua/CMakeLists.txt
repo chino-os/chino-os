@@ -14,6 +14,7 @@ set(LUA_SRCS lua/lapi.c
 	lua/lfunc.c
 	lua/lgc.c
 	lua/llex.c
+	lua/linit.c
 	lua/liolib.c
 	lua/lmathlib.c
 	lua/lmem.c
@@ -35,7 +36,9 @@ set(LUA_SRCS lua/lapi.c
 	lua/lzio.c)
 set(SRCS)
 
+set_source_files_properties(${LUA_SRCS} PROPERTIES LANGUAGE CXX)
 add_library(lua STATIC ${LUA_SRCS} ${SRCS})
 target_include_directories(lua PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(lua PUBLIC -DLUA_USE_LONGJMP)
 #target_include_directories(lua PRIVATE ports/chino)
-target_link_libraries(lua PUBLIC api)
+target_link_libraries(lua PUBLIC api microrl)

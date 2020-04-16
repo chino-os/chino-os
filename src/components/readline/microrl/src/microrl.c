@@ -543,7 +543,7 @@ static void microrl_get_complite (microrl_t * pThis)
 #endif
 
 //*****************************************************************************
-void new_line_handler(microrl_t * pThis){
+int new_line_handler(microrl_t * pThis){
 	char const * tkn_arr [_COMMAND_TOKEN_NMB];
 	int status;
 	int bexit = 0;
@@ -553,7 +553,11 @@ void new_line_handler(microrl_t * pThis){
 	if (pThis->cmdlen > 0)
 		hist_save_line (&pThis->ring_hist, pThis->cmdline, pThis->cmdlen);
 #endif
-	if (pThis->newline != NULL)
+	if (pThis->wait_newline) {
+		pThis->wait_newline = 0;
+		return 1;
+	}
+	else if (pThis->newline != NULL)
 		bexit = pThis->newline(pThis->cmdline);
 	else {
 	    status = split (pThis, pThis->cmdlen, tkn_arr);
@@ -573,6 +577,27 @@ void new_line_handler(microrl_t * pThis){
 	memset(pThis->cmdline, 0, _COMMAND_LINE_LEN);
 #ifdef _USE_HISTORY
 	pThis->ring_hist.cur = 0;
+#endif
+	return 0;
+}
+
+char *microrl_readline(microrl_t *pThis, const char *prompt)
+{
+    pThis->wait_newline = 1;
+
+    printf(prompt);
+    while (pThis->wait_newline)
+        microrl_insert_char(pThis, getchar());
+    return pThis->cmdline;
+}
+
+void microrl_free(microrl_t *pThis)
+{
+    pThis->cmdlen = 0;
+    pThis->cursor = 0;
+    memset(pThis->cmdline, 0, _COMMAND_LINE_LEN);
+#ifdef _USE_HISTORY
+    pThis->ring_hist.cur = 0;
 #endif
 }
 
@@ -614,7 +639,8 @@ void microrl_insert_char (microrl_t * pThis, int ch)
 			case KEY_CR:
 			break;
 			case KEY_LF:
-				new_line_handler(pThis);
+				if (new_line_handler(pThis))
+					return;
 			break;
 #endif
 			//-----------------------------------------------------

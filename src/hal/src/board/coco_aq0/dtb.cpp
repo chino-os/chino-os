@@ -20,24 +20,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #include <board.h>
-#include <chino/chip/wm/w600/platform.h>
-#include <chino/chip/wm/w600/uart.h>
+#define INCBIN_STYLE INCBIN_STYLE_SNAKE
+#include <incbin.h>
 
 using namespace chino;
-using namespace chino::chip;
 using namespace chino::board;
+using namespace chino::kernel;
 
-void board::board_t::boot_print_init() noexcept
-{
-    uart::set_baud_rate(UART0_BASE, 40000000, 38400);
-}
+INCBIN(dtb, DTB_PATH);
 
-void board::board_t::boot_print(const char *message) noexcept
+gsl::span<const uint8_t> board::board_t::device_tree() noexcept
 {
-    auto p = message;
-    while (*p)
-    {
-        while (uart::is_tx_fifo_full(UART0_BASE));
-        uart::write(UART0_BASE, *p++);
-    }
+    return { gdtb_data, gdtb_size };
 }

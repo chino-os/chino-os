@@ -13,13 +13,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <microrl.h>
 
 #include "lua.h"
 
 #include "lauxlib.h"
 #include "lualib.h"
 
-
+static microrl_t rl;
 
 #if !defined(LUA_PROMPT)
 #define LUA_PROMPT		"> "
@@ -75,29 +76,9 @@
 ** lua_saveline defines how to "save" a read line in a "history".
 ** lua_freeline defines how to free a line read by lua_readline.
 */
-#if !defined(lua_readline)	/* { */
-
-#if defined(LUA_USE_READLINE)	/* { */
-
-#include <readline/readline.h>
-#include <readline/history.h>
-#define lua_readline(L,b,p)	((void)L, ((b)=readline(p)) != NULL)
-#define lua_saveline(L,line)	((void)L, add_history(line))
-#define lua_freeline(L,b)	((void)L, free(b))
-
-#else				/* }{ */
-
-#define lua_readline(L,b,p) \
-        ((void)L, fputs(p, stdout), fflush(stdout),  /* show prompt */ \
-        fgets(b, LUA_MAXINPUT, stdin) != NULL)  /* get line */
-#define lua_saveline(L,line)	{ (void)L; (void)line; }
-#define lua_freeline(L,b)	{ (void)L; (void)b; }
-
-#endif				/* } */
-
-#endif				/* } */
-
-
+#define lua_readline(L,b,p)	((void)L, ((b)=microrl_readline(&rl, p)) != NULL)
+#define lua_saveline(L,line)	((void)L)
+#define lua_freeline(L,b)	((void)L, microrl_free(&rl))
 
 
 static lua_State *globalL = NULL;
@@ -305,10 +286,10 @@ static int incomplete (lua_State *L, int status) {
 ** Prompt the user, read a line, and push it into the Lua stack.
 */
 static int pushline (lua_State *L, int firstline) {
-  char buffer[LUA_MAXINPUT];
-  char *b = buffer;
+  char *b;
   size_t l;
   const char *prmt = get_prompt(L, firstline);
+  rl.prompt_len = strlen(prmt);
   int readstatus = lua_readline(L, b, prmt);
   if (readstatus == 0)
     return 0;  /* no input (prompt will be popped by caller) */
@@ -405,6 +386,7 @@ static void l_print (lua_State *L) {
 static void doREPL (lua_State *L) {
   int status;
   const char *oldprogname = progname;
+  microrl_init(&rl);
   progname = NULL;  /* no 'progname' on errors in interactive mode */
   while ((status = loadline(L)) != -1) {
     if (status == LUA_OK)
