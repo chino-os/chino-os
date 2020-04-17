@@ -89,7 +89,7 @@ void free_cmd(char argc, char **argv)
 extern "C"
 {
     const static_cmd_st static_cmd[] = {
-        { "basic", basic_cmd },
+        //{ "basic", basic_cmd },
         { "free", free_cmd },
         { "lua", lua_cmd },
         { "cat", cat_cmd },

@@ -86,6 +86,7 @@ typedef struct {
 	int cursor;                        // input cursor
 	int (*execute) (int argc, const char * const * argv );            // ptr to 'execute' callback
 	int (*newline) (const char * line );                              // ptr to 'newline' callback
+	int eot;
 	int wait_newline;
 	char ** (*get_completion) (int argc, const char * const * argv ); // ptr to 'completion' callback
 #ifdef _USE_CTLR_C

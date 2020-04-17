@@ -23,10 +23,10 @@
 #include <algorithm>
 #include <board.h>
 #include <cassert>
-#include <chino_config.h>
 #include <chino/ddk/threading.h>
 #include <chino/ddk/utility.h>
 #include <chino/memory/memory_manager.h>
+#include <chino_config.h>
 #include <cstring>
 #include <mutex>
 
@@ -224,9 +224,82 @@ private:
         {
             prev->count += cnt->count;
             prev->next = cnt->next;
+            try_free_pages(prev);
+        }
+        else
+        {
+            try_free_pages(cnt);
         }
 
         sanity_check();
+    }
+
+    void try_free_pages(free_heap_node *node) noexcept
+    {
+        if (node->count >= PAGE_SIZE)
+        {
+            auto aligned_low = align(uintptr_t(node), PAGE_SIZE);
+            auto aligned_high = align_down(uintptr_t(node->end()), PAGE_SIZE);
+
+            if (aligned_high > aligned_low)
+            {
+                int32_t pages = (aligned_high - aligned_low) / PAGE_SIZE;
+                int32_t free_before = aligned_low - uintptr_t(node);
+                int32_t free_after = uintptr_t(node->end()) - aligned_high;
+
+                if (free_after != 0 && free_after < sizeof(free_heap_node))
+                {
+                    pages--;
+                    free_after += PAGE_SIZE;
+                }
+
+                if (free_before != 0 && free_before < sizeof(free_heap_node))
+                {
+                    pages--;
+                    free_before += PAGE_SIZE;
+                }
+
+                // No pages to be free
+                if (pages <= 0)
+                    return;
+
+                // Add free after node
+                if (free_after)
+                {
+                    auto new_node = reinterpret_cast<free_heap_node *>(uintptr_t(node->end()) - free_after);
+                    new_node->count = free_after;
+                    new_node->next = node->next;
+                    node->next = new_node;
+                }
+
+                node->count -= pages * PAGE_SIZE;
+
+                // Add free before node
+                if (free_before)
+                {
+                    node->count = free_before;
+                }
+                else
+                {
+                    // Find prev node
+                    free_heap_node *prev = nullptr, *cnt = head_;
+                    while (cnt != node)
+                    {
+                        prev = cnt;
+                        cnt = cnt->next;
+                    }
+
+                    if (prev)
+                        prev->next = node->next;
+                    else
+                        head_ = node->next;
+                }
+
+                // Free pages
+                free_pages(owner(), reinterpret_cast<uint8_t *>(node) + free_before, pages);
+                avail_bytes_ -= pages * PAGE_SIZE;
+            }
+        }
     }
 
     threading::kprocess &owner() noexcept;

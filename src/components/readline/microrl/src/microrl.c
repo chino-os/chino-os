@@ -337,6 +337,7 @@ void microrl_init (microrl_t * pThis)
 	pThis->execute = NULL;
 	pThis->newline = NULL;
 	pThis->get_completion = NULL;
+	pThis->eot=0;
 #ifdef _USE_CTLR_C
 	pThis->sigint = NULL;
 #endif
@@ -588,7 +589,7 @@ char *microrl_readline(microrl_t *pThis, const char *prompt)
     printf(prompt);
     while (pThis->wait_newline)
         microrl_insert_char(pThis, getchar());
-    return pThis->cmdline;
+    return pThis->eot ? NULL : pThis->cmdline;
 }
 
 void microrl_free(microrl_t *pThis)
@@ -723,6 +724,11 @@ void microrl_insert_char (microrl_t * pThis, int ch)
 				pThis->sigint();
 			break;
 #endif
+			case KEY_EOT:
+				pThis->eot = 1;
+				new_line_handler(pThis);
+				return;
+
 			//-----------------------------------------------------
 			default:
 			if (((ch == ' ') && (pThis->cmdlen == 0)) || IS_CONTROL_CHAR(ch))
