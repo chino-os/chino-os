@@ -1,10 +1,22 @@
 /*
- * linker script for STM32F10x with GNU ld
- * bernard.xiong 2009-10-14
+ * linker script for STM32F103ZET6 with GNU ld
+ * SunnyCase 2020-04-09
  */
 
 /* Program Entry, set to mark it as "used" and avoid gc */
-ENTRY(Reset_Handler)
+MEMORY
+{% raw %}
+{
+{% endraw %}
+{% for region in chip.memories %}
+    {{region.name}} ({{region.attribute}}) : ORIGIN = {{region.start}}, LENGTH = {{region.length.bytes}}
+{% endfor %}
+{% raw %}
+}
+{% endraw %}
+
+/* Program Entry, set to mark it as "used" and avoid gc */
+ENTRY(chinoStartup)
 _system_stack_size = 0x400;
 _ram_end = ORIGIN(RAM) + LENGTH(RAM);
 
@@ -12,12 +24,12 @@ SECTIONS
 {
 	.isr :
 	{
-        KEEP(*(.isr_vector))            /* Startup code */
+        KEEP(*(SORT(.isr_vector.*)))            /* Startup code */
 	} > FLASH
 
 	.init :
 	{
-		KEEP(*(SORT(.init)))
+		KEEP (*(SORT_NONE(.init)))
 	} > FLASH
 
     .text :
@@ -34,11 +46,6 @@ SECTIONS
         . = ALIGN(4);
         _etext = .;
     } > FLASH
-
-	.fini :
-	{
-	  KEEP (*(SORT(.fini)))
-	} > FLASH
 	
     /* Read-only data segment */
     .rodata :
@@ -47,6 +54,14 @@ SECTIONS
       *(.rodata .rodata.*)
       *(.gnu.linkonce.r.*)
     } > FLASH
+
+    /* Drivers */
+    drivers_begin_ = .;
+    .chino.driver :
+    {
+      KEEP (*(.chdrv .chdrv.*))
+    } > FLASH
+    drivers_end_ = .;
 
 	.ARM.extab : /* exception unwinding information */
     {
@@ -80,13 +95,6 @@ SECTIONS
         KEEP(*(.init_array*))
         PROVIDE_HIDDEN(__init_array_end = .);
     } > FLASH
-    .fini_array :
-    {
-        PROVIDE_HIDDEN(__fini_array_start = .);
-        KEEP(*(SORT(.fini_array.*)))
-        KEEP(*(.fini_array*))
-        PROVIDE_HIDDEN(__fini_array_end = .);
-	} > FLASH
 	
     /* This is used by the startup in order to initialize the .data secion */
     _sidata = .;
@@ -130,7 +138,7 @@ SECTIONS
     .stack : 
     {
         . = . + _system_stack_size;
-        . = ALIGN(4);
+        . = ALIGN(8);
         _estack = .;
     } > RAM
 

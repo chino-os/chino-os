@@ -12,3 +12,7 @@ CMakeSettings.json
 *.dtb
 /out
 src/hal/src/board/win32/RC*
+obj
+bin
+*.user
+*.deb

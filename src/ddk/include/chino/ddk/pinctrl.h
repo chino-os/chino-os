@@ -19,19 +19,46 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include <stdexcept>
+#pragma once
+#include <cstdint>
+#include <string_view>
+#include <chino/error.h>
+#include <chino/result.h>
 
-#ifndef _MSC_VER
-#include <cxxabi.h>
-
-namespace __cxxabiv1
+namespace chino::io::pinctrl
 {
-std::terminate_handler __terminate_handler = abort;
-
-extern "C"
+struct pin_bank
 {
-    [[noreturn]] void *__cxa_allocate_exception(size_t) noexcept { abort(); }
-    [[noreturn]] void __cxa_throw(void *, std::type_info *, void (*)(void *)) noexcept { abort(); }
+};
+
+struct pin_group
+{
+    const pin_bank &bank;
+    gsl::span<const uint16_t> pins;
+};
+
+struct pin_setting
+{
+    const pin_group& group;
+    uint32_t func;
+};
+
+struct pin_state_desc
+{
+    std::string_view name;
+    gsl::span<const pin_setting> settings;
+};
+
+struct device_pin_state_desc
+{
+    gsl::span<const pin_state_desc> states;
+};
+
+namespace wellknwon_states
+{
+    using namespace std::string_view_literals;
+
+    inline constexpr std::string_view default_ = "default";
+    inline constexpr std::string_view sleep = "sleep";
 }
 }
-#endif

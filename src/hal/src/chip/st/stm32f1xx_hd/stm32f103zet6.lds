@@ -5,10 +5,15 @@
 
 /* Program Entry, set to mark it as "used" and avoid gc */
 MEMORY
+{% raw %}
 {
-    FLASH (rx) : ORIGIN = 0x08000000, LENGTH = 512k /* 512KB flash */
-    RAM (rw) : ORIGIN = 0x20000000, LENGTH = 64k /* 64K sram */
+{% endraw %}
+{% for region in chip.memories %}
+    {{region.name}} ({{region.attribute}}) : ORIGIN = {{region.start}}, LENGTH = {{region.length.bytes}}
+{% endfor %}
+{% raw %}
 }
+{% endraw %}
 
 /* Program Entry, set to mark it as "used" and avoid gc */
 ENTRY(chinoStartup)
@@ -41,11 +46,6 @@ SECTIONS
         . = ALIGN(4);
         _etext = .;
     } > FLASH
-
-	.fini :
-	{
-	  KEEP (*(SORT_NONE(.fini)))
-	} > FLASH
 	
     /* Read-only data segment */
     .rodata :

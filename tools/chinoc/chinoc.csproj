@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <RootNamespace>Chino</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\hal\src\chip\st\stm32f1xx_hd\chip.cs" Link="Chip\st\stm32f1xx_hd\chip.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="newtonsoft.json" Version="12.0.3" />
+    <PackageReference Include="Scriban" Version="2.1.2" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20214.1" />
+    <PackageReference Include="UnitsNet" Version="4.58.0" />
+    <PackageReference Include="UnitsNet.NumberExtensions" Version="4.58.0" />
+  </ItemGroup>
+
+</Project>

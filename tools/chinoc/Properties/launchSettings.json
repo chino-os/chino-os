@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "chinoc": {
+      "commandName": "Project",
+      "commandLineArgs": "render --cfg D:\\Work\\Repository\\chino-os\\src\\hal\\src\\board\\PZ6806L\\board.json --template D:\\Work\\Repository\\chino-os\\src\\hal\\src\\chip\\st\\stm32fxxx.lds.liquid --out board.lds"
+    }
+  }
+}
