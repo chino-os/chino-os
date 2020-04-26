@@ -5,15 +5,13 @@
 
 /* Program Entry, set to mark it as "used" and avoid gc */
 MEMORY
-{% raw %}
 {
-{% endraw %}
-{% for region in chip.memories %}
-    {{region.name}} ({{region.attribute}}) : ORIGIN = {{region.start}}, LENGTH = {{region.length.bytes}}
-{% endfor %}
-{% raw %}
+@foreach (var region in Model.Chip.Memories)
+{
+    var origin = $"0x{region.Start:X8}";
+    @("    ")@region.Name @:(@region.Attribute) : ORIGIN = @origin, LENGTH = @region.Length.Bytes
 }
-{% endraw %}
+}
 
 /* Program Entry, set to mark it as "used" and avoid gc */
 ENTRY(chinoStartup)

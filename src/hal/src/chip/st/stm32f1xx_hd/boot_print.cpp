@@ -20,11 +20,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #include <board.h>
-#include <chino/chip/st/stm32f1xx_hd/platform.h>
-#include <chino/chip/st/stm32f1xx_hd/usart.h>
-#include <chino/chip/st/stm32f1xx_hd/rcc.h>
 #include <chino/chip/st/stm32f1xx_hd/gpio.h>
+#include <chino/chip/st/stm32f1xx_hd/rcc.h>
+#include <chino/chip/st/stm32f1xx_hd/usart.h>
 #include <chino_config.h>
+#include <chipdef.h>
 
 using namespace chino;
 using namespace chino::chip;
@@ -51,7 +51,8 @@ void board::board_t::boot_print(const char *message) noexcept
     auto p = message;
     while (*p)
     {
-        while (!usart::tx_is_empty(USART1_BASE));
+        while (!usart::tx_is_empty(USART1_BASE))
+            ;
         usart::tx_send(USART1_BASE, *p++);
     }
 }

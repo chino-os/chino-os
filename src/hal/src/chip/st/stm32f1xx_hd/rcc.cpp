@@ -20,8 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #include <chino/arch/reg.h>
-#include <chino/chip/st/stm32f1xx_hd/platform.h>
 #include <chino/chip/st/stm32f1xx_hd/rcc.h>
+#include <chipdef.h>
 
 using namespace chino;
 using namespace chino::arch;

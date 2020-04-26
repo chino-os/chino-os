@@ -32,8 +32,8 @@ namespace Chino.Chip
                 Name = "STM32F103ZET6",
                 Memories = new[]
                 {
-                    new MemoryRange { Name = "FLASH", Attribute = "rx", Start = 0x08000000, Length = 512.Kilobytes() },
-                    new MemoryRange { Name = "RAM", Attribute = "rw", Start = 0x20000000, Length = 64.Kilobytes() }
+                    new MemoryRange { Name = "FLASH", Attribute = "rx", Start = 0x08000000, Length = 512.Kibibytes() },
+                    new MemoryRange { Name = "RAM", Attribute = "rw", Start = 0x20000000, Length = 64.Kibibytes() }
                 },
                 PinBanks = new[] { portA },
                 PinGroups = new[]
@@ -52,6 +52,11 @@ namespace Chino.Chip
                             {
                                 gpioA,
 
+                                new SimpleDeviceNode
+                                {
+                                    Name = "Rcc",
+                                    Regs = new[] { new RegRange { Start = 0x40021800, Length = 0x400.Bytes() } },
+                                },
                                 new SimpleDeviceNode
                                 {
                                     Name = "Usart1",

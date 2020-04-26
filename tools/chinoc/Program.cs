@@ -7,7 +7,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Chino.Chip;
 using Newtonsoft.Json;
-using Scriban;
 
 namespace Chino
 {
@@ -27,7 +26,7 @@ namespace Chino
 
     class Program
     {
-        static int Main(string[] args)
+        static Task<int> Main(string[] args)
         {
             var renderCmd = new Command("render", "render a template")
             {
@@ -42,17 +41,21 @@ namespace Chino
                 renderCmd
             };
 
-            return rootCmd.Invoke(args);
+            return rootCmd.InvokeAsync(args);
         }
 
-        private static void OnRender(RenderOptions options)
+        private static async Task OnRender(RenderOptions options)
         {
+            var engine = new RazorLight.RazorLightEngineBuilder()
+                .UseMemoryCachingProvider()
+                .UseFileSystemProject(Path.GetDirectoryName(options.Template), ".razor")
+                .Build();
             var chips = GetChipDefinitions();
             var config = JsonConvert.DeserializeObject<BoardConfig>(File.ReadAllText(options.Cfg));
             var chip = chips.FirstOrDefault(x => x.Id == config.Chip) ?? throw new InvalidOperationException($"Cannot find chip definition for {config.Chip}");
             var context = new TemplateRenderContext { Chip = chip };
-            var template = Template.ParseLiquid(File.ReadAllText(options.Template));
-            File.WriteAllText(options.Out, template.Render(context));
+            var result = await engine.CompileRenderAsync(Path.GetFileName(options.Template), context);
+            File.WriteAllText(options.Out, result);
         }
 
         static IReadOnlyCollection<ChipDefinition> GetChipDefinitions()

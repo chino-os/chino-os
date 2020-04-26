@@ -23,9 +23,13 @@
 #include <cstdint>
 #include <cstddef>
 
+@{
+    var soc = Model.Chip.Root.Devices[0];
+}
 namespace chino::chip
 {
-inline constexpr uintptr_t RCC_BASE = 0x40021000;
-inline constexpr uintptr_t USART1_BASE = 0x40013800;
-inline constexpr uintptr_t GPIOA_BASE = 0x40010800;
+@foreach (var dev in soc.Children)
+{
+@:inline constexpr uintptr_t @(dev.Name.ToUpper() + "_BASE") = @("0x" + dev.Regs[0].Start.ToString("X8"));
+}
 }
