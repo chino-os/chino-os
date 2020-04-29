@@ -23,6 +23,10 @@ jobs:
       addToPath: true 
       architecture: 'x64'
 
+  - script: |
+      pip install conan==1.21.1
+    displayName: 'Install Conan'
+
   - task: CMake@1
     inputs:
         cmakeArgs: '.. -G "Visual Studio 16 2019" -A x64 -DCHINO_BOARD=win32 -DCMAKE_BUILD_TYPE=Release'
