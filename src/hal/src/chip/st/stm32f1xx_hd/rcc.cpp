@@ -79,7 +79,7 @@ typedef struct
     reg_t<rcc_apb2_enr_t> apb2_enr;
 } rcc_t;
 
-static volatile rcc_t &rcc_r() noexcept { return *reinterpret_cast<volatile rcc_t *>(RCC_BASE); }
+static volatile rcc_t &rcc_r() noexcept { return *reinterpret_cast<volatile rcc_t *>(config::rcc::base); }
 
 void rcc::clock_enable(apb2_periph periph) noexcept
 {

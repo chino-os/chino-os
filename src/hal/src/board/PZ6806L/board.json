@@ -1,3 +1,6 @@
 {
-    "chip": "03A3F064-FFBA-4DE2-BAE2-51FD3AC8E11D"
+    "chip": "03A3F064-FFBA-4DE2-BAE2-51FD3AC8E11D",
+    "selectedPinGroups": {
+        "Usart1": "Usart1-A"
+    }
 }

@@ -1,0 +1,52 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+  branches:
+    include:
+    - '*'
+
+jobs:
+- job: Windows
+  timeoutInMinutes: 0
+  pool:
+    vmImage: 'windows-2019'
+  steps:
+  - checkout: self
+    submodules: true
+
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.7' 
+      addToPath: true 
+      architecture: 'x64'
+
+  - task: CMake@1
+    inputs:
+        cmakeArgs: '-G "Visual Studio 16 2019" -A x64 -DCHINO_BOARD=win32 -DCMAKE_BUILD_TYPE=Release'
+    displayName: 'Configure'
+
+  - task: MSBuild@1
+    inputs:
+      solution: 'build/chino.sln'
+      msbuildArchitecture: 'x64'
+      configuration: 'Release'
+      msbuildArguments: '-m'
+    displayName: 'Build'
+
+  - task: ArchiveFiles@2
+    inputs:
+      rootFolderOrFile: 'build/bin' 
+      includeRootFolder: false 
+      archiveType: 'zip' # Options: zip, 7z, tar, wim
+      archiveFile: '$(Build.ArtifactStagingDirectory)/chino-win32.zip' 
+      replaceExistingArchive: true 
+      verbose: true
+    displayName: 'Publish'
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathToPublish: $(Build.ArtifactStagingDirectory)/chino-win32.zip
+      artifactName: chino-win32

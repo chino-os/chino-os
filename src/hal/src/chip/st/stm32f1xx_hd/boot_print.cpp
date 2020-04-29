@@ -32,18 +32,22 @@ using namespace chino::board;
 
 void board::board_t::boot_print_init() noexcept
 {
-    rcc::clock_enable(rcc::apb2_periph::iop_a);
-    rcc::clock_enable(rcc::apb2_periph::usart_1);
+    using tx_t = config::usart1::pins::tx;
+    using rx_t = config::usart1::pins::rx;
+    constexpr auto tx_base = tx_t::bank_t::dev_t::base;
+    constexpr auto rx_base = rx_t::bank_t::dev_t::base;
 
-    // tx
-    gpio::pin_set_mode(GPIOA_BASE, 9, gpio::output_mode_t::af_out_push_pull, gpio::speed_t::out_50MHz);
-    // rx
-    gpio::pin_set_mode(GPIOA_BASE, 10, gpio::input_mode_t::in_floating);
+    rcc::clock_enable(rcc::periph_from_base_v<tx_base>);
+    rcc::clock_enable(rcc::periph_from_base_v<rx_base>);
+    rcc::clock_enable(rcc::apb2_periph::usart1);
 
-    usart::set_baud_rate(USART1_BASE, 8000000, BOOT_DEBUG_SERIAL_BAUDRATE);
-    usart::set_format(USART1_BASE, usart::data_bits_t::data_8b, usart::stop_bits_t::stop_1b, usart::parity_t::none);
-    usart::tx_enable(USART1_BASE);
-    usart::enable(USART1_BASE);
+    gpio::pin_set_mode(tx_base, tx_t::index, gpio::output_mode_t::af_out_push_pull, gpio::speed_t::out_50MHz);
+    gpio::pin_set_mode(rx_base, rx_t::index, gpio::input_mode_t::in_floating);
+
+    usart::set_baud_rate(config::usart1::base, 8000000, BOOT_DEBUG_SERIAL_BAUDRATE);
+    usart::set_format(config::usart1::base, usart::data_bits_t::data_8b, usart::stop_bits_t::stop_1b, usart::parity_t::none);
+    usart::tx_enable(config::usart1::base);
+    usart::enable(config::usart1::base);
 }
 
 void board::board_t::boot_print(const char *message) noexcept
@@ -51,8 +55,8 @@ void board::board_t::boot_print(const char *message) noexcept
     auto p = message;
     while (*p)
     {
-        while (!usart::tx_is_empty(USART1_BASE))
+        while (!usart::tx_is_empty(config::usart1::base))
             ;
-        usart::tx_send(USART1_BASE, *p++);
+        usart::tx_send(config::usart1::base, *p++);
     }
 }

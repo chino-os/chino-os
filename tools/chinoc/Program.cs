@@ -10,9 +10,11 @@ using Newtonsoft.Json;
 
 namespace Chino
 {
-    class BoardConfig
+    public class BoardConfig
     {
         public Guid Chip { get; set; }
+
+        public Dictionary<string, string> SelectedPinGroups { get; set; }
     }
 
     class RenderOptions
@@ -53,7 +55,7 @@ namespace Chino
             var chips = GetChipDefinitions();
             var config = JsonConvert.DeserializeObject<BoardConfig>(File.ReadAllText(options.Cfg));
             var chip = chips.FirstOrDefault(x => x.Id == config.Chip) ?? throw new InvalidOperationException($"Cannot find chip definition for {config.Chip}");
-            var context = new TemplateRenderContext { Chip = chip };
+            var context = new TemplateRenderContext { Chip = chip, Board = config };
             var result = await engine.CompileRenderAsync(Path.GetFileName(options.Template), context);
             File.WriteAllText(options.Out, result);
         }

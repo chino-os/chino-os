@@ -22,23 +22,41 @@
 #pragma once
 #include <cstdint>
 #include <cstddef>
+#include <chipdef.h>
 
 namespace chino::chip::rcc
 {
 enum class apb2_periph : uint32_t
 {
     afio = 0,
-    iop_a = 2,
-    iop_b = 3,
-    iop_c = 4,
-    iop_d = 5,
-    iop_e = 6,
-    adc_1 = 9,
-    adc_2 =10,
-    tim_1 = 11,
-    spi_1 = 12,
-    usart_1 = 14
+    porta = 2,
+    portb = 3,
+    portc = 4,
+    portd = 5,
+    porte = 6,
+    adc1 = 9,
+    adc2 =10,
+    tim1 = 11,
+    spi1 = 12,
+    usart1 = 14
 };
+
+namespace details
+{
+template<uintptr_t Base>
+constexpr auto periph_from_base_impl() noexcept
+{
+    if constexpr(Base == config::gpioa::base)
+        return apb2_periph::porta;
+    else if constexpr(Base == config::usart1::base)
+        return apb2_periph::usart1;
+    else
+        return;
+}
+}
+
+template<uintptr_t Base>
+inline constexpr auto periph_from_base_v = details::periph_from_base_impl<Base>();
 
 void clock_enable(apb2_periph periph) noexcept;
 }

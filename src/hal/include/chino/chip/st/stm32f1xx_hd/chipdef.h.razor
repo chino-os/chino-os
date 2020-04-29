@@ -23,13 +23,56 @@
 #include <cstdint>
 #include <cstddef>
 
+@model Chino.TemplateRenderContext
+@using Chino
+@using Chino.Chip
+@using System.Linq
 @{
-    var soc = Model.Chip.Root.Devices[0];
+    var soc = (SimpleBusNode)Model.Chip.Root.Devices[0];
 }
-namespace chino::chip
+namespace chino::chip::config
 {
-@foreach (var dev in soc.Children)
+/* Forward Declares */
+@foreach (SimpleDeviceNode dev in soc.Children)
 {
-@:inline constexpr uintptr_t @(dev.Name.ToUpper() + "_BASE") = @("0x" + dev.Regs[0].Start.ToString("X8"));
+@:struct @dev.Name.ToLower();
+}
+
+/* Pin Banks */
+@foreach (PinBank bank in Model.Chip.PinBanks)
+{
+@:struct @bank.Name.ToLower()
+@:{
+@:    using dev_t = @bank.Device.Name.ToLower();
+@:    static constexpr uint32_t pins_count = @bank.PinsCount;
+@:};
+}
+
+/* Device Coinfigurations */
+@foreach (SimpleDeviceNode dev in soc.Children)
+{
+@:struct @dev.Name.ToLower()
+@:{
+@:    static constexpr uintptr_t base = @("0x" + dev.Regs[0].Start.ToString("X8"));
+    if (dev.PinGroups.Any())
+    {
+@:
+@:    struct pins
+@:    {
+        var pinGroupName = Model.Board.SelectedPinGroups[dev.Name];
+        var pinGroup = dev.PinGroups.First(x => x.Name == pinGroupName);
+        foreach (var pin in pinGroup.Pins)
+        {
+@:        struct @pin.Name.ToLower()
+@:        {
+@:            using bank_t = @pin.Pin.Bank.Name.ToLower();
+@:            static constexpr uint32_t index = @pin.Pin.Index;
+@:        };
+@:
+        }
+@:    };
+    }
+@:};
+@:
 }
 }
