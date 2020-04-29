@@ -25,7 +25,7 @@ jobs:
 
   - task: CMake@1
     inputs:
-        cmakeArgs: '-G "Visual Studio 16 2019" -A x64 -DCHINO_BOARD=win32 -DCMAKE_BUILD_TYPE=Release'
+        cmakeArgs: '.. -G "Visual Studio 16 2019" -A x64 -DCHINO_BOARD=win32 -DCMAKE_BUILD_TYPE=Release'
     displayName: 'Configure'
 
   - task: MSBuild@1
