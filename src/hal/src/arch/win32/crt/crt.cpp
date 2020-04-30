@@ -21,7 +21,11 @@
 // SOFTWARE.
 #include <stdexcept>
 
+#if NDEBUG
+#pragma comment(linker, "/export:_wassert=ucrtbase._wassert")
+#else
 #pragma comment(linker, "/export:_wassert=ucrtbased._wassert")
+#endif
 
 static void _cdecl raise_handler(const std::exception &ex)
 {
