@@ -38,7 +38,7 @@ set(TOOLS_DIR ${CMAKE_CURRENT_LIST_DIR}/tools)
  
 if (MSVC)
     enable_language(ASM_MASM)
-    add_definitions(/D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /DNOMINMAX /DUNICODE /D_UNICODE)
+    add_definitions(/D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_CRT_SECURE_NO_WARNINGS /DNOMINMAX /DUNICODE /D_UNICODE)
     add_compile_options(/Zc:threadSafeInit- /utf-8 /wd4200 /Oi)
     # Disable C++ exceptions.
     string(REGEX REPLACE "/EH[a-z]+" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")

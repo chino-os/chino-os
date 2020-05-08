@@ -32,24 +32,28 @@ public:
     serial_console_dev(file *file)
         : file_(file) {}
 
-    result<size_t, error_code> read(gsl::span<gsl::byte> buffer) noexcept;
-    result<void, error_code> write(gsl::span<const gsl::byte> buffer) noexcept;
+    result<size_t, error_code> read(gsl::span<gsl::byte> buffer) noexcept
+    {
+        try_var(ret, read_file(*file_, buffer));
+
+        for (size_t i = 0; i < ret; i++)
+        {
+            if (buffer[i] == gsl::to_byte('\r'))
+                buffer[i] = gsl::to_byte('\n');
+            else if (buffer[i] == gsl::to_byte(127))
+                buffer[i] = gsl::to_byte('\b');
+        }
+        return ok(ret);
+    }
+
+    result<void, error_code> write(gsl::span<const gsl::byte> buffer) noexcept
+    {
+        return write_file(*file_, buffer);
+    }
 
 private:
     file *file_;
 };
-
-result<void, error_code> con_attach_device(const driver &drv, device &bottom_dev, std::string_view args);
-result<file *, error_code> con_open_device(const driver &drv, device &dev, std::string_view filename, create_disposition create_disp);
-result<size_t, error_code> con_read_device(const driver &drv, device &dev, file &file, gsl::span<gsl::byte> buffer);
-result<void, error_code> con_write_device(const driver &drv, device &dev, file &file, gsl::span<const gsl::byte> buffer);
-
-const driver con_drv = {
-    .type = driver_type::console,
-    .name = "serial-console",
-    .ops = { .attach_device = con_attach_device, .open_device = con_open_device, .read_device = con_read_device, .write_device = con_write_device },
-};
-EXPORT_DRIVER(con_drv);
 
 result<void, error_code> con_attach_device(const driver &drv, device &bottom_dev, std::string_view args)
 {
@@ -59,37 +63,25 @@ result<void, error_code> con_attach_device(const driver &drv, device &bottom_dev
     return ok();
 }
 
-result<file *, error_code> con_open_device(const driver &drv, device &dev, std::string_view filename, create_disposition create_disp)
+result<file *, error_code> con_open_device(device &dev, std::string_view filename, create_disposition create_disp)
 {
     return create_file(dev, 0);
 }
 
-result<size_t, error_code> con_read_device(const driver &drv, device &dev, file &file, gsl::span<gsl::byte> buffer)
+result<size_t, error_code> con_read_device(file &file, gsl::span<gsl::byte> buffer)
 {
-    return dev.extension<serial_console_dev>().read(buffer);
+    return file.dev.extension<serial_console_dev>().read(buffer);
 }
 
-result<void, error_code> con_write_device(const driver &drv, device &dev, file &file, gsl::span<const gsl::byte> buffer)
+result<void, error_code> con_write_device(file &file, gsl::span<const gsl::byte> buffer)
 {
-    return dev.extension<serial_console_dev>().write(buffer);
-}
-}
-
-result<size_t, error_code> serial_console_dev::read(gsl::span<gsl::byte> buffer) noexcept
-{
-    try_var(ret, read_file(*file_, buffer));
-
-    for (size_t i = 0; i < ret; i++)
-    {
-        if (buffer[i] == gsl::to_byte('\r'))
-            buffer[i] = gsl::to_byte('\n');
-        else if (buffer[i] == gsl::to_byte(127))
-            buffer[i] = gsl::to_byte('\b');
-    }
-    return ok(ret);
+    return file.dev.extension<serial_console_dev>().write(buffer);
 }
 
-result<void, error_code> serial_console_dev::write(gsl::span<const gsl::byte> buffer) noexcept
-{
-    return write_file(*file_, buffer);
+const driver con_drv = {
+    .type = driver_type::console,
+    .name = "serial-console",
+    .ops = { .attach_device = con_attach_device, .open_device = con_open_device, .read_device = con_read_device, .write_device = con_write_device },
+};
+EXPORT_DRIVER(con_drv);
 }

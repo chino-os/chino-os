@@ -243,9 +243,9 @@ private:
 
             if (aligned_high > aligned_low)
             {
-                int32_t pages = (aligned_high - aligned_low) / PAGE_SIZE;
-                int32_t free_before = aligned_low - uintptr_t(node);
-                int32_t free_after = uintptr_t(node->end()) - aligned_high;
+                intmax_t pages = (aligned_high - aligned_low) / PAGE_SIZE;
+                intmax_t free_before = aligned_low - uintptr_t(node);
+                intmax_t free_after = uintptr_t(node->end()) - aligned_high;
 
                 if (free_after != 0 && free_after < sizeof(free_heap_node))
                 {

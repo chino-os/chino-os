@@ -8,6 +8,6 @@ namespace Chino
     {
         public Chip.ChipDefinition Chip { get; set; }
 
-        public BoardConfig Board { get; set; }
+        public Board.BoardDefinition Board { get; set; }
     }
 }

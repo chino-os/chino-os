@@ -255,7 +255,7 @@ result<device *, error_code> io::create_device(std::string_view name, const driv
 
 result<device *, error_code> io::create_device(const driver &drv, device_type type, size_t extension_size) noexcept
 {
-    return create_device({}, type, extension_size);
+    return create_device({}, drv, type, extension_size);
 }
 
 result<file *, error_code> io::create_file(device &dev, size_t extension_size) noexcept
@@ -273,7 +273,7 @@ result<file *, error_code> io::open_file(device &dev, access_mask access, std::s
         return err(error_code::not_supported);
 
     std::unique_lock lock(dev.syncroot);
-    return drv.ops.open_device(drv, dev, filename, create_disp);
+    return drv.ops.open_device(dev, filename, create_disp);
 }
 
 result<size_t, error_code> io::read_file(file &file, gsl::span<gsl::byte> buffer) noexcept
@@ -283,7 +283,7 @@ result<size_t, error_code> io::read_file(file &file, gsl::span<gsl::byte> buffer
         return err(error_code::not_supported);
 
     std::unique_lock lock(file.syncroot);
-    try_var(ret, drv.ops.read_device(drv, file.dev, file, buffer));
+    try_var(ret, drv.ops.read_device(file, buffer));
     file.offset += ret;
     return ok(ret);
 }
@@ -295,7 +295,7 @@ result<void, error_code> io::write_file(file &file, gsl::span<const gsl::byte> b
         return err(error_code::not_supported);
 
     std::unique_lock lock(file.syncroot);
-    try_(drv.ops.write_device(drv, file.dev, file, buffer));
+    try_(drv.ops.write_device(file, buffer));
     file.offset += buffer.length_bytes();
     return ok();
 }
@@ -307,7 +307,7 @@ result<void, error_code> io::close_file(file &file) noexcept
         return ok();
 
     std::unique_lock lock(file.syncroot);
-    return drv.ops.close_device(drv, file.dev, file);
+    return drv.ops.close_device(file);
 }
 
 result<void, error_code> io::alloc_console() noexcept

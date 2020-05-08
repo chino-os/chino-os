@@ -128,10 +128,10 @@ private:
 
 typedef result<void, error_code> (*driver_add_device_t)(const driver &drv, const device_id &dev_id);
 typedef result<void, error_code> (*driver_attach_device_t)(const driver &drv, device &bottom_dev, std::string_view args);
-typedef result<file *, error_code> (*driver_open_device_t)(const driver &drv, device &dev, std::string_view filename, create_disposition create_disp);
-typedef result<void, error_code> (*driver_close_device_t)(const driver &drv, device &dev, file &file);
-typedef result<size_t, error_code> (*driver_read_device_t)(const driver &drv, device &dev, file &file, gsl::span<gsl::byte> buffer);
-typedef result<void, error_code> (*driver_write_device_t)(const driver &drv, device &dev, file &file, gsl::span<const gsl::byte> buffer);
+typedef result<file *, error_code> (*driver_open_device_t)(device &dev, std::string_view filename, create_disposition create_disp);
+typedef result<void, error_code> (*driver_close_device_t)(file &file);
+typedef result<size_t, error_code> (*driver_read_device_t)(file &file, gsl::span<gsl::byte> buffer);
+typedef result<void, error_code> (*driver_write_device_t)(file &file, gsl::span<const gsl::byte> buffer);
 
 struct driver_operations
 {
