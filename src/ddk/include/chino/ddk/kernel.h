@@ -47,7 +47,7 @@ struct physical_memory_desc
 typedef void (*thread_thunk_t)(void *arg0, void *arg1);
 result<void, error_code> memory_manager_init(const physical_memory_desc &desc);
 result<void, error_code> kernel_main();
-result<void, error_code> io_manager_init(gsl::span<const uint8_t> fdt);
+result<void, error_code> io_manager_init();
 result<void, error_code> logging_init();
 uint32_t kernel_system_thread_main(void *arg);
 

@@ -48,9 +48,11 @@ namespace Chino
                 .Build();
             var boards = GetBoardDefinitions();
             var chips = GetChipDefinitions();
+            var drivers = GetDriverDefinitions();
             var board = boards.FirstOrDefault(x => x.Id == options.Board) ?? throw new InvalidOperationException($"Cannot find board definition for {options.Board}");
             var chip = chips.FirstOrDefault(x => x.Id == board.Chip) ?? throw new InvalidOperationException($"Cannot find chip definition for {board.Chip}");
-            var context = new TemplateRenderContext { Chip = chip, Board = board };
+            var bdrivers = board.Drivers.Select(x => drivers.First(d => d.Id == x)).ToList();
+            var context = new TemplateRenderContext { Chip = chip, Board = board, Drivers = bdrivers };
             var result = await engine.CompileRenderAsync(Path.GetFileName(options.Template), context);
             File.WriteAllText(options.Out, result);
         }
@@ -73,6 +75,16 @@ namespace Chino
                     let boards = ((IBoardDefinitionProvider)Activator.CreateInstance(t)).Boards
                     from b in boards
                     select b).ToList();
+        }
+
+        static IReadOnlyCollection<DriverDefinition> GetDriverDefinitions()
+        {
+            var ddpType = typeof(IDriverDefinitionProvider);
+            return (from t in typeof(driverdef.Module).Assembly.ExportedTypes
+                    where !t.IsAbstract && t.IsClass && t.GetInterfaces().Contains(ddpType)
+                    let drivers = ((IDriverDefinitionProvider)Activator.CreateInstance(t)).Drivers
+                    from d in drivers
+                    select d).ToList();
         }
     }
 }

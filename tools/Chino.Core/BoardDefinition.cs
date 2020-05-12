@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Chino.Board
+namespace Chino
 {
     public class BoardDefinition
     {
@@ -11,6 +11,8 @@ namespace Chino.Board
         public Guid Chip { get; set; }
 
         public Dictionary<string, string> SelectedPinGroups { get; set; }
+
+        public IReadOnlyList<Guid> Drivers { get; set; }
     }
 
     public interface IBoardDefinitionProvider

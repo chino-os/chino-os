@@ -1,12 +1,17 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <RootNamespace>Chino.Chip</RootNamespace>
+    <RootNamespace>Chino.Driver</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\tools\Chino.Core\Chino.Core.csproj" />
+    <ProjectReference Include="..\hal\src\chip\chipdef.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="bus\" />
   </ItemGroup>
 
 </Project>

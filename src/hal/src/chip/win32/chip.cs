@@ -21,9 +21,22 @@ namespace Chino.Chip
                 Name = "Win32",
                 Root = new MachineNode
                 {
-                    Name = "Win32"
+                    Name = "Win32",
+                    Devices = new[]
+                    {
+                        new SimpleDeviceNode
+                        {
+                            Name = "Console",
+                            Compatible = new[] { DeviceCompatibles.Console }
+                        }
+                    }
                 }
             });
+        }
+
+        public static class DeviceCompatibles
+        {
+            public static readonly Guid Console = new Guid("ABA5BEB4-E5B2-4B44-A07E-969ECEA00EA6");
         }
     }
 }

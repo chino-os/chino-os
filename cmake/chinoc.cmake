@@ -10,9 +10,16 @@ function(CHINOC_RENDER Name OUTPUT TEMPLATE)
     get_filename_component(OUTPUT_NAME ${OUTPUT} NAME)
     get_filename_component(TEMPLATE_NAME ${TEMPLATE} NAME)
     add_custom_command(OUTPUT ${OUTPUT}
-        COMMAND ${CHINOC_EXEC} render --cfg ${CHINO_BOARD_SRC_DIR}/board.json --template ${TEMPLATE} --out ${OUTPUT}
-        DEPENDS ${CHINO_BOARD_SRC_DIR}/board.json ${TEMPLATE}
+        COMMAND ${CHINOC_EXEC} render --board ${CHINO_BOARD_ID} --template ${TEMPLATE} --out ${OUTPUT}
+        DEPENDS ${TEMPLATE}
         COMMENT "Render ${TEMPLATE_NAME} to ${OUTPUT_NAME}")
     add_custom_target(${Name} DEPENDS ${OUTPUT})
     set_target_properties(${Name} PROPERTIES TARGET_FILE ${OUTPUT})
 endfunction(CHINOC_RENDER)
+
+function(CHINOC_RENDER_IMM OUTPUT TEMPLATE)
+    get_filename_component(OUTPUT_NAME ${OUTPUT} NAME)
+    get_filename_component(TEMPLATE_NAME ${TEMPLATE} NAME)
+    execute_process(COMMAND ${CHINOC_EXEC} render --board ${CHINO_BOARD_ID} --template ${TEMPLATE} --out ${OUTPUT})
+    message("Render ${TEMPLATE_NAME} to ${OUTPUT_NAME}")
+endfunction(CHINOC_RENDER_IMM)

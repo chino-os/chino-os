@@ -29,13 +29,6 @@
 
 namespace chino::io
 {
-struct machine_desc
-{
-    const void *fdt;
-    std::string_view model;
-    std::string_view bootargs;
-};
-
 enum class std_handles
 {
     in,
@@ -51,8 +44,6 @@ enum class create_disposition
     open_existing = 3,
     truncate_existing = 5
 };
-
-machine_desc get_machine_desc() noexcept;
 
 result<void, error_code> alloc_console() noexcept;
 handle_t get_std_handle(std_handles type) noexcept;

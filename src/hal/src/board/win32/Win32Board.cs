@@ -17,7 +17,11 @@ namespace Chino.Board
             _boards.Add(new BoardDefinition
             {
                 Id = Win32,
-                Chip = Chip.Win32Chip.Win32
+                Chip = Chip.Win32Chip.Win32,
+                Drivers = new[]
+                {
+                    Driver.Win32ConsoleDriver.Win32Console
+                }
             });
         }
     }

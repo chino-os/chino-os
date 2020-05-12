@@ -24,5 +24,4 @@
 
 namespace chino::io
 {
-extern machine_desc machine_desc_;
 }

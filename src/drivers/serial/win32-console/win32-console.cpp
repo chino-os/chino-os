@@ -72,9 +72,9 @@ private:
     HANDLE stdin_, stdout_;
 };
 
-result<void, error_code> con_add_device(const driver &drv, const device_id &dev_id)
+result<void, error_code> con_add_device(const driver &drv, const hardware_device_registration &hdr)
 {
-    try_var(con, create_device(dev_id, device_type::serial, sizeof(win32_console_dev)));
+    try_var(con, create_device(drv, device_type::serial, sizeof(win32_console_dev)));
     new (&con->extension()) win32_console_dev();
     return ok();
 }
@@ -96,14 +96,9 @@ result<void, error_code> con_write_device(file &file, gsl::span<const gsl::byte>
     return file.dev.extension<win32_console_dev>().write(buffer);
 }
 
-const driver_id match_table[] = {
-    { .compatible = "win32,console" }
-};
-
 const driver con_drv = {
     .name = "win32-console",
-    .ops = { .add_device = con_add_device, .open_device = con_open_device, .read_device = con_read_device, .write_device = con_write_device },
-    .match_table = match_table
+    .ops = { .add_device = con_add_device, .open_device = con_open_device, .read_device = con_read_device, .write_device = con_write_device }
 };
-EXPORT_DRIVER(con_drv);
+#include <win32-console.inl>
 }
