@@ -105,9 +105,8 @@ public:
         add_first_nolock(node);
     }
 
-    void add_last(node_t *node) noexcept
+    void add_last_nolock(node_t *node) noexcept
     {
-        std::unique_lock lock(lock_);
         assert(!node->l);
         node->l = this;
         node->next = nullptr;
@@ -122,6 +121,12 @@ public:
             node->prev = nullptr;
             head_ = tail_ = node;
         }
+    }
+
+    void add_last(node_t *node) noexcept
+    {
+        std::unique_lock lock(lock_);
+        add_last_nolock(node);
     }
 
     void remove(node_t *node) noexcept
@@ -145,7 +150,7 @@ public:
     {
         if (!offset)
         {
-            add_first_nolock(node);
+            add_last_nolock(node);
         }
         else
         {

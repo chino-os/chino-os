@@ -20,7 +20,8 @@ namespace Chino.Board
                 Chip = Chip.Win32Chip.Win32,
                 Drivers = new[]
                 {
-                    Driver.Win32ConsoleDriver.Win32Console
+                    Driver.Win32ConsoleDriver.Win32Console,
+                    Driver.Win32FSDriver.Win32FS
                 }
             });
         }

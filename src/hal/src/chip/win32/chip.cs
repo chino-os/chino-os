@@ -28,6 +28,15 @@ namespace Chino.Chip
                         {
                             Name = "Console",
                             Compatible = new[] { DeviceCompatibles.Console }
+                        },
+                        new SimpleDeviceNode
+                        {
+                            Name = "Win32FS",
+                            Compatible = new[] { DeviceCompatibles.Win32FS },
+                            Properties = new Dictionary<string, object>
+                            {
+                                { "Path", "share" }
+                            }
                         }
                     }
                 }
@@ -37,6 +46,7 @@ namespace Chino.Chip
         public static class DeviceCompatibles
         {
             public static readonly Guid Console = new Guid("ABA5BEB4-E5B2-4B44-A07E-969ECEA00EA6");
+            public static readonly Guid Win32FS = new Guid("C6F17CB5-7D0F-4DE4-AFFA-D0496495A0ED");
         }
     }
 }

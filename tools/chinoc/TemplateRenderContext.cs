@@ -18,7 +18,7 @@ namespace Chino
             var driver = Drivers.First(x => x.Id == driverId);
             return (from d in FlattenDevices()
                     let c = d as IHasCompatible
-                    where c != null && c.Compatible.Union(driver.Compatible).Any()
+                    where c != null && c.Compatible.Intersect(driver.Compatible).Any()
                     select d).ToList();
         }
 

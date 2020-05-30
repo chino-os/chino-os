@@ -114,7 +114,7 @@ struct file : ob::object
     threading::sched_spinlock syncroot;
 
     template <class T = uint8_t>
-    T &extension() noexcept { return *reinterpret_cast<T *>(reinterpret_cast<uint8_t *>(this) + sizeof(device)); }
+    T &extension() noexcept { return *reinterpret_cast<T *>(reinterpret_cast<uint8_t *>(this) + sizeof(file)); }
 };
 
 struct file_extension
