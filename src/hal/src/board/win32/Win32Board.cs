@@ -21,7 +21,8 @@ namespace Chino.Board
                 Drivers = new[]
                 {
                     Driver.Win32ConsoleDriver.Win32Console,
-                    Driver.Win32FSDriver.Win32FS
+                    Driver.Win32FSDriver.Win32FS,
+                    Driver.Win32NetIfDriver.Win32NetIf
                 }
             });
         }

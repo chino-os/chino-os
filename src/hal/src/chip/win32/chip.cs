@@ -37,6 +37,11 @@ namespace Chino.Chip
                             {
                                 { "Path", "share" }
                             }
+                        },
+                        new SimpleDeviceNode
+                        {
+                            Name = "Win32NetIf",
+                            Compatible = new[] { DeviceCompatibles.Win32NetIf }
                         }
                     }
                 }
@@ -47,6 +52,7 @@ namespace Chino.Chip
         {
             public static readonly Guid Console = new Guid("ABA5BEB4-E5B2-4B44-A07E-969ECEA00EA6");
             public static readonly Guid Win32FS = new Guid("C6F17CB5-7D0F-4DE4-AFFA-D0496495A0ED");
+            public static readonly Guid Win32NetIf = new Guid("59DBBA5D-ED63-4962-B597-688E9447A23B");
         }
     }
 }

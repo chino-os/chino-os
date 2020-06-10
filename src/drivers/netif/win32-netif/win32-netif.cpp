@@ -71,7 +71,7 @@ private:
     pcap_if_t *pcap_if_;
 };
 
-result<void, error_code> netif_add_device(const driver &drv, const device_id &dev_id)
+result<void, error_code> netif_add_device(const driver &drv, const hardware_device_registration &hdr)
 {
     pcap_if_t *alldevs;
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -82,7 +82,7 @@ result<void, error_code> netif_add_device(const driver &drv, const device_id &de
     auto pcap_dev = alldevs;
     while (pcap_dev)
     {
-        try_var(netif, create_device(dev_id, device_type::netif, sizeof(win32_netif_dev)));
+        try_var(netif, create_device(drv, device_type::netif, sizeof(win32_netif_dev)));
         new (&netif->extension()) win32_netif_dev(pcap_dev);
 
         pcap_dev = pcap_dev->next;
@@ -112,14 +112,9 @@ result<void, error_code> netif_write_device(file &file, gsl::span<const gsl::byt
     return file.dev.extension<win32_netif_dev>().write(file, buffer);
 }
 
-const driver_id match_table[] = {
-    { .compatible = "win32,netif" }
-};
-
 const driver netif_drv = {
     .name = "win32-netif",
     .ops = { .add_device = netif_add_device, .open_device = netif_open_device, .close_device = netif_close_device, .read_device = netif_read_device, .write_device = netif_write_device },
-    .match_table = match_table
 };
-EXPORT_DRIVER(netif_drv);
+#include <win32-netif.inl>
 }
