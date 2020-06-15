@@ -19,22 +19,11 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include "../../arch/win32/target.h"
-#include "board.h"
-#include "resource.h"
-#include <Windows.h>
-#include <cassert>
+#pragma once
+#include "error.h"
+#include "result.h"
 
-using namespace chino;
-using namespace chino::board;
-using namespace chino::kernel;
-
-gsl::span<const uint8_t> win32_board::device_tree() noexcept
+namespace chino::kernel
 {
-    auto hres = FindResource(nullptr, MAKEINTRESOURCE(IDR_DTB), L"Binary");
-    assert(hres);
-    auto size = SizeofResource(nullptr, hres);
-    auto hmem = LoadResource(nullptr, hres);
-    assert(hmem);
-    return { reinterpret_cast<const uint8_t *>(LockResource(hmem)), size };
+result<void, error_code> kernel_main();
 }

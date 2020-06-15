@@ -9,8 +9,8 @@ if(MSVC)
     target_link_options(drivers PUBLIC "/WHOLEARCHIVE:drivers")
 endif()
 
-add_subdirectory(bus)
-add_subdirectory(console)
-add_subdirectory(serial)
-add_subdirectory(fs)
-add_subdirectory(netif)
+# Generate drivers inclusion
+CHINOC_RENDER_IMM(${CMAKE_CURRENT_BINARY_DIR}/inc_drivers.cmake ${CMAKE_CURRENT_SOURCE_DIR}/inc_drivers.cmake.razor)
+
+add_subdirectory(console/serial-console)
+include(${CMAKE_CURRENT_BINARY_DIR}/inc_drivers.cmake)

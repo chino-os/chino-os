@@ -33,8 +33,14 @@ namespace chino::io
 #pragma section(".CHDRV$C", long, read) // Drivers
 #pragma section(".CHDRV$Z", long, read) // End drivers
 #define EXPORT_DRIVER(x) __declspec(allocate(".CHDRV$C")) const ::chino::io::driver *CHINO_CONCAT(_drv_, __COUNTER__) = &x
+
+#pragma section(".CHHDR$A", long, read) // Begin hardware device registrations
+#pragma section(".CHHDR$C", long, read) // Hardware device registrations
+#pragma section(".CHHDR$Z", long, read) // End hardware device registrations
+#define EXPORT_HARDWARE(x) __declspec(allocate(".CHHDR$C")) const ::chino::io::hardware_device_registration *CHINO_CONCAT(_hdr_, __COUNTER__) = &x
 #elif defined(__GNUC__)
 #define EXPORT_DRIVER(x) __attribute__((unused, section(".chdrv"))) const ::chino::io::driver *CHINO_CONCAT(_drv_, __COUNTER__) = &x
+#define EXPORT_HARDWARE(x) __attribute__((unused, section(".chhdr"))) const ::chino::io::hardware_device_registration *CHINO_CONCAT(_hdr_, __COUNTER__) = &x
 #else
 #error "Unsupported compiler"
 #endif
@@ -57,81 +63,17 @@ enum class driver_type
     console
 };
 
-class device_property
+struct hardware_device_registration
 {
-public:
-    device_property() = default;
-    constexpr device_property(const void *data, int len) noexcept
-        : data_(data), len_(len) {}
-
-    const void *data() const noexcept { return data_; }
-    size_t len() const noexcept { return len_; }
-
-    uint32_t uint32(size_t index = 0) const noexcept;
-    uint64_t uint64(size_t index = 0) const noexcept;
-    std::string_view string(size_t index = 0) const noexcept;
-
-private:
-    const void *data_;
-    int len_;
+    const driver &drv;
 };
 
-struct driver_id
-{
-    std::string_view compatible;
-    void *data;
-};
-
-class device_id
-{
-public:
-    constexpr device_id(int node, device *parent, const driver &drv, const driver_id &drv_id)
-        : node_(node), parent_(parent), drv_(drv), drv_id_(drv_id) {}
-
-    int node() const noexcept { return node_; }
-    device *parent() const noexcept { return parent_; }
-    const driver &drv() const noexcept { return drv_; }
-    const driver_id &drv_id() const noexcept { return drv_id_; }
-
-private:
-    int node_;
-    device *parent_;
-    const driver &drv_;
-    const driver_id &drv_id_;
-};
-
-class device_descriptor
-{
-public:
-    device_descriptor() = default;
-    constexpr device_descriptor(int node) noexcept
-        : node_(node) {}
-
-    const void *fdt() const noexcept;
-    int node() const noexcept { return node_; }
-
-    result<device_descriptor, error_code> parent() const noexcept;
-    result<device_descriptor, error_code> first_subnode() const noexcept;
-    result<device_descriptor, error_code> next_subnode(int prev) const noexcept;
-
-    result<device_property, error_code> property(std::string_view name) const noexcept;
-    bool has_compatible() const noexcept;
-
-    uint32_t address_cells() const noexcept;
-    uint32_t size_cells() const noexcept;
-
-    result<std::pair<uint64_t, uint64_t>, error_code> reg(size_t index = 0) const noexcept;
-
-private:
-    int node_;
-};
-
-typedef result<void, error_code> (*driver_add_device_t)(const driver &drv, const device_id &dev_id);
+typedef result<void, error_code> (*driver_add_device_t)(const driver &drv, const hardware_device_registration &hdr);
 typedef result<void, error_code> (*driver_attach_device_t)(const driver &drv, device &bottom_dev, std::string_view args);
-typedef result<file *, error_code> (*driver_open_device_t)(const driver &drv, device &dev, std::string_view filename, create_disposition create_disp);
-typedef result<void, error_code> (*driver_close_device_t)(const driver &drv, device &dev, file &file);
-typedef result<size_t, error_code> (*driver_read_device_t)(const driver &drv, device &dev, file &file, gsl::span<gsl::byte> buffer);
-typedef result<void, error_code> (*driver_write_device_t)(const driver &drv, device &dev, file &file, gsl::span<const gsl::byte> buffer);
+typedef result<file *, error_code> (*driver_open_device_t)(device &dev, std::string_view filename, create_disposition create_disp);
+typedef result<void, error_code> (*driver_close_device_t)(file &file);
+typedef result<size_t, error_code> (*driver_read_device_t)(file &file, gsl::span<gsl::byte> buffer);
+typedef result<void, error_code> (*driver_write_device_t)(file &file, gsl::span<const gsl::byte> buffer);
 
 struct driver_operations
 {
@@ -148,14 +90,11 @@ struct driver
     driver_type type = driver_type::hardware;
     std::string_view name;
     driver_operations ops;
-    gsl::span<const driver_id> match_table;
-
-    const driver_id *check_compatible(std::string_view compatible) const noexcept;
 };
 
 struct device : ob::object
 {
-    device_id id;
+    const driver &drv;
     device_type type;
     threading::sched_spinlock syncroot;
 
@@ -175,7 +114,7 @@ struct file : ob::object
     threading::sched_spinlock syncroot;
 
     template <class T = uint8_t>
-    T &extension() noexcept { return *reinterpret_cast<T *>(reinterpret_cast<uint8_t *>(this) + sizeof(device)); }
+    T &extension() noexcept { return *reinterpret_cast<T *>(reinterpret_cast<uint8_t *>(this) + sizeof(file)); }
 };
 
 struct file_extension
@@ -183,10 +122,6 @@ struct file_extension
     io::file &file() noexcept { return *reinterpret_cast<io::file *>(reinterpret_cast<uint8_t *>(this) - sizeof(device)); }
 };
 
-result<void, error_code> populate_sub_devices(device &parent) noexcept;
-result<void, error_code> probe_device(const device_descriptor &node, device *parent) noexcept;
-
-result<device *, error_code> create_device(const device_id &id, device_type type, size_t extension_size) noexcept;
 result<device *, error_code> create_device(const driver &drv, device_type type, size_t extension_size) noexcept;
 result<device *, error_code> create_device(std::string_view name, const driver &drv, device_type type, size_t extension_size) noexcept;
 result<file *, error_code> create_file(device &dev, size_t extension_size) noexcept;

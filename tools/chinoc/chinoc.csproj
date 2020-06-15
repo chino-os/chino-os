@@ -8,15 +8,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\src\hal\src\chip\st\stm32f1xx_hd\chip.cs" Link="Chip\st\stm32f1xx_hd\chip.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="RazorLight" Version="2.0.0-beta7" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20214.1" />
-    <PackageReference Include="UnitsNet" Version="4.58.0" />
-    <PackageReference Include="UnitsNet.NumberExtensions" Version="4.58.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\hal\src\board\boarddef.csproj" />
+    <ProjectReference Include="..\..\src\hal\src\chip\chipdef.csproj" />
+    <ProjectReference Include="..\Chino.Core\Chino.Core.csproj" />
   </ItemGroup>
 
 </Project>

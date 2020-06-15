@@ -62,7 +62,7 @@ result<void, error_code> kernel::kernel_main()
 
 uint32_t kernel::kernel_system_thread_main(void *arg)
 {
-    kernel::io_manager_init(board::board_t::device_tree()).expect("IO system setup failed");
+    kernel::io_manager_init().expect("IO system setup failed");
     chino_start_shell().expect("Shell startup failed");
     return 0;
 }

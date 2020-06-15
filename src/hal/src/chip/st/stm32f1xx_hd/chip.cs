@@ -6,6 +6,8 @@ namespace Chino.Chip
 {
     public class STM32F1XX_HD : IChipDefinitionProvider
     {
+        public static readonly Guid STM32F103ZET6 = new Guid("03A3F064-FFBA-4DE2-BAE2-51FD3AC8E11D");
+
         private readonly List<ChipDefinition> _chips = new List<ChipDefinition>();
 
         public IReadOnlyCollection<ChipDefinition> Chips => _chips;
@@ -27,7 +29,7 @@ namespace Chino.Chip
 
             _chips.Add(new ChipDefinition
             {
-                Id = new Guid("03A3F064-FFBA-4DE2-BAE2-51FD3AC8E11D"),
+                Id = STM32F103ZET6,
                 Vendor = "ST",
                 Name = "STM32F103ZET6",
                 Memories = new[]

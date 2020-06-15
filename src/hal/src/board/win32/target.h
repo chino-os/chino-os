@@ -19,29 +19,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include <chino/ddk/io.h>
-
-using namespace chino;
-using namespace chino::io;
-
-namespace
-{
-result<void, error_code> sb_add_device(const driver &drv, const device_id &dev_id);
-
-const driver_id match_table[] = {
-    { .compatible = "simple-bus" }
-};
-
-const driver sb_drv = {
-    .name = "simple-bus",
-    .ops = { .add_device = sb_add_device },
-    .match_table = match_table
-};
-EXPORT_DRIVER(sb_drv);
-
-result<void, error_code> sb_add_device(const driver &drv, const device_id &dev_id)
-{
-    try_var(bus, create_device(dev_id, device_type::bus, 0));
-    return populate_sub_devices(*bus);
-}
-}
+#pragma once
+#include <winsdkver.h>
+#define _WIN32_WINNT 0x0A00 // Win10
+#include <sdkddkver.h>

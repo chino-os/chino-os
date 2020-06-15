@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Chino.Chip
+namespace Chino
 {
     public class MemoryRange
     {
@@ -65,17 +65,29 @@ namespace Chino.Chip
         public IReadOnlyDictionary<string, object> Properties { get; set; } = new Dictionary<string, object>();
     }
 
-    public class MachineNode : DeviceNode
+    public interface IHasChildrenDevices
     {
-        public IReadOnlyList<DeviceNode> Devices { get; set; } = Array.Empty<DeviceNode>();
+        IReadOnlyList<DeviceNode> Children { get; }
     }
 
-    public class SimpleBusNode : DeviceNode
+    public interface IHasCompatible
+    {
+        IReadOnlyList<Guid> Compatible { get; }
+    }
+
+    public class MachineNode : DeviceNode, IHasChildrenDevices
+    {
+        public IReadOnlyList<DeviceNode> Devices { get; set; } = Array.Empty<DeviceNode>();
+
+        IReadOnlyList<DeviceNode> IHasChildrenDevices.Children => Devices;
+    }
+
+    public class SimpleBusNode : DeviceNode, IHasChildrenDevices
     {
         public IReadOnlyList<DeviceNode> Children { get; set; } = Array.Empty<DeviceNode>();
     }
 
-    public class SimpleDeviceNode : DeviceNode
+    public class SimpleDeviceNode : DeviceNode, IHasCompatible
     {
         public IReadOnlyList<Guid> Compatible { get; set; } = Array.Empty<Guid>();
 
