@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="RazorLight" Version="2.0.0-beta7" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20214.1" />
   </ItemGroup>
