@@ -1,82 +1,96 @@
-﻿cmake_minimum_required (VERSION 3.13)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
-project("chino")
+﻿cmake_minimum_required(VERSION 3.13)
 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake/Modules)
+
+if(NOT DEFINED CHINO_VERSION)
+    set(CHINO_VERSION "0.1.0")
+endif()
+
+if(DEFINED ENV{CHINO_VERSION_SUFFIX})
+    set(CHINO_VERSION_SUFFIX $ENV{CHINO_VERSION_SUFFIX})
+endif()
+
+if(NOT DEFINED CHINO_VERSION_SUFFIX)
+    find_package (Git)
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} describe --always --dirty
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_DESC
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    set(CHINO_VERSION_SUFFIX "-${GIT_DESC}")
+endif()
+
+if (NOT PACKAGE_VERSION)
+    set(PACKAGE_VERSION
+        "${CHINO_VERSION}${CHINO_VERSION_SUFFIX}")
+endif()
+
+project(CHINO
+  VERSION ${CHINO_VERSION}
+  LANGUAGES C CXX ASM)
+
+option(BUILD_TESTING "Build test programs" OFF)
+option(BUILD_EMULATOR "Build emulator" ON)
+
+include(cmake/configure-conan.cmake)
 include(cmake/conan.cmake)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
+include(cmake/default-toolchain.cmake)
 
-conan_check()
-conan_add_remote(NAME bincrafts URL https://api.bintray.com/conan/bincrafters/public-conan)
-if (APPLE)
-    conan_add_remote(NAME sunnycase URL https://conan.sunnycase.moe)
-else()
-    conan_add_remote(NAME sunnycase INDEX 0 URL https://conan.sunnycase.moe)
+if(NOT CONAN_EXPORTED)
+    conan_check()
+    conan_add_remote(NAME sunnycase URL https://conan.sunnycase.moe INDEX 0)
 endif()
 
-if (NOT CHINO_BOARD)
-    message(FATAL "Please specify CHINO_BOARD")
-else()
-    add_definitions(-DCHINO_BOARD=${CHINO_BOARD})
-    add_definitions(-DCHINO_BOARD_HEADER=<chino/board/${CHINO_BOARD}/board.h>)
-endif()
-
-if ("${CHINO_BOARD}" STREQUAL "win32")
-    conan_cmake_run(CONANFILE conanfile-win32.txt
-                    BASIC_SETUP CMAKE_TARGETS
-                    SETTINGS compiler.cppstd=20
-                    BUILD missing)
-else()
-    conan_cmake_run(CONANFILE conanfile.txt
-                    BASIC_SETUP CMAKE_TARGETS
-                    SETTINGS compiler.cppstd=20
+if(CONAN_EXPORTED) # in conan local cache
+    message(STATUS "Standard Conan Installation")
+else() # in user space
+    message(STATUS "Auto Cmake Conan Installation")
+    include(${CMAKE_SOURCE_DIR}/cmake/conan.cmake)
+    conan_cmake_run(CONANFILE conanfile.py
+                    BASIC_SETUP
+                    OPTIONS ${CONAN_OPTS}
+                    SETTINGS ${CONAN_SETTINGS}
                     BUILD missing)
 endif()
 
+include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
+include(cmake/dependencies.cmake)
+
+set(CMAKE_SKIP_RPATH OFF)
+
+set(CHINO_SDK_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/include/sdk)
+set(CHINO_DDK_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/include/ddk)
+set(CHINO_SDK_GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/include/sdk)
 set(THIRD_PARTY ${CMAKE_CURRENT_LIST_DIR}/third_party)
-set(TOOLS_DIR ${CMAKE_CURRENT_LIST_DIR}/tools)
- 
-if (MSVC)
-    enable_language(ASM_MASM)
-    add_definitions(/D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_CRT_SECURE_NO_WARNINGS /DNOMINMAX /DUNICODE /D_UNICODE)
-    add_compile_options(/Zc:threadSafeInit- /utf-8 /wd4200 /Oi)
-    # Disable C++ exceptions.
-    string(REGEX REPLACE "/EH[a-z]+" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHs-c- /GS-")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /GS-")
-    string(REGEX REPLACE "/RTC[^ ]*" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
-    string(REGEX REPLACE "/RTC[^ ]*" "" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
-    add_definitions(-D_HAS_EXCEPTIONS=0)
-
-    # Disable RTTI.
-    string(REGEX REPLACE "/GR" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
-else()
-    enable_language(ASM)
-    add_compile_options(-flto -Wno-multichar -fno-common -ffunction-sections -fno-exceptions -fdata-sections -fno-unwind-tables -fno-asynchronous-unwind-tables)
-    add_link_options(-flto)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
+set_property(GLOBAL PROPERTY POSITION_INDEPENDENT_CODE ON)
+if (APPLE)
+    set(CMAKE_MACOSX_RPATH TRUE)
+    set(CMAKE_INSTALL_RPATH "@loader_path")
+    set(CMAKE_INSTALL_NAME_DIR "@rpath")
+else ()
+    set(CMAKE_INSTALL_RPATH "$ORIGIN")
 endif()
 
-set(CHINO_ROOT ${CMAKE_CURRENT_LIST_DIR})
-set(CHINO_BOARD_SRC_DIR ${CMAKE_CURRENT_LIST_DIR}/src/hal/src/board/${CHINO_BOARD})
-include(cmake/toolchain.cmake)
-include(cmake/config.cmake)
-include(cmake/dtc.cmake)
-include(cmake/chinoc.cmake)
-include(cmake/boards/${CHINO_BOARD}.cmake)
-include(cmake/definitions.cmake)
+if (MSVC)
+    add_definitions(/D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_CRT_SECURE_NO_WARNINGS /DNOMINMAX /DUNICODE)
+    add_definitions(/D_WIN32_WINNT=_WIN32_WINNT_WIN7)
+    add_compile_options(/utf-8 /W3 /WX /EHsc -Wno-unused-function -Wno-unused-const-variable)
+    #add_link_options(/NODEFAULTLIB)
+    set(PYBIND11_CPP_STANDARD "/std:c++latest")
+else()
+    add_compile_options(-fvisibility=hidden)
+    add_compile_options(-Wall -Wextra -pedantic -Werror)
+endif()
 
-add_subdirectory(src/api)
-add_subdirectory(src/ddk)
-add_subdirectory(src/hal)
-add_subdirectory(src/kernel)
-add_subdirectory(src/components)
-add_subdirectory(src/drivers)
-add_subdirectory(third_party/ulog)
-#add_subdirectory(third_party/lwip)
-add_subdirectory(third_party/incbin)
+include_directories(${CHINO_SDK_INCLUDE_DIR})
+include_directories(${CHINO_SDK_GENERATED_INCLUDE_DIR})
 
-if (WIN32)
-    add_subdirectory(tools/win32/win32-term)
+if (BUILD_EMULATOR)
+    add_definitions(-DCHINO_EMULATOR=1)
+endif()
+
+add_subdirectory(include/sdk/chino)
+add_subdirectory(src)
+
+if(BUILD_TESTING)
 endif()

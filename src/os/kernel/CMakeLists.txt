@@ -1,0 +1,24 @@
+cmake_minimum_required(VERSION 3.13)
+
+set(SRCS kernel.cpp)
+
+if (BUILD_EMULATOR)
+    add_library(chino.kernel SHARED ${SRCS})
+else()
+    add_executable(chino.kernel ${SRCS})
+
+    if (APPLE)
+        target_link_options(chino.kernel PRIVATE -e _kernel_entry)
+    endif()
+endif()
+
+if (NOT WIN32)
+    target_link_options(chino.kernel PRIVATE -nostdlib)
+endif()
+
+install(TARGETS chino.kernel
+        COMPONENT chino.os
+        RUNTIME DESTINATION chino/system
+        LIBRARY DESTINATION chino/system
+        )
+        
