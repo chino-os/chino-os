@@ -5,7 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace chino::os::hal {
+namespace chino::os::kernel::hal {
 class emulator_cpu {
   public:
     inline static constexpr size_t min_page_size = 4 * KiB;

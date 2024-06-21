@@ -32,11 +32,11 @@ struct boot_memory_desc {
     size_t size_bytes;
 };
 
-struct boot_context {
+struct boot_options {
     std::span<const boot_memory_desc> memory_descs;
 };
 } // namespace chino::os::kernel
 
 extern "C" {
-[[noreturn]] CHINO_KERNEL_API void CHINO_KERNEL_STARTUP(const chino::os::kernel::boot_context &context);
+[[noreturn]] CHINO_KERNEL_API void CHINO_KERNEL_STARTUP(const chino::os::kernel::boot_options &options);
 }

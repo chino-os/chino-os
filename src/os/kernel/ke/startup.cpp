@@ -5,9 +5,9 @@
 
 using namespace chino::os::kernel;
 
-extern "C" [[noreturn]] void CHINO_KERNEL_STARTUP(const boot_context &context) {
+extern "C" [[noreturn]] void CHINO_KERNEL_STARTUP(const boot_options &options) {
     // 1. Phase 0
-    mm::initialize_phase0(context);
+    mm::initialize_phase0(options);
     while (1) {
     }
 }

@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
     // 1. Load kernel
     auto kernel_entryp = load_kernel_entry();
 
-    // 2. Parpare boot context
+    // 2. Parpare boot options
     // 2.1. Create memory
     auto free_pages = memory_size / cpu_t::min_page_size;
     size_t free_memory_size = cpu_t::min_page_size * (free_pages + 1);
@@ -107,9 +107,9 @@ int main(int argc, char **argv) {
         },
     };
 
-    // 2.2 Create context
-    boot_context context{
+    // 2.2 Create boot options
+    boot_options options{
         .memory_descs = std::span(memory_descs),
     };
-    kernel_entryp(context);
+    kernel_entryp(options);
 }
