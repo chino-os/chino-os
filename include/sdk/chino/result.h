@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #pragma once
+#include "error.h"
 #include <string_view>
 #include <system_error>
 #include <type_traits>
@@ -56,12 +57,7 @@ namespace chino {
             return nncase::err(std::move(v.unwrap_err()));                                                             \
     }
 
-[[noreturn]] inline void fail_fast(const char *message) {
-    fprintf(stderr, "terminate:%s\n", message);
-    // auto exit for pld
-    fprintf(stderr, "}");
-    std::terminate();
-}
+[[noreturn]] void fail_fast(const char *message);
 
 template <class T> class [[nodiscard]] result;
 
@@ -131,80 +127,69 @@ template <class T> class [[nodiscard]] result {
     using value_type = T;
 
     template <class... Args>
-    result(detail::ok_t, Args... args) : type_(detail::result_type::ok), ok_(std::forward<Args>(args)...) {}
+    constexpr result(detail::ok_t, Args... args) : err_(error_code::success), ok_(std::forward<Args>(args)...) {}
+    constexpr result(error_code err) noexcept : err_(err) {}
 
-    result(std::error_condition err) noexcept : type_(detail::result_type::err), err_(std::move(err)) {}
-
-    result(const result &other) : type_(other.type_) {
-        if (type_ == detail::result_type::ok)
+    result(const result &other) : err_(other.err_) {
+        if (is_ok())
             new (&ok_) T(other.ok_);
-        else
-            new (&err_) std::error_condition(other.err_);
     }
 
-    result(result &&other) : type_(other.type_) {
-        if (type_ == detail::result_type::ok)
+    result(result &&other) : err_(other.err_) {
+        if (is_ok())
             new (&ok_) T(std::move(other.ok_));
-        else
-            new (&err_) std::error_condition(std::move(other.err_));
     }
 
     template <class U, class = std::enable_if_t<std::is_convertible_v<U, T>>>
-    result(result<U> &&other) : type_(other.type_) {
-        if (type_ == detail::result_type::ok)
+    result(result<U> &&other) : err_(other.err_) {
+        if (is_ok())
             new (&ok_) T(std::move(other.ok_));
-        else
-            new (&err_) std::error_condition(std::move(other.err_));
     }
 
     ~result() { destroy(); }
 
     result &operator=(const result &other) noexcept {
         destroy();
-        type_ = other.type_;
-        if (type_ == detail::result_type::ok)
+        err_ = other.err_;
+        if (is_ok())
             new (&ok_) T(other.ok_);
-        else
-            new (&err_) std::error_condition(other.err_);
         return *this;
     }
 
     result &operator=(result &&other) noexcept {
         destroy();
-        type_ = other.type_;
-        if (type_ == detail::result_type::ok)
+        err_ = other.err_;
+        if (is_ok())
             new (&ok_) T(std::move(other.ok_));
-        else
-            new (&err_) std::error_condition(std::move(other.err_));
         return *this;
     }
 
-    constexpr bool is_ok() const noexcept { return type_ == detail::result_type::ok; }
+    constexpr bool is_ok() const noexcept { return err_ == error_code::success; }
 
-    constexpr bool is_err() const noexcept { return type_ == detail::result_type::err; }
+    constexpr bool is_err() const noexcept { return !is_ok(); }
 
-    constexpr T &unwrap() & noexcept {
+    constexpr T &unwrap() &noexcept {
         if (is_ok())
             return ok_;
         else
             std::terminate();
     }
 
-    constexpr T &&unwrap() && noexcept {
+    constexpr T &&unwrap() &&noexcept {
         if (is_ok())
             return std::move(ok_);
         else
             std::terminate();
     }
 
-    constexpr std::error_condition &unwrap_err() noexcept {
+    constexpr error_code &unwrap_err() noexcept {
         if (is_ok())
             std::terminate();
         else
             return err_;
     }
 
-    constexpr T &expect(const char *message) & noexcept {
+    constexpr T &expect(const char *message) &noexcept {
         if (is_ok())
             return ok_;
         else {
@@ -212,7 +197,7 @@ template <class T> class [[nodiscard]] result {
         }
     }
 
-    constexpr T &&expect(const char *message) && noexcept {
+    constexpr T &&expect(const char *message) &&noexcept {
         if (is_ok())
             return std::move(ok_);
         else {
@@ -221,7 +206,7 @@ template <class T> class [[nodiscard]] result {
     }
 
     template <class Func, class Traits = detail::map_traits<T, Func>>
-    constexpr typename Traits::result_t &&map(Func &&func) && noexcept {
+    constexpr typename Traits::result_t &&map(Func &&func) &&noexcept {
         if (is_ok())
             return Traits()(std::forward<Func>(func), std::move(ok_));
         else
@@ -229,7 +214,7 @@ template <class T> class [[nodiscard]] result {
     }
 
     template <class Func, class Traits = detail::map_err_traits<T, Func>>
-    constexpr typename Traits::result_t &&map_err(Func &&func) && noexcept {
+    constexpr typename Traits::result_t &&map_err(Func &&func) &&noexcept {
         if (is_ok())
             return std::move(*this);
         else
@@ -237,7 +222,7 @@ template <class T> class [[nodiscard]] result {
     }
 
     template <class Func, class Traits = detail::and_then_traits<T, Func>>
-    constexpr typename Traits::result_t &&and_then(Func &&func) && noexcept {
+    constexpr typename Traits::result_t &&and_then(Func &&func) &&noexcept {
         if (is_ok())
             return Traits()(std::forward<Func>(func), ok_);
         else
@@ -254,32 +239,26 @@ template <class T> class [[nodiscard]] result {
 
   private:
     template <class U> friend class result;
-
-    detail::result_type type_;
+    error_code err_;
     union {
         T ok_;
-        std::error_condition err_;
     };
 };
 
 template <> class [[nodiscard]] result<void> {
   public:
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnull-dereference"
-    result() noexcept : err_(0, *(std::error_category *)nullptr) {}
-#pragma GCC diagnostic pop
+    constexpr result() noexcept : err_(error_code::success) {}
+    constexpr result(error_code err) noexcept : err_(err) {}
 
-    result(std::error_condition err) noexcept : err_(std::move(err)) {}
-
-    bool is_ok() const noexcept { return !is_err(); }
-    bool is_err() const noexcept { return (bool)err_; }
+    bool is_ok() const noexcept { return err_ == error_code::success; }
+    bool is_err() const noexcept { return !is_ok(); }
 
     void unwrap() noexcept {
         if (is_err())
             std::terminate();
     }
 
-    std::error_condition &unwrap_err() noexcept {
+    constexpr error_code unwrap_err() noexcept {
         if (is_ok())
             std::terminate();
         else
@@ -292,7 +271,7 @@ template <> class [[nodiscard]] result<void> {
     }
 
     template <class Func, class Traits = detail::map_traits<void, Func>>
-    typename Traits::result_t &&map(Func &&func) && noexcept {
+    typename Traits::result_t &&map(Func &&func) &&noexcept {
         if (is_ok())
             return Traits()(std::forward<Func>(func));
         else
@@ -300,7 +279,7 @@ template <> class [[nodiscard]] result<void> {
     }
 
     template <class Func, class Traits = detail::map_err_traits<void, Func>>
-    typename Traits::result_t &&map_err(Func &&func) && noexcept {
+    typename Traits::result_t &&map_err(Func &&func) &&noexcept {
         if (is_ok())
             return std::move(*this);
         else
@@ -308,7 +287,7 @@ template <> class [[nodiscard]] result<void> {
     }
 
     template <class Func, class Traits = detail::and_then_traits<void, Func>>
-    typename Traits::result_t &&and_then(Func &&func) && noexcept {
+    typename Traits::result_t &&and_then(Func &&func) &&noexcept {
         if (is_ok())
             return Traits()(std::forward<Func>(func));
         else
@@ -316,10 +295,10 @@ template <> class [[nodiscard]] result<void> {
     }
 
   private:
-    std::error_condition err_;
+    error_code err_;
 };
 
-inline result<void> ok() { return {}; }
+inline constexpr result<void> ok() { return {}; }
 
 template <class T, class... Args> constexpr result<T> ok(Args &&...args) {
     return {detail::ok_v, std::forward<Args>(args)...};
@@ -327,12 +306,7 @@ template <class T, class... Args> constexpr result<T> ok(Args &&...args) {
 
 template <class T> constexpr result<std::decay_t<T>> ok(T &&value) { return {detail::ok_v, std::forward<T>(value)}; }
 
-inline std::error_condition err(std::error_condition value) noexcept { return value; }
-
-template <class ErrCode, class = std::enable_if_t<std::is_error_condition_enum<ErrCode>::value>>
-std::error_condition err(ErrCode value) {
-    return err(std::error_condition(value));
-}
+inline constexpr error_code err(error_code value) noexcept { return value; }
 
 namespace detail {
 template <class T, class Func> class map_call_impl<T, void, Func> {

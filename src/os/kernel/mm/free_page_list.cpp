@@ -31,8 +31,8 @@ void free_page_list::initialize(std::span<const boot_memory_desc> descs) noexcep
 }
 
 result<std::byte *> free_page_list::allocate() noexcept {
-    return err(std::errc::not_enough_memory);
+    return err(error_code::out_of_memory);
 }
 
-void free_page_list::free(void *base) noexcept {
+void free_page_list::free([[maybe_unused]] void *base) noexcept {
 }
