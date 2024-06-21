@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 
-set(SRCS kernel.cpp)
+set(SRCS dummy.cpp)
 
 if (BUILD_EMULATOR)
     add_library(chino.kernel SHARED ${SRCS})
@@ -12,7 +12,12 @@ else()
     endif()
 endif()
 
-if (NOT WIN32)
+add_subdirectory(ke)
+add_subdirectory(mm)
+
+if (WIN32)
+    target_link_options(chino.kernel PRIVATE /NODEFAULTLIB)
+else()
     target_link_options(chino.kernel PRIVATE -nostdlib)
 endif()
 

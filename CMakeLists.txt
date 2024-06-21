@@ -30,7 +30,7 @@ project(CHINO
   LANGUAGES C CXX ASM)
 
 option(BUILD_TESTING "Build test programs" OFF)
-option(BUILD_EMULATOR "Build emulator" ON)
+option(CHINO_BOARD "Board name" "emulator")
 
 include(cmake/configure-conan.cmake)
 include(cmake/conan.cmake)
@@ -55,6 +55,8 @@ endif()
 
 include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
 include(cmake/dependencies.cmake)
+include(boards/${CHINO_BOARD}/cmake/board.cmake)
+include(chips/${CHINO_CHIP}/cmake/chip.cmake)
 
 set(CMAKE_SKIP_RPATH OFF)
 
@@ -74,7 +76,7 @@ endif()
 if (MSVC)
     add_definitions(/D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_CRT_SECURE_NO_WARNINGS /DNOMINMAX /DUNICODE)
     add_definitions(/D_WIN32_WINNT=_WIN32_WINNT_WIN7)
-    add_compile_options(/utf-8 /W3 /WX /EHsc -Wno-unused-function -Wno-unused-const-variable)
+    add_compile_options(/utf-8 /W3 /WX /EHsc /GS- -Wno-unused-function -Wno-unused-const-variable -Wno-inconsistent-dllimport)
     #add_link_options(/NODEFAULTLIB)
     set(PYBIND11_CPP_STANDARD "/std:c++latest")
 else()
@@ -82,12 +84,10 @@ else()
     add_compile_options(-Wall -Wextra -pedantic -Werror)
 endif()
 
+add_compile_definitions(-DCHINO_CPU=${CHINO_CPU})
+
 include_directories(${CHINO_SDK_INCLUDE_DIR})
 include_directories(${CHINO_SDK_GENERATED_INCLUDE_DIR})
-
-if (BUILD_EMULATOR)
-    add_definitions(-DCHINO_EMULATOR=1)
-endif()
 
 add_subdirectory(include/sdk/chino)
 add_subdirectory(src)
