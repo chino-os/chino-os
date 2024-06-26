@@ -6,7 +6,7 @@ using namespace chino;
 using namespace chino::os::kernel::mm;
 
 void free_page_list::initialize(std::span<const boot_memory_desc> descs) noexcept {
-    auto avail_pages = 0;
+    size_t avail_pages = 0;
     free_page_node *prev = nullptr;
     for (auto &desc : descs) {
         if (desc.kind == boot_memory_kind::free) {

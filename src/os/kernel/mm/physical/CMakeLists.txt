@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 
-set(SRCS free_page_list.cpp
-         memory_manager.cpp
+set(SRCS physical_allocator.cpp
 )
 
 target_sources(chino.kernel PRIVATE ${SRCS})
-
-add_subdirectory(physical)

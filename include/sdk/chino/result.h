@@ -258,7 +258,7 @@ template <> class [[nodiscard]] result<void> {
             std::terminate();
     }
 
-    constexpr error_code unwrap_err() noexcept {
+    error_code unwrap_err() noexcept {
         if (is_ok())
             std::terminate();
         else

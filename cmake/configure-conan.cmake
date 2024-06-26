@@ -12,7 +12,7 @@ function(_SET_CONANSETTING OUT_VAR SET_NAME SET_VALUE)
 endfunction()
 
 _SET_CONANOPT(CONAN_OPTS "tests" BUILD_TESTING)
-_SET_CONANOPT(CONAN_OPTS "emulator" BUILD_EMULATOR)
+_SET_CONANOPT(CONAN_OPTS "board" CHINO_BOARD)
 
 if (NOT DEFINED CMAKE_CXX_STANDARD)
     set (CMAKE_CXX_STANDARD 20)
@@ -30,4 +30,5 @@ if (CMAKE_GENERATOR MATCHES "Ninja")
     # The workaround is to set CMAKE_CL_SHOWINCLUDES_PREFIX to the exact English string "Note: including file: ".
     # function CMAKE_DETERMINE_MSVC_SHOWINCLUDES_PREFIX may be used if any locale issue occurs.
     set(CMAKE_CL_SHOWINCLUDES_PREFIX "Note: including file: " CACHE INTERNAL "AMD WORKAROUND")
+    #set(CMAKE_CL_SHOWINCLUDES_PREFIX "注意: 包含文件: " CACHE INTERNAL "AMD WORKAROUND")
 endif()

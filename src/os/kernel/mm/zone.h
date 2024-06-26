@@ -1,7 +1,7 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
-#include "physical_page.h"
+#include "physical/physical_page.h"
 
 namespace chino::os::kernel::mm {
 class free_area {

@@ -10,17 +10,16 @@ from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain, cmake_layout
 
 class chinoConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
-    generators = "CMakeToolchain", "cmake_find_package", "cmake_paths"
     options = {
         "shared": [True, False],
         "fPIC": [True, False],
-        "emulator": [True, False],
+        "board": ["ANY"],
         "tests": [True, False]
     }
     default_options = {
         "shared": False,
         "fPIC": True,
-        "emulator": True,
+        "board": "emulator",
         "tests": False
     }
 
@@ -35,7 +34,7 @@ class chinoConan(ConanFile):
         cmake_layout(self)
 
     def requirements(self):
-        if self.options.emulator:
+        if self.options.board == 'emulator':
             self.requires('lyra/1.6.1')
 
     def build_requirements(self):
@@ -49,12 +48,10 @@ class chinoConan(ConanFile):
         if self.settings.compiler.get_safe("cppstd"):
             check_min_cppstd(self, self._min_cppstd)
 
-        if self.settings.os == 'Windows':
-            self.settings.compiler.toolset = 'ClangCL'
-
     def generate(self):
-        tc = CMakeToolchain(self)
+        tc = CMakeToolchain(self, generator="Ninja")
         tc.variables["BUILD_TESTING"] = self.options.tests
+        tc.variables["CHINO_BOARD"] = self.options.board
         tc.generate()
         deps = CMakeDeps(self)
         deps.generate()

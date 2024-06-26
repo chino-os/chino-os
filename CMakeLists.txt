@@ -1,7 +1,5 @@
 ﻿cmake_minimum_required(VERSION 3.13)
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake/Modules)
-
 if(NOT DEFINED CHINO_VERSION)
     set(CHINO_VERSION "0.1.0")
 endif()
@@ -36,27 +34,9 @@ include(cmake/configure-conan.cmake)
 include(cmake/conan.cmake)
 include(cmake/default-toolchain.cmake)
 
-if(NOT CONAN_EXPORTED)
-    conan_check()
-    conan_add_remote(NAME sunnycase URL https://conan.sunnycase.moe INDEX 0)
-endif()
-
-if(CONAN_EXPORTED) # in conan local cache
-    message(STATUS "Standard Conan Installation")
-else() # in user space
-    message(STATUS "Auto Cmake Conan Installation")
-    include(${CMAKE_SOURCE_DIR}/cmake/conan.cmake)
-    conan_cmake_run(CONANFILE conanfile.py
-                    BASIC_SETUP
-                    OPTIONS ${CONAN_OPTS}
-                    SETTINGS ${CONAN_SETTINGS}
-                    BUILD missing)
-endif()
-
-include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
-include(cmake/dependencies.cmake)
 include(boards/${CHINO_BOARD}/cmake/board.cmake)
 include(chips/${CHINO_CHIP}/cmake/chip.cmake)
+include(cmake/dependencies.cmake)
 
 set(CMAKE_SKIP_RPATH OFF)
 
@@ -76,15 +56,23 @@ endif()
 if (MSVC)
     add_definitions(/D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_CRT_SECURE_NO_WARNINGS /DNOMINMAX /DUNICODE)
     add_definitions(/D_WIN32_WINNT=_WIN32_WINNT_WIN7)
-    add_compile_options(/utf-8 /W3 /WX /EHsc /GS- -Wno-unused-function -Wno-unused-const-variable -Wno-inconsistent-dllimport)
-    #add_link_options(/NODEFAULTLIB)
+    add_compile_options(/utf-8 /W3 /WX /wd4273)
+    # Disable C++ exceptions.
+    string(REGEX REPLACE "/EH[a-z]+" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHs-c- /GS-")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /GS-")
+    string(REGEX REPLACE "/RTC[^ ]*" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+    string(REGEX REPLACE "/RTC[^ ]*" "" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
+    add_definitions(-D_HAS_EXCEPTIONS=0)
+
+    # Disable RTTI.
+    string(REGEX REPLACE "/GR" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
     set(PYBIND11_CPP_STANDARD "/std:c++latest")
 else()
     add_compile_options(-fvisibility=hidden)
     add_compile_options(-Wall -Wextra -pedantic -Werror)
 endif()
-
-add_compile_definitions(-DCHINO_CPU=${CHINO_CPU})
 
 include_directories(${CHINO_SDK_INCLUDE_DIR})
 include_directories(${CHINO_SDK_GENERATED_INCLUDE_DIR})
