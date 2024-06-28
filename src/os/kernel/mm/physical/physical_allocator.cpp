@@ -3,6 +3,7 @@
 #include "physical_allocator.h"
 #include "page_table_2.h"
 #include "page_table_1.h"
+#include "page_table_0.h"
 
 using namespace chino::os::kernel;
 using namespace chino::os::kernel::mm;

@@ -4,8 +4,6 @@
 #include "page_table_2.h"
 
 namespace chino::os::kernel::mm {
-static_assert(hal::cpu_t::min_page_size == 4 * KiB, "Only support 4KiB base page");
-
 /** @brief Level-1 page table entry.
  *
  *  Counts for untaken level-2 pages and marks whether the whole level-1 page entry is taken.
@@ -19,13 +17,6 @@ class page_table_1_entry {
 
   public:
     constexpr page_table_1_entry() noexcept : value_(initial_value) {}
-
-    /** @brief Take the whole level-1 page entry.
-     */
-    result<void> take_all() noexcept {
-        uint16_t expected = initial_value; // Expect untaken
-        return value_.compare_exchange_strong(expected, 1) ? ok() : err(error_code::out_of_memory);
-    }
 
     /** @brief Take one level-2 page.
      *  @return The index of set bit.
@@ -50,6 +41,13 @@ class page_table_1_entry {
         return ok(pt2.set_first_untaken().unwrap());
     }
 
+    /** @brief Take the whole level-1 page entry.
+     */
+    result<void> take_huge() noexcept {
+        uint16_t expected = initial_value; // Expect untaken
+        return value_.compare_exchange_strong(expected, 1) ? ok() : err(error_code::out_of_memory);
+    }
+
     size_t free_pages() const noexcept {
         auto value = value_.load(std::memory_order_relaxed);
         return (value & 1) ? 0 // Huge page
@@ -65,8 +63,36 @@ class page_table_1_entry {
  *  Consist of 32 level-1 page table entries.
  */
 class page_table_1 {
+  public:
+    inline static constexpr size_t max_entries = 32;
+
+    /** @brief Take one page.
+     *  @return The index of set bit.
+     */
+    result<size_t> take(page_table_2 *pt2_bucket_base) noexcept {
+        for (size_t pt1_index = 0; pt1_index < entries_.size(); pt1_index++) {
+            auto index_in_pt1 = entries_[pt1_index].take(pt2_bucket_base[pt1_index]);
+            if (index_in_pt1.is_ok()) {
+                return ok(pt1_index * page_table_2::max_pages + index_in_pt1.unwrap());
+            }
+        }
+        return err(error_code::out_of_memory);
+    }
+
+    /** @brief Take the whole level-1 page entry.
+     *  @return The index of set bit.
+     */
+    result<size_t> take_huge() noexcept {
+        for (size_t pt1_index = 0; pt1_index < entries_.size(); pt1_index++) {
+            if (entries_[pt1_index].take_huge().is_ok()) {
+                return ok(pt1_index * page_table_2::max_pages);
+            }
+        }
+        return err(error_code::out_of_memory);
+    }
+
   private:
-    std::array<page_table_1_entry, 32> entries_;
+    std::array<page_table_1_entry, max_entries> entries_;
 };
 
 static_assert(sizeof(page_table_1) == hal::cacheline_size);
