@@ -20,4 +20,16 @@ namespace chino {
 inline constexpr size_t KiB = 1024;
 inline constexpr size_t MiB = 1024 * KiB;
 inline constexpr size_t GiB = 1024 * MiB;
+
+template <typename T, typename U> constexpr T ceil_div(T divisor, U dividend) noexcept {
+    T quotient = static_cast<T>(divisor / dividend);
+    return (quotient * dividend < divisor) ? (quotient + 1) : quotient;
+}
+
+template <typename T, typename U> constexpr T algin_up(T val, U base) noexcept {
+    if constexpr (std::is_integral_v<T> && std::is_integral_v<U>) {
+        return ((val + base - 1) & (~(base - 1)));
+    }
+    return ceil_div(val, base) * base;
+}
 } // namespace chino

@@ -24,7 +24,7 @@ class page_table_1_entry {
     result<size_t> take(page_table_2 &pt2) noexcept {
         // 1. Reserve one page
         while (true) {
-            uint16_t value = value_.load(std::memory_order_relaxed);
+            auto value = value_.load(std::memory_order_relaxed);
             if (value == 0 || (value & 1)) {
                 // 1.1 No free pages
                 return err(error_code::out_of_memory);
@@ -44,7 +44,7 @@ class page_table_1_entry {
     /** @brief Take the whole level-1 page entry.
      */
     result<void> take_huge() noexcept {
-        uint16_t expected = initial_value; // Expect untaken
+        auto expected = initial_value; // Expect untaken
         return value_.compare_exchange_strong(expected, 1) ? ok() : err(error_code::out_of_memory);
     }
 
