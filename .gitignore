@@ -19,3 +19,7 @@ obj
 bin
 *.user
 *.deb
+/conan.lock
+/conanbuildinfo.txt
+/conaninfo.txt
+/graph_info.json

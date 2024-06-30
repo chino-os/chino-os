@@ -7,12 +7,13 @@
 using namespace chino::os::kernel;
 using namespace chino::os::kernel::mm;
 
-namespace {
-namespace detail {
-template <class TMaxZoneSizes> struct physical_zone_impl;
+namespace {} // namespace
 
-template <size_t... MaxZoneSizes> struct physical_zones_impl<std::integer_sequence<size_t, MaxZoneSizes...>> {};
-} // namespace detail
-} // namespace
-
-void physical_allocator::initialize_phase0(const boot_options &options) {}
+void physical_allocator::initialize_phase0(const boot_options &options) noexcept {
+    physical_segment::segments_count = options.memory_descs.size();
+    for (size_t i = 0; i < options.memory_descs.size(); i++) {
+        auto &desc = options.memory_descs[i];
+        auto &segment = physical_segment::segment(i);
+        segment.initialize(desc.physical_address, desc.size_bytes);
+    }
+}

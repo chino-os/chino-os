@@ -34,8 +34,8 @@ class page_table_2 {
             while (true) {
                 auto row_value = row.load(std::memory_order_relaxed);
                 if (row_value != std::numeric_limits<uint64_t>::max()) {
-                    auto first_zero_index = std::countr_one(row_value);
-                    [[assume(first_zero_index > 0 && first_zero_index < row_digits)]];
+                    auto first_zero_index = (size_t)std::countr_one(row_value);
+                    CHINO_ASSUME(first_zero_index > 0 && first_zero_index < row_digits);
                     auto mask = uint64_t(0b1) << first_zero_index;
                     if ((row.fetch_or(mask, std::memory_order_relaxed) & mask) == 0) {
                         // Successfully set without race condition.

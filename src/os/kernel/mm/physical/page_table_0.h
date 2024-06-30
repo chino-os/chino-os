@@ -2,6 +2,7 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
 #include "page_table_1.h"
+#include <atomic>
 
 namespace chino::os::kernel::mm {
 /** @brief Level-1 page table.
@@ -18,68 +19,29 @@ class page_table_0 {
   public:
     constexpr page_table_0() noexcept : value_(initial_value) {}
 
-    /** @brief Take one level-2 page.
-     *  @return The index of set bit.
-     */
-    result<size_t> take(page_table_1 &pt1, page_table_2 *pt2_bucket_base) noexcept {
-        // 1. Reserve one page
-        while (true) {
-            auto value = value_.load(std::memory_order_relaxed);
-            if ((value >> 1) == 0) {
-                // 1.1 No free pages
-                return err(error_code::out_of_memory);
-            } else {
-                // 1.2 Minus 1
-                auto desired = value - (1 << 1);
-                if (value_.compare_exchange_strong(value, desired)) {
-                    break;
-                }
-            }
-        }
-
-        // 2. Take page, shouldn't fail
-        return ok(pt1.take(pt2_bucket_base).unwrap());
-    }
-
-    /** @brief Take one huge level-1 page entry.
-     *  @return The index of set bit.
-     */
-    result<size_t> take_huge(page_table_1 &pt1) noexcept {
-        // 1. Reserve one huge page
-        while (true) {
-            auto value = value_.load(std::memory_order_relaxed);
-            if ((value >> 1) < page_table_1_entry::max_pages) {
-                // 1.1 No free pages
-                return err(error_code::out_of_memory);
-            } else {
-                // 1.2 Minus one huge page
-                auto desired = value - (page_table_1_entry::max_pages << 1);
-                if (value_.compare_exchange_strong(value, desired)) {
-                    break;
-                }
-            }
-        }
-
-        // 2. Take page, shouldn't fail
-        return ok(pt1.take_huge().unwrap());
-    }
-
-    /** @brief Reserve the level-0 page.
+    /** @brief Rent the level-0 page.
      *  @return The count of free level-2 pages.
      */
-    result<size_t> reserve() noexcept {
+    result<size_t> rent() noexcept {
         while (true) {
             auto value = value_.load(std::memory_order_relaxed);
             if (value & 1) {
-                // 1.1 Already reserved
+                // 1.1 Already rented
                 return err(error_code::out_of_memory);
             } else {
-                // 1.2 Set reserved bit
+                // 1.2 Set rent bit
                 if (value_.compare_exchange_strong(value, 1)) {
                     return ok(value >> 1);
                 }
             }
         }
+    }
+
+    /** @brief Return the rented level-0 page.
+     */
+    void return_(size_t free_pages) noexcept {
+        auto add_value = (free_pages << 1) - 1; // Unset rent bit
+        value_.fetch_add(add_value, std::memory_order_relaxed);
     }
 
     size_t free_pages() const noexcept { return value_.load(std::memory_order_relaxed) >> 1; }

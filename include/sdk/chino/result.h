@@ -168,26 +168,11 @@ template <class T> class [[nodiscard]] result {
 
     constexpr bool is_err() const noexcept { return !is_ok(); }
 
-    constexpr T &unwrap() &noexcept {
-        if (is_ok())
-            return ok_;
-        else
-            std::terminate();
-    }
+    constexpr T &unwrap() &noexcept { return ok_; }
 
-    constexpr T &&unwrap() &&noexcept {
-        if (is_ok())
-            return std::move(ok_);
-        else
-            std::terminate();
-    }
+    constexpr T &&unwrap() &&noexcept { return std::move(ok_); }
 
-    constexpr error_code &unwrap_err() noexcept {
-        if (is_ok())
-            std::terminate();
-        else
-            return err_;
-    }
+    constexpr error_code &unwrap_err() noexcept { return err_; }
 
     constexpr T &expect(const char *message) &noexcept {
         if (is_ok())
@@ -253,17 +238,9 @@ template <> class [[nodiscard]] result<void> {
     bool is_ok() const noexcept { return err_ == error_code::success; }
     bool is_err() const noexcept { return !is_ok(); }
 
-    void unwrap() noexcept {
-        if (is_err())
-            std::terminate();
-    }
+    void unwrap() noexcept {}
 
-    error_code unwrap_err() noexcept {
-        if (is_ok())
-            std::terminate();
-        else
-            return err_;
-    }
+    error_code unwrap_err() noexcept { return err_; }
 
     void expect(const char *message) noexcept {
         if (is_err())

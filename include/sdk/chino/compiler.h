@@ -11,3 +11,9 @@
 // clang-format on
 
 #define CHINO_MAKE_RELATIVE_HEADER(prefix, target, name) CHINO_STRINGFY(CHINO_CONCAT_3(prefix, target, name))
+
+#ifdef _MSC_VER
+#define CHINO_ASSUME(...)
+#else
+#define CHINO_ASSUME(...) __builtin_assume(__VA_ARGS__)
+#endif
