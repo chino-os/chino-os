@@ -17,3 +17,9 @@
 #else
 #define CHINO_ASSUME(...) __builtin_assume(__VA_ARGS__)
 #endif
+
+#define CHINO_NONCOPYABLE(T)                                                                                           \
+    T(const T &) = delete;                                                                                             \
+    T(T &&) = delete;                                                                                                  \
+    T &operator=(const T &) = delete;                                                                                  \
+    T &operator=(T &&) = delete

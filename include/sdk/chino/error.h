@@ -38,6 +38,7 @@ enum class error_code : int32_t
     not_supported = 8,
     invalid_path = 9,
     insufficient_buffer = 10,
-    io_error = 11
+    io_error = 11,
+    bad_cast = 12
 };
 }

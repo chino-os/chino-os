@@ -10,6 +10,7 @@ namespace chino::os::kernel::hal {
 class emulator_chip {
   public:
     inline static constexpr std::array<size_t, 1> max_memory_segments_sizes{64 * MiB};
+    inline static constexpr size_t cpus_count = 1;
 };
 
 using chip_t = emulator_chip;

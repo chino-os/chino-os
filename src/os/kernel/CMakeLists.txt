@@ -12,8 +12,10 @@ else()
     endif()
 endif()
 
+add_subdirectory(de)
 add_subdirectory(ke)
 add_subdirectory(mm)
+add_subdirectory(ps)
 
 if (WIN32)
     target_link_options(chino.kernel PRIVATE /NODEFAULTLIB)

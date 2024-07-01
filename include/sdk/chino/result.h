@@ -57,7 +57,7 @@ namespace chino {
             return nncase::err(std::move(v.unwrap_err()));                                                             \
     }
 
-[[noreturn]] void fail_fast(const char *message);
+[[noreturn]] void fail_fast(const char *message) noexcept;
 
 template <class T> class [[nodiscard]] result;
 

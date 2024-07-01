@@ -17,7 +17,6 @@ class physical_segments_impl<std::integer_sequence<size_t, SegmentIndexes...>>
     : public physical_segment_impl<SegmentIndexes>... {
   public:
     physical_segment &segment(size_t index) noexcept {
-        CHINO_ASSUME(index < sizeof...(SegmentIndexes));
         physical_segment *segments[] = {static_cast<physical_segment_impl<SegmentIndexes> *>(this)...};
         return *segments[index];
     }

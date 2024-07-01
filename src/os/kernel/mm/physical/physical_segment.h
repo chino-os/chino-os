@@ -3,9 +3,12 @@
 #pragma once
 #include "chino/error.h"
 #include "chino/os/kernel/hal/cpu/cpu.h"
+#include "chino/os/kernel/hal/cpu/emulator/cpu.h"
 #include "chino/os/kernel/kernel.h"
 #include "chino/units.h"
 #include "page_table_0.h"
+#include "page_table_1.h"
+#include "page_table_2.h"
 #include <cstddef>
 #include <utility>
 
@@ -28,6 +31,11 @@ class physical_segment {
     page_table_0 &pt0(size_t index) noexcept { return pt0_base_[index]; }
     page_table_1 &pt1(size_t index) noexcept { return pt1_base_[index]; }
     page_table_2 &pt2(size_t index) noexcept { return pt2_base_[index]; }
+    page_table_2 *pt2_bucket_base(size_t pt01_index) noexcept { return &pt2(pt01_index * page_table_1::max_entries); }
+
+    uintptr_t pfn_to_paddr(size_t pfn) const noexcept {
+        return physical_address_base_ + pfn * hal::cpu_t::min_page_size;
+    }
 
     void initialize(uintptr_t physical_address, size_t size_bytes) noexcept;
 

@@ -2,6 +2,7 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
 #include "page_table_2.h"
+#include <atomic>
 
 namespace chino::os::kernel::mm {
 /** @brief Level-1 page table entry.
@@ -24,14 +25,14 @@ class page_table_1_entry {
     result<size_t> take(page_table_2 &pt2) noexcept {
         // 1. Reserve one page
         while (true) {
-            auto value = value_.load(std::memory_order_relaxed);
+            auto value = value_.load(std::memory_order_acquire);
             if (value == 0 || (value & 1)) {
                 // 1.1 No free pages
                 return err(error_code::out_of_memory);
             } else {
                 // 1.2 Minus 1
                 auto desired = value - (1 << 1);
-                if (value_.compare_exchange_strong(value, desired)) {
+                if (value_.compare_exchange_strong(value, desired, std::memory_order_acq_rel)) {
                     break;
                 }
             }
@@ -45,11 +46,12 @@ class page_table_1_entry {
      */
     result<void> take_huge() noexcept {
         auto expected = initial_value; // Expect untaken
-        return value_.compare_exchange_strong(expected, 1) ? ok() : err(error_code::out_of_memory);
+        return value_.compare_exchange_strong(expected, 1, std::memory_order_relaxed) ? ok()
+                                                                                      : err(error_code::out_of_memory);
     }
 
     size_t free_pages() const noexcept {
-        auto value = value_.load(std::memory_order_relaxed);
+        auto value = value_.load(std::memory_order_acquire);
         return (value & 1) ? 0 // Huge page
                            : value >> 1;
     }

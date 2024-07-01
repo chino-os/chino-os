@@ -9,7 +9,9 @@ namespace chino::os::kernel::hal {
 class emulator_cpu {
   public:
     inline static constexpr size_t min_page_size = 4 * KiB;
+
+    static constexpr size_t current_cpu_id() noexcept { return 0; }
 };
 
 using cpu_t = emulator_cpu;
-} // namespace chino::hal
+} // namespace chino::os::kernel::hal

@@ -7,7 +7,15 @@
 namespace chino::os::kernel::mm {
 class alignas(hal::cacheline_size) cpu_physical_allocator {
   public:
+    constexpr cpu_physical_allocator() noexcept : segment_index_(0), pt01_index_(0) {}
+
+    void initialize() noexcept;
     result<uintptr_t> allocate_page() noexcept;
+
+  private:
+    physical_segment &current_segment() noexcept { return physical_segment::segment(segment_index_); }
+    result<void> rent_new_pt0() noexcept;
+    void return_current_pt0() noexcept;
 
   private:
     uint32_t segment_index_;
