@@ -8,6 +8,11 @@ extern "C" {
 int __isa_available = 0;
 int __favor = 0;
 
+#if defined(_M_AMD64)
+size_t __memset_nt_threshold = 0x2000000;
+size_t __memset_fast_string_threshold = 0x80000;
+#endif
+
 int atexit(void(__cdecl *)()) { return 0; }
 
 void _CrtDbgReport() {}

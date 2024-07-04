@@ -1,9 +1,13 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
+#include <bit>
+#include <chino/os/kernel/kernel.h>
+#include <chino/os/kernel/threading.h>
 #include <chino/units.h>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 
 #if defined(__x86_64__)
 #include <xmmintrin.h>
@@ -47,7 +51,12 @@ class emulator_arch {
 
     static constexpr size_t current_cpu_id() noexcept { return 0; }
 
+    static emulator_thread_context initialize_thread_context(std::span<std::byte> stack,
+                                                             thread_main_thunk_t thread_thunk, void *thread,
+                                                             ps::thread_start_t entry_point, void *entry_arg) noexcept;
+
     [[noreturn]] static void restore_context(emulator_thread_context &context) noexcept;
+    [[noreturn]] static void start_schedule(emulator_thread_context &context) noexcept;
 };
 
 using arch_t = emulator_arch;

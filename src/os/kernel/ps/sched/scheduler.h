@@ -18,10 +18,13 @@ class scheduler {
     void lock() noexcept;
     void unlock() noexcept;
 
-    [[noreturn]] void start_schedule() noexcept;
+    void attach_thread(thread &thread) noexcept;
+
+    [[noreturn]] void start_schedule(thread &init_thread) noexcept;
 
   private:
     thread *select_next_thread() noexcept;
+    void set_current_thread(thread &thread) noexcept;
 
   private:
     std::atomic<uint32_t> lock_depth_;

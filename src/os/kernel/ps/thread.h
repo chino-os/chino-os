@@ -7,23 +7,36 @@
 #include <chino/os/kernel/hal/arch.h>
 #include <chino/os/kernel/object.h>
 #include <chino/os/kernel/threading.h>
+#include <span>
 
 namespace chino::os::kernel::ps {
-struct thread_context : public hal::arch_thread_context_t {};
+struct thread_context {
+    hal::arch_thread_context_t arch;
+};
+
+struct thread_flags {
+    uint32_t not_owned_stack : 1;
+    uint32_t priority : 3;
+};
 
 class thread : public object {
     CHINO_DEFINE_KERNEL_OBJECT_KIND(object, object_kind_thread);
 
   public:
-    constexpr thread() noexcept : context{}, priority_(thread_priority::idle){};
+    constexpr thread() noexcept : context{}, flags_{} {};
 
-    thread_priority priority() const noexcept { return priority_; }
+    void initialize(std::span<std::byte> stack, thread_start_t entry_point, void *entry_arg) noexcept;
+    thread_priority priority() const noexcept { return (thread_priority)flags_.priority; }
+
+  private:
+    [[noreturn]] static void thread_main_thunk(void *thread, thread_start_t entry_point, void *entry_arg) noexcept;
 
   public:
     intrusive_list_node schedule_list_node;
     thread_context context;
 
   private:
-    thread_priority priority_;
+    thread_flags flags_;
+    std::span<std::byte> stack_;
 };
 } // namespace chino::os::kernel::ps

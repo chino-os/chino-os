@@ -1,6 +1,7 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
+#include "threading.h"
 #include <cstddef>
 #include <cstdint>
 #include <span>
@@ -44,6 +45,8 @@ struct boot_options {
     hal::emulator_method_table *emu_mt;
 #endif
 };
+
+typedef void (*thread_main_thunk_t)(void *thread, ps::thread_start_t entry_point, void *entry_arg);
 } // namespace chino::os::kernel
 
 extern "C" {

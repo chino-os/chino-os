@@ -6,9 +6,23 @@
 
 using namespace chino::os::kernel;
 
+namespace {
+int ke_init_thread_main(void *arg) noexcept;
+
+alignas(hal::cacheline_size) std::array<std::byte, sizeof(uintptr_t) * 128> init_stack_;
+constinit ps::thread init_thread_;
+
+int ke_init_thread_main(void *arg) noexcept {
+    (void)arg;
+    return 0;
+}
+} // namespace
+
 extern "C" [[noreturn]] void CHINO_KERNEL_STARTUP(const boot_options &options) {
     // 1. Phase 0
     mm::initialize_phase0(options);
 
-    ps::scheduler::current().start_schedule();
+    // 2. Setup init thread
+    init_thread_.initialize(init_stack_, ke_init_thread_main, nullptr);
+    ps::scheduler::current().start_schedule(init_thread_);
 }

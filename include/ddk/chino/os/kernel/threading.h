@@ -26,4 +26,6 @@ class current_irq_schedule_lock {
 
   private:
 };
+
+typedef int (*thread_start_t)(void *);
 } // namespace chino::os::kernel::ps

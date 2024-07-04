@@ -11,7 +11,6 @@ using namespace chino::os::kernel::ps;
 
 namespace {
 constinit std::array<scheduler, hal::chip_t::cpus_count> schedulers_;
-constinit thread idle_thread_;
 } // namespace
 
 extern "C" {
@@ -40,8 +39,16 @@ thread *scheduler::select_next_thread() noexcept {
     return next ? next : ready_threads_[cnt_priority].front();
 }
 
-void scheduler::start_schedule() noexcept {
-    ready_threads_[0].push_front(&idle_thread_);
-    chino_current_threads[hal::arch_t::current_cpu_id()] = &idle_thread_;
-    hal::arch_t::restore_context(idle_thread_.context);
+void scheduler::attach_thread(thread &thread) noexcept {
+    ready_threads_[(size_t)thread.priority()].push_front(&thread);
+}
+
+void scheduler::set_current_thread(thread &thread) noexcept {
+    chino_current_threads[hal::arch_t::current_cpu_id()] = &thread;
+}
+
+void scheduler::start_schedule(thread &init_thread) noexcept {
+    attach_thread(init_thread);
+    set_current_thread(init_thread);
+    hal::arch_t::start_schedule(init_thread.context.arch);
 }
