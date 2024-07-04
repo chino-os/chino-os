@@ -14,6 +14,12 @@ class thread : public object {
   public:
     constexpr thread() noexcept {};
 
+    thread_priority priority() const noexcept { return priority_; }
+
+  public:
     intrusive_list_node schedule_list_node;
+
+  private:
+    thread_priority priority_;
 };
 } // namespace chino::os::kernel::ps

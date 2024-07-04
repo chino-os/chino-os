@@ -10,7 +10,7 @@ using namespace chino::os::kernel::mm;
 namespace {} // namespace
 
 void physical_allocator::initialize_phase0(const boot_options &options) noexcept {
-    physical_segment::segments_count = options.memory_descs.size();
+    physical_segment::segments_count = (uint32_t)options.memory_descs.size();
     for (size_t i = 0; i < options.memory_descs.size(); i++) {
         auto &desc = options.memory_descs[i];
         auto &segment = physical_segment::segment(i);

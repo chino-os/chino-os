@@ -46,7 +46,7 @@ result<void> cpu_physical_allocator::rent_new_pt0() noexcept {
     for (size_t i = 0; i < physical_segment::segments_count; i++) {
         auto rent_result = physical_segment::segment(i).rent();
         if (rent_result.is_ok()) {
-            segment_index_ = i;
+            segment_index_ = (uint32_t)i;
             pt01_index_ = rent_result.unwrap().pt01_index;
             free_pages_.store(rent_result.unwrap().free_pages, std::memory_order_release);
             return ok();

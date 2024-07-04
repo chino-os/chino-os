@@ -40,7 +40,7 @@ result<rent_result> physical_segment::rent() noexcept {
     for (size_t i = 0; i < pt01_count(); i++) {
         auto pages = pt0(i).rent();
         if (pages.is_ok()) {
-            return ok(rent_result{i, pages.unwrap()});
+            return ok(rent_result{(uint32_t)i, pages.unwrap()});
         }
     }
 

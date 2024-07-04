@@ -20,7 +20,7 @@ class alignas(hal::cacheline_size) cpu_physical_allocator {
   private:
     uint32_t segment_index_;
     uint32_t pt01_index_;
-    std::atomic<uint32_t> free_pages_;
+    std::atomic<uint16_t> free_pages_;
     std::atomic<uint32_t> encoded_last_frees_;
 };
 

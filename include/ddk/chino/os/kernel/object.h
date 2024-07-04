@@ -28,6 +28,8 @@ class object {
     constexpr object() noexcept : ref_count_(1) {}
     virtual ~object() = default;
 
+    void operator delete(void *) {}
+
     /** @brief Get the kind of the object */
     virtual const object_kind &runtime_kind() const noexcept = 0;
 
@@ -37,16 +39,13 @@ class object {
     /** @brief Is the object an instance of specific kind */
     virtual bool is_a(const object_kind &kind) const noexcept;
 
-    /** @brief Is the object equal to another instance */
-    virtual bool equals(const object &other) const noexcept;
-
   private:
     uint32_t add_ref() const noexcept { return ref_count_.fetch_add(1, std::memory_order_relaxed); }
 
     uint32_t release() const noexcept {
         auto count = ref_count_.fetch_sub(1, std::memory_order_acq_rel);
         if (count == 1) {
-            //delete this;
+            delete this;
         }
         return count;
     }
@@ -107,15 +106,6 @@ template <Object T> class object_ptr {
         } else {
             return err(error_code::bad_cast);
         }
-    }
-
-    /** @brief Is the object equal to another instance */
-    template <class U> bool equals(const U &other) const noexcept {
-        if (get() == other.get())
-            return true;
-        else if (!empty() && !other.empty())
-            return object_->equals(*other.get());
-        return false;
     }
 
     object_ptr &operator=(object_ptr &&other) noexcept {

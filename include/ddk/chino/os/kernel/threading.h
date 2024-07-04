@@ -8,6 +8,8 @@ class object;
 }
 
 namespace chino::os::kernel::ps {
+enum class thread_priority { idle = 0, lowest = 1, low = 2, normal = 3, high = 4, highest = 5, max = highest };
+
 struct current_schedule_lock {
     CHINO_NONCOPYABLE(current_schedule_lock);
 

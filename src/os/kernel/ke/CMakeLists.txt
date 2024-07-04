@@ -4,3 +4,7 @@ set(SRCS crt.cpp
          startup.cpp)
 
 target_sources(chino.kernel PRIVATE ${SRCS})
+
+if (MSVC)
+    target_compile_options(chino.kernel PRIVATE -Wno-inconsistent-dllimport)
+endif()

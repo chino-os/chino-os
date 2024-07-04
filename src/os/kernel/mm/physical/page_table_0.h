@@ -22,7 +22,7 @@ class page_table_0 {
     /** @brief Rent the level-0 page.
      *  @return The count of free level-2 pages.
      */
-    result<size_t> rent() noexcept {
+    result<uint16_t> rent() noexcept {
         while (true) {
             auto value = value_.load(std::memory_order_relaxed);
             if (value & 1) {
@@ -39,7 +39,7 @@ class page_table_0 {
 
     /** @brief Return the rented level-0 page.
      */
-    void return_(size_t free_pages) noexcept {
+    void return_(uint16_t free_pages) noexcept {
         auto add_value = (free_pages << 1) - 1; // Unset rent bit
         value_.fetch_add(add_value, std::memory_order_relaxed);
     }

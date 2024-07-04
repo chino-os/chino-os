@@ -14,8 +14,8 @@
 
 namespace chino::os::kernel::mm {
 struct rent_result {
-    size_t pt01_index;
-    size_t free_pages;
+    uint32_t pt01_index;
+    uint16_t free_pages;
 };
 
 class physical_segment {

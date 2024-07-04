@@ -49,8 +49,14 @@ class intrusive_list_storage {
 
     constexpr intrusive_list_storage() noexcept : head_(nullptr), tail_(nullptr), size_(0) {}
 
+    static node_type *prev(node_type *pivot) noexcept { return pivot->prev; }
+    static node_type *next(node_type *pivot) noexcept { return pivot->next; }
+
     bool empty() const noexcept { return size() == 0; }
     size_t size() const noexcept { return size_; }
+
+    node_type *front() noexcept { return head_; }
+    node_type *back() noexcept { return tail_; }
 
     void insert_before(node_type *pivot, node_type *node) noexcept {
         node->prev = pivot->prev;
@@ -74,7 +80,7 @@ class intrusive_list_storage {
         size_++;
     }
 
-    void insert_head(node_type *node) noexcept {
+    void push_front(node_type *node) noexcept {
         node->next = head_;
         if (head_)
             head_->prev = node;
@@ -83,7 +89,7 @@ class intrusive_list_storage {
         size_++;
     }
 
-    void insert_tail(node_type *node) noexcept {
+    void push_back(node_type *node) noexcept {
         node->prev = tail_;
         if (tail_)
             tail_->next = node;
@@ -107,7 +113,23 @@ class intrusive_list : protected detail::intrusive_list_storage {
     using base_type = detail::intrusive_list_storage;
     using node_type = intrusive_list_node;
 
+    using base_type::empty;
+    using base_type::size;
+
+    static intrusive_list_node *container_of(node_type *node) noexcept {
+        return reinterpret_cast<TContainer *>(reinterpret_cast<std::byte *>(node) -
+                                              reinterpret_cast<uintptr_t>(member_of(nullptr)));
+    }
+
     static intrusive_list_node *member_of(TContainer *container) noexcept { return &(container->*member); }
+
+    static TContainer *prev(TContainer *pivot) noexcept { return container_of(base_type::prev(member_of(pivot))); }
+
+    static TContainer *next(TContainer *pivot) noexcept { return container_of(base_type::prev(member_of(next))); }
+
+    TContainer *front() noexcept { return container_of(base_type::front()); }
+
+    TContainer *back() noexcept { return container_of(base_type::back()); }
 
     void insert_before(TContainer *pivot, TContainer *node) noexcept {
         base_type::insert_before(member_of(pivot), member_of(node));
@@ -117,6 +139,8 @@ class intrusive_list : protected detail::intrusive_list_storage {
         base_type::insert_after(member_of(pivot), member_of(node));
     }
 
-    void insert_head(TContainer *node) noexcept { base_type::insert_head(node); }
+    void push_front(TContainer *node) noexcept { base_type::push_front(member_of(node)); }
+
+    void push_back(TContainer *node) noexcept { base_type::push_back(member_of(node)); }
 };
 } // namespace chino
