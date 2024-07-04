@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13)
 
-set(CHINO_CPU emulator)
+set(CHINO_ARCH emulator)
 
-add_compile_definitions(-DCHINO_CPU_EMULATOR=1)
+add_compile_definitions(-DCHINO_ARCH_EMULATOR=1)

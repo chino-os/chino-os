@@ -3,10 +3,10 @@
 #pragma once
 #include <chino/compiler.h>
 
-#ifdef CHINO_CPU_EMULATOR
-#include "emulator/cpu.h"
+#ifdef CHINO_ARCH_EMULATOR
+#include "chips/emulator/chip.h"
+#else
+#error "Unknown chip."
 #endif
 
-namespace chino::os::kernel::hal {
-inline constexpr size_t cacheline_size = 64;
-}
+namespace chino::os::kernel::hal {}

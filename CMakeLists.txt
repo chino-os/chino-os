@@ -56,7 +56,7 @@ endif()
 if (MSVC)
     add_definitions(/D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_CRT_SECURE_NO_WARNINGS /DNOMINMAX /DUNICODE)
     add_definitions(/D_WIN32_WINNT=_WIN32_WINNT_WIN7)
-    add_compile_options(/utf-8 /W3 /WX /wd4273)
+    add_compile_options(/utf-8 /W3 /WX /wd4273 -Wno-unused-command-line-argument)
     # Disable C++ exceptions.
     string(REGEX REPLACE "/EH[a-z]+" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHs-c- /GS-")

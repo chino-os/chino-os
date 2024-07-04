@@ -11,7 +11,7 @@ void free_page_list::initialize(std::span<const boot_memory_desc> descs) noexcep
     for (auto &desc : descs) {
         if (desc.kind == boot_memory_kind::free) {
             auto node = reinterpret_cast<free_page_node *>(desc.virtual_address);
-            auto pages = desc.size_bytes / hal::cpu_t::min_page_size;
+            auto pages = desc.size_bytes / hal::arch_t::min_page_size;
             for (size_t i = 0; i < pages; i++) {
                 if (prev)
                     prev->next = node;
@@ -30,9 +30,6 @@ void free_page_list::initialize(std::span<const boot_memory_desc> descs) noexcep
     avail_pages_ = avail_pages;
 }
 
-result<std::byte *> free_page_list::allocate() noexcept {
-    return err(error_code::out_of_memory);
-}
+result<std::byte *> free_page_list::allocate() noexcept { return err(error_code::out_of_memory); }
 
-void free_page_list::free([[maybe_unused]] void *base) noexcept {
-}
+void free_page_list::free([[maybe_unused]] void *base) noexcept {}

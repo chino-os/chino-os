@@ -2,8 +2,7 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
 #include "chino/error.h"
-#include "chino/os/kernel/hal/cpu/cpu.h"
-#include "chino/os/kernel/hal/cpu/emulator/cpu.h"
+#include "chino/os/kernel/hal/arch.h"
 #include "chino/os/kernel/kernel.h"
 #include "chino/units.h"
 #include "page_table_0.h"
@@ -34,7 +33,7 @@ class physical_segment {
     page_table_2 *pt2_bucket_base(size_t pt01_index) noexcept { return &pt2(pt01_index * page_table_1::max_entries); }
 
     uintptr_t pfn_to_paddr(size_t pfn) const noexcept {
-        return physical_address_base_ + pfn * hal::cpu_t::min_page_size;
+        return physical_address_base_ + pfn * hal::arch_t::min_page_size;
     }
 
     void initialize(uintptr_t physical_address, size_t size_bytes) noexcept;
@@ -56,7 +55,7 @@ class physical_segment {
 
 template <size_t MaxSizeBytes> class inline_physical_segment : public physical_segment {
   public:
-    inline static constexpr size_t max_pages = MaxSizeBytes / hal::cpu_t::min_page_size;
+    inline static constexpr size_t max_pages = MaxSizeBytes / hal::arch_t::min_page_size;
     inline static constexpr size_t max_pt2_count = ceil_div(max_pages, page_table_2::max_pages);
     inline static constexpr size_t max_pt01_count = ceil_div(max_pt2_count, page_table_1::max_entries);
 

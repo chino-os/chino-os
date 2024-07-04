@@ -14,8 +14,10 @@
 
 #ifdef _MSC_VER
 #define CHINO_ASSUME(...)
+#define CHINO_UNREACHABLE() __assume(0)
 #else
 #define CHINO_ASSUME(...) __builtin_assume(__VA_ARGS__)
+#define CHINO_UNREACHABLE() __builtin_unreachable()
 #endif
 
 #define CHINO_NONCOPYABLE(T)                                                                                           \

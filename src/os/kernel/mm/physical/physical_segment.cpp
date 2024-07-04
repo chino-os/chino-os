@@ -1,7 +1,7 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #include "physical_segment.h"
-#include <chino/os/kernel/hal/chip/chip.h>
+#include <chino/os/kernel/hal/chip.h>
 
 using namespace chino;
 using namespace chino::os::kernel;
@@ -33,7 +33,7 @@ physical_segment &physical_segment::segment(size_t index) noexcept { return phys
 
 void physical_segment::initialize(uintptr_t physical_address, size_t size_bytes) noexcept {
     physical_address_base_ = physical_address;
-    total_pages_ = size_bytes / hal::cpu_t::min_page_size;
+    total_pages_ = size_bytes / hal::arch_t::min_page_size;
 }
 
 result<rent_result> physical_segment::rent() noexcept {

@@ -116,7 +116,7 @@ class intrusive_list : protected detail::intrusive_list_storage {
     using base_type::empty;
     using base_type::size;
 
-    static intrusive_list_node *container_of(node_type *node) noexcept {
+    static TContainer *container_of(node_type *node) noexcept {
         return reinterpret_cast<TContainer *>(reinterpret_cast<std::byte *>(node) -
                                               reinterpret_cast<uintptr_t>(member_of(nullptr)));
     }
@@ -124,11 +124,9 @@ class intrusive_list : protected detail::intrusive_list_storage {
     static intrusive_list_node *member_of(TContainer *container) noexcept { return &(container->*member); }
 
     static TContainer *prev(TContainer *pivot) noexcept { return container_of(base_type::prev(member_of(pivot))); }
-
-    static TContainer *next(TContainer *pivot) noexcept { return container_of(base_type::prev(member_of(next))); }
+    static TContainer *next(TContainer *pivot) noexcept { return container_of(base_type::next(member_of(pivot))); }
 
     TContainer *front() noexcept { return container_of(base_type::front()); }
-
     TContainer *back() noexcept { return container_of(base_type::back()); }
 
     void insert_before(TContainer *pivot, TContainer *node) noexcept {

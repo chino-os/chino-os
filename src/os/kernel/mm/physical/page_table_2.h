@@ -4,13 +4,13 @@
 #include <array>
 #include <atomic>
 #include <bit>
-#include <chino/os/kernel/hal/cpu/cpu.h>
+#include <chino/os/kernel/hal/arch.h>
 #include <chino/os/kernel/kernel.h>
 #include <chino/result.h>
 #include <numeric>
 
 namespace chino::os::kernel::mm {
-static_assert(hal::cpu_t::min_page_size == 4 * KiB, "Only support 4KiB base page");
+static_assert(hal::arch_t::min_page_size == 4 * KiB, "Only support 4KiB base page");
 
 /** @brief Level-2 page table.
  *

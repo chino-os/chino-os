@@ -2,7 +2,7 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #include "physical_allocator.h"
 #include "physical_segment.h"
-#include <chino/os/kernel/hal/chip/chip.h>
+#include <chino/os/kernel/hal/chip.h>
 
 using namespace chino::os::kernel;
 using namespace chino::os::kernel::mm;

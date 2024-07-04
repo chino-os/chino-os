@@ -16,8 +16,14 @@
 #endif
 
 #define CHINO_KERNEL_STARTUP ke_startup
+#ifdef CHINO_EMULATOR
+namespace chino::os::kernel::hal {
+struct emulator_method_table;
+}
+#endif
 
 namespace chino::os::kernel {
+
 enum class boot_memory_kind {
     free,
     boot,
@@ -34,6 +40,9 @@ struct boot_memory_desc {
 
 struct boot_options {
     std::span<const boot_memory_desc> memory_descs;
+#ifdef CHINO_EMULATOR
+    hal::emulator_method_table *emu_mt;
+#endif
 };
 } // namespace chino::os::kernel
 

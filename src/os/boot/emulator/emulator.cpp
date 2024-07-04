@@ -1,6 +1,7 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
-#include <chino/os/kernel/hal/cpu/cpu.h>
+#include <chino/os/kernel/hal/arch.h>
+#include <chino/os/kernel/hal/chip.h>
 #include <chino/os/kernel/kernel.h>
 #include <chino/version.h>
 #include <format>
@@ -66,6 +67,60 @@ kernel_entry_t load_kernel_entry() {
 #endif
     return kernel_entryp;
 }
+
+class emulator {
+  public:
+    static void run(size_t memory_size) {
+        memory_size_ = memory_size;
+        create_cpu_threads();
+        WaitForMultipleObjects((DWORD)cpu_threads_.size(), cpu_threads_.data(), TRUE, INFINITE);
+    }
+
+  private:
+    static void create_cpu_threads() {
+        for (size_t i = 0; i < cpu_threads_.size(); i++) {
+            cpu_threads_[i] = CreateThread(nullptr, 0, cpu_entry, (LPVOID)i, 0, nullptr);
+        }
+    }
+
+    static DWORD WINAPI cpu_entry([[maybe_unused]] LPVOID) {
+        // 1. Load kernel
+        auto kernel_entryp = load_kernel_entry();
+
+        // 2. Parpare boot options
+        // 2.1. Create memory
+        auto free_pages = memory_size_ / arch_t::min_page_size;
+        size_t free_memory_size = arch_t::min_page_size * (free_pages + 1);
+        auto free_memory_holder = std::make_unique<uint8_t[]>(free_memory_size);
+        void *free_memory_aligned = free_memory_holder.get();
+        if (!std::align(arch_t::min_page_size, arch_t::min_page_size * free_pages, free_memory_aligned,
+                        free_memory_size)) {
+            throw std::runtime_error("Unable to allocate main memory.");
+        }
+
+        boot_memory_desc memory_descs[] = {
+            {
+                .kind = boot_memory_kind::free,
+                .physical_address = (uintptr_t)free_memory_aligned,
+                .virtual_address = (uintptr_t)free_memory_aligned,
+                .size_bytes = free_memory_size,
+            },
+        };
+
+        // 2.2 Create boot options
+        emulator_method_table emu_mt = {.restore_context = restore_context};
+
+        boot_options options{.memory_descs = std::span(memory_descs), .emu_mt = &emu_mt};
+        kernel_entryp(options);
+        CHINO_UNREACHABLE();
+    }
+
+    static void restore_context(emulator_thread_context &context) noexcept { ResumeThread(cpu_threads_[0]); }
+
+  private:
+    inline static size_t memory_size_;
+    inline static std::array<HANDLE, chip_t::cpus_count> cpu_threads_;
+};
 } // namespace
 
 int main(int argc, char **argv) {
@@ -85,31 +140,5 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    // 1. Load kernel
-    auto kernel_entryp = load_kernel_entry();
-
-    // 2. Parpare boot options
-    // 2.1. Create memory
-    auto free_pages = memory_size / cpu_t::min_page_size;
-    size_t free_memory_size = cpu_t::min_page_size * (free_pages + 1);
-    auto free_memory_holder = std::make_unique<uint8_t[]>(free_memory_size);
-    void *free_memory_aligned = free_memory_holder.get();
-    if (!std::align(cpu_t::min_page_size, cpu_t::min_page_size * free_pages, free_memory_aligned, free_memory_size)) {
-        throw std::runtime_error("Unable to allocate main memory.");
-    }
-
-    boot_memory_desc memory_descs[] = {
-        {
-            .kind = boot_memory_kind::free,
-            .physical_address = (uintptr_t)free_memory_aligned,
-            .virtual_address = (uintptr_t)free_memory_aligned,
-            .size_bytes = free_memory_size,
-        },
-    };
-
-    // 2.2 Create boot options
-    boot_options options{
-        .memory_descs = std::span(memory_descs),
-    };
-    kernel_entryp(options);
+    emulator::run(memory_size);
 }

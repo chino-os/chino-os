@@ -2,7 +2,7 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
 #include <atomic>
-#include <chino/os/kernel/hal/cpu/cpu.h>
+#include <chino/os/kernel/hal/arch.h>
 #include <chino/os/kernel/kernel.h>
 #include <chino/result.h>
 #include <numeric>
@@ -12,10 +12,10 @@ class free_page_list {
     struct free_page_node {
         free_page_node *next;
         size_t pages;
-        std::byte *end() noexcept { return reinterpret_cast<std::byte *>(this) + pages * hal::cpu_t::min_page_size; }
+        std::byte *end() noexcept { return reinterpret_cast<std::byte *>(this) + pages * hal::arch_t::min_page_size; }
     };
 
-    static_assert(sizeof(free_page_node) <= hal::cpu_t::min_page_size);
+    static_assert(sizeof(free_page_node) <= hal::arch_t::min_page_size);
 
   public:
     constexpr free_page_list() : avail_pages_(0), head_(nullptr) {}
