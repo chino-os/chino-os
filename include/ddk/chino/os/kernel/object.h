@@ -28,21 +28,9 @@ class object {
     constexpr object() noexcept : ref_count_(1) {}
     virtual ~object() = default;
 
-    void operator delete(void *) {}
-
-    /** @brief Get the kind of the object */
-    virtual const object_kind &runtime_kind() const noexcept = 0;
-
-  protected:
-    template <Object T> friend class object_ptr;
-
-    /** @brief Is the object an instance of specific kind */
-    virtual bool is_a(const object_kind &kind) const noexcept;
-
-  private:
     uint32_t add_ref() const noexcept { return ref_count_.fetch_add(1, std::memory_order_relaxed); }
 
-    uint32_t release() const noexcept {
+    uint32_t dec_ref() const noexcept {
         auto count = ref_count_.fetch_sub(1, std::memory_order_acq_rel);
         if (count == 1) {
             delete this;
@@ -50,11 +38,22 @@ class object {
         return count;
     }
 
+    void operator delete(void *) {}
+
+    /** @brief Get the kind of the object */
+    virtual const object_kind &runtime_kind() const noexcept = 0;
+
+  protected:
+    template <class T> friend class object_ptr;
+
+    /** @brief Is the object an instance of specific kind */
+    virtual bool is_a(const object_kind &kind) const noexcept;
+
   private:
     mutable std::atomic<uint32_t> ref_count_;
 };
 
-template <Object T> class object_ptr {
+template <class T> class object_ptr {
   public:
     using object_type = T;
 
@@ -84,6 +83,7 @@ template <Object T> class object_ptr {
 
     /** @brief Get the managed pointer to the object */
     T *get() const noexcept { return object_; }
+    T *operator*() const noexcept { return get(); }
     T *operator->() const noexcept { return get(); }
 
     bool empty() const noexcept { return !object_; }
@@ -110,7 +110,7 @@ template <Object T> class object_ptr {
 
     object_ptr &operator=(object_ptr &&other) noexcept {
         if (this != &other) {
-            release();
+            dec_ref();
             object_ = other.object_;
             other.object_ = nullptr;
         }
@@ -119,25 +119,23 @@ template <Object T> class object_ptr {
 
     object_ptr &operator=(const object_ptr &other) noexcept {
         if (this != &other) {
-            release();
+            dec_ref();
             object_ = other.object_;
             add_ref();
         }
         return *this;
     }
 
-    T *detach() noexcept {
+    T *release() noexcept {
         auto obj = object_;
         object_ = nullptr;
         return obj;
     }
 
-    T **release_and_addressof() noexcept {
-        release();
+    T **dec_ref_and_addressof() noexcept {
+        dec_ref();
         return &object_;
     }
-
-    void dangerous_add_ref() noexcept { return add_ref(); }
 
   private:
     void add_ref() noexcept {
@@ -146,16 +144,16 @@ template <Object T> class object_ptr {
         }
     }
 
-    void release() noexcept {
+    void dec_ref() noexcept {
         auto obj = object_;
         if (obj) {
-            obj->release();
+            obj->dec_ref();
             object_ = nullptr;
         }
     }
 
   private:
-    template <Object U> friend class object_ptr;
+    template <class U> friend class object_ptr;
 
     T *object_;
 };

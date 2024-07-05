@@ -1,14 +1,12 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
-#include <chino/compiler.h>
-
-namespace chino::os::kernel {
-class object;
-}
+#include "object.h"
 
 namespace chino::os::kernel::ps {
 enum class thread_priority { idle = 0, lowest = 1, low = 2, normal = 3, high = 4, highest = 5, max = highest };
+
+typedef int (*thread_start_t)(void *);
 
 struct current_schedule_lock {
     CHINO_NONCOPYABLE(current_schedule_lock);
@@ -27,5 +25,8 @@ class current_irq_schedule_lock {
   private:
 };
 
-typedef int (*thread_start_t)(void *);
+class wait_queue {
+  public:
+  private:
+};
 } // namespace chino::os::kernel::ps

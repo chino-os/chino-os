@@ -2,75 +2,43 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
 #include "compiler.h"
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <result.h>
 
 namespace chino {
 namespace detail {
-class intrusive_list_storage;
+class atomic_queue_storage;
 }
 
-class intrusive_list_node {
+class atomic_queue_node {
   public:
-    constexpr intrusive_list_node() noexcept : prev(nullptr), next(nullptr) {}
+    constexpr atomic_queue_node() noexcept : next(nullptr) {}
 
   private:
-    friend class detail::intrusive_list_storage;
+    friend class detail::atomic_queue_storage;
 
-    intrusive_list_node *prev;
-    intrusive_list_node *next;
+    std::atomic<atomic_queue_node *> next;
 };
 
 namespace detail {
-class intrusive_list_storage {
+class atomic_queue_storage {
   public:
-    using node_type = intrusive_list_node;
+    using node_type = atomic_queue_node;
 
-    CHINO_NONCOPYABLE(intrusive_list_storage);
+    CHINO_NONCOPYABLE(atomic_queue_storage);
 
-    constexpr intrusive_list_storage() noexcept : head_(nullptr), tail_(nullptr), size_(0) {}
+    constexpr atomic_queue_storage() noexcept : head_(nullptr), tail_(nullptr), size_(0) {}
 
-    static node_type *prev(node_type *pivot) noexcept { return pivot->prev; }
-    static node_type *next(node_type *pivot) noexcept { return pivot->next; }
+    static node_type *next(node_type *pivot) noexcept { return pivot->next.load(std::memory_order_relaxed); }
 
     bool empty() const noexcept { return size() == 0; }
-    size_t size() const noexcept { return size_; }
+    size_t size() const noexcept { return size_.load(std::memory_order_relaxed); }
 
-    node_type *front() noexcept { return head_; }
-    node_type *back() noexcept { return tail_; }
+    node_type *front() noexcept { return head_.load(std::memory_order_relaxed); }
 
-    void insert_before(node_type *pivot, node_type *node) noexcept {
-        node->prev = pivot->prev;
-        node->next = pivot;
-        if (pivot->prev)
-            pivot->prev->next = node;
-        else
-            head_ = node;
-        pivot->prev = node;
-        size_++;
-    }
-
-    void insert_after(node_type *pivot, node_type *node) noexcept {
-        node->prev = pivot;
-        node->next = pivot->next;
-        if (pivot->next)
-            pivot->next->prev = node;
-        else
-            tail_ = node;
-        pivot->next = node;
-        size_++;
-    }
-
-    void push_front(node_type *node) noexcept {
-        node->next = head_;
-        if (head_)
-            head_->prev = node;
-        else
-            head_ = tail_ = node;
-        size_++;
-    }
-
-    void push_back(node_type *node) noexcept {
+    void push(node_type *node) noexcept {
         node->prev = tail_;
         if (tail_)
             tail_->next = node;
@@ -79,12 +47,12 @@ class intrusive_list_storage {
         size_++;
     }
 
-    void remove(node_type *node) noexcept { (void)node; }
+    result<node_type *> try_pop() noexcept {}
 
   private:
-    node_type *head_;
-    node_type *tail_;
-    size_t size_;
+    std::atomic<node_type *> head_;
+    std::atomic<node_type *> tail_;
+    std::atomic<size_t> size_;
 };
 } // namespace detail
 

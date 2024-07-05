@@ -11,5 +11,7 @@ namespace chino::os::kernel::mm {
 class physical_allocator {
   public:
     static void initialize_phase0(const boot_options &options) noexcept;
+
+    static result<uintptr_t> allocate_page() noexcept;
 };
 } // namespace chino::os::kernel::mm

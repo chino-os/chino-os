@@ -53,6 +53,8 @@ else ()
     set(CMAKE_INSTALL_RPATH "$ORIGIN")
 endif()
 
+add_compile_definitions(_CHINO=1)
+
 if (MSVC)
     add_definitions(/D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_CRT_SECURE_NO_WARNINGS /DNOMINMAX /DUNICODE)
     add_definitions(/D_WIN32_WINNT=_WIN32_WINNT_WIN7)
@@ -81,6 +83,7 @@ include_directories(${CHINO_SDK_GENERATED_INCLUDE_DIR})
 
 add_subdirectory(include/sdk/chino)
 add_subdirectory(src)
+#add_subdirectory(third_party/mimalloc)
 
 if(BUILD_TESTING)
 endif()

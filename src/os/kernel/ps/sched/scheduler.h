@@ -8,7 +8,7 @@
 
 namespace chino::os::kernel::ps {
 class scheduler {
-    using schedule_list_t = intrusive_list<thread, &thread::schedule_list_node>;
+    using scheduler_list_t = intrusive_list<thread, &thread::scheduler_list_node>;
 
   public:
     static scheduler &current() noexcept;
@@ -19,17 +19,20 @@ class scheduler {
     void unlock() noexcept;
 
     void attach_thread(thread &thread) noexcept;
+    void detach_thread(thread &thread) noexcept;
+    void yield() noexcept;
 
     [[noreturn]] void start_schedule(thread &init_thread) noexcept;
 
   private:
     thread *select_next_thread() noexcept;
     void set_current_thread(thread &thread) noexcept;
+    scheduler_list_t &list_of(thread &thread) noexcept;
 
   private:
     std::atomic<uint32_t> lock_depth_;
     std::atomic_flag higher_thread_ready_;
 
-    std::array<schedule_list_t, (size_t)thread_priority::max + 1> ready_threads_;
+    std::array<scheduler_list_t, (size_t)thread_priority::max + 1> ready_threads_;
 };
 } // namespace chino::os::kernel::ps

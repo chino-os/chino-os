@@ -35,12 +35,28 @@ thread *scheduler::select_next_thread() noexcept {
         }
     }
 
-    auto next = schedule_list_t::next(&cnt_thread);
+    auto next = scheduler_list_t::next(&cnt_thread);
     return next ? next : ready_threads_[cnt_priority].front();
 }
 
 void scheduler::attach_thread(thread &thread) noexcept {
-    ready_threads_[(size_t)thread.priority()].push_front(&thread);
+    thread.add_ref();
+    list_of(thread).push_front(&thread);
+}
+
+void scheduler::detach_thread(thread &thread) noexcept {
+    list_of(thread).remove(&thread);
+    thread.dec_ref();
+}
+
+void scheduler::yield() noexcept {
+    auto next_thread = select_next_thread();
+    set_current_thread(*next_thread);
+    hal::arch_t::start_schedule(next_thread->context.arch);
+}
+
+scheduler::scheduler_list_t &scheduler::list_of(thread &thread) noexcept {
+    return ready_threads_[(size_t)thread.priority()];
 }
 
 void scheduler::set_current_thread(thread &thread) noexcept {
