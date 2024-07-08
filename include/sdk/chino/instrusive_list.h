@@ -66,6 +66,7 @@ class intrusive_list_storage {
         node->next->prev = node->prev;
         node->prev->next = node->next;
         node->prev = node->next = nullptr;
+        size_--;
     }
 
   private:
@@ -104,8 +105,15 @@ class intrusive_list : protected detail::intrusive_list_storage {
         return next ? container_of(next) : nullptr;
     }
 
-    TContainer *front() noexcept { return container_of(base_type::front()); }
-    TContainer *back() noexcept { return container_of(base_type::back()); }
+    TContainer *front() noexcept {
+        auto next = base_type::front();
+        return next ? container_of(next) : nullptr;
+    }
+
+    TContainer *back() noexcept {
+        auto next = base_type::back();
+        return next ? container_of(next) : nullptr;
+    }
 
     void insert_before(TContainer *pivot, TContainer *node) noexcept {
         base_type::insert_before(member_of(pivot), member_of(node));

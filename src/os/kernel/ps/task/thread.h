@@ -12,21 +12,18 @@
 namespace chino::os::kernel::ps {
 class process;
 
-struct thread_context {
-    hal::arch_thread_context_t arch;
-};
-
 struct thread_flags {
     uint32_t not_owned_stack : 1;
     uint32_t priority : 3;
     uint32_t status : 3;
+    uint32_t scheduled : 1;
 };
 
 struct thread_create_options {
     ps::process *process;
     thread_priority priority = thread_priority::normal;
     bool not_owned_stack = false;
-    std::span<std::byte> stack;
+    std::span<uintptr_t> stack;
     thread_start_t entry_point;
     void *entry_arg = nullptr;
 };
@@ -43,11 +40,21 @@ class thread : public object {
     thread_status status() const noexcept { return (thread_status)flags_.status; }
     void status(thread_status value) noexcept { flags_.status = (uint32_t)value; }
 
+    bool set_scheduled() noexcept {
+        if (flags_.scheduled) {
+            return true;
+        } else {
+            flags_.scheduled = 1;
+            return false;
+        }
+    }
+
   private:
-    [[noreturn]] static void thread_main_thunk(void *thread, thread_start_t entry_point, void *entry_arg) noexcept;
+    [[noreturn]] static void thread_main_thunk(thread_start_t entry_point, void *entry_arg) noexcept;
+    static uintptr_t *initialize_thread_stack(const thread_create_options &create_options) noexcept;
 
   public:
-    thread_context context;
+    uintptr_t *stack_top;
 
     intrusive_list_node scheduler_list_node;
     intrusive_list_node process_list_node;
@@ -62,7 +69,7 @@ class thread : public object {
   private:
     thread_flags flags_;
     object_ptr<ps::process> process_;
-    std::span<std::byte> stack_;
+    std::span<uintptr_t> stack_;
 };
 
 object_ptr<thread> create_thread();

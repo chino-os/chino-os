@@ -16,7 +16,10 @@ using namespace chino::os::kernel;
 using namespace chino::os::kernel::hal;
 
 extern "C" {
-[[noreturn]] extern void emulator_restore_context(emulator_thread_context *context) noexcept;
+void emulator_restore_irq(arch_irq_state_t irq_state) noexcept { emulator_arch::restore_irq(irq_state); }
+
+[[noreturn]] extern void emulator_restore_context() noexcept;
+[[noreturn]] extern void emulator_start_schedule() noexcept;
 }
 
 namespace {
@@ -46,8 +49,6 @@ class emulator {
         return 0;
     }
 
-    static void restore_context(emulator_thread_context &context) noexcept { ResumeThread(cpu_threads_[0]); }
-
   private:
     inline static size_t memory_size_;
     inline static std::array<HANDLE, chip_t::cpus_count> cpu_threads_;
@@ -57,27 +58,29 @@ class emulator {
 
 void emulator_arch::arch_startup(size_t memory_size) { emulator::run(memory_size); }
 
-emulator_thread_context emulator_arch::initialize_thread_context(std::span<std::byte> stack,
-                                                                 ps::thread_main_thunk_t thread_thunk, void *thread,
-                                                                 thread_start_t entry_point, void *entry_arg) noexcept {
-    auto rsp = reinterpret_cast<uintptr_t *>(stack.data() + stack.size_bytes());
-    *--rsp = 0; // Avoid unwind
-    return emulator_thread_context{.rcx = (uintptr_t)thread,
-                                   .rdx = (uintptr_t)entry_point,
-                                   .rsp = (uintptr_t)rsp,
-                                   .r8 = (uintptr_t)entry_arg,
-                                   .rip = (uintptr_t)thread_thunk};
-}
-
 std::chrono::milliseconds emulator_arch::current_cpu_time() noexcept {
     return std::chrono::milliseconds(GetTickCount64());
 }
 
-void emulator_arch::restore_context(emulator_thread_context &context) noexcept { emulator_restore_context(&context); }
+void emulator_arch::restore_context(uintptr_t *stack_top) noexcept {
+    __asm {
+        mov rsp, stack_top;
+        jmp emulator_restore_context
+    }
+}
+
+void emulator_arch::start_schedule(uintptr_t *stack_top) noexcept {
+    __asm {
+        mov rsp, stack_top;
+        jmp emulator_start_schedule
+    }
+}
+
+void emulator_arch::enable_irq() noexcept { restore_irq(1); }
 
 arch_irq_state_t emulator_arch::disable_irq() noexcept { return emulator::current_cpu().disable_irq(); }
 
-void emulator_arch::restore_irq(arch_irq_state_t state) noexcept { (void)state; }
+bool emulator_arch::restore_irq(arch_irq_state_t state) noexcept { return emulator::current_cpu().restore_irq(state); }
 
 void emulator_arch::enable_system_tick(std::chrono::milliseconds due_time) noexcept {
     emulator::current_cpu().enable_system_tick(due_time);

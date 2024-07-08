@@ -1,6 +1,7 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
+#include <atomic>
 #include <chino/os/kernel/hal/archs/emulator/arch.h>
 #include <chino/os/kernel/hal/chip.h>
 
@@ -31,6 +32,9 @@ class emulator_cpu {
 
     void run(size_t cpu_id, size_t memory_size);
 
+    arch_irq_state_t disable_irq();
+    bool restore_irq(arch_irq_state_t irq_state);
+
     void enable_system_tick(std::chrono::milliseconds ticks);
 
   private:
@@ -41,6 +45,7 @@ class emulator_cpu {
     LRESULT window_proc(UINT uMsg, WPARAM wParam, LPARAM lParam);
     void send_arch_call(arch_call &call);
     void send_irq(arch_irq_number_t irq_number);
+    void process_irq(arch_irq_number_t irq_number);
 
     void cpu_entry();
     void apic_entry();
@@ -58,5 +63,8 @@ class emulator_cpu {
     HWND event_window_;
     HWND apic_window_;
     arch_irq_number_t current_irq_;
+    std::atomic<arch_irq_state_t> irq_state_;
+    CONDITION_VARIABLE irq_state_cs_;
+    CRITICAL_SECTION irq_lock_;
 };
 } // namespace chino::os::kernel::hal

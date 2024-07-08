@@ -1,2 +1,3 @@
 DEFINE_OBJECT_KIND(thread,         Thread,       1)
 DEFINE_OBJECT_KIND(process,        Process,      2)
+DEFINE_OBJECT_KIND(mutex,          Mutex,        3)

@@ -23,9 +23,11 @@ class scheduler {
     void attach_thread(thread &thread) noexcept;
     void detach_thread(thread &thread) noexcept;
     void yield() noexcept;
+    void yield_if_needed() noexcept;
 
     void block_current_thread(waitable_object &waiting_object,
                               std::optional<std::chrono::milliseconds> timeout) noexcept;
+    void unblock_thread(thread &thread) noexcept;
     void delay_current_thread(std::chrono::milliseconds timeout) noexcept;
 
     [[noreturn]] void start_schedule() noexcept;

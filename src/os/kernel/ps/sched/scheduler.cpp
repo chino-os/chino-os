@@ -15,7 +15,7 @@ using namespace std::chrono_literals;
 namespace {
 constinit std::array<scheduler, hal::chip_t::cpus_count> schedulers_;
 
-alignas(hal::cacheline_size) std::array<std::byte, sizeof(uintptr_t) * 16> idle_stack_;
+alignas(hal::cacheline_size) std::array<uintptr_t, 128> idle_stack_;
 constinit static_object<ps::thread> idle_thread_;
 } // namespace
 
@@ -57,14 +57,28 @@ void scheduler::detach_thread(thread &thread) noexcept {
 void scheduler::yield() noexcept {
     auto &next_thread = select_next_thread();
     set_current_thread(next_thread);
-    hal::arch_t::restore_context(next_thread.context.arch);
+    if (next_thread.set_scheduled()) {
+        hal::arch_t::restore_context(next_thread.stack_top);
+    } else {
+        hal::arch_t::start_schedule(next_thread.stack_top);
+    }
+}
+
+void scheduler::yield_if_needed() noexcept {
+    auto &cnt_thread = current_thread();
+    auto cnt_priority = (uint32_t)cnt_thread.priority();
+    auto search_priority = (uint32_t)max_ready_priority_;
+    if (search_priority > cnt_priority || cnt_thread.status() != thread_status::running) {
+        yield();
+    }
 }
 
 void scheduler::start_schedule() noexcept {
     auto &next_thread = select_next_thread();
     set_current_thread(next_thread);
     setup_next_system_tick();
-    hal::arch_t::restore_context(next_thread.context.arch);
+    next_thread.set_scheduled();
+    hal::arch_t::start_schedule(next_thread.stack_top);
 }
 
 void scheduler::on_system_tick() noexcept {
@@ -82,11 +96,17 @@ void scheduler::block_current_thread(waitable_object &waiting_object,
         // 1. Add to blocked list
         blocked_threads_.push_back(&cnt_thread);
         cnt_thread.status(thread_status::blocked);
-        yield();
     } else {
         // 2. Add to delayed list
         delay_current_thread(*timeout);
     }
+}
+
+void scheduler::unblock_thread(thread &thread) noexcept {
+    blocked_threads_.remove(&thread);
+    thread.waiting_object = nullptr;
+    thread.status(thread_status::ready);
+    list_of(thread).push_back(&thread);
 }
 
 void scheduler::delay_current_thread(std::chrono::milliseconds timeout) noexcept {
@@ -106,7 +126,6 @@ void scheduler::delay_current_thread(std::chrono::milliseconds timeout) noexcept
         delayed_threads_.push_front(&cnt_thread);
     }
     cnt_thread.status(thread_status::delayed);
-    yield();
 }
 
 scheduler::scheduler_list_t &scheduler::list_of(thread &thread) noexcept {
@@ -128,14 +147,18 @@ thread &scheduler::select_next_thread() noexcept {
     auto &cnt_thread = current_thread();
     auto cnt_priority = (uint32_t)cnt_thread.priority();
     auto search_priority = (uint32_t)max_ready_priority_;
-    thread *next_thread;
+    thread *next_thread = nullptr;
 
     if (search_priority > cnt_priority || cnt_thread.status() != thread_status::running) {
+        if (cnt_thread.status() != thread_status::running) {
+            cnt_priority = 0;
+        }
         // 1. Higher thread ready or current thread blocked, search from max priority
-        for (size_t i = search_priority; i > cnt_priority; i--) {
+        for (size_t i = search_priority; i >= cnt_priority; i--) {
             auto &threads = ready_threads_[i];
             if (!threads.empty()) {
                 next_thread = threads.front();
+                break;
             }
         }
     } else {

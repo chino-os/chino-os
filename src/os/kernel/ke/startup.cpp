@@ -9,7 +9,7 @@ using namespace chino::os;
 using namespace chino::os::kernel;
 
 namespace {
-alignas(hal::cacheline_size) std::array<std::byte, sizeof(uintptr_t) * 128> init_stack_;
+alignas(hal::cacheline_size) std::array<uintptr_t, 128> init_stack_;
 constinit static_object<ps::process> ke_process_;
 constinit static_object<ps::thread> init_thread_;
 } // namespace
@@ -37,6 +37,11 @@ void ke_startup(const boot_options &options) noexcept {
 
 int ke_init_thread_main(void *pv_options) noexcept {
     [[maybe_unused]] auto &options = *reinterpret_cast<const boot_options *>(pv_options);
+    ps::mutex m;
     while (true) {
+        if (m.wait().is_ok()) {
+            m.wait().expect("");
+            m.release();
+        }
     }
 }

@@ -30,6 +30,11 @@ void emulator_cpu::run(size_t cpu_id, size_t memory_size) {
     cpu_id_ = cpu_id;
     memory_size_ = memory_size;
 
+    // Create IRQ lock
+    irq_state_.store(0, std::memory_order_relaxed); // Disable IRQ on startup
+    InitializeCriticalSection(&irq_lock_);
+    InitializeConditionVariable(&irq_state_cs_);
+
     // Create event loop window
     event_window_ =
         CreateWindowExW(0, message_queue_class, message_queue_class, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
@@ -46,6 +51,24 @@ void emulator_cpu::run(size_t cpu_id, size_t memory_size) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
+}
+
+arch_irq_state_t emulator_cpu::disable_irq() {
+    arch_irq_state_t old_state = 1;
+    EnterCriticalSection(&irq_lock_);
+    irq_state_.compare_exchange_weak(old_state, 0, std::memory_order_relaxed);
+    LeaveCriticalSection(&irq_lock_);
+    return old_state;
+}
+
+bool emulator_cpu::restore_irq(arch_irq_state_t irq_state) {
+    EnterCriticalSection(&irq_lock_);
+    irq_state_.store(irq_state, std::memory_order_relaxed);
+    LeaveCriticalSection(&irq_lock_);
+    if (irq_state) {
+        WakeConditionVariable(&irq_state_cs_);
+    }
+    return irq_state;
 }
 
 LRESULT CALLBACK emulator_cpu::window_proc_thunk(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -76,6 +99,8 @@ LRESULT emulator_cpu::window_proc(UINT uMsg, WPARAM wParam, LPARAM lParam) {
         }
         return 1;
     } else if (uMsg == WM_ARCH_IRQ) {
+        process_irq((arch_irq_number_t)wParam);
+        return 1;
     } else if (uMsg == WM_TIMER) {
         if (wParam == systick_timer_id) {
             // systick
@@ -90,15 +115,28 @@ LRESULT emulator_cpu::window_proc(UINT uMsg, WPARAM wParam, LPARAM lParam) {
 void emulator_cpu::send_arch_call(arch_call &call) { SendMessage(event_window_, WM_ARCH_CALL, NULL, (LPARAM)&call); }
 
 void emulator_cpu::send_irq(arch_irq_number_t irq_number) {
-    SuspendThread(cpu_thread_);
-    CONTEXT context{.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER};
-    GetThreadContext(cpu_thread_, &context);
-    auto &rsp = (uintptr_t *&)context.Rsp;
-    *--rsp = context.Rip;
-    *--rsp = (uint32_t)irq_number;
-    context.Rip = (uintptr_t)emulator_dispatch_irq;
-    SetThreadContext(cpu_thread_, &context);
-    ResumeThread(cpu_thread_);
+    PostMessage(apic_window_, WM_ARCH_IRQ, (WPARAM)irq_number, NULL);
+}
+
+void emulator_cpu::process_irq(arch_irq_number_t irq_number) {
+    EnterCriticalSection(&irq_lock_);
+    while (!irq_state_.load()) {
+        SleepConditionVariableCS(&irq_state_cs_, &irq_lock_, INFINITE);
+    }
+
+    {
+        SuspendThread(cpu_thread_);
+        CONTEXT context{.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER};
+        GetThreadContext(cpu_thread_, &context);
+        auto &rsp = (uintptr_t *&)context.Rsp;
+        *--rsp = context.Rip;
+        *--rsp = (uint32_t)irq_number;
+        context.Rip = (uintptr_t)emulator_dispatch_irq;
+        SetThreadContext(cpu_thread_, &context);
+        ResumeThread(cpu_thread_);
+    }
+
+    LeaveCriticalSection(&irq_lock_);
 }
 
 DWORD WINAPI emulator_cpu::cpu_entry_thunk([[maybe_unused]] LPVOID pcpu) {

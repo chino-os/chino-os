@@ -15,37 +15,12 @@
 #endif
 
 namespace chino::os::kernel::hal {
-struct alignas(16) emulator_thread_context {
-#if defined(__x86_64__)
-    uintptr_t rax;
-    uintptr_t rbx;
-    uintptr_t rcx;
-    uintptr_t rdx;
-    uintptr_t rsp;
-    uintptr_t rbp;
-    uintptr_t rsi;
-    uintptr_t rdi;
-    uintptr_t r8;
-    uintptr_t r9;
-    uintptr_t r10;
-    uintptr_t r11;
-    uintptr_t r12;
-    uintptr_t r13;
-    uintptr_t r14;
-    uintptr_t r15;
-
-    uintptr_t rip;
-
-    __m128 xmm[16];
-#endif
-};
+using arch_irq_state_t = uint32_t;
 
 enum class emulator_irq_number {
     system_tick,
 };
 
-using arch_thread_context_t = emulator_thread_context;
-using arch_irq_state_t = uint32_t;
 using arch_irq_number_t = emulator_irq_number;
 
 class emulator_arch {
@@ -57,14 +32,14 @@ class emulator_arch {
     static constexpr size_t current_cpu_id() noexcept { return 0; }
     static std::chrono::milliseconds current_cpu_time() noexcept;
 
-    static emulator_thread_context initialize_thread_context(std::span<std::byte> stack,
-                                                             ps::thread_main_thunk_t thread_thunk, void *thread,
-                                                             thread_start_t entry_point, void *entry_arg) noexcept;
+    static void initialize_thread_stack(uintptr_t *&stack_top) noexcept {}
 
-    [[noreturn]] static void restore_context(emulator_thread_context &context) noexcept;
+    [[noreturn]] static void restore_context(uintptr_t *stack_top) noexcept;
+    [[noreturn]] static void start_schedule(uintptr_t *stack_top) noexcept;
 
+    static void enable_irq() noexcept;
     static arch_irq_state_t disable_irq() noexcept;
-    static void restore_irq(arch_irq_state_t state) noexcept;
+    static bool restore_irq(arch_irq_state_t state) noexcept;
 
     static void enable_system_tick(std::chrono::milliseconds due_time) noexcept;
 };

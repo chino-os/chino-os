@@ -20,13 +20,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
 
-namespace chino
-{
-enum class error_code : int32_t
-{
+namespace chino {
+enum class error_code : int32_t {
     success = 0,
     argument_null = 1,
     invalid_argument = 2,
@@ -39,6 +37,7 @@ enum class error_code : int32_t
     invalid_path = 9,
     insufficient_buffer = 10,
     io_error = 11,
-    bad_cast = 12
+    bad_cast = 12,
+    timeout = 13,
 };
 }

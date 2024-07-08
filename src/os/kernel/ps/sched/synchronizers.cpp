@@ -21,20 +21,54 @@ void waitable_object::blocking_wait(std::optional<std::chrono::milliseconds> tim
     auto &cnt_thread = scheduler::current_thread();
 
     auto &list = waiting_list(waiting_threads_);
-    auto pivot = list.front();
-    if (pivot) {
-        thread *next;
-        // 1. Find the last thread.priority >= cnt_thread.priority
-        while ((next = list.next(pivot)) && next->priority() >= cnt_thread.priority()) {
-            pivot = next;
-        }
+    {
+        std::unique_lock locker(waiting_threads_lock_);
+        auto pivot = list.front();
+        if (pivot) {
+            thread *next;
+            // 1. Find the last thread.priority >= cnt_thread.priority
+            while ((next = list.next(pivot)) && next->priority() >= cnt_thread.priority()) {
+                pivot = next;
+            }
 
-        // 2. Add to wait list
-        list.insert_after(pivot, &cnt_thread);
-    } else {
-        list.push_front(&cnt_thread);
+            // 2. Add to wait list
+            list.insert_after(pivot, &cnt_thread);
+        } else {
+            list.push_front(&cnt_thread);
+        }
     }
 
     // 3. Block this thread
     scheduler::current().block_current_thread(*this, timeout);
+}
+
+void waitable_object::notify_one() noexcept {
+    auto &list = waiting_list(waiting_threads_);
+    auto pivot = list.front();
+    if (pivot) {
+        list.remove(pivot);
+        scheduler::current().unblock_thread(*pivot);
+    }
+}
+
+result<void> mutex::wait(std::optional<std::chrono::milliseconds> timeout) noexcept {
+    uint32_t held = 0;
+    if (held_.compare_exchange_strong(held, 1, std::memory_order_acq_rel)) {
+        return ok();
+    } else {
+        held = 0;
+        if (held_.compare_exchange_strong(held, 1, std::memory_order_acq_rel)) {
+            return ok();
+        } else {
+            blocking_wait(timeout);
+            return held_.compare_exchange_strong(held, 1, std::memory_order_acq_rel) ? ok() : err(error_code::timeout);
+        }
+    }
+}
+
+void mutex::release() noexcept {
+    held_.store(0, std::memory_order_release);
+    if (!held_.load(std::memory_order_acquire)) {
+        notify_one();
+    }
 }

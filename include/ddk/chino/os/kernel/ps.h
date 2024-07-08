@@ -62,19 +62,24 @@ class waitable_object : public object {
     virtual result<void> wait(std::optional<std::chrono::milliseconds> timeout = std::nullopt) noexcept = 0;
 
   protected:
-    irq_spin_lock &syncroot() noexcept { return syncroot_; }
-
     void blocking_wait(std::optional<std::chrono::milliseconds> timeout) noexcept;
     void notify_one() noexcept;
     void notify_all() noexcept;
 
   private:
-    irq_spin_lock syncroot_;
+    irq_spin_lock waiting_threads_lock_;
     chino::detail::intrusive_list_storage waiting_threads_;
 };
 
-class mutex : public waitable_object {
+class mutex final : public waitable_object {
+    CHINO_DEFINE_KERNEL_OBJECT_KIND(waitable_object, object_kind_mutex);
+
   public:
+    result<void> wait(std::optional<std::chrono::milliseconds> timeout = std::nullopt) noexcept override;
+    void release() noexcept;
+
+  private:
+    std::atomic<uint32_t> held_;
 };
 } // namespace chino::os::kernel::ps
 
