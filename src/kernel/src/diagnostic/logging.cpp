@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #include <board.h>
-#include <chino/ddk/kernel.h>
+#include <chino/ddk/ke.h>
 #include <ulog.h>
 
 using namespace chino;

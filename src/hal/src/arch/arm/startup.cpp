@@ -21,7 +21,7 @@
 // SOFTWARE.
 #include <board.h>
 #include <chino_config.h>
-#include <chino/ddk/kernel.h>
+#include <chino/ddk/ke.h>
 #include <chino/ddk/utility.h>
 #include <cstring>
 #include <chino/arch/arm/armv7-m/core_debug.h>

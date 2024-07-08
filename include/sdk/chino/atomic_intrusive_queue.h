@@ -9,55 +9,69 @@
 
 namespace chino {
 namespace detail {
-class atomic_queue_storage;
+class atomic_intrusive_queue_storage;
 }
 
-class atomic_queue_node {
+class atomic_intrusive_queue_node {
   public:
-    constexpr atomic_queue_node() noexcept : next(nullptr) {}
+    constexpr atomic_intrusive_queue_node(atomic_intrusive_queue_node *next = nullptr) noexcept : next(next) {}
 
   private:
-    friend class detail::atomic_queue_storage;
+    friend class detail::atomic_intrusive_queue_storage;
 
-    std::atomic<atomic_queue_node *> next;
+    std::atomic<atomic_intrusive_queue_node *> next;
 };
 
 namespace detail {
-class atomic_queue_storage {
+class atomic_intrusive_queue_storage {
   public:
-    using node_type = atomic_queue_node;
+    using node_type = atomic_intrusive_queue_node;
 
-    CHINO_NONCOPYABLE(atomic_queue_storage);
+    CHINO_NONCOPYABLE(atomic_intrusive_queue_storage);
 
-    constexpr atomic_queue_storage() noexcept : head_(nullptr), tail_(nullptr), size_(0) {}
+    constexpr atomic_intrusive_queue_storage() noexcept : head_(), tail_(&dummy_), size_(0) {}
 
-    static node_type *next(node_type *pivot) noexcept { return pivot->next.load(std::memory_order_relaxed); }
+    static node_type *next(node_type *pivot) noexcept { return pivot->next.load(); }
 
     bool empty() const noexcept { return size() == 0; }
-    size_t size() const noexcept { return size_.load(std::memory_order_relaxed); }
+    size_t size() const noexcept { return size_.load(std::memory_order_acquire); }
 
-    node_type *front() noexcept { return head_.load(std::memory_order_relaxed); }
+    node_type *front() noexcept { return head().load(std::memory_order_acquire); }
 
-    void push(node_type *node) noexcept {
-        node->prev = tail_;
-        if (tail_)
-            tail_->next = node;
-        else
-            head_ = tail_ = node;
-        size_++;
+    node_type *back() noexcept {
+        auto back = tail_.load(std::memory_order_acquire);
+        return back != &dummy_ ? back : nullptr;
     }
 
-    result<node_type *> try_pop() noexcept {}
+    void push(node_type *node) noexcept {
+        tail_.load()->next.store(node, std::memory_order_relaxed);
+        tail_.store(node, std::memory_order_relaxed);
+        size_.fetch_add(1, std::memory_order_release);
+    }
+
+    node_type *pop() noexcept {
+        auto node = head().load(std::memory_order_acquire);
+        if (node) {
+            head().store(node->next.load(std::memory_order_relaxed));
+            size_.fetch_sub(1, std::memory_order_release);
+        } else {
+            tail_.store(&dummy_);
+        }
+        return node;
+    }
 
   private:
-    std::atomic<node_type *> head_;
+    std::atomic<node_type *> &head() noexcept { return head_.next; }
+
+  private:
+    node_type dummy_;
     std::atomic<node_type *> tail_;
     std::atomic<size_t> size_;
 };
 } // namespace detail
 
 template <class TContainer, intrusive_list_node TContainer::*member>
-class intrusive_list : protected detail::intrusive_list_storage {
+class atomic_queue : protected detail::intrusive_list_storage {
   public:
     using base_type = detail::intrusive_list_storage;
     using node_type = intrusive_list_node;

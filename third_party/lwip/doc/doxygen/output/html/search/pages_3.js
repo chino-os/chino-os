@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['multithreading',['Multithreading',['../multithreading.html',1,'']]]
+  ['multithreading',['Multithreading',['../multips.html',1,'']]]
 ];

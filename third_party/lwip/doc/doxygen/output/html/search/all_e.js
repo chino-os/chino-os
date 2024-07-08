@@ -186,7 +186,7 @@ var searchData=
   ['msg_5fidx',['msg_idx',['../structmqtt__client__s.html#aae7bd1da3461efef9616934feb166aa5',1,'mqtt_client_s']]],
   ['mtu',['mtu',['../structnetif.html#aca7d56b4e0f822b0ced2885f222b8d48',1,'netif']]],
   ['mtu6',['mtu6',['../structnetif.html#acd78fca5dad6468605f38e327b3a5e72',1,'netif']]],
-  ['multithreading',['Multithreading',['../multithreading.html',1,'']]],
+  ['multithreading',['Multithreading',['../multips.html',1,'']]],
   ['mib2_20statistics',['MIB2 statistics',['../group__netif__mib2.html',1,'']]],
   ['mib2',['MIB2',['../group__snmp__mib2.html',1,'']]],
   ['mailboxes',['Mailboxes',['../group__sys__mbox.html',1,'']]],

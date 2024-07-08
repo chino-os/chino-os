@@ -21,7 +21,7 @@
 // SOFTWARE.
 #pragma once
 #include "object.h"
-#include <chino/threading.h>
+#include <chino/ps.h>
 
 namespace chino::ob
 {

@@ -23,7 +23,7 @@
 #include "object.h"
 #include "utility.h"
 #include <chino/io.h>
-#include <chino/threading.h>
+#include <chino/ps.h>
 #include <gsl/gsl-lite.hpp>
 
 namespace chino::io

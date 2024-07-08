@@ -3,7 +3,7 @@
 #pragma once
 #include "chino/error.h"
 #include "chino/os/kernel/hal/arch.h"
-#include "chino/os/kernel/kernel.h"
+#include "chino/os/kernel/ke.h"
 #include "chino/units.h"
 #include "page_table_0.h"
 #include "page_table_1.h"

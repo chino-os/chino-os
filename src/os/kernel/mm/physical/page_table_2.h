@@ -5,7 +5,7 @@
 #include <atomic>
 #include <bit>
 #include <chino/os/kernel/hal/arch.h>
-#include <chino/os/kernel/kernel.h>
+#include <chino/os/kernel/ke.h>
 #include <chino/result.h>
 #include <numeric>
 

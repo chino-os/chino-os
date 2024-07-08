@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #pragma once
-#include <chino/ddk/kernel.h>
+#include <chino/ddk/ke.h>
 #include <cstdint>
 #include <gsl/gsl-lite.hpp>
 

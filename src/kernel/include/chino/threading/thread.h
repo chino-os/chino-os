@@ -23,7 +23,7 @@
 #include <board.h>
 #include <chino/ddk/list.h>
 #include <chino/ddk/object.h>
-#include <chino/threading.h>
+#include <chino/ps.h>
 #include <gsl/gsl-lite.hpp>
 
 namespace chino::threading

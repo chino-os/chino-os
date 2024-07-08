@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #include <chino/io.h>
-#include <chino/threading.h>
+#include <chino/ps.h>
 #include <chino/memory.h>
 #include <nr_micro_shell.h>
 

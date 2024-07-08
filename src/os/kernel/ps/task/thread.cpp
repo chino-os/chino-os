@@ -1,19 +1,19 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #include "thread.h"
+#include "../sched/scheduler.h"
 #include "process.h"
-#include "sched/scheduler.h"
 
 using namespace chino::os::kernel;
 using namespace chino::os::kernel::ps;
 
-void thread::initialize(ps::process &process, std::span<std::byte> stack, thread_start_t entry_point,
-                        void *entry_arg) noexcept {
-    flags_.not_owned_stack = 1;
-    process_ = &process;
-    process.attach_thread(*this);
-    stack_ = stack;
-    context.arch = hal::arch_t::initialize_thread_context(stack, thread_main_thunk, this, entry_point, entry_arg);
+thread::thread(const thread_create_options &create_options) noexcept
+    : context{.arch = hal::arch_t::initialize_thread_context(create_options.stack, thread_main_thunk, this,
+                                                             create_options.entry_point, create_options.entry_arg)},
+      flags_{.not_owned_stack = create_options.not_owned_stack, .priority = (uint32_t)create_options.priority},
+      process_(create_options.process),
+      stack_(create_options.stack) {
+    process_->attach_thread(*this);
 }
 
 void thread::thread_main_thunk(void *thread, thread_start_t entry_point, void *entry_arg) noexcept {

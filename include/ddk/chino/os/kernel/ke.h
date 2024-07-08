@@ -1,7 +1,7 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
-#include "threading.h"
+#include "ps.h"
 #include <cstddef>
 #include <cstdint>
 #include <span>
@@ -16,14 +16,10 @@
 #define CHINO_KERNEL_API
 #endif
 
-#define CHINO_KERNEL_STARTUP ke_startup
-#ifdef CHINO_EMULATOR
-namespace chino::os::kernel::hal {
-struct emulator_method_table;
-}
-#endif
-
 namespace chino::os::kernel {
+namespace ps {
+class process;
+}
 
 enum class boot_memory_kind {
     free,
@@ -41,14 +37,8 @@ struct boot_memory_desc {
 
 struct boot_options {
     std::span<const boot_memory_desc> memory_descs;
-#ifdef CHINO_EMULATOR
-    hal::emulator_method_table *emu_mt;
-#endif
 };
 
-typedef void (*thread_main_thunk_t)(void *thread, ps::thread_start_t entry_point, void *entry_arg);
+ps::process &ke_process() noexcept;
+[[noreturn]] void ke_startup(const chino::os::kernel::boot_options &options);
 } // namespace chino::os::kernel
-
-extern "C" {
-[[noreturn]] CHINO_KERNEL_API void CHINO_KERNEL_STARTUP(const chino::os::kernel::boot_options &options);
-}

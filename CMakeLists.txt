@@ -35,7 +35,7 @@ include(cmake/conan.cmake)
 include(cmake/default-toolchain.cmake)
 
 include(boards/${CHINO_BOARD}/cmake/board.cmake)
-include(chips/${CHINO_CHIP}/cmake/chip.cmake)
+include(src/os/kernel/hal/chips/${CHINO_CHIP}/cmake/chip.cmake)
 include(cmake/dependencies.cmake)
 
 set(CMAKE_SKIP_RPATH OFF)
@@ -58,7 +58,8 @@ add_compile_definitions(_CHINO=1)
 if (MSVC)
     add_definitions(/D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_CRT_SECURE_NO_WARNINGS /DNOMINMAX /DUNICODE)
     add_definitions(/D_WIN32_WINNT=_WIN32_WINNT_WIN7)
-    add_compile_options(/utf-8 /W3 /WX /wd4273 -Wno-unused-command-line-argument)
+    add_compile_options(/utf-8 /W3 /WX /wd4273 /guard:cf- -Wno-unused-command-line-argument)
+    add_link_options(/GUARD:NO)
     # Disable C++ exceptions.
     string(REGEX REPLACE "/EH[a-z]+" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHs-c- /GS-")

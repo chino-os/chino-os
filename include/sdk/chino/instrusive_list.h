@@ -12,7 +12,8 @@ class intrusive_list_storage;
 
 class intrusive_list_node {
   public:
-    constexpr intrusive_list_node() noexcept : prev(nullptr), next(nullptr) {}
+    constexpr intrusive_list_node(intrusive_list_node *prev = nullptr, intrusive_list_node *next = nullptr) noexcept
+        : prev(prev), next(next) {}
 
   private:
     friend class detail::intrusive_list_storage;
@@ -28,62 +29,51 @@ class intrusive_list_storage {
 
     CHINO_NONCOPYABLE(intrusive_list_storage);
 
-    constexpr intrusive_list_storage() noexcept : head_(nullptr), tail_(nullptr), size_(0) {}
+    constexpr intrusive_list_storage() noexcept : dummy_(), size_(0) {
+        dummy_.prev = &dummy_;
+        dummy_.next = &dummy_;
+    }
 
-    static node_type *prev(node_type *pivot) noexcept { return pivot->prev; }
-    static node_type *next(node_type *pivot) noexcept { return pivot->next; }
+    node_type *prev(node_type *pivot) noexcept { return pivot->prev != &dummy_ ? pivot->prev : nullptr; }
+    node_type *next(node_type *pivot) noexcept { return pivot->next != &dummy_ ? pivot->next : nullptr; }
 
     bool empty() const noexcept { return size() == 0; }
     size_t size() const noexcept { return size_; }
 
-    node_type *front() noexcept { return head_; }
-    node_type *back() noexcept { return tail_; }
-
-    void insert_before(node_type *pivot, node_type *node) noexcept {
-        node->prev = pivot->prev;
-        node->next = pivot;
-        if (pivot->prev)
-            pivot->prev->next = node;
-        else
-            head_ = node;
-        pivot->prev = node;
-        size_++;
-    }
+    node_type *front() noexcept { return head() != &dummy_ ? head() : nullptr; }
+    node_type *back() noexcept { return tail() != &dummy_ ? tail() : nullptr; }
 
     void insert_after(node_type *pivot, node_type *node) noexcept {
-        node->prev = pivot;
         node->next = pivot->next;
-        if (pivot->next)
-            pivot->next->prev = node;
-        else
-            tail_ = node;
+        node->prev = pivot;
+        pivot->next->prev = node;
         pivot->next = node;
         size_++;
     }
 
-    void push_front(node_type *node) noexcept {
-        node->next = head_;
-        if (head_)
-            head_->prev = node;
-        else
-            head_ = tail_ = node;
+    void insert_before(node_type *pivot, node_type *node) noexcept {
+        node->prev = pivot->prev;
+        node->next = pivot;
+        pivot->prev->next = node;
+        pivot->prev = node;
         size_++;
     }
 
-    void push_back(node_type *node) noexcept {
-        node->prev = tail_;
-        if (tail_)
-            tail_->next = node;
-        else
-            head_ = tail_ = node;
-        size_++;
-    }
+    void push_front(node_type *node) noexcept { insert_after(&dummy_, node); }
+    void push_back(node_type *node) noexcept { insert_before(&dummy_, node); }
 
-    void remove(node_type *node) noexcept { (void)node; }
+    void remove(node_type *node) noexcept {
+        node->next->prev = node->prev;
+        node->prev->next = node->next;
+        node->prev = node->next = nullptr;
+    }
 
   private:
-    node_type *head_;
-    node_type *tail_;
+    node_type *head() noexcept { return dummy_.prev; }
+    node_type *tail() noexcept { return dummy_.next; }
+
+  private:
+    node_type dummy_;
     size_t size_;
 };
 } // namespace detail
@@ -104,8 +94,15 @@ class intrusive_list : protected detail::intrusive_list_storage {
 
     static intrusive_list_node *member_of(TContainer *container) noexcept { return &(container->*member); }
 
-    static TContainer *prev(TContainer *pivot) noexcept { return container_of(base_type::prev(member_of(pivot))); }
-    static TContainer *next(TContainer *pivot) noexcept { return container_of(base_type::next(member_of(pivot))); }
+    TContainer *prev(TContainer *pivot) noexcept {
+        auto prev = base_type::prev(member_of(pivot));
+        return prev ? container_of(prev) : nullptr;
+    }
+
+    TContainer *next(TContainer *pivot) noexcept {
+        auto next = base_type::next(member_of(pivot));
+        return next ? container_of(next) : nullptr;
+    }
 
     TContainer *front() noexcept { return container_of(base_type::front()); }
     TContainer *back() noexcept { return container_of(base_type::back()); }

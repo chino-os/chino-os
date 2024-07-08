@@ -23,7 +23,7 @@
 #include "crtinit.inl"
 #include <Windows.h>
 #include <board.h>
-#include <chino/ddk/kernel.h>
+#include <chino/ddk/ke.h>
 #include <chino_config.h>
 
 using namespace chino;

@@ -83,7 +83,7 @@ template <class T> class object_ptr {
 
     /** @brief Get the managed pointer to the object */
     T *get() const noexcept { return object_; }
-    T *operator*() const noexcept { return get(); }
+    T &operator*() const noexcept { return *get(); }
     T *operator->() const noexcept { return get(); }
 
     bool empty() const noexcept { return !object_; }
@@ -156,5 +156,24 @@ template <class T> class object_ptr {
     template <class U> friend class object_ptr;
 
     T *object_;
+};
+
+template <Object T> class static_object {
+  public:
+    CHINO_NONCOPYABLE(static_object);
+
+    constexpr static_object() noexcept : storage_{} {}
+
+    template <class... TArgs> void initialize(TArgs &&...args) noexcept {
+        std::construct_at(get(), std::forward<TArgs>(args)...);
+    }
+
+    T *get() noexcept { return reinterpret_cast<T *>(storage_); }
+    T &operator*() noexcept { return *get(); }
+    T *operator->() const noexcept { return get(); }
+    T *operator->() noexcept { return get(); }
+
+  private:
+    alignas(alignof(T)) std::byte storage_[sizeof(T)];
 };
 } // namespace chino::os::kernel

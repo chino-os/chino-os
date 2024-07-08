@@ -24,7 +24,7 @@
 #include <chino/ddk/list.h>
 #include <chino/memory/heap_allocator.h>
 #include <chino/object/handle_table.h>
-#include <chino/threading.h>
+#include <chino/ps.h>
 
 namespace chino::threading
 {

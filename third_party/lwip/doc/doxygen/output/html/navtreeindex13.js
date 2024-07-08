@@ -137,7 +137,7 @@ var NAVTREEINDEX13 =
 "mqtt_8h.html":[13,0,0,3,1,0,9],
 "mqtt__opts_8h.html":[13,0,0,3,1,0,10],
 "mqtt__priv_8h.html":[13,0,0,3,1,0,11],
-"multithreading.html":[8],
+"multips.html":[8],
 "nd6_8c.html":[13,0,0,2,1,8],
 "nd6_8c.html#a27224542b8ffab81c2ed9f47752bb51e":[13,0,0,2,1,8,0],
 "nd6_8c.html#a4959990cae26a3996f638ec996f046df":[13,0,0,2,1,8,7],

@@ -21,7 +21,7 @@
 // SOFTWARE.
 #pragma once
 #include <cassert>
-#include <chino/threading.h>
+#include <chino/ps.h>
 #include <cstddef>
 #include <cstdint>
 #include <mutex>

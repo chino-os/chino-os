@@ -3,11 +3,16 @@
 #pragma once
 #include <atomic>
 #include <chino/os/kernel/hal/arch.h>
-#include <chino/os/kernel/kernel.h>
+#include <chino/os/kernel/ke.h>
 #include <chino/result.h>
 #include <numeric>
 
 namespace chino::os::kernel::mm {
+
+/** @brief The page frame allocator.
+  * @see The basic idea is from * LLFree: Scalable and Optionally-Persistent Page-Frame Allocation * @2023 USENIX ATC
+  *      https://www.usenix.org/conference/atc23/presentation/wrenger
+  */
 class physical_allocator {
   public:
     static void initialize_phase0(const boot_options &options) noexcept;

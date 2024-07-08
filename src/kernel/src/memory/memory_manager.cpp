@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #include <cassert>
-#include <chino/ddk/kernel.h>
+#include <chino/ddk/ke.h>
 #include <chino/ddk/utility.h>
 #include <chino/memory/free_page_list.h>
 #include <chino/memory/memory_manager.h>

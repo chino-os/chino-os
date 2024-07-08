@@ -122,7 +122,7 @@ Macros</h2></td></tr>
 <p>Macro/function to check whether lwIP's threading/locking requirements are satisfied during current function call. This macro usually calls a function that is implemented in the OS-dependent sys layer and performs the following checks:</p><ul>
 <li>Not in ISR (this should be checked for NO_SYS==1, too!)</li>
 <li>If <a class="el" href="group__lwip__opts__lock.html#ga8e46232794349c209e8ed4e9e7e4f011">LWIP_TCPIP_CORE_LOCKING</a> = 1: TCPIP core lock is held</li>
-<li>If <a class="el" href="group__lwip__opts__lock.html#ga8e46232794349c209e8ed4e9e7e4f011">LWIP_TCPIP_CORE_LOCKING</a> = 0: function is called from TCPIP thread <dl class="section see"><dt>See also</dt><dd><a class="el" href="multithreading.html">Multithreading</a> </dd></dl>
+<li>If <a class="el" href="group__lwip__opts__lock.html#ga8e46232794349c209e8ed4e9e7e4f011">LWIP_TCPIP_CORE_LOCKING</a> = 0: function is called from TCPIP thread <dl class="section see"><dt>See also</dt><dd><a class="el" href="multips.html">Multithreading</a> </dd></dl>
 </li>
 </ul>
 
@@ -142,7 +142,7 @@ Macros</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Called as first thing in the lwIP TCPIP thread. Can be used in conjunction with <a class="el" href="group__lwip__opts__lock.html#ga6a30040db307b3459fc11906bd433f75">LWIP_ASSERT_CORE_LOCKED</a> to check core locking. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="multithreading.html">Multithreading</a> </dd></dl>
+<p>Called as first thing in the lwIP TCPIP thread. Can be used in conjunction with <a class="el" href="group__lwip__opts__lock.html#ga6a30040db307b3459fc11906bd433f75">LWIP_ASSERT_CORE_LOCKED</a> to check core locking. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="multips.html">Multithreading</a> </dd></dl>
 
 </div>
 </div>

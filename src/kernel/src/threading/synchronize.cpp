@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #include <board.h>
-#include <chino/threading.h>
+#include <chino/ps.h>
 #include <chino/threading/scheduler.h>
 
 using namespace chino;

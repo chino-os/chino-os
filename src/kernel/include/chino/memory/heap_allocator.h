@@ -23,7 +23,7 @@
 #include <algorithm>
 #include <board.h>
 #include <cassert>
-#include <chino/ddk/threading.h>
+#include <chino/ddk/ps.h>
 #include <chino/ddk/utility.h>
 #include <chino/memory/memory_manager.h>
 #include <chino_config.h>

@@ -6,7 +6,7 @@
 #include "physical_segment.h"
 #include <atomic>
 #include <chino/os/kernel/hal/chip.h>
-#include <chino/os/kernel/threading.h>
+#include <chino/os/kernel/ps.h>
 
 using namespace chino;
 using namespace chino::os::kernel;

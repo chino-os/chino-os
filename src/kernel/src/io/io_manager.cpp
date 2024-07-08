@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #include <chino/ddk/directory.h>
-#include <chino/ddk/kernel.h>
+#include <chino/ddk/ke.h>
 #include <chino/io.h>
 #include <chino/io/io_manager.h>
 #include <chino/threading/scheduler.h>

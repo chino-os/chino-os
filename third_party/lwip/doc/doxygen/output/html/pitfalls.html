@@ -88,7 +88,7 @@ $(document).ready(function(){initNavTree('pitfalls.html','');});
 <div class="textblock"><h1>Multiple Execution Contexts in lwIP code </h1>
 <p>The most common source of lwIP problems is to have multiple execution contexts inside the lwIP code.</p>
 <p>lwIP can be used in two basic modes: <a class="el" href="group__lwip__nosys.html">Mainloop mode ("NO_SYS")</a> (no OS/RTOS running on target system) or <a class="el" href="group__lwip__os.html">OS mode (TCPIP thread)</a> (there is an OS running on the target system).</p>
-<p>See also: <a class="el" href="multithreading.html">Multithreading</a> (especially the part about <a class="el" href="group__lwip__opts__lock.html#ga6a30040db307b3459fc11906bd433f75">LWIP_ASSERT_CORE_LOCKED()</a>!)</p>
+<p>See also: <a class="el" href="multips.html">Multithreading</a> (especially the part about <a class="el" href="group__lwip__opts__lock.html#ga6a30040db307b3459fc11906bd433f75">LWIP_ASSERT_CORE_LOCKED()</a>!)</p>
 <h2>Mainloop Mode </h2>
 <p>In mainloop mode, only <a class="el" href="group__callbackstyle__api.html">"raw" APIs</a> can be used. The user has two possibilities to ensure there is only one exection context at a time in lwIP:</p>
 <p>1) Deliver RX ethernet packets directly in interrupt context to lwIP by calling netif-&gt;input directly in interrupt. This implies all lwIP callback functions are called in IRQ context, which may cause further problems in application code: IRQ is blocked for a long time, multiple execution contexts in application code etc. When the application wants to call lwIP, it only needs to disable interrupts during the call. If timers are involved, even more locking code is needed to lock out timer IRQ and ethernet IRQ from each other, assuming these may be nested.</p>

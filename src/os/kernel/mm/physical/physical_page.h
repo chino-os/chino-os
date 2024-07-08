@@ -3,7 +3,7 @@
 #pragma once
 #include <atomic>
 #include <chino/os/kernel/hal/cpu/cpu.h>
-#include <chino/os/kernel/kernel.h>
+#include <chino/os/kernel/ke.h>
 #include <chino/result.h>
 #include <numeric>
 

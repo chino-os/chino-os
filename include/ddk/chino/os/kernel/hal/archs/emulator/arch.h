@@ -2,8 +2,8 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
 #include <bit>
-#include <chino/os/kernel/kernel.h>
-#include <chino/os/kernel/threading.h>
+#include <chino/os/kernel/kernel_types.h>
+#include <chino/os/processapi.h>
 #include <chino/units.h>
 #include <cstddef>
 #include <cstdint>
@@ -39,26 +39,28 @@ struct alignas(16) emulator_thread_context {
 #endif
 };
 
-struct emulator_method_table {
-    void (*restore_context)(emulator_thread_context &);
-};
+using arch_thread_context_t = emulator_thread_context;
+using arch_irq_state_t = uint32_t;
 
 class emulator_arch {
   public:
     inline static constexpr size_t min_page_size = 4 * KiB;
 
-    static void initialize_method_table(emulator_method_table &mt) noexcept;
+    static void arch_startup(size_t memory_size);
 
     static constexpr size_t current_cpu_id() noexcept { return 0; }
 
     static emulator_thread_context initialize_thread_context(std::span<std::byte> stack,
-                                                             thread_main_thunk_t thread_thunk, void *thread,
-                                                             ps::thread_start_t entry_point, void *entry_arg) noexcept;
+                                                             ps::thread_main_thunk_t thread_thunk, void *thread,
+                                                             thread_start_t entry_point, void *entry_arg) noexcept;
 
     [[noreturn]] static void restore_context(emulator_thread_context &context) noexcept;
-    [[noreturn]] static void start_schedule(emulator_thread_context &context) noexcept;
+
+    static arch_irq_state_t disable_irq() noexcept;
+    static void restore_irq(arch_irq_state_t state) noexcept;
+
+    static void enable_systick(uint64_t ticks) noexcept;
 };
 
 using arch_t = emulator_arch;
-using arch_thread_context_t = emulator_thread_context;
 } // namespace chino::os::kernel::hal

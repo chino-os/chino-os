@@ -9,7 +9,7 @@ var NAVTREE =
     [ "Reporting bugs", "bugs.html", null ],
     [ "Zero-copy RX", "zerocopyrx.html", null ],
     [ "System initalization", "sys_init.html", null ],
-    [ "Multithreading", "multithreading.html", null ],
+    [ "Multithreading", "multips.html", null ],
     [ "Optimization hints", "optimization.html", null ],
     [ "Deprecated List", "deprecated.html", null ],
     [ "Modules", "modules.html", "modules" ],
