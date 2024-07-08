@@ -40,5 +40,9 @@ struct boot_options {
 };
 
 ps::process &ke_process() noexcept;
-[[noreturn]] void ke_startup(const chino::os::kernel::boot_options &options);
 } // namespace chino::os::kernel
+
+extern "C" {
+[[noreturn]] void ke_startup(const chino::os::kernel::boot_options &options) noexcept;
+void ke_handle_irq(chino::os::kernel::hal::arch_irq_number_t irq_number) noexcept;
+}

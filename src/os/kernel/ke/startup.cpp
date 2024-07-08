@@ -5,6 +5,7 @@
 #include "../ps/task/process.h"
 #include <chino/os/kernel/ke.h>
 
+using namespace chino::os;
 using namespace chino::os::kernel;
 
 namespace {
@@ -17,7 +18,7 @@ constinit static_object<ps::thread> init_thread_;
 
 ps::process &chino::os::kernel::ke_process() noexcept { return *ke_process_; }
 
-void chino::os::kernel::ke_startup(const boot_options &options) {
+void ke_startup(const boot_options &options) noexcept {
     // 1. Phase 0
     mm::initialize_phase0(options);
     ke_process_.initialize();

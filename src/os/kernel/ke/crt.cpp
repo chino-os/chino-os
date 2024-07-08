@@ -1,5 +1,11 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
+#include "../hal/archs/emulator/emulator_cpu.h"
+
+using namespace chino::os::kernel;
+
+HINSTANCE chino::os::kernel::hal::hal_instance;
+
 #ifdef WIN32
 #include <Windows.h>
 #include <isa_availability.h>
@@ -22,12 +28,18 @@ void abort() {
 
 void guard_check_icall() {}
 
-void _CrtDbgReport() {}
+int _CrtDbgReport(_In_ int _ReportType, _In_opt_z_ char const *_FileName, _In_ int _Linenumber,
+                  _In_opt_z_ char const *_ModuleName, _In_opt_z_ char const *_Format, ...) {
+    return 0;
+}
 
 void __cdecl _invalid_parameter(_In_opt_z_ wchar_t const *, _In_opt_z_ wchar_t const *, _In_opt_z_ wchar_t const *,
                                 _In_ unsigned int, _In_ uintptr_t) {}
 
-BOOL WINAPI _DllMainCRTStartup(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) { return TRUE; }
+BOOL WINAPI _DllMainCRTStartup(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
+    hal::hal_instance = hinstDLL;
+    return TRUE;
+}
 
 void(__cdecl *__guard_check_icall_fptr)() = guard_check_icall;
 void(__cdecl *__guard_dispatch_icall_fptr)() = guard_check_icall;

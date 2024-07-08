@@ -1,0 +1,160 @@
+// Copyright (c) SunnyCase. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+#include "emulator_cpu.h"
+#include <chino/os/kernel/ke.h>
+
+using namespace chino;
+using namespace chino::os::kernel;
+using namespace chino::os::kernel::hal;
+
+namespace {
+inline static const wchar_t message_queue_class[] = L"Chino.Emulator.MQ";
+inline static constexpr UINT WM_ARCH_CALL = WM_USER + 1;
+inline static constexpr UINT WM_ARCH_IRQ = WM_USER + 2;
+} // namespace
+
+extern "C" {
+[[noreturn]] extern void emulator_dispatch_irq(arch_irq_number_t irq_number) noexcept;
+}
+
+void emulator_cpu::register_message_queue() {
+    WNDCLASS wc = {};
+
+    wc.lpfnWndProc = window_proc_thunk;
+    wc.hInstance = GetModuleHandle(nullptr);
+    wc.lpszClassName = message_queue_class;
+    RegisterClass(&wc);
+}
+
+void emulator_cpu::run(size_t cpu_id, size_t memory_size) {
+    cpu_id_ = cpu_id;
+    memory_size_ = memory_size;
+
+    // Create event loop window
+    event_window_ =
+        CreateWindowExW(0, message_queue_class, message_queue_class, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
+                        CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr, GetModuleHandle(nullptr), this);
+    cpu_thread_ = CreateThread(nullptr, 0, cpu_entry_thunk, (LPVOID)this, 0, nullptr);
+    SetThreadDescription(cpu_thread_, L"Chino Emulator CPU");
+
+    apic_thread_ = CreateThread(nullptr, 0, apic_entry_thunk, (LPVOID)this, 0, nullptr);
+    SetThreadDescription(apic_thread_, L"Chino Emulator APIC");
+
+    // Begin event loop
+    MSG msg;
+    while (GetMessage(&msg, NULL, 0, 0)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+}
+
+LRESULT CALLBACK emulator_cpu::window_proc_thunk(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    if (uMsg == WM_NCCREATE) {
+        // Setup link
+        auto create_struct = (CREATESTRUCTW *)lParam;
+        SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)create_struct->lpCreateParams);
+    } else {
+        auto this_ptr = (emulator_cpu *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+        if (this_ptr) {
+            if (uMsg != WM_NCDESTROY) {
+                return this_ptr->window_proc(uMsg, wParam, lParam);
+            } else {
+                SetWindowLongPtr(hwnd, GWLP_USERDATA, 0);
+            }
+        }
+    }
+    return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
+
+LRESULT emulator_cpu::window_proc(UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    if (uMsg == WM_ARCH_CALL) {
+        auto *call = (arch_call *)lParam;
+        switch (call->opcode) {
+        case arch_call_opcode::enable_systick:
+            do_enable_systick((enable_systick_call *)call);
+            break;
+        }
+        return 1;
+    } else if (uMsg == WM_ARCH_IRQ) {
+    } else if (uMsg == WM_TIMER) {
+        if (wParam == systick_timer_id) {
+            // systick
+            KillTimer(event_window_, systick_timer_id);
+            on_system_tick();
+            return 0;
+        }
+    }
+    return DefWindowProc(event_window_, uMsg, wParam, lParam);
+}
+
+void emulator_cpu::send_arch_call(arch_call &call) { SendMessage(event_window_, WM_ARCH_CALL, NULL, (LPARAM)&call); }
+
+void emulator_cpu::send_irq(arch_irq_number_t irq_number) {
+    SuspendThread(cpu_thread_);
+    CONTEXT context{.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER};
+    GetThreadContext(cpu_thread_, &context);
+    auto &rsp = (uintptr_t *&)context.Rsp;
+    *--rsp = context.Rip;
+    *--rsp = (uint32_t)irq_number;
+    context.Rip = (uintptr_t)emulator_dispatch_irq;
+    SetThreadContext(cpu_thread_, &context);
+    ResumeThread(cpu_thread_);
+}
+
+DWORD WINAPI emulator_cpu::cpu_entry_thunk([[maybe_unused]] LPVOID pcpu) {
+    auto cpu = (emulator_cpu *)pcpu;
+    cpu->cpu_entry();
+    return 0;
+}
+
+DWORD WINAPI emulator_cpu::apic_entry_thunk([[maybe_unused]] LPVOID pcpu) {
+    auto cpu = (emulator_cpu *)pcpu;
+    cpu->apic_entry();
+    return 0;
+}
+
+void emulator_cpu::cpu_entry() {
+    if (cpu_id_ == 0) {
+        boot_cpu0();
+    }
+}
+
+void emulator_cpu::apic_entry() {
+    // Create event loop window
+    apic_window_ =
+        CreateWindowExW(0, message_queue_class, message_queue_class, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
+                        CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr, GetModuleHandle(nullptr), this);
+
+    // Begin event loop
+    MSG msg;
+    while (GetMessage(&msg, NULL, 0, 0)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+}
+
+void emulator_cpu::boot_cpu0() {
+    // 1. Parpare boot options
+    // 1.1. Create memory
+    auto free_pages = memory_size_ / arch_t::min_page_size;
+    size_t free_memory_size = arch_t::min_page_size * free_pages;
+    auto free_memory = VirtualAlloc(nullptr, free_memory_size, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+    if (!free_memory) {
+        fail_fast("Unable to allocate main memory.");
+    }
+
+    boot_memory_desc memory_descs[] = {
+        {
+            .kind = boot_memory_kind::free,
+            .physical_address = (uintptr_t)free_memory,
+            .virtual_address = (uintptr_t)free_memory,
+            .size_bytes = free_memory_size,
+        },
+    };
+
+    // 1.2 Create boot options
+    boot_options options{.memory_descs = std::span(memory_descs)};
+
+    // 2. Startup
+    ke_startup(options);
+}

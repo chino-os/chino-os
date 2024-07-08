@@ -5,6 +5,7 @@
 #include <chino/os/kernel/kernel_types.h>
 #include <chino/os/processapi.h>
 #include <chino/units.h>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <span>
@@ -39,8 +40,13 @@ struct alignas(16) emulator_thread_context {
 #endif
 };
 
+enum class emulator_irq_number {
+    system_tick,
+};
+
 using arch_thread_context_t = emulator_thread_context;
 using arch_irq_state_t = uint32_t;
+using arch_irq_number_t = emulator_irq_number;
 
 class emulator_arch {
   public:
@@ -49,6 +55,7 @@ class emulator_arch {
     static void arch_startup(size_t memory_size);
 
     static constexpr size_t current_cpu_id() noexcept { return 0; }
+    static std::chrono::milliseconds current_cpu_time() noexcept;
 
     static emulator_thread_context initialize_thread_context(std::span<std::byte> stack,
                                                              ps::thread_main_thunk_t thread_thunk, void *thread,
@@ -59,7 +66,7 @@ class emulator_arch {
     static arch_irq_state_t disable_irq() noexcept;
     static void restore_irq(arch_irq_state_t state) noexcept;
 
-    static void enable_systick(uint64_t ticks) noexcept;
+    static void enable_system_tick(std::chrono::milliseconds due_time) noexcept;
 };
 
 using arch_t = emulator_arch;

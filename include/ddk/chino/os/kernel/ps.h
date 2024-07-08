@@ -11,6 +11,8 @@
 #include <optional>
 
 namespace chino::os::kernel::ps {
+inline constexpr auto system_tick_interval = std::chrono::milliseconds(1000);
+
 struct current_schedule_lock {
     CHINO_NONCOPYABLE(current_schedule_lock);
 
@@ -90,7 +92,3 @@ template <> class unique_lock<chino::os::kernel::ps::irq_spin_lock> {
     chino::os::kernel::hal::arch_irq_state_t irq_state_;
 };
 } // namespace std
-
-extern "C" {
-void ps_on_system_tick() noexcept;
-}

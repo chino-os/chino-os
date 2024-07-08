@@ -29,7 +29,7 @@ class scheduler {
     void delay_current_thread(std::chrono::milliseconds timeout) noexcept;
 
     [[noreturn]] void start_schedule() noexcept;
-    void on_system_tick(std::chrono::milliseconds duration) noexcept;
+    void on_system_tick() noexcept;
 
   private:
     scheduler_list_t &list_of(thread &thread) noexcept;

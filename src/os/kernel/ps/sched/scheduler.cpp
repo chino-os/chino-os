@@ -67,8 +67,8 @@ void scheduler::start_schedule() noexcept {
     hal::arch_t::restore_context(next_thread.context.arch);
 }
 
-void scheduler::on_system_tick(std::chrono::milliseconds duration) noexcept {
-    current_time_ += duration;
+void scheduler::on_system_tick() noexcept {
+    current_time_ = hal::arch_t::current_cpu_time();
     setup_next_system_tick();
 }
 
@@ -189,8 +189,4 @@ void scheduler::wakeup_delayed_threads() noexcept {
     }
 }
 
-void scheduler::setup_next_system_tick() noexcept {
-    hal::arch_t::enable_systick(hal::chip_t::duration_to_cpu_ticks(0, 1000ms));
-}
-
-void ps_on_system_tick() noexcept { scheduler::current().on_system_tick(1000ms); }
+void scheduler::setup_next_system_tick() noexcept { hal::arch_t::enable_system_tick(system_tick_interval); }
