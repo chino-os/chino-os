@@ -18,8 +18,8 @@ using namespace chino::os::kernel::hal;
 extern "C" {
 void emulator_restore_irq(arch_irq_state_t irq_state) noexcept { emulator_arch::restore_irq(irq_state); }
 
-[[noreturn]] extern void emulator_restore_context() noexcept;
 [[noreturn]] extern void emulator_start_schedule() noexcept;
+[[noreturn]] extern void emulator_yield_context() noexcept;
 }
 
 namespace {
@@ -62,16 +62,16 @@ std::chrono::milliseconds emulator_arch::current_cpu_time() noexcept {
     return std::chrono::milliseconds(GetTickCount64());
 }
 
-void emulator_arch::restore_context(uintptr_t *stack_top) noexcept {
+void emulator_arch::yield_cpu() noexcept { YieldProcessor(); }
+
+void emulator_arch::yield_context(ps::thread &old_thread, ps::thread &new_thread, bool scheduled) noexcept {
     __asm {
-        mov rsp, stack_top;
-        jmp emulator_restore_context
+        jmp emulator_yield_context
     }
 }
 
-void emulator_arch::start_schedule(uintptr_t *stack_top) noexcept {
+void emulator_arch::start_schedule(ps::thread &thread) noexcept {
     __asm {
-        mov rsp, stack_top;
         jmp emulator_start_schedule
     }
 }

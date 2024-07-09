@@ -59,15 +59,18 @@ class waitable_object : public object {
   public:
     constexpr waitable_object() noexcept {}
 
+    virtual result<void> try_wait() noexcept = 0;
     virtual result<void> wait(std::optional<std::chrono::milliseconds> timeout = std::nullopt) noexcept = 0;
 
   protected:
-    void blocking_wait(std::optional<std::chrono::milliseconds> timeout) noexcept;
+    irq_spin_lock &syncroot() noexcept { return syncroot_; }
+
+    void blocking_wait(std::optional<std::chrono::milliseconds> timeout, hal::arch_irq_state_t irq_state) noexcept;
     void notify_one() noexcept;
     void notify_all() noexcept;
 
   private:
-    irq_spin_lock waiting_threads_lock_;
+    irq_spin_lock syncroot_;
     chino::detail::intrusive_list_storage waiting_threads_;
 };
 
@@ -75,6 +78,7 @@ class mutex final : public waitable_object {
     CHINO_DEFINE_KERNEL_OBJECT_KIND(waitable_object, object_kind_mutex);
 
   public:
+    result<void> try_wait() noexcept override;
     result<void> wait(std::optional<std::chrono::milliseconds> timeout = std::nullopt) noexcept override;
     void release() noexcept;
 

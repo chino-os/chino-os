@@ -12,21 +12,7 @@
 namespace chino::os::kernel::hal {
 extern HINSTANCE hal_instance;
 
-enum class arch_call_opcode { enable_systick };
-
-struct arch_call {
-    arch_call(arch_call_opcode opcode) noexcept : opcode(opcode) {}
-    arch_call_opcode opcode;
-};
-
-struct enable_systick_call : arch_call {
-    enable_systick_call() noexcept : arch_call(arch_call_opcode::enable_systick) {}
-    uint64_t ticks_in_ms;
-};
-
 class emulator_cpu {
-    inline static UINT_PTR systick_timer_id = 1;
-
   public:
     static void register_message_queue();
 
@@ -39,29 +25,25 @@ class emulator_cpu {
 
   private:
     static DWORD WINAPI cpu_entry_thunk([[maybe_unused]] LPVOID pcpu);
-    static DWORD WINAPI apic_entry_thunk([[maybe_unused]] LPVOID pcpu);
     static LRESULT CALLBACK window_proc_thunk(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-    LRESULT window_proc(UINT uMsg, WPARAM wParam, LPARAM lParam);
-    void send_arch_call(arch_call &call);
+    LRESULT window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
     void send_irq(arch_irq_number_t irq_number);
     void process_irq(arch_irq_number_t irq_number);
 
     void cpu_entry();
-    void apic_entry();
     void boot_cpu0();
 
     // System tick
-    void on_system_tick();
-    void do_enable_systick(enable_systick_call *call);
+    static VOID NTAPI on_system_tick_timer(_Inout_ PTP_CALLBACK_INSTANCE Instance, _Inout_opt_ PVOID Context,
+                                           _Inout_ PTP_TIMER Timer);
 
   private:
     size_t cpu_id_;
     size_t memory_size_;
     HANDLE cpu_thread_;
-    HANDLE apic_thread_;
     HWND event_window_;
-    HWND apic_window_;
+    PTP_TIMER systick_timer_;
     arch_irq_number_t current_irq_;
     std::atomic<arch_irq_state_t> irq_state_;
     CONDITION_VARIABLE irq_state_cs_;

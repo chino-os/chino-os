@@ -11,6 +11,7 @@
 
 namespace chino::os::kernel::ps {
 class process;
+class scheduler;
 
 struct thread_flags {
     uint32_t not_owned_stack : 1;
@@ -49,27 +50,29 @@ class thread : public object {
         }
     }
 
+    ps::scheduler *scheduler() const noexcept { return scheduler_.load(std::memory_order_acquire); }
+    void scheduler(ps::scheduler *value) noexcept { scheduler_.store(value, std::memory_order_release); }
+
   private:
     [[noreturn]] static void thread_main_thunk(thread_start_t entry_point, void *entry_arg) noexcept;
     static uintptr_t *initialize_thread_stack(const thread_create_options &create_options) noexcept;
 
   public:
     uintptr_t *stack_top;
+    uintptr_t *stack_bottom;
 
     intrusive_list_node scheduler_list_node;
     intrusive_list_node process_list_node;
 
-    struct {
-        object_ptr<waitable_object> waiting_object;
-        intrusive_list_node waiting_list_node;
-    };
+    object_ptr<waitable_object> waiting_object;
+    intrusive_list_node waiting_list_node;
 
     std::chrono::milliseconds wakeup_time_;
 
   private:
     thread_flags flags_;
     object_ptr<ps::process> process_;
-    std::span<uintptr_t> stack_;
+    std::atomic<ps::scheduler *> scheduler_;
 };
 
 object_ptr<thread> create_thread();

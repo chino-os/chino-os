@@ -9,18 +9,15 @@ using namespace chino::os::kernel::hal;
 
 namespace {}
 
-void emulator_cpu::enable_system_tick(std::chrono::milliseconds ticks) {
-    enable_systick_call call;
-    call.ticks_in_ms = ticks.count();
-    send_arch_call(call);
-}
-
-void emulator_cpu::on_system_tick() {
-    wchar_t chars[] = L"Hello \n";
+void emulator_cpu::on_system_tick_timer(_Inout_ PTP_CALLBACK_INSTANCE Instance, _Inout_opt_ PVOID Context,
+                                        _Inout_ PTP_TIMER Timer) {
+    wchar_t chars[] = L"on_system_tick_timer \n";
     WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), chars, std::size(chars), nullptr, nullptr);
-    send_irq(arch_irq_number_t::system_tick);
+    auto cpu = (emulator_cpu *)Context;
+    cpu->send_irq(arch_irq_number_t::system_tick);
 }
 
-void emulator_cpu::do_enable_systick(enable_systick_call *call) {
-    SetTimer(event_window_, systick_timer_id, call->ticks_in_ms, nullptr);
+void emulator_cpu::enable_system_tick(std::chrono::milliseconds ticks) {
+    int64_t dueTime = -(int64_t)ticks.count() * 10000; // in 100ns
+    SetThreadpoolTimer(systick_timer_, (FILETIME *)&dueTime, 0, 0);
 }

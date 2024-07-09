@@ -34,8 +34,9 @@ class emulator_arch {
 
     static void initialize_thread_stack(uintptr_t *&stack_top) noexcept {}
 
-    [[noreturn]] static void restore_context(uintptr_t *stack_top) noexcept;
-    [[noreturn]] static void start_schedule(uintptr_t *stack_top) noexcept;
+    static void yield_cpu() noexcept;
+    static void yield_context(ps::thread &old_thread, ps::thread &new_thread, bool scheduled) noexcept;
+    [[noreturn]] static void start_schedule(ps::thread &thread) noexcept;
 
     static void enable_irq() noexcept;
     static arch_irq_state_t disable_irq() noexcept;

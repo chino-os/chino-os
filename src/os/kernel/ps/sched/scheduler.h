@@ -13,6 +13,7 @@ class scheduler {
   public:
     static scheduler &current() noexcept;
     static thread &current_thread() noexcept;
+    static void unblock_thread(thread &thread, irq_spin_lock &lock, hal::arch_irq_state_t irq_state) noexcept;
 
     constexpr scheduler() noexcept : max_ready_priority_(thread_priority::idle), current_time_(0) {}
 
@@ -25,12 +26,11 @@ class scheduler {
     void yield() noexcept;
     void yield_if_needed() noexcept;
 
-    void block_current_thread(waitable_object &waiting_object,
-                              std::optional<std::chrono::milliseconds> timeout) noexcept;
-    void unblock_thread(thread &thread) noexcept;
+    void block_current_thread(waitable_object &waiting_object, std::optional<std::chrono::milliseconds> timeout,
+                              irq_spin_lock &lock, hal::arch_irq_state_t irq_state) noexcept;
     void delay_current_thread(std::chrono::milliseconds timeout) noexcept;
 
-    [[noreturn]] void start_schedule() noexcept;
+    [[noreturn]] void start_schedule(thread &first_thread) noexcept;
     void on_system_tick() noexcept;
 
   private:
@@ -38,10 +38,12 @@ class scheduler {
     thread &select_next_thread() noexcept;
     void set_current_thread(thread &thread) noexcept;
 
-    void setup_idle_thread() noexcept;
     void update_max_ready_priority(thread_priority priority) noexcept;
-    void wakeup_delayed_threads() noexcept;
     void setup_next_system_tick() noexcept;
+
+    void unblock_local_thread(thread &thread, irq_spin_lock &lock, hal::arch_irq_state_t irq_state) noexcept;
+    void add_to_delay_list(thread &thread, std::chrono::milliseconds timeout) noexcept;
+    void wakeup_delayed_threads() noexcept;
 
   private:
     std::atomic<uint32_t> lock_depth_;
