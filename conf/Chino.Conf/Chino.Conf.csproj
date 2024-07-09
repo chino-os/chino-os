@@ -3,10 +3,9 @@
   <PropertyGroup>
     <RootNamespace>Chino</RootNamespace>
   </PropertyGroup>
-  
+
   <ItemGroup>
-    <!--<PackageReference Include="UnitsNet" />
-    <PackageReference Include="UnitsNet.NumberExtensions" />-->
+    <PackageReference Include="UnitsNet" />
   </ItemGroup>
 
 </Project>

@@ -2,7 +2,7 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
 #include <atomic>
-#include <chino/os/kernel/hal/arch.h>
+#include <chino/os/hal/arch.h>
 #include <chino/os/kernel/ke.h>
 #include <chino/result.h>
 #include <numeric>

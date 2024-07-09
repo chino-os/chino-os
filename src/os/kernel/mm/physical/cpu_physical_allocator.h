@@ -1,8 +1,8 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
-#include "chino/os/kernel/hal/arch.h"
 #include "physical_segment.h"
+#include <chino/os/hal/arch.h>
 
 namespace chino::os::kernel::mm {
 class alignas(hal::cacheline_size) cpu_physical_allocator {

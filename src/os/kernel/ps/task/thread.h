@@ -1,11 +1,11 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
-#include "chino/os/kernel/object_kind.h"
 #include <atomic>
 #include <chino/instrusive_list.h>
-#include <chino/os/kernel/hal/arch.h>
+#include <chino/os/hal/arch.h>
 #include <chino/os/kernel/object.h>
+#include <chino/os/kernel/object_kind.h>
 #include <chino/os/kernel/ps.h>
 #include <span>
 

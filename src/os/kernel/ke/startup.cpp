@@ -4,7 +4,7 @@
 #include "../mm/memory_manager.h"
 #include "../ps/sched/scheduler.h"
 #include "../ps/task/process.h"
-#include <chino/os/kernel/hal/chip.h>
+#include <chino/os/hal/chip.h>
 #include <chino/os/kernel/ke.h>
 
 using namespace chino::os;

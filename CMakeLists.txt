@@ -35,7 +35,7 @@ include(cmake/conan.cmake)
 include(cmake/default-toolchain.cmake)
 
 include(boards/${CHINO_BOARD}/cmake/board.cmake)
-include(src/os/kernel/hal/chips/${CHINO_CHIP}/cmake/chip.cmake)
+include(src/os/hal/chips/${CHINO_CHIP}/cmake/chip.cmake)
 include(cmake/dependencies.cmake)
 
 set(CMAKE_SKIP_RPATH OFF)

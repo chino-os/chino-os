@@ -3,17 +3,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Chino;
 
-public abstract class DriverDefinition
+public static class Vendors
 {
-    public abstract Guid Id { get; }
-
-    public abstract string Name { get; }
-
-    public abstract string Path { get; }
-
-    public abstract IReadOnlyList<Guid> Compatibles { get; }
+    public static readonly string Chino = "Chino";
 }

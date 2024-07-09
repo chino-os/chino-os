@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Chino.Drivers</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="bus\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\conf\Chino.Conf\Chino.Conf.csproj" />
+    <ProjectReference Include="..\hal\chips\Chino.Chips.csproj" />
+  </ItemGroup>
+
+</Project>

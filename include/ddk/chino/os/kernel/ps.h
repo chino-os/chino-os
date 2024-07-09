@@ -4,7 +4,7 @@
 #include "object.h"
 #include <atomic>
 #include <chino/instrusive_list.h>
-#include <chino/os/kernel/hal/arch.h>
+#include <chino/os/hal/arch.h>
 #include <chino/os/processapi.h>
 #include <chrono>
 #include <mutex>

@@ -12,14 +12,14 @@ else()
     endif()
 endif()
 
-add_subdirectory(hal)
-
 add_subdirectory(de)
 add_subdirectory(io)
 add_subdirectory(ke)
 add_subdirectory(mm)
 add_subdirectory(ob)
 add_subdirectory(ps)
+
+target_link_libraries(chino.kernel PRIVATE chino.hal)
 
 if (WIN32)
     target_link_options(chino.kernel PRIVATE /NODEFAULTLIB)

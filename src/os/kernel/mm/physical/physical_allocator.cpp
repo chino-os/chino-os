@@ -3,7 +3,7 @@
 #include "physical_allocator.h"
 #include "cpu_physical_allocator.h"
 #include "physical_segment.h"
-#include <chino/os/kernel/hal/chip.h>
+#include <chino/os/hal/chip.h>
 
 using namespace chino;
 using namespace chino::os::kernel;

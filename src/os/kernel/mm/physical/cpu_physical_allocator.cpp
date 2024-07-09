@@ -5,7 +5,7 @@
 #include "page_table_1.h"
 #include "physical_segment.h"
 #include <atomic>
-#include <chino/os/kernel/hal/chip.h>
+#include <chino/os/hal/chip.h>
 #include <chino/os/kernel/ps.h>
 
 using namespace chino;

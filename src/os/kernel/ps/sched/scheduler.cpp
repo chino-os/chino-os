@@ -2,10 +2,10 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #include "scheduler.h"
 #include "../task/process.h"
-#include "chino/os/kernel/hal/arch.h"
-#include "chino/os/kernel/hal/chip.h"
 #include <array>
 #include <atomic>
+#include <chino/os/hal/arch.h>
+#include <chino/os/hal/chip.h>
 #include <chino/os/kernel/ke.h>
 
 using namespace chino::os::kernel;
