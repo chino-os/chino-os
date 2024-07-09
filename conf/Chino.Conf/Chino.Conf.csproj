@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Chino</RootNamespace>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <!--<PackageReference Include="UnitsNet" />
+    <PackageReference Include="UnitsNet.NumberExtensions" />-->
+  </ItemGroup>
+
+</Project>

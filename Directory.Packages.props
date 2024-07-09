@@ -1,0 +1,26 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <CodeAnalysisRuleSet>$(MSBuildThisFileDirectory)/tools/StyleCopAnalyzers.ruleset</CodeAnalysisRuleSet>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);MSB3270;CS0659;CS0661</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <!--<TreatWarningsAsErrors>true</TreatWarningsAsErrors>-->
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.435" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="StyleCop.Analyzers">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)/tools/stylecop.json" />
+  </ItemGroup>
+</Project>

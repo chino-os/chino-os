@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\tools\Chino.Core\Chino.Core.csproj" />
-    <ProjectReference Include="..\hal\src\chip\chipdef.csproj" />
+    <ProjectReference Include="..\hal\src\chip\Chino.Chips.csproj" />
   </ItemGroup>
 
   <ItemGroup>

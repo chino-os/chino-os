@@ -1,0 +1,27 @@
+{
+  "$schema": "https://raw.githubusercontent.com/DotNetAnalyzers/StyleCopAnalyzers/master/StyleCop.Analyzers/StyleCop.Analyzers/Settings/stylecop.schema.json",
+  "settings": {
+    "orderingRules": {
+      "usingDirectivesPlacement": "outsideNamespace"
+    },
+    "documentationRules": {
+      "companyName": "SunnyCase",
+      "xmlHeader": false,
+      "copyrightText": "Copyright (c) {companyName}. All rights reserved.\r\nLicensed under the {licenseName} license. See {licenseFile} file in the project root for full license information.",
+      "variables": {
+        "licenseName": "Apache",
+        "licenseFile": "LICENSE"
+      },
+      "documentExposedElements": false,
+      "documentInterfaces": false,
+      "documentInternalElements": false,
+      "documentPrivateElements": false,
+      "documentPrivateFields": false
+    },
+    "spacingRules": {
+
+    },
+    "readabilityRules": {},
+    "namingRules": {}
+  }
+}

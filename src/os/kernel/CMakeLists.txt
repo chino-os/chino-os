@@ -15,6 +15,7 @@ endif()
 add_subdirectory(hal)
 
 add_subdirectory(de)
+add_subdirectory(io)
 add_subdirectory(ke)
 add_subdirectory(mm)
 add_subdirectory(ob)

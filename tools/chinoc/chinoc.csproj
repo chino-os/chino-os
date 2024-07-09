@@ -15,7 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\hal\src\board\boarddef.csproj" />
-    <ProjectReference Include="..\..\src\hal\src\chip\chipdef.csproj" />
+    <ProjectReference Include="..\..\src\hal\src\chip\Chino.Chips.csproj" />
     <ProjectReference Include="..\Chino.Core\Chino.Core.csproj" />
   </ItemGroup>
 

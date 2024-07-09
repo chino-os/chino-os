@@ -11,8 +11,6 @@ namespace {}
 
 void emulator_cpu::on_system_tick_timer(_Inout_ PTP_CALLBACK_INSTANCE Instance, _Inout_opt_ PVOID Context,
                                         _Inout_ PTP_TIMER Timer) {
-    wchar_t chars[] = L"on_system_tick_timer \n";
-    WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), chars, std::size(chars), nullptr, nullptr);
     auto cpu = (emulator_cpu *)Context;
     cpu->send_irq(arch_irq_number_t::system_tick);
 }
