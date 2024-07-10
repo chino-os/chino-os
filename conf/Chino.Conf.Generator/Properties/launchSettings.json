@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "chinoc": {
+      "commandName": "Project",
+      "commandLineArgs": "gen emulator E:\\Work\\Repos\\chino-os"
+    }
+  }
+}

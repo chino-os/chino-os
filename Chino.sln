@@ -18,6 +18,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Chino.Chips", "src\os\hal\c
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Chino.Drivers", "src\os\drivers\Chino.Drivers.csproj", "{A92BF4D4-9E27-4C11-AC77-B02190BFB903}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Chino.Boards", "conf\boards\Chino.Boards.csproj", "{358159E2-DABF-4DBB-8E56-21E2F8CB96BC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Chino.Conf.Generator", "conf\Chino.Conf.Generator\Chino.Conf.Generator.csproj", "{1F619BE9-32E6-4D33-9C2E-BBF36FD90C30}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,6 +40,14 @@ Global
 		{A92BF4D4-9E27-4C11-AC77-B02190BFB903}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A92BF4D4-9E27-4C11-AC77-B02190BFB903}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A92BF4D4-9E27-4C11-AC77-B02190BFB903}.Release|Any CPU.Build.0 = Release|Any CPU
+		{358159E2-DABF-4DBB-8E56-21E2F8CB96BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{358159E2-DABF-4DBB-8E56-21E2F8CB96BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{358159E2-DABF-4DBB-8E56-21E2F8CB96BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{358159E2-DABF-4DBB-8E56-21E2F8CB96BC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1F619BE9-32E6-4D33-9C2E-BBF36FD90C30}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1F619BE9-32E6-4D33-9C2E-BBF36FD90C30}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1F619BE9-32E6-4D33-9C2E-BBF36FD90C30}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1F619BE9-32E6-4D33-9C2E-BBF36FD90C30}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -44,6 +56,8 @@ Global
 		{89CAC358-EF71-44DE-B6A6-24A83984BA1F} = {584C9B9D-5D00-4D8F-9C9E-48A59140F766}
 		{27660AF7-DEE7-4D2C-A7AD-964D50DFDC77} = {584C9B9D-5D00-4D8F-9C9E-48A59140F766}
 		{A92BF4D4-9E27-4C11-AC77-B02190BFB903} = {584C9B9D-5D00-4D8F-9C9E-48A59140F766}
+		{358159E2-DABF-4DBB-8E56-21E2F8CB96BC} = {584C9B9D-5D00-4D8F-9C9E-48A59140F766}
+		{1F619BE9-32E6-4D33-9C2E-BBF36FD90C30} = {584C9B9D-5D00-4D8F-9C9E-48A59140F766}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {4033F8F1-0C7A-4D33-8903-A353E802C8A9}

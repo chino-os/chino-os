@@ -205,6 +205,7 @@ csharp_style_prefer_local_over_anonymous_function = true:suggestion
 csharp_style_prefer_tuple_swap = true:suggestion
 csharp_style_prefer_utf8_string_literals = true:suggestion
 dotnet_diagnostic.xUnit1026.severity = suggestion
+csharp_style_prefer_primary_constructors = true:suggestion
 
 ## Naming conventions
 
@@ -542,3 +543,4 @@ tab_width = 4
 dotnet_style_allow_multiple_blank_lines_experimental = true:silent
 dotnet_style_allow_statement_immediately_after_block_experimental = true:silent
 dotnet_style_namespace_match_folder = true:suggestion
+end_of_line = crlf

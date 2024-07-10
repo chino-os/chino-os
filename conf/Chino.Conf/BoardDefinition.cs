@@ -7,13 +7,24 @@ using System.Text;
 
 namespace Chino;
 
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+public sealed class BoardAttribute : Attribute
+{
+    public BoardAttribute(string name)
+    {
+        Name = name;
+    }
+
+    public string Name { get; }
+}
+
 public abstract class BoardDefinition
 {
-    public Guid Id { get; }
+    public abstract Guid Id { get; }
 
-    public ChipDefinition Chip { get; }
+    public abstract ChipDefinition Chip { get; }
 
     public Dictionary<string, string> SelectedPinGroups { get; set; }
 
-    public IReadOnlyList<DriverDefinition> Drivers { get; set; }
+    public List<DriverDefinition> Drivers { get; set; } = new();
 }

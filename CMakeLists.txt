@@ -34,7 +34,7 @@ include(cmake/configure-conan.cmake)
 include(cmake/conan.cmake)
 include(cmake/default-toolchain.cmake)
 
-include(boards/${CHINO_BOARD}/cmake/board.cmake)
+include(conf/boards/${CHINO_BOARD}/cmake/board.cmake)
 include(src/os/hal/chips/${CHINO_CHIP}/cmake/chip.cmake)
 include(cmake/dependencies.cmake)
 
@@ -81,6 +81,7 @@ endif()
 
 include_directories(${CHINO_SDK_INCLUDE_DIR})
 include_directories(${CHINO_SDK_GENERATED_INCLUDE_DIR})
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/conf)
 
 add_subdirectory(include/sdk/chino)
 add_subdirectory(src)
