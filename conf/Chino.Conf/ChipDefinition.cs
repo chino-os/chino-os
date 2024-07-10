@@ -7,11 +7,11 @@ using System.Text;
 
 namespace Chino;
 
-public record struct RegRange(ulong Start, UnitsNet.Information Length)
+public record struct RegRange(ulong Start, UnitsNet.Information Size)
 {
 }
 
-public record class MemoryRange(string Name, string Attribute, ulong Start, UnitsNet.Information Length)
+public record class MemoryRange(string Name, string Attribute, ulong Start, UnitsNet.Information Size)
 {
 }
 
@@ -55,6 +55,12 @@ public class DeviceNode
 {
     public string Name { get; set; }
 
+    public IReadOnlyList<Guid> Compatibles { get; set; } = Array.Empty<Guid>();
+
+    public IReadOnlyList<RegRange> Regs { get; set; } = Array.Empty<RegRange>();
+
+    public IReadOnlyList<PinGroup> PinGroups { get; set; } = Array.Empty<PinGroup>();
+
     public Dictionary<string, object> Properties { get; set; } = new();
 }
 
@@ -65,7 +71,7 @@ public interface IHasChildrenDevices
 
 public interface IHasCompatible
 {
-    IReadOnlyList<Guid> Compatible { get; }
+    IReadOnlyList<Guid> Compatibles { get; }
 }
 
 public class MachineNode : DeviceNode, IHasChildrenDevices
@@ -82,11 +88,6 @@ public class SimpleBusNode : DeviceNode, IHasChildrenDevices
 
 public class SimpleDeviceNode : DeviceNode, IHasCompatible
 {
-    public IReadOnlyList<Guid> Compatible { get; set; } = Array.Empty<Guid>();
-
-    public IReadOnlyList<RegRange> Regs { get; set; } = Array.Empty<RegRange>();
-
-    public IReadOnlyList<PinGroup> PinGroups { get; set; } = Array.Empty<PinGroup>();
 }
 
 public abstract class ChipDefinition

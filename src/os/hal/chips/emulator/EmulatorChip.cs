@@ -19,12 +19,12 @@ public sealed class EmulatorChip : ChipDefinition
                 new SimpleDeviceNode
                 {
                     Name = "host_console",
-                    Compatible = [DeviceCompatibles.HostConsole],
+                    Compatibles = [DeviceCompatibles.HostConsole],
                 },
                 new SimpleDeviceNode
                 {
                     Name = "host_fs",
-                    Compatible = [DeviceCompatibles.HostFS],
+                    Compatibles = [DeviceCompatibles.HostFS],
                     Properties =
                     {
                         { "Path", "share" },
@@ -33,7 +33,7 @@ public sealed class EmulatorChip : ChipDefinition
                 new SimpleDeviceNode
                 {
                     Name = "host_netif",
-                    Compatible = [DeviceCompatibles.HostNetIf],
+                    Compatibles = [DeviceCompatibles.HostNetIf],
                 },
             },
         };

@@ -21,7 +21,7 @@ public class GenerateSettings : CommandSettings
     public string BoardName { get; set; } = null!;
 
     [Description("Project root.")]
-    [CommandArgument(0, "<projectRoot>")]
+    [CommandArgument(1, "<projectRoot>")]
     public string ProjectRoot { get; set; } = null!;
 }
 
@@ -30,9 +30,7 @@ public class GenerateCommand : AsyncCommand<GenerateSettings>
     public override async Task<int> ExecuteAsync(CommandContext context, GenerateSettings settings)
     {
         var board = Program.GetBoard(settings.BoardName);
-        AnsiConsole.WriteLine($"Generate board_desc.h for {settings.BoardName}...");
-        var content = await RazorTemplateEngine.RenderAsync("~/Templates/board_desc.h.cshtml", board);
-        var directory = Path.Combine(settings.ProjectRoot, "build", "conf");
+        var directory = Path.Combine(settings.ProjectRoot, "build", "gen", "chino", "conf");
         if (!Directory.Exists(settings.ProjectRoot))
         {
             AnsiConsole.WriteLine($"{settings.ProjectRoot} doesn't exists.");
@@ -40,7 +38,14 @@ public class GenerateCommand : AsyncCommand<GenerateSettings>
         }
 
         Directory.CreateDirectory(directory);
+
+        AnsiConsole.WriteLine($"Generate board_desc.h for {settings.BoardName}...");
+        var content = await RazorTemplateEngine.RenderAsync("~/Templates/board_desc.h.cshtml", board);
         await File.WriteAllTextAsync(Path.Combine(directory, "board_desc.h"), content);
+
+        AnsiConsole.WriteLine($"Generate board_init.inl for {settings.BoardName}...");
+        content = await RazorTemplateEngine.RenderAsync("~/Templates/board_init.inl.cshtml", board);
+        await File.WriteAllTextAsync(Path.Combine(directory, "board_init.inl"), content);
         return 0;
     }
 }

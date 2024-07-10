@@ -11,4 +11,9 @@ enum class device_meta_kind {
     simple,
     bus,
 };
+
+struct reg_range {
+    uintptr_t start;
+    uintptr_t size;
+};
 } // namespace chino::os::hal::meta
