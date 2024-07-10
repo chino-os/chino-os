@@ -56,7 +56,7 @@ namespace chino::os::hal {
     var driver = GetMatchDriver(device);
     if (driver != null)
     {
-@:decltype(chino::os::drivers::@(driver.Name)_driver::initialize_device(std::declval<meta::board_desc::chip::machine::devices::@device.Name>(), std::declval<chino::os::kernel::io::device *>())) @(device.Name)_device_;
+@:constinit chino::os::drivers::@(driver.Name)_driver::device_t<meta::board_desc::chip::machine::devices::@device.Name, chino::os::kernel::io::device> @(device.Name)_device_(meta::board_desc::chip::machine::devices::@device.Name{}, nullptr);
     }
 }
 } // namespace chino::os::hal
