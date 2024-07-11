@@ -86,6 +86,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/gen)
 add_subdirectory(include/sdk/chino)
 add_subdirectory(src)
 #add_subdirectory(third_party/mimalloc)
+add_subdirectory(third_party/picolibc)
 
 if(BUILD_TESTING)
 endif()
