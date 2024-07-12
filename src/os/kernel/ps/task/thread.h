@@ -4,9 +4,9 @@
 #include <atomic>
 #include <chino/instrusive_list.h>
 #include <chino/os/hal/arch.h>
-#include <chino/os/kernel/object.h>
-#include <chino/os/kernel/object_kind.h>
 #include <chino/os/kernel/ps.h>
+#include <chino/os/object.h>
+#include <chino/os/object_kind.h>
 #include <span>
 
 namespace chino::os::kernel::ps {

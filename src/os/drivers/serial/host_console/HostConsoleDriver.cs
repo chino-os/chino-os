@@ -13,7 +13,7 @@ public class HostConsoleDriver : DriverDefinition
 
     public override string Name { get; } = "host_console";
 
-    public override string Path { get; } = "serial/host-console";
+    public override string Path { get; } = "serial/host_console";
 
     public override IReadOnlyList<Guid> Compatibles { get; } = [Chips.EmulatorChip.DeviceCompatibles.HostConsole];
 }

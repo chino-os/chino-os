@@ -41,7 +41,7 @@ int ke_init_system(void *pv_options) noexcept {
     // 1. Phase 1
     auto &options = *reinterpret_cast<const boot_options *>(pv_options);
     hal::chip_t::debug_print("ke_init_system\n");
-    io::initialize_phase1(options);
+    io::initialize_phase1(options).expect("Initialize IO system failed.");
 
     ke_idle_loop();
 }

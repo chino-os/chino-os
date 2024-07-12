@@ -4,5 +4,5 @@
 #include <chino/os/kernel/ke.h>
 
 namespace chino::os::kernel::io {
-void initialize_phase1(const boot_options &options) noexcept;
+result<void> initialize_phase1(const boot_options &options) noexcept;
 }

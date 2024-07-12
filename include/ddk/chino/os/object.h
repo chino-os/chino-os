@@ -7,7 +7,7 @@
 #include <chino/result.h>
 #include <type_traits>
 
-namespace chino::os::kernel {
+namespace chino::os {
 #define CHINO_DEFINE_KERNEL_OBJECT_KIND(base_t, kind_)                                                                 \
   public:                                                                                                              \
     static constexpr object_kind kind() noexcept { return kind_; }                                                     \
@@ -176,4 +176,4 @@ template <Object T> class static_object {
   private:
     alignas(alignof(T)) std::byte storage_[sizeof(T)];
 };
-} // namespace chino::os::kernel
+} // namespace chino::os
