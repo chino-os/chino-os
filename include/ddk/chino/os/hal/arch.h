@@ -9,6 +9,6 @@
 #error "Unknown arch."
 #endif
 
-namespace chino::os::kernel::hal {
+namespace chino::os::hal {
 inline constexpr size_t cacheline_size = 64;
 }

@@ -14,7 +14,7 @@
 #include <xmmintrin.h>
 #endif
 
-namespace chino::os::kernel::hal {
+namespace chino::os::hal {
 using arch_irq_state_t = uint32_t;
 
 enum class emulator_irq_number {
@@ -35,8 +35,8 @@ class emulator_arch {
     static void initialize_thread_stack(uintptr_t *&stack_top) noexcept {}
 
     static void yield_cpu() noexcept;
-    static void yield_context(ps::thread &old_thread, ps::thread &new_thread, bool scheduled) noexcept;
-    [[noreturn]] static void start_schedule(ps::thread &thread) noexcept;
+    static void yield_context(kernel::ps::thread &old_thread, kernel::ps::thread &new_thread, bool scheduled) noexcept;
+    [[noreturn]] static void start_schedule(kernel::ps::thread &thread) noexcept;
 
     static void enable_irq() noexcept;
     static arch_irq_state_t disable_irq() noexcept;
@@ -46,4 +46,4 @@ class emulator_arch {
 };
 
 using arch_t = emulator_arch;
-} // namespace chino::os::kernel::hal
+} // namespace chino::os::hal

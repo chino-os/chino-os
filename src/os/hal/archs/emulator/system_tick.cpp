@@ -4,8 +4,8 @@
 #include <chino/os/kernel/ke.h>
 
 using namespace chino;
+using namespace chino::os::hal;
 using namespace chino::os::kernel;
-using namespace chino::os::kernel::hal;
 
 namespace {}
 

@@ -12,8 +12,8 @@
 #endif
 
 using namespace chino;
+using namespace chino::os::hal;
 using namespace chino::os::kernel;
-using namespace chino::os::kernel::hal;
 
 extern "C" {
 void emulator_restore_irq(arch_irq_state_t irq_state) noexcept { emulator_arch::restore_irq(irq_state); }

@@ -8,6 +8,7 @@
 #include <chino/os/hal/chip.h>
 #include <chino/os/kernel/ke.h>
 
+using namespace chino::os;
 using namespace chino::os::kernel;
 using namespace chino::os::kernel::ps;
 using namespace std::chrono_literals;

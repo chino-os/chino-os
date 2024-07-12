@@ -4,8 +4,8 @@
 #include <chino/os/kernel/ke.h>
 
 using namespace chino;
+using namespace chino::os::hal;
 using namespace chino::os::kernel;
-using namespace chino::os::kernel::hal;
 
 namespace {
 inline static const wchar_t message_queue_class[] = L"Chino.Emulator.MQ";

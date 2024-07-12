@@ -2,9 +2,9 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #include "emulator_cpu.h"
 
-using namespace chino::os::kernel;
+using namespace chino::os;
 
-HINSTANCE chino::os::kernel::hal::hal_instance;
+HINSTANCE chino::os::hal::hal_instance;
 
 #ifdef WIN32
 #include <Windows.h>

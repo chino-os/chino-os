@@ -9,7 +9,7 @@
 #include <Windows.h>
 #endif
 
-namespace chino::os::kernel::hal {
+namespace chino::os::hal {
 extern HINSTANCE hal_instance;
 
 class emulator_cpu {
@@ -49,4 +49,4 @@ class emulator_cpu {
     CONDITION_VARIABLE irq_state_cs_;
     CRITICAL_SECTION irq_lock_;
 };
-} // namespace chino::os::kernel::hal
+} // namespace chino::os::hal

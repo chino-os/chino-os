@@ -59,4 +59,15 @@ namespace chino::os::hal {
 @:constinit chino::os::drivers::@(driver.Name)_driver::device_t<meta::board_desc::chip::machine::devices::@device.Name, chino::os::kernel::io::device> @(device.Name)_device_(meta::board_desc::chip::machine::devices::@device.Name{}, nullptr);
     }
 }
+
+void hal_attach_devices() {
+@foreach (var device in Model.Chip.Machine.Devices)
+{
+    var driver = GetMatchDriver(device);
+    if (driver != null)
+    {
+@:chino::os::drivers::@(driver.Name)_driver::attach_device(@(device.Name)_device_);
+    }
+}
+}
 } // namespace chino::os::hal

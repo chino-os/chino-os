@@ -14,5 +14,7 @@ class host_console_device : public kernel::io::device {
 class host_console_driver {
   public:
     template <class TDevice, class TBottomDevice> using device_t = host_console_device;
+
+    static result<void> attach_device(host_console_device &device) noexcept;
 };
 } // namespace chino::os::drivers

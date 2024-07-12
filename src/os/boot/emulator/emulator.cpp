@@ -16,8 +16,8 @@
 #include <dlfcn.h>
 #endif
 
+using namespace chino::os::hal;
 using namespace chino::os::kernel;
-using namespace chino::os::kernel::hal;
 
 #define SYSTEM_PATH "../chino/system/"
 #define KERNEL_FILENAME "chino.kernel"

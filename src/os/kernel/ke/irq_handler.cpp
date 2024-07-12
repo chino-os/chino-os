@@ -4,10 +4,11 @@
 #include <chino/os/kernel/ke.h>
 
 using namespace chino;
+using namespace chino::os;
 using namespace chino::os::kernel;
-using namespace chino::os::kernel::hal;
+using namespace chino::os::hal;
 
-void ke_handle_irq(hal::arch_irq_number_t irq_number) noexcept {
+void ke_handle_irq(arch_irq_number_t irq_number) noexcept {
     switch (irq_number) {
     case arch_irq_number_t::system_tick:
         ps::scheduler::current().on_system_tick();

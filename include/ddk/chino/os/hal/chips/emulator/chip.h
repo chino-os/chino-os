@@ -7,7 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace chino::os::kernel::hal {
+namespace chino::os::hal {
 class emulator_chip {
   public:
     inline static constexpr std::array<size_t, 1> max_memory_segments_sizes{64 * MiB};
@@ -18,4 +18,4 @@ class emulator_chip {
 };
 
 using chip_t = emulator_chip;
-} // namespace chino::os::kernel::hal
+} // namespace chino::os::hal

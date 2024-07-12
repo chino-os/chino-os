@@ -9,4 +9,4 @@
 #error "Unknown chip."
 #endif
 
-namespace chino::os::kernel::hal {}
+namespace chino::os::hal {}

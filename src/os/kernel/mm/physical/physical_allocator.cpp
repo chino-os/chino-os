@@ -6,6 +6,7 @@
 #include <chino/os/hal/chip.h>
 
 using namespace chino;
+using namespace chino::os;
 using namespace chino::os::kernel;
 using namespace chino::os::kernel::mm;
 

@@ -98,6 +98,6 @@ template <> class unique_lock<chino::os::kernel::ps::irq_spin_lock> {
 
   private:
     chino::os::kernel::ps::irq_spin_lock &lock_;
-    chino::os::kernel::hal::arch_irq_state_t irq_state_;
+    chino::os::hal::arch_irq_state_t irq_state_;
 };
 } // namespace std
