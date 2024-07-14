@@ -7,3 +7,6 @@
 [submodule "third_party/llvm"]
 	path = third_party/llvm
 	url = https://github.com/chino-os/llvm-project.git
+[submodule "third_party/nr_micro_shell"]
+	path = src/shell/sh
+	url = https://github.com/chino-os/nr_micro_shell.git

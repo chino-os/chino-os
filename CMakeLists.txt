@@ -45,7 +45,7 @@ set(CHINO_SDK_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/include/sdk)
 set(CHINO_DDK_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/include/ddk)
 set(CHINO_CONF_GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen)
 set(CHINO_SDK_GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/include/sdk)
-set(THIRD_PARTY ${CMAKE_CURRENT_LIST_DIR}/third_party)
+set(CHINO_THIRD_PARTY_DIR ${CMAKE_CURRENT_LIST_DIR}/third_party)
 set_property(GLOBAL PROPERTY POSITION_INDEPENDENT_CODE ON)
 if (APPLE)
     set(CMAKE_MACOSX_RPATH TRUE)
@@ -91,11 +91,13 @@ include_directories(${CHINO_SDK_GENERATED_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/gen)
 
 add_subdirectory(include/sdk/chino)
+
 add_subdirectory(src)
 #add_subdirectory(third_party/mimalloc)
 add_subdirectory(third_party/picolibc)
 set(LLVM_ENABLE_RUNTIMES "libcxx")
 add_subdirectory(third_party/llvm/runtimes)
+
 
 if(BUILD_TESTING)
 endif()
