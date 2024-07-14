@@ -13,6 +13,7 @@ constinit static_object<file> file_;
 } // namespace
 
 result<void> host_console_device::install() noexcept {
+    AllocConsole();
     SetConsoleTitle(L"Chino Terminal");
     stdin_ = GetStdHandle(STD_INPUT_HANDLE);
     stdout_ = GetStdHandle(STD_OUTPUT_HANDLE);

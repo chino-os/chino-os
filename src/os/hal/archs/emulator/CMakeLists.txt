@@ -11,3 +11,4 @@ if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "(amd64)|(AMD64)|(x86_64)|(X86_64)")
 endif()
 
 target_sources(chino.hal PRIVATE ${SRCS})
+target_include_directories(chino.hal PRIVATE ${WIN_SDK_INCLUDE_DIR})

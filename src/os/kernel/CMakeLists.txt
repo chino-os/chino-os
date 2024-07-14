@@ -21,7 +21,7 @@ add_subdirectory(mm)
 add_subdirectory(ob)
 add_subdirectory(ps)
 
-target_link_libraries(chino.kernel PRIVATE chino.hal)
+target_link_libraries(chino.kernel PRIVATE chino.hal c cxx_static)
 
 if (WIN32)
     target_link_options(chino.kernel PRIVATE /NODEFAULTLIB)

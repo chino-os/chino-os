@@ -60,8 +60,9 @@ add_compile_definitions(_CHINO=1)
 if (MSVC)
     add_definitions(/D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_CRT_SECURE_NO_WARNINGS /DNOMINMAX /DUNICODE)
     add_definitions(/D_WIN32_WINNT=_WIN32_WINNT_WIN7)
-    add_compile_options(/utf-8 /W3 /WX /wd4273 /guard:cf- -Wno-unused-command-line-argument)
-    add_link_options(/GUARD:NO)
+    add_compile_options(/utf-8 /W3 /WX /wd4273 /guard:cf- -Wno-unused-command-line-argument -Wno-user-defined-literals -Wno-ignored-pragma-intrinsic
+                        -Wno-ignored-attributes -Wno-pragma-pack -Wno-nonportable-include-path -Wno-unknown-pragmas)
+    add_link_options(/NODEFAULTLIB /GUARD:NO)
     # Disable C++ exceptions.
     string(REGEX REPLACE "/EH[a-z]+" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHs-c- /GS-")
@@ -74,6 +75,10 @@ if (MSVC)
     string(REGEX REPLACE "/GR" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
     set(PYBIND11_CPP_STANDARD "/std:c++latest")
+
+    # Disable standard lib.
+    add_compile_options(/X)
+    add_compile_definitions(__STDC__=1)
 else()
     # Disable C++ exceptions.
     add_compile_options(-fno-exceptions -fno-rtti -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables)
@@ -89,6 +94,8 @@ add_subdirectory(include/sdk/chino)
 add_subdirectory(src)
 #add_subdirectory(third_party/mimalloc)
 add_subdirectory(third_party/picolibc)
+set(LLVM_ENABLE_RUNTIMES "libcxx")
+add_subdirectory(third_party/llvm/runtimes)
 
 if(BUILD_TESTING)
 endif()

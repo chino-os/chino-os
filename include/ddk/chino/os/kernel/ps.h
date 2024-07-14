@@ -88,6 +88,8 @@ class mutex final : public waitable_object {
 } // namespace chino::os::kernel::ps
 
 namespace std {
+template <class T> class unique_lock;
+
 template <> class unique_lock<chino::os::kernel::ps::irq_spin_lock> {
   public:
     CHINO_NONCOPYABLE(unique_lock);

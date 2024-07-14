@@ -34,7 +34,7 @@ class handle_segment {
     }
 
     result<std::pair<handle_entry *, size_t>> allocate() noexcept {
-        std::unique_lock lock(lock_);
+        std::unique_lock<decltype(lock_)> lock(lock_);
         if (free_head_) {
             auto item = reinterpret_cast<handle_entry *>(free_head_);
             free_head_ = free_head_->next;
@@ -46,7 +46,7 @@ class handle_segment {
     }
 
     void free(handle_entry *handle) noexcept {
-        std::unique_lock lock(lock_);
+        std::unique_lock<decltype(lock_)> lock(lock_);
         auto head = reinterpret_cast<free_entry *>(handle);
         head->next = free_head_;
         head->used = 0;

@@ -23,9 +23,9 @@ void chip_t::debug_print(const char *format, ...) noexcept {
     va_list va;
     va_start(va, format);
     {
-        std::unique_lock locker(debug_lock_);
+        std::unique_lock<decltype(debug_lock_)> locker(debug_lock_);
         wvsprintfA(debug_buffer_, format, va);
-        WriteConsoleA(GetStdHandle(STD_ERROR_HANDLE), debug_buffer_, lstrlenA(debug_buffer_), nullptr, nullptr);
+        OutputDebugStringA(debug_buffer_);
     }
     va_end(va);
 }

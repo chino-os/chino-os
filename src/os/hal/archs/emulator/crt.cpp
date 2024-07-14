@@ -14,6 +14,7 @@ HINSTANCE chino::os::hal::hal_instance;
 extern "C" {
 int __isa_available = 0;
 int __favor = 0;
+int _fltused;
 
 #if defined(_M_AMD64)
 size_t __memset_nt_threshold = 0x2000000;
@@ -44,10 +45,6 @@ BOOL WINAPI _DllMainCRTStartup(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvRe
 
 void(__cdecl *__guard_check_icall_fptr)() = guard_check_icall;
 void(__cdecl *__guard_dispatch_icall_fptr)() = guard_check_icall;
-}
-
-[[noreturn]] _CRTIMP2_PURE void __CLRCALL_PURE_OR_CDECL std::_Xout_of_range(_In_z_ const char *message) {
-    chino::fail_fast(message);
 }
 
 #endif

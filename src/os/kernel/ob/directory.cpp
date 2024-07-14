@@ -10,7 +10,7 @@ using namespace chino::os::kernel::ob;
 
 result<void> directory::remove(object &object) noexcept {
     {
-        std::unique_lock lock(items_mutex_);
+        std::unique_lock<decltype(items_mutex_)> lock(items_mutex_);
         items_.remove(&object);
     }
     object.dec_ref();
@@ -60,7 +60,7 @@ result<object_ptr<object>> directory::insert_or_lookup(object *insert_object,
     // 5. Find the component object
     object_ptr<object> component;
     {
-        std::unique_lock lock(items_mutex_);
+        std::unique_lock<decltype(items_mutex_)> lock(items_mutex_);
         auto pivot = items_.front();
         auto find_result = error_code::not_found;
         while (pivot) {

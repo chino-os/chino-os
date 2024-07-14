@@ -5,8 +5,7 @@
 #include <chino/os/kernel/ke.h>
 #include <chino/version.h>
 #include <format>
-#include <iostream>
-#include <lyra/lyra.hpp>
+// #include <lyra/lyra.hpp>
 #include <memory>
 #include <string>
 
@@ -46,12 +45,14 @@ hal_startup_t load_hal_startup() {
 #ifdef WIN32
     auto kernel_lib = LoadLibraryExA(KERNEL_FILEPATH, nullptr, LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
     if (!kernel_lib) {
-        throw std::runtime_error(std::format("Unable to load " KERNEL_FILENAME ": {:#08X}", GetLastError()));
+        ExitProcess(-1);
+        // throw std::runtime_error(std::format("Unable to load " KERNEL_FILENAME ": {:#08X}", GetLastError()));
     }
 
     auto kernel_entryp = reinterpret_cast<hal_startup_t>(GetProcAddress(kernel_lib, HAL_STARTUP_STR));
     if (!kernel_entryp) {
-        throw std::runtime_error(std::format("Unable to load kernel entrypoint: {:#08X}", GetLastError()));
+        ExitProcess(-1);
+        // throw std::runtime_error(std::format("Unable to load kernel entrypoint: {:#08X}", GetLastError()));
     }
 #else
     auto kernel_lib = dlopen(KERNEL_FILEPATH, RTLD_NOW);
@@ -67,22 +68,27 @@ hal_startup_t load_hal_startup() {
     return kernel_entryp;
 }
 
+void print(std::string_view str) {
+    WriteConsoleA(GetStdHandle(STD_OUTPUT_HANDLE), str.data(), str.size(), nullptr, nullptr);
+}
+
 } // namespace
 
-int main(int argc, char **argv) {
+int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine,
+                   _In_ int nShowCmd) {
     bool show_version = false;
     size_t memory_size = default_memory_size;
 
-    auto cli = lyra::cli();
-    cli.add_argument(lyra::opt(show_version).name("-v").name("--version").help("show version"));
-    cli.add_argument(
-        lyra::opt(memory_size, "memory size").optional().name("-m").name("--memory_size").help("set memory size"));
-
-    cli.parse({argc, argv});
+    // auto cli = lyra::cli();
+    // cli.add_argument(lyra::opt(show_version).name("-v").name("--version").help("show version"));
+    // cli.add_argument(
+    //     lyra::opt(memory_size, "memory size").optional().name("-m").name("--memory_size").help("set memory size"));
+    //
+    // cli.parse({argc, argv});
 
     if (show_version) {
-        std::cout << "Chino OS emulator " CHINO_VERSION CHINO_VERSION_SUFFIX << " Build " __DATE__ << std::endl
-                  << "Copyright (c) SunnyCase." << std::endl;
+        print("Chino OS emulator " CHINO_VERSION CHINO_VERSION_SUFFIX " Build " __DATE__ "\n");
+        print("Copyright (c) SunnyCase.\n");
         return 0;
     }
 
