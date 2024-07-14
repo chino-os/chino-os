@@ -3,7 +3,7 @@
 #pragma once
 #include "../object.h"
 #include <atomic>
-#include <chino/instrusive_list.h>
+#include <chino/intrusive_list.h>
 #include <chino/os/hal/arch.h>
 #include <chino/os/processapi.h>
 #include <chrono>
@@ -99,5 +99,16 @@ template <> class unique_lock<chino::os::kernel::ps::irq_spin_lock> {
   private:
     chino::os::kernel::ps::irq_spin_lock &lock_;
     chino::os::hal::arch_irq_state_t irq_state_;
+};
+
+template <> class unique_lock<chino::os::kernel::ps::mutex> {
+  public:
+    CHINO_NONCOPYABLE(unique_lock);
+
+    unique_lock(chino::os::kernel::ps::mutex &mutex) noexcept : lock_(mutex) { lock_.wait().expect(nullptr); }
+    ~unique_lock() { lock_.release(); }
+
+  private:
+    chino::os::kernel::ps::mutex &lock_;
 };
 } // namespace std

@@ -7,11 +7,12 @@ namespace chino {
 
 struct buffer_slist_node {
     std::byte *start;
-    uintptr_t size;
+    size_t size;
     buffer_slist_node *next;
 };
 
 struct buffer_slist {
     buffer_slist_node *head;
+    size_t count;
 };
 } // namespace chino

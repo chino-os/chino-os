@@ -4,3 +4,6 @@
 [submodule "third_party/picolibc"]
 	path = third_party/picolibc
 	url = https://github.com/chino-os/picolibc.git
+[submodule "third_party/llvm"]
+	path = third_party/llvm
+	url = https://github.com/chino-os/llvm-project.git

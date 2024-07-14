@@ -56,7 +56,7 @@ namespace chino::os::hal {
     var driver = GetMatchDriver(device);
     if (driver != null)
     {
-@:constinit chino::os::drivers::@(driver.Name)_driver::device_t<meta::board_desc::chip::machine::devices::@device.Name, chino::os::device> @(device.Name)_device_(meta::board_desc::chip::machine::devices::@device.Name{}, nullptr);
+@:constinit chino::os::drivers::@(driver.Name)_driver::device_t<meta::board_desc::chip::machine::devices::@device.Name, chino::os::device> @(device.Name)_device_(meta::board_desc::chip::machine::devices::@device.Name{});
     }
 }
 
@@ -64,9 +64,10 @@ result<void> hal_install_devices() {
 @foreach (var device in Model.Chip.Machine.Devices)
 {
     var driver = GetMatchDriver(device);
+    var referencedDevices = device.ReferencedDevices.Where(x => GetMatchDriver(x) != null);
     if (driver != null)
     {
-@:    try_(chino::os::drivers::@(driver.Name)_driver::install_device(@(device.Name)_device_));
+@:    try_(chino::os::drivers::@(driver.Name)_driver::install_device(@(device.Name)_device_@(referencedDevices.Any() ? ", " + string.Join(", ", referencedDevices.Select(x => $"{x.Name}_device_")) : string.Empty)));
     }
 }
     return ok();

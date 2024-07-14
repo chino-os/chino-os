@@ -1,6 +1,7 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
+#include "../../ob/handle_table.h"
 #include "thread.h"
 
 namespace chino::os::kernel::ps {
@@ -12,9 +13,12 @@ class process : public object {
   public:
     constexpr process() noexcept {};
 
+    ob::handle_table &handle_table() noexcept { return handle_table_; }
+
     void attach_thread(thread &thread) noexcept;
 
   private:
     process_list_t threads_;
+    ob::handle_table handle_table_;
 };
 } // namespace chino::os::kernel::ps

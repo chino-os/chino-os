@@ -14,6 +14,7 @@ public class EmulatorBoard : BoardDefinition
         Drivers = new()
         {
             new HostConsoleDriver(),
+            new StreamConsoleDriver(),
         };
     }
 

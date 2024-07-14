@@ -4,6 +4,7 @@
 #include "chino/error.h"
 #include "object_kind.h"
 #include <chino/compiler.h>
+#include <chino/intrusive_list.h>
 #include <chino/result.h>
 #include <type_traits>
 
@@ -43,11 +44,16 @@ class object {
     /** @brief Get the kind of the object */
     virtual const object_kind &runtime_kind() const noexcept = 0;
 
+    virtual std::string_view name() const noexcept { return {}; }
+
   protected:
     template <class T> friend class object_ptr;
 
     /** @brief Is the object an instance of specific kind */
     virtual bool is_a(const object_kind &kind) const noexcept;
+
+  public:
+    intrusive_list_node directory_list_node;
 
   private:
     mutable std::atomic<uint32_t> ref_count_;
@@ -68,12 +74,12 @@ template <class T> class object_ptr {
 
     object_ptr(const object_ptr &other) noexcept : object_(other.object_) { add_ref(); }
 
-    template <Object U, class = std::enable_if_t<std::is_convertible_v<U *, T *>>>
+    template <class U, class = std::enable_if_t<std::is_convertible_v<U *, T *>>>
     object_ptr(object_ptr<U> &&other) noexcept : object_(other.object_) {
         other.object_ = nullptr;
     }
 
-    template <Object U, class = std::enable_if_t<std::is_convertible_v<U *, T *>>>
+    template <class U, class = std::enable_if_t<std::is_convertible_v<U *, T *>>>
     object_ptr(const object_ptr<U> &other) noexcept : object_(other.object_) {
         add_ref();
     }
@@ -98,11 +104,11 @@ template <class T> class object_ptr {
     bool is_a(const object_kind &kind) const noexcept { return object_ && static_cast<object *>(object_)->is_a(kind); }
 
     /** @brief Is the object an instance of specific type */
-    template <class U> bool is_a() const noexcept { return is_a(U::object_type::kind()); }
+    template <class U> bool is_a() const noexcept { return is_a(U::kind()); }
 
-    template <class U> result<U> as() const noexcept {
+    template <class U> result<object_ptr<U>> as() const noexcept {
         if (is_a<U>()) {
-            return ok(U(static_cast<typename U::object_type *>(object_)));
+            return ok(static_cast<U *>(object_));
         } else {
             return err(error_code::bad_cast);
         }

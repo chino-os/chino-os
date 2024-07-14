@@ -8,8 +8,8 @@
 .extern emulator_restore_irq
 .extern ke_handle_irq
 
-STACK_TOP_OFFSET    = 16
-STACK_BOTTOM_OFFSET = 24
+STACK_TOP_OFFSET    = 0x20
+STACK_BOTTOM_OFFSET = 0x28
 
 .text
 .align 16

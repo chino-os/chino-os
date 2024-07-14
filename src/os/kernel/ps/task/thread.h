@@ -2,7 +2,7 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
 #include <atomic>
-#include <chino/instrusive_list.h>
+#include <chino/intrusive_list.h>
 #include <chino/os/hal/arch.h>
 #include <chino/os/kernel/ps.h>
 #include <chino/os/object.h>

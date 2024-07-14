@@ -10,25 +10,22 @@
 using namespace chino::os;
 using namespace chino::os::kernel;
 
-namespace {
-alignas(hal::cacheline_size) std::array<uintptr_t, 512> init_stack_;
-constinit static_object<ps::process> ke_process_;
-constinit static_object<ps::thread> init_thread_;
-} // namespace
+alignas(hal::cacheline_size) static std::array<uintptr_t, 512> init_stack_;
+static constinit ps::process ke_process_;
+static constinit static_object<ps::thread> init_thread_;
 
 [[noreturn]] static int ke_init_system(void *arg) noexcept;
 [[noreturn]] static void ke_idle_loop() noexcept;
 
-ps::process &chino::os::kernel::ke_process() noexcept { return *ke_process_; }
+ps::process &chino::os::kernel::ke_process() noexcept { return ke_process_; }
 
 void ke_startup(const boot_options &options) noexcept {
     // 1. Phase 0
     mm::initialize_phase0(options);
-    ke_process_.initialize();
     ps::scheduler::current().initialize_phase0();
 
     // 2. Setup init thread
-    init_thread_.initialize(ps::thread_create_options{.process = ke_process_.get(),
+    init_thread_.initialize(ps::thread_create_options{.process = &ke_process_,
                                                       .priority = thread_priority::highest,
                                                       .not_owned_stack = true,
                                                       .stack = init_stack_,

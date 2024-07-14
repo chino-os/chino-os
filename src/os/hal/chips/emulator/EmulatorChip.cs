@@ -11,16 +11,18 @@ public sealed class EmulatorChip : ChipDefinition
 {
     public EmulatorChip()
     {
+        SimpleDeviceNode host_console;
+
         Machine = new()
         {
             Name = Name,
             Devices =
             {
-                new SimpleDeviceNode
+                (host_console = new SimpleDeviceNode
                 {
                     Name = "host_console",
                     Compatibles = [DeviceCompatibles.HostConsole],
-                },
+                }),
                 new SimpleDeviceNode
                 {
                     Name = "host_fs",
@@ -35,6 +37,8 @@ public sealed class EmulatorChip : ChipDefinition
                     Name = "host_netif",
                     Compatibles = [DeviceCompatibles.HostNetIf],
                 },
+
+                SystemDevices.StreamConsole(host_console),
             },
         };
     }

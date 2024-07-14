@@ -1,6 +1,7 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #include "emulator_cpu.h"
+#include <chino/result.h>
 
 using namespace chino::os;
 
@@ -43,6 +44,10 @@ BOOL WINAPI _DllMainCRTStartup(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvRe
 
 void(__cdecl *__guard_check_icall_fptr)() = guard_check_icall;
 void(__cdecl *__guard_dispatch_icall_fptr)() = guard_check_icall;
+}
+
+[[noreturn]] _CRTIMP2_PURE void __CLRCALL_PURE_OR_CDECL std::_Xout_of_range(_In_z_ const char *message) {
+    chino::fail_fast(message);
 }
 
 #endif

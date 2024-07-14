@@ -61,6 +61,8 @@ public class DeviceNode
 
     public IReadOnlyList<PinGroup> PinGroups { get; set; } = Array.Empty<PinGroup>();
 
+    public List<DeviceNode> ReferencedDevices { get; set; } = new();
+
     public Dictionary<string, object> Properties { get; set; } = new();
 }
 
