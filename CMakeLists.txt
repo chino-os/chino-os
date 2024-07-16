@@ -61,7 +61,7 @@ if (MSVC)
     add_definitions(/D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_CRT_SECURE_NO_WARNINGS /DNOMINMAX /DUNICODE)
     add_definitions(/D_WIN32_WINNT=_WIN32_WINNT_WIN7)
     add_compile_options(/utf-8 /W3 /WX /wd4273 /guard:cf- -Wno-unused-command-line-argument -Wno-user-defined-literals -Wno-ignored-pragma-intrinsic
-                        -Wno-ignored-attributes -Wno-pragma-pack -Wno-nonportable-include-path -Wno-unknown-pragmas)
+                        -Wno-ignored-attributes -Wno-pragma-pack -Wno-nonportable-include-path -Wno-unknown-pragmas -Wno-unused-function)
     add_link_options(/NODEFAULTLIB /GUARD:NO)
     # Disable C++ exceptions.
     string(REGEX REPLACE "/EH[a-z]+" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
@@ -89,6 +89,7 @@ endif()
 include_directories(${CHINO_SDK_INCLUDE_DIR})
 include_directories(${CHINO_SDK_GENERATED_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/gen)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/src/crts/picolibc/picolibc/include)
 
 add_subdirectory(include/sdk/chino)
 
