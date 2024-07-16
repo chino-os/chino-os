@@ -1,12 +1,12 @@
 [submodule "third_party/mimalloc"]
 	path = third_party/mimalloc
 	url = https://github.com/chino-os/mimalloc.git
-[submodule "third_party/picolibc"]
+[submodule "src/crts/picolibc"]
 	path = src/crts/picolibc
 	url = https://github.com/chino-os/picolibc.git
 [submodule "third_party/llvm"]
 	path = third_party/llvm
 	url = https://github.com/chino-os/llvm-project.git
-[submodule "third_party/nr_micro_shell"]
+[submodule "src/shell/sh"]
 	path = src/shell/sh
 	url = https://github.com/chino-os/nr_micro_shell.git
