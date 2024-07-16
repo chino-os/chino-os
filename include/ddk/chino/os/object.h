@@ -164,13 +164,13 @@ template <class T> class object_ptr {
     T *object_;
 };
 
-template <Object T> class static_object {
+template <class T> class static_object {
   public:
     CHINO_NONCOPYABLE(static_object);
 
     constexpr static_object() noexcept : storage_{} {}
 
-    template <class... TArgs> void initialize(TArgs &&...args) noexcept {
+    template <class... TArgs> void construct(TArgs &&...args) noexcept {
         std::construct_at(get(), std::forward<TArgs>(args)...);
     }
 

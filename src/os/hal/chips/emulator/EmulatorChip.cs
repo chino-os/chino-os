@@ -27,10 +27,6 @@ public sealed class EmulatorChip : ChipDefinition
                 {
                     Name = "host_fs",
                     Compatibles = [DeviceCompatibles.HostFS],
-                    Properties =
-                    {
-                        { "Path", "share" },
-                    },
                 },
                 new SimpleDeviceNode
                 {

@@ -3,6 +3,7 @@
 #include "io_manager.h"
 #include "../ob/directory.h"
 #include <chino/conf/board_init.inl>
+#include <chino/os/kernel/ob.h>
 
 using namespace chino;
 using namespace chino::os;
@@ -24,6 +25,7 @@ constinit dev_directory dev_directory_;
 } // namespace
 
 result<void> io::initialize_phase1(const boot_options &options) noexcept {
+    try_(ob::insert_object(dev_directory_, "/dev"));
     try_(hal::hal_install_devices());
     return ok();
 }
@@ -33,9 +35,13 @@ result<void> io::attach_device(device &device) noexcept {
     return ok();
 }
 
-result<object_ptr<file>> io::open_file(device &device, std::string_view path,
-                                       create_disposition create_disposition) noexcept {
-    return device.open(path, create_disposition);
+result<file> io::open_file(device &device, std::string_view path, create_disposition disposition) noexcept {
+    return device.open(path, disposition);
+}
+
+result<file> io::open_file(std::string_view path, create_disposition disposition) noexcept {
+    try_var(dev, ob::lookup_object_partial<device>(path));
+    return open_file(*dev, path, disposition);
 }
 
 result<void> io::close_file(file &file) noexcept { return file.device().close(file); }
@@ -87,3 +93,9 @@ result<size_t> io::control_file(file &file, control_code_t code, std::span<const
 }
 
 result<void> io::allocate_console() noexcept { return ok(); }
+
+file ::~file() {
+    if (!device_.empty()) {
+        (void)device_->close(*this);
+    }
+}

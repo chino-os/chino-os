@@ -88,7 +88,7 @@ void scheduler::start_schedule(thread &first_thread) noexcept {
     chino_current_threads[hal::arch_t::current_cpu_id()] = &first_thread;
     first_thread.status(thread_status::running);
     first_thread.set_scheduled();
-    setup_next_system_tick();
+    //setup_next_system_tick();
     hal::arch_t::start_schedule(first_thread);
 }
 

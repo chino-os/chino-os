@@ -85,6 +85,8 @@ class mutex final : public waitable_object {
   private:
     std::atomic<uint32_t> held_;
 };
+
+result<void> create_process(std::string_view filepath) noexcept;
 } // namespace chino::os::kernel::ps
 
 namespace std {

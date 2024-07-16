@@ -70,8 +70,8 @@ class intrusive_list_storage {
     }
 
   private:
-    node_type *head() noexcept { return dummy_.prev; }
-    node_type *tail() noexcept { return dummy_.next; }
+    node_type *head() noexcept { return dummy_.next; }
+    node_type *tail() noexcept { return dummy_.prev; }
 
   private:
     node_type dummy_;

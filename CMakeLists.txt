@@ -94,7 +94,6 @@ add_subdirectory(include/sdk/chino)
 
 add_subdirectory(src)
 #add_subdirectory(third_party/mimalloc)
-add_subdirectory(third_party/picolibc)
 set(LLVM_ENABLE_RUNTIMES "libcxx")
 add_subdirectory(third_party/llvm/runtimes)
 
