@@ -12,7 +12,7 @@ using namespace chino::os::drivers;
 
 result<void> host_fs_device::install() noexcept {
     GetModuleFileNameA(hal::hal_instance, base_dirname_, MAX_PATH);
-    PathCombineA(base_dirname_, base_dirname_, "..\\..\\..\\");
+    PathCombineA(base_dirname_, base_dirname_, "..\\..\\");
     return ok();
 }
 
@@ -22,7 +22,11 @@ result<file> host_fs_device::open(std::string_view path, create_disposition disp
         PathCombineA(host_filename, base_dirname_, path.data());
         auto handle =
             CreateFileA(host_filename, GENERIC_READ | GENERIC_WRITE, 0, nullptr, (DWORD)disposition, 0, nullptr);
-        return ok(file(*this, handle));
+        if (handle != INVALID_HANDLE_VALUE) {
+            return ok(file(*this, access_mask::generic_all, handle));
+        } else {
+            return err(error_code::not_found);
+        }
     }
     return err(error_code::invalid_path);
 }
@@ -31,7 +35,7 @@ result<void> host_fs_device::close(file &file) noexcept {
     return CloseHandle(file.data<HANDLE>()) ? ok() : err(error_code::io_error);
 }
 
-result<size_t> host_fs_device::read(file &file, std::span<const iovec> iovs, size_t offset) noexcept {
+result<size_t> host_fs_device::read(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept {
     size_t total_read = 0;
     for (auto iov : iovs) {
         DWORD read;
@@ -45,7 +49,7 @@ result<size_t> host_fs_device::read(file &file, std::span<const iovec> iovs, siz
     return ok(total_read);
 }
 
-result<size_t> host_fs_device::write(file &file, std::span<const iovec> iovs, size_t offset) noexcept {
+result<size_t> host_fs_device::write(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept {
     size_t total_written = 0;
     for (auto iov : iovs) {
         DWORD written;

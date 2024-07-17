@@ -15,6 +15,11 @@ using namespace std::string_view_literals;
     iovec iovs##0 {.iov_base = (void *)buffer.data(), .iov_len = buffer.size_bytes()};                                 \
     std::span<const iovec> iovs(&iovs##0, 1)
 
+#define TRY_GET_DEVICE(file)                                                                                           \
+    if (!file.object().is_a(os::device::kind())) [[unlikely]]                                                          \
+        return err(error_code::not_supported);                                                                         \
+    auto &dev = static_cast<os::device &>(file.object())
+
 namespace {
 class dev_directory : public ob::directory {
   public:
@@ -40,62 +45,51 @@ result<file> io::open_file(device &device, std::string_view path, create_disposi
 }
 
 result<file> io::open_file(std::string_view path, create_disposition disposition) noexcept {
-    try_var(dev, ob::lookup_object_partial<device>(path));
-    return open_file(*dev, path, disposition);
+    // 1. Search by absolute path
+    auto result = ob::lookup_object_partial<device>(path);
+
+    // 2. Search in fs0
+    if (result.is_err()) {
+        if (result.unwrap_err() == error_code::not_found && !path.empty() && path[0] == ob::directory_separator) {
+            try_var(fs0, ob::lookup_object<device>("/dev/fs0"));
+            return open_file(*fs0, path.substr(1), disposition);
+        } else {
+            return err(result.unwrap_err());
+        }
+    }
+
+    return open_file(*result.unwrap().first, result.unwrap().second, disposition);
 }
 
-result<void> io::close_file(file &file) noexcept { return file.device().close(file); }
-
-result<size_t> io::read_file(file &file, std::span<const iovec> iovs, size_t offset) noexcept {
-    return file.device().read(file, iovs, offset);
+result<void> io::close_file(file &file) noexcept {
+    TRY_GET_DEVICE(file);
+    return dev.close(file);
 }
 
-result<size_t> io::read_file(file &file, std::span<const iovec> iovs) noexcept {
-    auto offset = file.offset();
-    try_var(read, read_file(file, iovs, offset));
-    file.offset(offset + read);
-    return ok(read);
+result<size_t> io::read_file(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept {
+    TRY_GET_DEVICE(file);
+    return dev.read(file, iovs, offset);
 }
 
-result<size_t> io::read_file(file &file, std::span<std::byte> buffer, size_t offset) noexcept {
+result<size_t> io::read_file(file &file, std::span<std::byte> buffer, std::optional<size_t> offset) noexcept {
     BUFFER_TO_IOVS(buffer, iovs);
     return read_file(file, iovs, offset);
 }
 
-result<size_t> io::read_file(file &file, std::span<std::byte> buffer) noexcept {
-    BUFFER_TO_IOVS(buffer, iovs);
-    return read_file(file, iovs);
+result<size_t> io::write_file(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept {
+    TRY_GET_DEVICE(file);
+    return dev.write(file, iovs, offset);
 }
 
-result<size_t> io::write_file(file &file, std::span<const iovec> iovs, size_t offset) noexcept {
-    return file.device().write(file, iovs, offset);
-}
-
-result<size_t> io::write_file(file &file, std::span<const iovec> iovs) noexcept {
-    auto offset = file.offset();
-    try_var(written, write_file(file, iovs, offset));
-    file.offset(offset + written);
-    return ok(written);
-}
-result<size_t> io::write_file(file &file, std::span<const std::byte> buffer, size_t offset) noexcept {
+result<size_t> io::write_file(file &file, std::span<const std::byte> buffer, std::optional<size_t> offset) noexcept {
     BUFFER_TO_IOVS(buffer, iovs);
     return write_file(file, iovs, offset);
 }
 
-result<size_t> io::write_file(file &file, std::span<const std::byte> buffer) noexcept {
-    BUFFER_TO_IOVS(buffer, iovs);
-    return write_file(file, iovs);
-}
-
 result<size_t> io::control_file(file &file, control_code_t code, std::span<const std::byte> in_buffer,
                                 std::span<std::byte> out_buffer) noexcept {
-    return file.device().control(file, code, in_buffer, out_buffer);
+    TRY_GET_DEVICE(file);
+    return dev.control(file, code, in_buffer, out_buffer);
 }
 
 result<void> io::allocate_console() noexcept { return ok(); }
-
-file ::~file() {
-    if (!device_.empty()) {
-        (void)device_->close(*this);
-    }
-}

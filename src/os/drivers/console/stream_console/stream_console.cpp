@@ -15,18 +15,20 @@ result<void> stream_console_device::install(device &stream_device) noexcept {
 
 result<file> stream_console_device::open(std::string_view path, create_disposition create_disposition) noexcept {
     if (path.empty()) {
-        return ok(file(*this));
+        return ok(file(*this, access_mask::generic_all));
     }
     return err(error_code::invalid_path);
 }
 
 result<void> stream_console_device::close(file &file) noexcept { return ok(); }
 
-result<size_t> stream_console_device::read(file &file, std::span<const iovec> iovs, size_t /*offset*/) noexcept {
+result<size_t> stream_console_device::read(file &file, std::span<const iovec> iovs,
+                                           std::optional<size_t> /*offset*/) noexcept {
     return io::read_file(stream_file_, iovs);
 }
 
-result<size_t> stream_console_device::write(file &file, std::span<const iovec> iovs, size_t /*offset*/) noexcept {
+result<size_t> stream_console_device::write(file &file, std::span<const iovec> iovs,
+                                            std::optional<size_t> /*offset*/) noexcept {
     return io::write_file(stream_file_, iovs);
 }
 

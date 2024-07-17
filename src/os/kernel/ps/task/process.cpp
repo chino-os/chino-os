@@ -2,6 +2,7 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #include "process.h"
 #include "../sched/scheduler.h"
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <chino/os/kernel/io.h>
 

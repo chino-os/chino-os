@@ -45,7 +45,7 @@ int ke_init_system(void *pv_options) noexcept {
     initialize_ke_services().expect("Initialize Ke Services failed.");
 
     // 3. Launch shell
-    ps::create_process("/dev/fs0/chino/system/chino.shell.sh.exe").expect("Launch shell failed.");
+    ps::create_process("/bin/sh.exe").expect("Launch shell failed.");
     ke_idle_loop();
 }
 

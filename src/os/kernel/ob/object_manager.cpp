@@ -24,7 +24,15 @@ result<void> ob::insert_object(object &object, std::string_view full_path) noexc
     return root_directory_.insert(object, full_path.substr(1));
 }
 
-result<object_ptr<object>> ob::lookup_object_partial(std::string_view &remaining_path) noexcept {
+result<object_ptr<object>> ob::lookup_object(std::string_view fullpath) noexcept {
+    // 1. Should start with separator
+    if (fullpath.empty() || fullpath.front() != directory_separator)
+        return err(error_code::invalid_path);
+    return root_directory_.lookup(fullpath.substr(1));
+}
+
+result<std::pair<object_ptr<object>, std::string_view>>
+ob::lookup_object_partial(std::string_view remaining_path) noexcept {
     // 1. Should start with separator
     if (remaining_path.empty() || remaining_path.front() != directory_separator)
         return err(error_code::invalid_path);

@@ -20,8 +20,8 @@ class host_fs_device : public device {
     result<file> open(std::string_view path, create_disposition create_disposition) noexcept override;
     result<void> close(file &file) noexcept override;
 
-    result<size_t> read(file &file, std::span<const iovec> iovs, size_t offset) noexcept override;
-    result<size_t> write(file &file, std::span<const iovec> iovs, size_t offset) noexcept override;
+    result<size_t> read(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept override;
+    result<size_t> write(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept override;
     result<size_t> control(file &file, control_code_t code, std::span<const std::byte> in_buffer,
                            std::span<std::byte> out_buffer) noexcept override;
 

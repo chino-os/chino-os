@@ -23,20 +23,21 @@ result<void> directory::insert(object &object, std::string_view full_path) noexc
 }
 
 result<object_ptr<object>> directory::lookup(std::string_view full_path) noexcept {
-    try_var(object, insert_or_lookup(nullptr, full_path));
-    return full_path.empty() ? ok(std::move(object)) : err(error_code::not_found);
+    try_var(result, insert_or_lookup(nullptr, full_path));
+    return result.second.empty() ? ok(std::move(result.first)) : err(error_code::not_found);
 }
 
-result<object_ptr<object>> directory::lookup_partial(std::string_view &remaining_path) noexcept {
+result<std::pair<object_ptr<object>, std::string_view>>
+directory::lookup_partial(std::string_view remaining_path) noexcept {
     return insert_or_lookup(nullptr, remaining_path);
 }
 
-result<object_ptr<object>> directory::insert_or_lookup(object *insert_object,
-                                                       std::string_view &remaining_path) noexcept {
+result<std::pair<object_ptr<object>, std::string_view>>
+directory::insert_or_lookup(object *insert_object, std::string_view remaining_path) noexcept {
     // 1. Empty name
     if (remaining_path.empty()) {
         if (!insert_object)
-            return ok(this);
+            return ok(std::make_pair<object_ptr<object>, std::string_view>(this, {}));
         return err(error_code::invalid_path);
     }
 
@@ -53,7 +54,7 @@ result<object_ptr<object>> directory::insert_or_lookup(object *insert_object,
     // 4. Empty component name
     if (component_name.empty()) {
         if (remaining_path.empty() && !insert_object)
-            return ok(this);
+            return ok(std::make_pair<object_ptr<object>, std::string_view>(this, {}));
         return err(error_code::invalid_path);
     }
 
@@ -81,13 +82,15 @@ result<object_ptr<object>> directory::insert_or_lookup(object *insert_object,
                 if (find_result == error_code::not_found) {
                     insert_object->add_ref();
                     pivot ? items_.insert_before(pivot, insert_object) : items_.push_front(insert_object);
-                    return ok(insert_object);
+                    return ok(std::make_pair<object_ptr<object>, std::string_view>(insert_object, {}));
                 } else {
                     return err(find_result);
                 }
             } else {
                 // 5.1.1. lookup
-                return find_result == error_code::key_already_exists ? ok(pivot) : err(find_result);
+                return find_result == error_code::key_already_exists
+                           ? ok(std::make_pair<object_ptr<object>, std::string_view>(pivot, {}))
+                           : err(find_result);
             }
         } else {
             // 5.2. Save the component object
@@ -105,6 +108,7 @@ result<object_ptr<object>> directory::insert_or_lookup(object *insert_object,
         return sub_directory.unwrap()->insert_or_lookup(insert_object, remaining_path);
     } else {
         // 6.2. Return the component with remaining path
-        return insert_object ? err(error_code::not_supported) : ok(std::move(component));
+        return insert_object ? err(error_code::not_supported)
+                             : ok(std::make_pair(std::move(component), remaining_path));
     }
 }

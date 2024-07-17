@@ -32,7 +32,7 @@ endif()
 
 install(TARGETS chino.kernel
         COMPONENT chino.os
-        RUNTIME DESTINATION chino/system
-        LIBRARY DESTINATION chino/system
+        RUNTIME DESTINATION boot
+        LIBRARY DESTINATION boot
         )
         

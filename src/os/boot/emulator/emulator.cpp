@@ -18,7 +18,7 @@
 using namespace chino::os::hal;
 using namespace chino::os::kernel;
 
-#define SYSTEM_PATH "../chino/system/"
+#define SYSTEM_PATH ""
 #define KERNEL_FILENAME "chino.kernel"
 #define HAL_STARTUP_STR "hal_startup"
 

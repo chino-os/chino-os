@@ -127,14 +127,15 @@ result<void> host_console_device::install() noexcept {
 
 result<file> host_console_device::open(std::string_view path, create_disposition disposition) noexcept {
     if (path.empty()) {
-        return ok(file(*this));
+        return ok(file(*this, access_mask::generic_all));
     }
     return err(error_code::invalid_path);
 }
 
 result<void> host_console_device::close(file &file) noexcept { return ok(); }
 
-result<size_t> host_console_device::read(file &file, std::span<const iovec> iovs, size_t offset) noexcept {
+result<size_t> host_console_device::read(file &file, std::span<const iovec> iovs,
+                                         std::optional<size_t> /*offset*/) noexcept {
     size_t total_read = 0;
     for (auto iov : iovs) {
         DWORD read;
@@ -158,7 +159,8 @@ result<size_t> host_console_device::read(file &file, std::span<const iovec> iovs
     return ok(total_read);
 }
 
-result<size_t> host_console_device::write(file &file, std::span<const iovec> iovs, size_t offset) noexcept {
+result<size_t> host_console_device::write(file &file, std::span<const iovec> iovs,
+                                          std::optional<size_t> /*offset*/) noexcept {
     size_t total_written = 0;
     for (auto iov : iovs) {
         DWORD written;

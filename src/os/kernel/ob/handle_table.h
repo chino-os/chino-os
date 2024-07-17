@@ -2,15 +2,14 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
 #include <array>
+#include <chino/os/file.h>
 #include <chino/os/kernel/ps.h>
 #include <chino/os/object.h>
 #include <chino/os/objectapi.h>
+#include <unistd.h>
 
 namespace chino::os::kernel::ob {
-struct handle_entry {
-    object *object;
-    access_mask granted_access;
-};
+inline static int fd_base = STDERR_FILENO + 1;
 
 namespace detail {
 class handle_segment {
@@ -21,10 +20,19 @@ class handle_segment {
 
     union element {
         free_entry free;
-        handle_entry entry;
+        file entry;
+
+        constexpr element() noexcept : free{} {}
+        ~element() {
+            if (free.used) {
+                std::destroy_at(&entry);
+            }
+        }
     };
 
   public:
+    CHINO_NONCOPYABLE(handle_segment);
+
     static constexpr size_t elements_count = (hal::arch_t::min_page_size - 3 * sizeof(uintptr_t)) / sizeof(element);
 
     constexpr handle_segment() noexcept : next(nullptr), frees_(elements_count), free_head_(&elements_->free) {
@@ -33,10 +41,10 @@ class handle_segment {
         }
     }
 
-    result<std::pair<handle_entry *, size_t>> allocate() noexcept {
+    result<std::pair<file *, size_t>> allocate() noexcept {
         std::unique_lock<decltype(lock_)> lock(lock_);
         if (free_head_) {
-            auto item = reinterpret_cast<handle_entry *>(free_head_);
+            auto item = reinterpret_cast<file *>(free_head_);
             free_head_ = free_head_->next;
             frees_.fetch_sub(1, std::memory_order_acq_rel);
             return ok(std::make_pair(item, index(item)));
@@ -45,16 +53,16 @@ class handle_segment {
         }
     }
 
-    void free(handle_entry *handle) noexcept {
+    void free(file *handle) noexcept {
         std::unique_lock<decltype(lock_)> lock(lock_);
-        auto head = reinterpret_cast<free_entry *>(handle);
-        head->next = free_head_;
-        head->used = 0;
-        free_head_ = head;
+        auto head = reinterpret_cast<element *>(handle);
+        std::destroy_at(head);
+        head->free = {.next = free_head_, .used = 0};
+        free_head_ = &head->free;
         frees_.fetch_add(1, std::memory_order_acq_rel);
     }
 
-    result<handle_entry *> at(size_t index) noexcept {
+    result<file *> at(size_t index) noexcept {
         auto &element = elements_[index];
         if (!element.free.used)
             return err(error_code::invalid_argument);
@@ -62,7 +70,7 @@ class handle_segment {
     }
 
   private:
-    size_t index(handle_entry *handle) const noexcept { return handle - &elements_->entry; }
+    size_t index(file *handle) const noexcept { return handle - &elements_->entry; }
 
   public:
     handle_segment *next;
@@ -79,10 +87,12 @@ static_assert(sizeof(handle_segment) <= hal::arch_t::min_page_size);
 
 class handle_table {
   public:
+    CHINO_NONCOPYABLE(handle_table);
+
     constexpr handle_table() noexcept {}
 
-    result<std::pair<handle_entry *, int>> allocate() noexcept {
-        int fd = 0;
+    result<std::pair<file *, int>> allocate() noexcept {
+        int fd = fd_base;
         auto segement = &head_segment_;
         while (segement) {
             auto handle = segement->allocate();
@@ -103,13 +113,14 @@ class handle_table {
         return ok();
     }
 
-    result<handle_entry *> at(int fd) noexcept {
+    result<file *> at(int fd) noexcept {
         try_var(handle, at_with_segment(fd));
         return ok(handle.second);
     }
 
   private:
-    result<std::pair<detail::handle_segment *, handle_entry *>> at_with_segment(int fd) noexcept {
+    result<std::pair<detail::handle_segment *, file *>> at_with_segment(int fd) noexcept {
+        fd -= fd_base;
         auto segement = &head_segment_;
         while (fd >= detail::handle_segment::elements_count) {
             segement = segement->next;

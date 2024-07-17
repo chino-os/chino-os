@@ -11,12 +11,13 @@ class directory : public object {
   public:
     result<void> remove(object &object) noexcept;
 
-    result<void> insert(object &object, std::string_view full_path) noexcept;
-    result<object_ptr<object>> lookup(std::string_view full_path) noexcept;
-    result<object_ptr<object>> lookup_partial(std::string_view &remaining_path) noexcept;
+    result<void> insert(object &object, std::string_view fullpath) noexcept;
+    result<object_ptr<object>> lookup(std::string_view fullpath) noexcept;
+    result<std::pair<object_ptr<object>, std::string_view>> lookup_partial(std::string_view remaining_path) noexcept;
 
   private:
-    result<object_ptr<object>> insert_or_lookup(object *insert_object, std::string_view &remaining_path) noexcept;
+    result<std::pair<object_ptr<object>, std::string_view>> insert_or_lookup(object *insert_object,
+                                                                             std::string_view remaining_path) noexcept;
 
   private:
     intrusive_list<object, &object::directory_list_node> items_;

@@ -7,12 +7,16 @@
 #include <chino/os/kernel/ps.h>
 
 namespace chino::os::kernel::ps {
+class process;
+
 class scheduler {
     using scheduler_list_t = intrusive_list<thread, &thread::scheduler_list_node>;
 
   public:
     static scheduler &current() noexcept;
     static thread &current_thread() noexcept;
+    static process &current_process() noexcept { return current_thread().process(); }
+
     static void unblock_thread(thread &thread, irq_spin_lock &lock, hal::arch_irq_state_t irq_state) noexcept;
 
     constexpr scheduler() noexcept : max_ready_priority_(thread_priority::idle), current_time_(0) {}

@@ -6,6 +6,9 @@
 
 namespace chino::os::kernel {
 struct i_ke_services {
+    virtual int errno_() noexcept = 0;
+    virtual int open(const char *pathname, int flags, mode_t mode) noexcept = 0;
+    virtual int close(int fd) noexcept = 0;
     virtual ssize_t read(int __fd, void *__buf, size_t __nbyte) noexcept = 0;
     virtual ssize_t write(int __fd, const void *__buf, size_t __nbyte) noexcept = 0;
 };

@@ -44,13 +44,13 @@ class object {
     /** @brief Get the kind of the object */
     virtual const object_kind &runtime_kind() const noexcept = 0;
 
+    /** @brief Is the object an instance of specific kind */
+    virtual bool is_a(const object_kind &kind) const noexcept;
+
     virtual std::string_view name() const noexcept { return {}; }
 
   protected:
     template <class T> friend class object_ptr;
-
-    /** @brief Is the object an instance of specific kind */
-    virtual bool is_a(const object_kind &kind) const noexcept;
 
   public:
     intrusive_list_node directory_list_node;
