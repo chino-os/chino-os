@@ -10,3 +10,6 @@
 [submodule "src/shell/sh"]
 	path = src/shell/sh
 	url = https://github.com/chino-os/nr_micro_shell.git
+[submodule "src/shell/micropython"]
+	path = src/shell/micropython
+	url = https://github.com/chino-os/micropython.git

@@ -18,6 +18,9 @@
 #define _CRT_END_C_HEADER                                                                                              \
     }                                                                                                                  \
     __pragma(pack(pop))
+#else
+#define _CRT_BEGIN_C_HEADER __pragma(pack(push, _CRT_PACKING))
+#define _CRT_END_C_HEADER __pragma(pack(pop))
 #endif
 
 #ifndef _VCRTIMP
