@@ -19,7 +19,6 @@ extern "C" {
 void emulator_restore_irq(arch_irq_state_t irq_state) noexcept { emulator_arch::restore_irq(irq_state); }
 
 [[noreturn]] extern void emulator_start_schedule() noexcept;
-[[noreturn]] extern void emulator_yield_context() noexcept;
 }
 
 namespace {
@@ -62,18 +61,26 @@ std::chrono::milliseconds emulator_arch::current_cpu_time() noexcept {
     return std::chrono::milliseconds(GetTickCount64());
 }
 
-void emulator_arch::yield_cpu() noexcept { YieldProcessor(); }
-
-void emulator_arch::yield_context(ps::thread &old_thread, ps::thread &new_thread, bool scheduled) noexcept {
-    __asm {
-        jmp emulator_yield_context
-    }
+void emulator_arch::initialize_thread_stack(uintptr_t *&stack_top, kernel::ps::thread_main_thunk_t thunk,
+                                            thread_start_t entrypoint, void *entry_arg) noexcept {
+    *--stack_top = 0;                     // Avoid unwind
+    *--stack_top = (uintptr_t)thunk;      // return address: thunk
+    stack_top -= 11;                      // r15-r8, rdi, rsi, rbp = 0
+    *--stack_top = (uintptr_t)entry_arg;  // rdx = entry_arg
+    *--stack_top = (uintptr_t)entrypoint; // rcx = entrypoint
+    stack_top -= 2;                       // rbx, rax = 0
 }
+
+void emulator_arch::yield_cpu() noexcept { YieldProcessor(); }
 
 void emulator_arch::start_schedule(ps::thread &thread) noexcept {
     __asm {
         jmp emulator_start_schedule
     }
+}
+
+void emulator_arch::syscall(kernel::syscall_number number, void *arg) noexcept {
+    emulator::current_cpu().syscall(number, arg);
 }
 
 void emulator_arch::enable_irq() noexcept { restore_irq(1); }

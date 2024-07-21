@@ -25,10 +25,10 @@ class scheduler {
     void lock() noexcept;
     void unlock() noexcept;
 
+    void switch_task() noexcept;
+
     void attach_thread(thread &thread) noexcept;
     void detach_thread(thread &thread) noexcept;
-    void yield() noexcept;
-    void yield_if_needed() noexcept;
 
     void block_current_thread(waitable_object &waiting_object, std::optional<std::chrono::milliseconds> timeout,
                               irq_spin_lock &lock, hal::arch_irq_state_t irq_state) noexcept;

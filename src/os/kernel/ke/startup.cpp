@@ -15,6 +15,10 @@ alignas(hal::cacheline_size) static std::array<uintptr_t, 128 * 1024> init_stack
 static constinit ps::process ke_process_;
 static constinit static_object<ps::thread> init_thread_;
 
+alignas(hal::cacheline_size) static std::array<uintptr_t, 128 * 1024 * 2> sh_stack_;
+static constinit ps::process sh_process_;
+static constinit static_object<ps::thread> sh_thread_;
+
 [[noreturn]] static int ke_init_system(void *arg) noexcept;
 [[noreturn]] static void ke_idle_loop() noexcept;
 
@@ -27,7 +31,7 @@ void ke_startup(const boot_options &options) noexcept {
 
     // 2. Setup init thread
     init_thread_.construct(ps::thread_create_options{.process = &ke_process_,
-                                                     .priority = thread_priority::highest,
+                                                     .priority = thread_priority::idle,
                                                      .not_owned_stack = true,
                                                      .stack = init_stack_,
                                                      .entry_point = ke_init_system,
@@ -45,7 +49,9 @@ int ke_init_system(void *pv_options) noexcept {
     initialize_ke_services().expect("Initialize Ke Services failed.");
 
     // 3. Launch shell
-    ps::create_process("/bin/sh.exe").expect("Launch shell failed.");
+    ps::thread_create_options sh_create_options{
+        .process = &sh_process_, .priority = thread_priority::normal, .not_owned_stack = true, .stack = sh_stack_};
+    ps::create_process("/bin/sh.exe", sh_thread_, sh_create_options).expect("Launch shell failed.");
     ke_idle_loop();
 }
 

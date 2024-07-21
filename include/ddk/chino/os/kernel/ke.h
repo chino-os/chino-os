@@ -1,6 +1,7 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
+#include "kernel_types.h"
 #include "ps.h"
 #include <cstddef>
 #include <cstdint>
@@ -44,5 +45,6 @@ ps::process &ke_process() noexcept;
 
 extern "C" {
 [[noreturn]] void ke_startup(const chino::os::kernel::boot_options &options) noexcept;
-void ke_handle_irq(chino::os::hal::arch_irq_number_t irq_number) noexcept;
+void ke_handle_irq(chino::os::hal::arch_irq_number_t irq_number, chino::os::kernel::syscall_number number,
+                   void *arg) noexcept;
 }

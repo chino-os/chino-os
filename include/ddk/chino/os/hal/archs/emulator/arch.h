@@ -19,6 +19,7 @@ using arch_irq_state_t = uint32_t;
 
 enum class emulator_irq_number {
     system_tick,
+    syscall,
 };
 
 using arch_irq_number_t = emulator_irq_number;
@@ -32,11 +33,12 @@ class emulator_arch {
     static constexpr size_t current_cpu_id() noexcept { return 0; }
     static std::chrono::milliseconds current_cpu_time() noexcept;
 
-    static void initialize_thread_stack(uintptr_t *&stack_top) noexcept {}
+    static void initialize_thread_stack(uintptr_t *&stack_top, kernel::ps::thread_main_thunk_t thunk,
+                                        thread_start_t entrypoint, void *entry_arg) noexcept;
 
     static void yield_cpu() noexcept;
-    static void yield_context(kernel::ps::thread &old_thread, kernel::ps::thread &new_thread, bool scheduled) noexcept;
     [[noreturn]] static void start_schedule(kernel::ps::thread &thread) noexcept;
+    static void syscall(kernel::syscall_number number, void *arg) noexcept;
 
     static void enable_irq() noexcept;
     static arch_irq_state_t disable_irq() noexcept;

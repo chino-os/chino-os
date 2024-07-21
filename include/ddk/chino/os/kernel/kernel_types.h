@@ -3,7 +3,13 @@
 #pragma once
 #include <chino/os/processapi.h>
 
-namespace chino::os::kernel::ps {
+namespace chino::os::kernel {
+enum class syscall_number {
+    yield,
+};
+
+namespace ps {
 class thread;
 typedef void (*thread_main_thunk_t)(thread_start_t entry_point, void *entry_arg);
-} // namespace chino::os::kernel::ps
+} // namespace ps
+} // namespace chino::os::kernel

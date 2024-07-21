@@ -11,6 +11,17 @@
 #include <optional>
 
 namespace chino::os::kernel::ps {
+class process;
+
+struct thread_create_options {
+    ps::process *process;
+    thread_priority priority = thread_priority::normal;
+    bool not_owned_stack = false;
+    std::span<uintptr_t> stack;
+    thread_start_t entry_point;
+    void *entry_arg = nullptr;
+};
+
 inline constexpr auto system_tick_interval = std::chrono::milliseconds(1000);
 
 struct current_schedule_lock {
@@ -86,7 +97,10 @@ class mutex final : public waitable_object {
     std::atomic<uint32_t> held_;
 };
 
+result<void> create_process(std::string_view filepath, static_object<thread> &thread,
+                            thread_create_options &options) noexcept;
 result<void> create_process(std::string_view filepath) noexcept;
+;
 } // namespace chino::os::kernel::ps
 
 namespace std {
@@ -116,3 +130,8 @@ template <> class unique_lock<chino::os::kernel::ps::mutex> {
     chino::os::kernel::ps::mutex &lock_;
 };
 } // namespace std
+
+extern "C" {
+void ps_switch_task() noexcept;
+void ps_yield() noexcept;
+}

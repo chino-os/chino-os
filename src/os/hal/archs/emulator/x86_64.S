@@ -2,7 +2,6 @@
 # Licensed under the Apache license. See LICENSE file in the project root for full license information.
 
 .global emulator_start_schedule
-.global emulator_yield_context
 .global emulator_dispatch_irq
 
 .extern emulator_restore_irq
@@ -14,95 +13,83 @@ STACK_BOTTOM_OFFSET = 0x28
 .text
 .align 16
 
-# rsp + 16 = entry_arg
-# rsp + 8 = entry_point
-# rsp + 0 = thread_main_thunk
-# rcx = thread
+# rcx = new_thread
+# after restore:
+#   rcx = thread_main_thunk
+#   rdx = entry_point
+#   r8  = entry_arg
 emulator_start_schedule:
     mov     STACK_TOP_OFFSET(%rcx),     %rsp
+
     # set stack limit
-    mov     %gs:0x30,   %rax     # TIB
-    mov     STACK_TOP_OFFSET(%rcx),     %rdx     # StackBase
-    mov     %rdx,       8(%rax)
-    mov     STACK_BOTTOM_OFFSET(%rcx),  %rdx     # StackLimit
+    mov     %gs:0x30,   %rax                        # TIB
+    mov     %rsp,       8(%rax)                     # StackBase
+    mov     STACK_BOTTOM_OFFSET(%rcx),  %rdx        # StackLimit
     mov     %rdx,       16(%rax)
-    mov     $1,     %rcx
-    call    emulator_restore_irq # enable irq
-    pop     %rax
+
+    mov     $1,         %rcx
+    call    emulator_restore_irq        # enable irq
+
+    # restore context
+    addq    $8*2,       %rsp            # skip rax, rbx
     pop     %rcx
     pop     %rdx
+    addq    $8*11,      %rsp            # skip rbp, rsi, rdi, r8-r15
+    pop     %rax
     jmp     *%rax
     
-# rcx = old_thread
-# rdx = new_thread
-# r8 = scheduled
-emulator_yield_context:
-    # 1. save non-volatile regs
-    lea     _emulator_yield_context_return(%rip),   %rax # save return address
-    push    %rax
-    push    %rbx
-    push    %rbp
-    push    %rsi
-    push    %rdi
-    push    %r12
-    push    %r13
-    push    %r14
-    push    %r15
-    push    $1                              # mark yield-style restore
-    mov     %rsp,   STACK_TOP_OFFSET(%rcx)  # store stack_top
-
-    # 2. restore
-    mov     STACK_TOP_OFFSET(%rdx),   %rsp
-    # 2.1. restore unscheduled
-    test    %r8,    %r8
-    jz      emulator_start_schedule
-
-    # 2.2. restore scheduled
-    pop     %rax            # pop mark
-    test    %rax,   %rax
-    jz      _emulator_non_yield_restore_context
-    # 2.2.1. restore yield-like
-    pop     %r15
-    pop     %r14
-    pop     %r13
-    pop     %r12
-    pop     %rdi
-    pop     %rsi
-    pop     %rbp
-    pop     %rbx
-    pop     %rax            # load return address
-    jmp     *%rax
-    
-    # 2.2.2. restore non-yield-like
-_emulator_non_yield_restore_context:
-    jmp     .
-
-_emulator_yield_context_return:
-    ret
-    
-# rsp + 8 = old rip
-# rsp + 0 = irq_number
 emulator_dispatch_irq:
-    # save volatile regs
-    push    %rax
-    push    %rcx
-    push    %rdx
-    push    %r8
-    push    %r9
-    push    %r10
+    # 1. save context
+    xchg    %r15,       -8*2(%rsp)      # syscall.arg
+    xchg    %r14,       -8*1(%rsp)      # syscall.number
+    xchg    %r13,       -8*0(%rsp)      # irq number
+    push    %r12
     push    %r11
+    push    %r10
+    push    %r9
+    push    %r8
+    push    %rdi
+    push    %rsi
+    push    %rbp
+    push    %rdx
+    push    %rcx
+    push    %rbx
+    push    %rax
 
-    mov     7*8(%rsp), %rcx
+    lea     chino_current_threads(%rip),    %rax
+    mov     (%rax),     %rax
+    mov     %rsp,       STACK_TOP_OFFSET(%rax)      # store stack_top
+
+    # 2. call handler
+    mov     %r13,       %rcx
+    mov     %r14,       %rdx
+    mov     %r15,       %r8
     call    ke_handle_irq
 
-    # restore volatile regs
-    pop     %r11
-    pop     %r10
-    pop     %r9
-    pop     %r8
-    pop     %rdx
-    pop     %rcx
-    pop     %rax
+    # 3. restore context
+    lea     chino_current_threads(%rip),    %rax
+    mov     (%rax),     %rax
+    mov     STACK_TOP_OFFSET(%rax),         %rsp    # load stack_top
 
-    addq    $8, %rsp
+    # set stack limit
+    mov     %gs:0x30,   %rbx                        # TIB
+    mov     %rsp,       8(%rbx)                     # StackBase
+    mov     STACK_BOTTOM_OFFSET(%rax),      %rdx    # StackLimit
+    mov     %rdx,       16(%rbx)
+
+    pop     %rax
+    pop     %rbx
+    pop     %rcx
+    pop     %rdx
+    pop     %rbp
+    pop     %rsi
+    pop     %rdi
+    pop     %r8
+    pop     %r9
+    pop     %r10
+    pop     %r11
+    pop     %r12
+    pop     %r13
+    pop     %r14
+    pop     %r15
     ret

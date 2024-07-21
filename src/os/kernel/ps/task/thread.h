@@ -20,15 +20,6 @@ struct thread_flags {
     uint32_t scheduled : 1;
 };
 
-struct thread_create_options {
-    ps::process *process;
-    thread_priority priority = thread_priority::normal;
-    bool not_owned_stack = false;
-    std::span<uintptr_t> stack;
-    thread_start_t entry_point;
-    void *entry_arg = nullptr;
-};
-
 class thread : public object {
     CHINO_DEFINE_KERNEL_OBJECT_KIND(object, object_kind_thread);
 

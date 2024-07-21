@@ -13,6 +13,11 @@ inline static constexpr UINT WM_ARCH_IRQ = WM_USER + 1;
 } // namespace
 
 extern "C" {
+struct syscall_payload {
+    syscall_number number;
+    void *arg;
+};
+
 [[noreturn]] extern void emulator_dispatch_irq(arch_irq_number_t irq_number) noexcept;
 }
 
@@ -91,7 +96,7 @@ LRESULT CALLBACK emulator_cpu::window_proc_thunk(HWND hwnd, UINT uMsg, WPARAM wP
 
 LRESULT emulator_cpu::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     if (uMsg == WM_ARCH_IRQ) {
-        process_irq((arch_irq_number_t)wParam);
+        process_irq((arch_irq_number_t)wParam, lParam);
         return 0;
     }
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
@@ -101,7 +106,12 @@ void emulator_cpu::send_irq(arch_irq_number_t irq_number) {
     PostMessage(event_window_, WM_ARCH_IRQ, (WPARAM)irq_number, NULL);
 }
 
-void emulator_cpu::process_irq(arch_irq_number_t irq_number) {
+void emulator_cpu::syscall(syscall_number number, void *arg) noexcept {
+    syscall_payload payload{.number = number, .arg = arg};
+    SendMessage(event_window_, WM_ARCH_IRQ, (WPARAM)arch_irq_number_t::syscall, (LPARAM)&payload);
+}
+
+void emulator_cpu::process_irq(arch_irq_number_t irq_number, LPARAM lParam) {
     EnterCriticalSection(&irq_lock_);
     while (!irq_state_.load()) {
         SleepConditionVariableCS(&irq_state_cs_, &irq_lock_, INFINITE);
@@ -113,7 +123,16 @@ void emulator_cpu::process_irq(arch_irq_number_t irq_number) {
         GetThreadContext(cpu_thread_, &context);
         auto &rsp = (uintptr_t *&)context.Rsp;
         *--rsp = context.Rip;
-        *--rsp = (uint32_t)irq_number;
+
+        if (irq_number == arch_irq_number_t::syscall) {
+            auto *payload = reinterpret_cast<syscall_payload *>(lParam);
+            *--rsp = (uintptr_t)payload->arg;
+            *--rsp = (uintptr_t)payload->number;
+        } else {
+            rsp -= 2; // Skip
+        }
+
+        *--rsp = (uintptr_t)irq_number;
         context.Rip = (uintptr_t)emulator_dispatch_irq;
         SetThreadContext(cpu_thread_, &context);
         ResumeThread(cpu_thread_);

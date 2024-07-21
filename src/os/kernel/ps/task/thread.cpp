@@ -13,22 +13,20 @@ thread::thread(const thread_create_options &create_options) noexcept
       flags_{.not_owned_stack = create_options.not_owned_stack, .priority = (uint32_t)create_options.priority},
       process_(create_options.process) {
     process_->attach_thread(*this);
+    scheduler::current().attach_thread(*this);
 }
 
 void thread::thread_main_thunk(thread_start_t entry_point, void *entry_arg) noexcept {
     auto &this_thread = scheduler::current_thread();
     entry_point(entry_arg);
     scheduler::current().detach_thread(this_thread);
-    scheduler::current().yield();
+    ps_yield();
     CHINO_UNREACHABLE();
 }
 
 uintptr_t *thread::initialize_thread_stack(const thread_create_options &create_options) noexcept {
     auto stack_top = create_options.stack.data() + create_options.stack.size();
-    *--stack_top = 0; // Avoid unwind
-    *--stack_top = (uintptr_t)create_options.entry_arg;
-    *--stack_top = (uintptr_t)create_options.entry_point;
-    *--stack_top = (uintptr_t)thread_main_thunk;
-    hal::arch_t::initialize_thread_stack(stack_top);
+    hal::arch_t::initialize_thread_stack(stack_top, thread_main_thunk, create_options.entry_point,
+                                         create_options.entry_arg);
     return stack_top;
 }

@@ -21,6 +21,10 @@ extern "C" {
 std::array<std::atomic<thread *>, hal::chip_t::cpus_count> chino_current_threads;
 }
 
+void ps_switch_task() noexcept { scheduler::current().switch_task(); }
+
+void ps_yield() noexcept { hal::arch_t::syscall(syscall_number::yield, nullptr); }
+
 scheduler &scheduler::current() noexcept { return schedulers_[hal::arch_t::current_cpu_id()]; }
 thread &scheduler::current_thread() noexcept {
     return *chino_current_threads[hal::arch_t::current_cpu_id()].load(std::memory_order_acquire);
@@ -49,6 +53,7 @@ void scheduler::attach_thread(thread &thread) noexcept {
     list_of(thread).push_back(&thread);
     update_max_ready_priority(thread.priority());
     thread.scheduler(this);
+    thread.status(thread_status::ready);
 }
 
 void scheduler::detach_thread(thread &thread) noexcept {
@@ -63,38 +68,28 @@ void scheduler::detach_thread(thread &thread) noexcept {
     thread.dec_ref();
 }
 
-void scheduler::yield() noexcept {
+void scheduler::switch_task() noexcept {
     current_irq_lock irq_lock;
     auto &cnt_thread = current_thread();
     auto &next_thread = select_next_thread();
     if (&next_thread != &cnt_thread) {
         set_current_thread(next_thread);
-        hal::arch_t::yield_context(cnt_thread, next_thread, next_thread.set_scheduled());
-    }
-}
-
-void scheduler::yield_if_needed() noexcept {
-    current_irq_lock irq_lock;
-    auto &cnt_thread = current_thread();
-    auto cnt_priority = (uint32_t)cnt_thread.priority();
-    auto search_priority = (uint32_t)max_ready_priority_;
-    if (search_priority > cnt_priority || cnt_thread.status() != thread_status::running) {
-        yield();
     }
 }
 
 void scheduler::start_schedule(thread &first_thread) noexcept {
-    attach_thread(first_thread);
     chino_current_threads[hal::arch_t::current_cpu_id()] = &first_thread;
     first_thread.status(thread_status::running);
     first_thread.set_scheduled();
-    //setup_next_system_tick();
+    setup_next_system_tick();
     hal::arch_t::start_schedule(first_thread);
 }
 
 void scheduler::on_system_tick() noexcept {
     current_time_ = hal::arch_t::current_cpu_time();
     setup_next_system_tick();
+    wakeup_delayed_threads();
+    switch_task();
 }
 
 void scheduler::block_current_thread(waitable_object &waiting_object, std::optional<std::chrono::milliseconds> timeout,
@@ -113,7 +108,7 @@ void scheduler::block_current_thread(waitable_object &waiting_object, std::optio
     }
     // 3. Yield
     lock.unlock(irq_state);
-    yield();
+    ps_yield();
 }
 
 void scheduler::unblock_local_thread(thread &thread, irq_spin_lock &lock, hal::arch_irq_state_t irq_state) noexcept {
@@ -123,7 +118,7 @@ void scheduler::unblock_local_thread(thread &thread, irq_spin_lock &lock, hal::a
     list_of(thread).push_back(&thread);
     update_max_ready_priority(thread.priority());
     lock.unlock(irq_state);
-    yield_if_needed();
+    ps_yield();
 }
 
 void scheduler::delay_current_thread(std::chrono::milliseconds timeout) noexcept {}
