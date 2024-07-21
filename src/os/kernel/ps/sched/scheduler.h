@@ -50,6 +50,7 @@ class scheduler {
     void wakeup_delayed_threads() noexcept;
 
   private:
+    std::atomic<uint32_t> started_;
     std::atomic<uint32_t> lock_depth_;
     thread_priority max_ready_priority_;
 

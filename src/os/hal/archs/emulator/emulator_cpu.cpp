@@ -19,6 +19,8 @@ struct syscall_payload {
 };
 
 [[noreturn]] extern void emulator_dispatch_irq(arch_irq_number_t irq_number) noexcept;
+
+static syscall_payload syscall_payload_;
 }
 
 void emulator_cpu::register_message_queue() {
@@ -107,8 +109,8 @@ void emulator_cpu::send_irq(arch_irq_number_t irq_number) {
 }
 
 void emulator_cpu::syscall(syscall_number number, void *arg) noexcept {
-    syscall_payload payload{.number = number, .arg = arg};
-    SendMessage(event_window_, WM_ARCH_IRQ, (WPARAM)arch_irq_number_t::syscall, (LPARAM)&payload);
+    syscall_payload_ = {.number = number, .arg = arg};
+    PostMessage(event_window_, WM_ARCH_IRQ, (WPARAM)arch_irq_number_t::syscall, (LPARAM)&syscall_payload_);
 }
 
 void emulator_cpu::process_irq(arch_irq_number_t irq_number, LPARAM lParam) {

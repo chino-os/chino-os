@@ -54,6 +54,10 @@ void scheduler::attach_thread(thread &thread) noexcept {
     update_max_ready_priority(thread.priority());
     thread.scheduler(this);
     thread.status(thread_status::ready);
+
+    if (started_.load(std::memory_order_acquire)) {
+        ps_yield();
+    }
 }
 
 void scheduler::detach_thread(thread &thread) noexcept {
@@ -82,6 +86,7 @@ void scheduler::start_schedule(thread &first_thread) noexcept {
     first_thread.status(thread_status::running);
     first_thread.set_scheduled();
     setup_next_system_tick();
+    started_.store(1, std::memory_order_release);
     hal::arch_t::start_schedule(first_thread);
 }
 
