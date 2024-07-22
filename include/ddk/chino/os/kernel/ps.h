@@ -97,6 +97,28 @@ class mutex final : public waitable_object {
     std::atomic<uint32_t> held_;
 };
 
+class event final : public waitable_object {
+    CHINO_DEFINE_KERNEL_OBJECT_KIND(waitable_object, object_kind_event);
+
+  public:
+    result<void> try_wait() noexcept override;
+    result<void> wait(std::optional<std::chrono::milliseconds> timeout = std::nullopt) noexcept override;
+    void notify_all() noexcept;
+    void reset() noexcept;
+
+  private:
+    std::atomic<uint32_t> signal_;
+};
+
+class condition_variable {
+  public:
+    result<void> wait(mutex &mutex, std::optional<std::chrono::milliseconds> timeout = std::nullopt) noexcept;
+    result<void> notify() noexcept;
+
+  private:
+    event event_;
+};
+
 result<void> create_process(std::string_view filepath, static_object<thread> &thread,
                             thread_create_options &options) noexcept;
 result<void> create_process(std::string_view filepath) noexcept;

@@ -51,6 +51,21 @@ void waitable_object::notify_one() noexcept {
     }
 }
 
+void waitable_object::notify_all() noexcept {
+    auto &list = waiting_list(waiting_threads_);
+    while (true) {
+        auto irq_state = syncroot_.lock();
+        auto pivot = list.front();
+        if (pivot) {
+            list.remove(pivot);
+            scheduler::unblock_thread(*pivot, syncroot_, irq_state);
+        } else {
+            syncroot_.unlock(irq_state);
+            break;
+        }
+    }
+}
+
 result<void> mutex::try_wait() noexcept {
     uint32_t held = 0;
     return held_.compare_exchange_strong(held, 1, std::memory_order_acq_rel) ? ok() : err(error_code::unavailable);
@@ -79,3 +94,46 @@ void mutex::release() noexcept {
         notify_one();
     }
 }
+
+result<void> event::try_wait() noexcept {
+    return signal_.load(std::memory_order_acquire) ? ok() : err(error_code::unavailable);
+}
+
+result<void> event::wait(std::optional<std::chrono::milliseconds> timeout) noexcept {
+    if (try_wait().is_ok()) {
+        // 1. Fast path
+        return ok();
+    } else {
+        // 2. Slow path
+        auto irq_state = syncroot().lock();
+        if (try_wait().is_ok()) {
+            syncroot().unlock(irq_state);
+            return ok();
+        } else {
+            blocking_wait(timeout, irq_state);
+            return try_wait().is_ok() ? ok() : err(error_code::timeout);
+        }
+    }
+}
+
+void event::notify_all() noexcept {
+    signal_.store(1, std::memory_order_release);
+    waitable_object::notify_all();
+}
+
+void event::reset() noexcept { signal_.store(0, std::memory_order_release); }
+
+result<void> condition_variable::wait(mutex &mutex, std::optional<std::chrono::milliseconds> timeout) noexcept {
+    if (event_.try_wait().is_ok()) {
+        // 1. Fast path
+        return ok();
+    } else {
+        // 2. Slow path
+        mutex.release();
+        auto result = event_.wait(timeout);
+        try_(mutex.wait());
+        return result;
+    }
+}
+
+result<void> condition_variable::notify() noexcept { return ok(); }

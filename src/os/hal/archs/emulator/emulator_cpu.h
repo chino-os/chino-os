@@ -23,13 +23,13 @@ class emulator_cpu {
 
     void enable_system_tick(std::chrono::milliseconds ticks);
     void syscall(kernel::syscall_number number, void *arg) noexcept;
+    void send_irq(arch_irq_number_t irq_number);
 
   private:
     static DWORD WINAPI cpu_entry_thunk([[maybe_unused]] LPVOID pcpu);
     static LRESULT CALLBACK window_proc_thunk(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
     LRESULT window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-    void send_irq(arch_irq_number_t irq_number);
     void process_irq(arch_irq_number_t irq_number, LPARAM lParam);
 
     void cpu_entry();

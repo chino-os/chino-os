@@ -2,6 +2,7 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #include "host_console.h"
 #include <chino/os/kernel/io.h>
+#include <chino/os/kernel/ps.h>
 
 using namespace chino;
 using namespace chino::os;
@@ -9,102 +10,15 @@ using namespace chino::os::kernel;
 using namespace chino::os::drivers;
 
 namespace {
-HRESULT PrepareStartupInformation(HPCON hpc, STARTUPINFOEXA *psi) {
-    // Prepare Startup Information structure
-    STARTUPINFOEXA si;
-    ZeroMemory(&si, sizeof(si));
-    si.StartupInfo.cb = sizeof(STARTUPINFOEXA);
+constinit ps::event stdin_avail_event_;
+std::array<INPUT_RECORD, 256> stdin_records_;
 
-    // Discover the size required for the list
-    size_t bytesRequired;
-    InitializeProcThreadAttributeList(NULL, 1, 0, &bytesRequired);
-
-    // Allocate memory to represent the list
-    si.lpAttributeList = (PPROC_THREAD_ATTRIBUTE_LIST)HeapAlloc(GetProcessHeap(), 0, bytesRequired);
-    if (!si.lpAttributeList) {
-        return E_OUTOFMEMORY;
-    }
-
-    // Initialize the list memory location
-    if (!InitializeProcThreadAttributeList(si.lpAttributeList, 1, 0, &bytesRequired)) {
-        HeapFree(GetProcessHeap(), 0, si.lpAttributeList);
-        return HRESULT_FROM_WIN32(GetLastError());
-    }
-
-    // Set the pseudoconsole information into the list
-    if (!UpdateProcThreadAttribute(si.lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE, hpc, sizeof(hpc), NULL,
-                                   NULL)) {
-        HeapFree(GetProcessHeap(), 0, si.lpAttributeList);
-        return HRESULT_FROM_WIN32(GetLastError());
-    }
-
-    *psi = si;
-
-    return S_OK;
+void CALLBACK handle_ready_callback(_In_ PVOID lpParameter, _In_ BOOLEAN TimerOrWaitFired) {
+    hal::arch_t::send_irq(hal::arch_irq_number_t::host_console_stdin);
 }
 } // namespace
 
-HRESULT host_console_device::SetUpPseudoConsole(COORD size) noexcept {
-    HRESULT hr = S_OK;
-
-    // Create communication channels
-
-    // - Close these after CreateProcess of child application with pseudoconsole object.
-    HANDLE inputReadSide, outputWriteSide;
-
-    // - Hold onto these and use them for communication with the child through the pseudoconsole.
-    HANDLE outputReadSide, inputWriteSide;
-
-    if (!CreatePipe(&inputReadSide, &inputWriteSide, NULL, 0)) {
-        return HRESULT_FROM_WIN32(GetLastError());
-    }
-
-    if (!CreatePipe(&outputReadSide, &outputWriteSide, NULL, 0)) {
-        return HRESULT_FROM_WIN32(GetLastError());
-    }
-
-    HPCON hPC;
-    hr = CreatePseudoConsole(size, inputReadSide, outputWriteSide, 0, &hPC);
-    if (FAILED(hr)) {
-        return hr;
-    }
-
-    STARTUPINFOEXA siEx;
-    hr = PrepareStartupInformation(hPC, &siEx);
-    if (FAILED(hr)) {
-        return hr;
-    }
-
-    PCSTR childApplication = "C:\\windows\\system32\\cmd.exe";
-
-    // Create mutable text string for CreateProcessW command line string.
-    const size_t charsRequired = strlen(childApplication) + 1; // +1 null terminator
-    PSTR cmdLineMutable = (PSTR)HeapAlloc(GetProcessHeap(), 0, sizeof(char) * charsRequired);
-
-    if (!cmdLineMutable) {
-        return E_OUTOFMEMORY;
-    }
-
-    strcpy(cmdLineMutable, childApplication);
-
-    PROCESS_INFORMATION pi;
-    ZeroMemory(&pi, sizeof(pi));
-
-    // Call CreateProcess
-    if (!CreateProcessA(NULL, cmdLineMutable, NULL, NULL, FALSE, EXTENDED_STARTUPINFO_PRESENT, NULL, NULL,
-                        &siEx.StartupInfo, &pi)) {
-        HeapFree(GetProcessHeap(), 0, cmdLineMutable);
-        return HRESULT_FROM_WIN32(GetLastError());
-    }
-
-    stdin_ = inputReadSide;
-    stdout_ = outputReadSide;
-    return S_OK;
-}
-
 result<void> host_console_device::install() noexcept {
-    // AllocConsole();
-    // SetUpPseudoConsole({.X = 320, .Y = 320});
     AllocConsole();
     SetConsoleTitle(L"Chino Terminal");
     stdin_ = GetStdHandle(STD_INPUT_HANDLE);
@@ -136,6 +50,48 @@ result<void> host_console_device::close(file &file) noexcept { return ok(); }
 
 result<size_t> host_console_device::read(file &file, std::span<const iovec> iovs,
                                          std::optional<size_t> /*offset*/) noexcept {
+#if 1
+    size_t total_read = 0;
+    for (auto iov : iovs) {
+        DWORD to_read = iov.iov_len;
+        char *iov_base = reinterpret_cast<char *>(iov.iov_base);
+        while (true) {
+            DWORD unread_events;
+            GetNumberOfConsoleInputEvents(stdin_, &unread_events);
+            if (!unread_events) {
+                if (!total_read) {
+                    HANDLE wait_handle;
+                    if (!RegisterWaitForSingleObject(&wait_handle, stdin_, handle_ready_callback, nullptr, INFINITE,
+                                                     WT_EXECUTEONLYONCE)) {
+                        return err(error_code::io_error);
+                    }
+                    try_(stdin_avail_event_.wait());
+                } else {
+                    return ok(total_read);
+                }
+            } else {
+                DWORD events_read = std::min({unread_events, to_read, (DWORD)stdin_records_.size()});
+                if (!ReadConsoleInputA(stdin_, stdin_records_.data(), events_read, &events_read)) {
+                    return err(error_code::io_error);
+                }
+                for (size_t i = 0; i < events_read; i++) {
+                    auto &record = stdin_records_[i];
+                    switch (record.EventType) {
+                    case KEY_EVENT: {
+                        auto &k_record = reinterpret_cast<KEY_EVENT_RECORD &>(record);
+                        *iov_base++ = k_record.uChar.AsciiChar;
+                        to_read--;
+                        total_read++;
+                        break;
+                    }
+                    default:
+                        break;
+                    }
+                }
+            }
+        }
+    }
+#else
     size_t total_read = 0;
     for (auto iov : iovs) {
         DWORD read;
@@ -156,6 +112,7 @@ result<size_t> host_console_device::read(file &file, std::span<const iovec> iovs
             break;
         total_read += read;
     }
+#endif
     return ok(total_read);
 }
 

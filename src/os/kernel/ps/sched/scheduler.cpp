@@ -74,10 +74,12 @@ void scheduler::detach_thread(thread &thread) noexcept {
 
 void scheduler::switch_task() noexcept {
     current_irq_lock irq_lock;
-    auto &cnt_thread = current_thread();
-    auto &next_thread = select_next_thread();
-    if (&next_thread != &cnt_thread) {
-        set_current_thread(next_thread);
+    if (!lock_depth_.load(std::memory_order_acquire)) {
+        auto &cnt_thread = current_thread();
+        auto &next_thread = select_next_thread();
+        if (&next_thread != &cnt_thread) {
+            set_current_thread(next_thread);
+        }
     }
 }
 
@@ -112,8 +114,8 @@ void scheduler::block_current_thread(waitable_object &waiting_object, std::optio
         add_to_delay_list(cnt_thread, *timeout);
     }
     // 3. Yield
-    lock.unlock(irq_state);
     ps_yield();
+    lock.unlock(irq_state);
 }
 
 void scheduler::unblock_local_thread(thread &thread, irq_spin_lock &lock, hal::arch_irq_state_t irq_state) noexcept {
@@ -122,8 +124,8 @@ void scheduler::unblock_local_thread(thread &thread, irq_spin_lock &lock, hal::a
     thread.status(thread_status::ready);
     list_of(thread).push_back(&thread);
     update_max_ready_priority(thread.priority());
-    lock.unlock(irq_state);
     ps_yield();
+    lock.unlock(irq_state);
 }
 
 void scheduler::delay_current_thread(std::chrono::milliseconds timeout) noexcept {}

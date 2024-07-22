@@ -89,6 +89,8 @@ arch_irq_state_t emulator_arch::disable_irq() noexcept { return emulator::curren
 
 bool emulator_arch::restore_irq(arch_irq_state_t state) noexcept { return emulator::current_cpu().restore_irq(state); }
 
+void emulator_arch::send_irq(arch_irq_number_t irq_number) { emulator::current_cpu().send_irq(irq_number); }
+
 void emulator_arch::enable_system_tick(std::chrono::milliseconds due_time) noexcept {
     emulator::current_cpu().enable_system_tick(due_time);
 }

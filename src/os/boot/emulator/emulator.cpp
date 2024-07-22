@@ -95,3 +95,34 @@ extern "C" int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrev
     auto hal_startup = load_hal_startup();
     hal_startup(memory_size);
 }
+
+extern "C" void __cdecl WinMainCRTStartup(void) {
+    int mainret;
+    LPSTR lpszCommandLine;
+    STARTUPINFO StartupInfo;
+
+    lpszCommandLine = (LPSTR)GetCommandLine();
+
+    if (*lpszCommandLine == '"') {
+        lpszCommandLine++;
+        while (*lpszCommandLine && (*lpszCommandLine != '"'))
+            lpszCommandLine++;
+
+        if (*lpszCommandLine == '"')
+            lpszCommandLine++;
+    } else {
+        while (*lpszCommandLine > ' ')
+            lpszCommandLine++;
+    }
+
+    while (*lpszCommandLine && (*lpszCommandLine <= ' '))
+        lpszCommandLine++;
+
+    StartupInfo.dwFlags = 0;
+    GetStartupInfo(&StartupInfo);
+
+    mainret = WinMain(GetModuleHandle(NULL), NULL, lpszCommandLine,
+                      StartupInfo.dwFlags & STARTF_USESHOWWINDOW ? StartupInfo.wShowWindow : SW_SHOWDEFAULT);
+
+    ExitProcess(mainret);
+}

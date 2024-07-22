@@ -40,9 +40,9 @@ emulator_start_schedule:
     
 emulator_dispatch_irq:
     # 1. save context
-    xchg    %r15,       -8*2(%rsp)      # syscall.arg
-    xchg    %r14,       -8*1(%rsp)      # syscall.number
-    xchg    %r13,       -8*0(%rsp)      # irq number
+    xchg    %r15,       8*2(%rsp)       # syscall.arg
+    xchg    %r14,       8*1(%rsp)       # syscall.number
+    xchg    %r13,       8*0(%rsp)       # irq number
     push    %r12
     push    %r11
     push    %r10

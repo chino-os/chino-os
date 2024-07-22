@@ -20,6 +20,7 @@ using arch_irq_state_t = uint32_t;
 enum class emulator_irq_number {
     system_tick,
     syscall,
+    host_console_stdin,
 };
 
 using arch_irq_number_t = emulator_irq_number;
@@ -43,6 +44,7 @@ class emulator_arch {
     static void enable_irq() noexcept;
     static arch_irq_state_t disable_irq() noexcept;
     static bool restore_irq(arch_irq_state_t state) noexcept;
+    static void send_irq(arch_irq_number_t irq_number);
 
     static void enable_system_tick(std::chrono::milliseconds due_time) noexcept;
 };
