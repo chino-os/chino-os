@@ -13,6 +13,8 @@ inline static constexpr UINT WM_ARCH_IRQ = WM_USER + 1;
 } // namespace
 
 extern "C" {
+std::atomic<arch_irq_state_t> emulator_irq_state;
+
 struct syscall_payload {
     syscall_number number;
     void *arg;
@@ -37,7 +39,7 @@ void emulator_cpu::run(size_t cpu_id, size_t memory_size) {
     memory_size_ = memory_size;
 
     // Create IRQ lock
-    irq_state_.store(0, std::memory_order_relaxed); // Disable IRQ on startup
+    emulator_irq_state.store(0, std::memory_order_relaxed); // Disable IRQ on startup
     InitializeCriticalSection(&irq_lock_);
     InitializeConditionVariable(&irq_state_cs_);
 
@@ -63,14 +65,14 @@ void emulator_cpu::run(size_t cpu_id, size_t memory_size) {
 arch_irq_state_t emulator_cpu::disable_irq() {
     arch_irq_state_t old_state = 1;
     EnterCriticalSection(&irq_lock_);
-    irq_state_.compare_exchange_weak(old_state, 0, std::memory_order_relaxed);
+    emulator_irq_state.compare_exchange_weak(old_state, 0, std::memory_order_relaxed);
     LeaveCriticalSection(&irq_lock_);
     return old_state;
 }
 
 bool emulator_cpu::restore_irq(arch_irq_state_t irq_state) {
     EnterCriticalSection(&irq_lock_);
-    irq_state_.store(irq_state, std::memory_order_relaxed);
+    emulator_irq_state.store(irq_state, std::memory_order_relaxed);
     LeaveCriticalSection(&irq_lock_);
     if (irq_state) {
         WakeConditionVariable(&irq_state_cs_);
@@ -115,7 +117,7 @@ void emulator_cpu::syscall(syscall_number number, void *arg) noexcept {
 
 void emulator_cpu::process_irq(arch_irq_number_t irq_number, LPARAM lParam) {
     EnterCriticalSection(&irq_lock_);
-    while (!irq_state_.load()) {
+    while (!emulator_irq_state.load()) {
         SleepConditionVariableCS(&irq_state_cs_, &irq_lock_, INFINITE);
     }
 

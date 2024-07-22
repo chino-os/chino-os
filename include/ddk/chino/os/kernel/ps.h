@@ -122,7 +122,10 @@ class condition_variable {
 result<void> create_process(std::string_view filepath, static_object<thread> &thread,
                             thread_create_options &options) noexcept;
 result<void> create_process(std::string_view filepath) noexcept;
-;
+
+thread &current_thread() noexcept;
+process &current_process() noexcept;
+void yield() noexcept;
 } // namespace chino::os::kernel::ps
 
 namespace std {
@@ -155,5 +158,4 @@ template <> class unique_lock<chino::os::kernel::ps::mutex> {
 
 extern "C" {
 void ps_switch_task() noexcept;
-void ps_yield() noexcept;
 }

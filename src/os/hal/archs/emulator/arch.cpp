@@ -19,6 +19,7 @@ extern "C" {
 void emulator_restore_irq(arch_irq_state_t irq_state) noexcept { emulator_arch::restore_irq(irq_state); }
 
 [[noreturn]] extern void emulator_start_schedule() noexcept;
+extern void emulator_yield() noexcept;
 }
 
 namespace {
@@ -69,6 +70,7 @@ void emulator_arch::initialize_thread_stack(uintptr_t *&stack_top, kernel::ps::t
     *--stack_top = (uintptr_t)entry_arg;  // rdx = entry_arg
     *--stack_top = (uintptr_t)entrypoint; // rcx = entrypoint
     stack_top -= 2;                       // rbx, rax = 0
+    *--stack_top = 1;                     // irq = 1
 }
 
 void emulator_arch::yield_cpu() noexcept { YieldProcessor(); }
@@ -76,6 +78,12 @@ void emulator_arch::yield_cpu() noexcept { YieldProcessor(); }
 void emulator_arch::start_schedule(ps::thread &thread) noexcept {
     __asm {
         jmp emulator_start_schedule
+    }
+}
+
+void emulator_arch::yield() noexcept {
+    __asm {
+        jmp emulator_yield
     }
 }
 

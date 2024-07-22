@@ -46,7 +46,6 @@ class emulator_cpu {
     HWND event_window_;
     PTP_TIMER systick_timer_;
     arch_irq_number_t current_irq_;
-    std::atomic<arch_irq_state_t> irq_state_;
     CONDITION_VARIABLE irq_state_cs_;
     CRITICAL_SECTION irq_lock_;
 };

@@ -2,6 +2,7 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
 #include <chino/os/processapi.h>
+#include <chino/result.h>
 
 namespace chino::os::kernel {
 enum class syscall_number {

@@ -3,9 +3,12 @@
 
 .global emulator_start_schedule
 .global emulator_dispatch_irq
+.global emulator_yield
 
 .extern emulator_restore_irq
-.extern ke_handle_irq
+.extern emulator_irq_state
+.extern io_handle_irq
+.extern ps_switch_task
 
 STACK_TOP_OFFSET    = 0x20
 STACK_BOTTOM_OFFSET = 0x28
@@ -27,8 +30,8 @@ emulator_start_schedule:
     mov     STACK_BOTTOM_OFFSET(%rcx),  %rdx        # StackLimit
     mov     %rdx,       16(%rax)
 
-    mov     $1,         %rcx
-    call    emulator_restore_irq        # enable irq
+    pop     %rcx
+    call    emulator_restore_irq        # restore irq
 
     # restore context
     addq    $8*2,       %rsp            # skip rax, rbx
@@ -55,6 +58,9 @@ emulator_dispatch_irq:
     push    %rcx
     push    %rbx
     push    %rax
+    lea     emulator_irq_state(%rip),       %rax
+    mov     (%rax),     %rax
+    push    %rax                                    # store irq state
 
     lea     chino_current_threads(%rip),    %rax
     mov     (%rax),     %rax
@@ -64,7 +70,7 @@ emulator_dispatch_irq:
     mov     %r13,       %rcx
     mov     %r14,       %rdx
     mov     %r15,       %r8
-    call    ke_handle_irq
+    call    io_handle_irq
 
     # 3. restore context
     lea     chino_current_threads(%rip),    %rax
@@ -76,6 +82,68 @@ emulator_dispatch_irq:
     mov     %rsp,       8(%rbx)                     # StackBase
     mov     STACK_BOTTOM_OFFSET(%rax),      %rdx    # StackLimit
     mov     %rdx,       16(%rbx)
+
+    pop     %rcx
+    call    emulator_restore_irq        # restore irq
+
+    pop     %rax
+    pop     %rbx
+    pop     %rcx
+    pop     %rdx
+    pop     %rbp
+    pop     %rsi
+    pop     %rdi
+    pop     %r8
+    pop     %r9
+    pop     %r10
+    pop     %r11
+    pop     %r12
+    pop     %r13
+    pop     %r14
+    pop     %r15
+    ret
+    
+emulator_yield:
+    # 1. save context
+    push    %r15
+    push    %r14
+    push    %r13
+    push    %r12
+    push    %r11
+    push    %r10
+    push    %r9
+    push    %r8
+    push    %rdi
+    push    %rsi
+    push    %rbp
+    push    %rdx
+    push    %rcx
+    push    %rbx
+    push    %rax
+    lea     emulator_irq_state(%rip),       %rax
+    mov     (%rax),     %rax
+    push    %rax                                    # store irq state
+
+    lea     chino_current_threads(%rip),    %rax
+    mov     (%rax),     %rax
+    mov     %rsp,       STACK_TOP_OFFSET(%rax)      # store stack_top
+
+    # 2. switch task
+    call    ps_switch_task
+
+    # 3. restore context
+    lea     chino_current_threads(%rip),    %rax
+    mov     (%rax),     %rax
+    mov     STACK_TOP_OFFSET(%rax),         %rsp    # load stack_top
+
+    # set stack limit
+    mov     %gs:0x30,   %rbx                        # TIB
+    mov     %rsp,       8(%rbx)                     # StackBase
+    mov     STACK_BOTTOM_OFFSET(%rax),      %rdx    # StackLimit
+    mov     %rdx,       16(%rbx)
+
+    pop     %rcx
+    call    emulator_restore_irq        # restore irq
 
     pop     %rax
     pop     %rbx

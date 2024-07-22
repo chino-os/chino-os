@@ -11,18 +11,18 @@ using namespace chino::os::kernel;
 using namespace chino::os::kernel::ob;
 
 result<int> ob::insert_handle(file &&file) noexcept {
-    auto &ht = ps::scheduler::current_process().handle_table();
+    auto &ht = ps::current_process().handle_table();
     try_var(handle, ht.allocate());
     std::construct_at(handle.first, std::move(file));
     return ok(handle.second);
 }
 
 result<file *> ob::reference_handle(int handle) noexcept {
-    auto &ht = ps::scheduler::current_process().handle_table();
+    auto &ht = ps::current_process().handle_table();
     return ht.at(handle);
 }
 
 result<void> ob::close_handle(int handle) noexcept {
-    auto &ht = ps::scheduler::current_process().handle_table();
+    auto &ht = ps::current_process().handle_table();
     return ht.free(handle);
 }

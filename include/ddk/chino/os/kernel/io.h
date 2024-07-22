@@ -2,12 +2,13 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
 #include "../object.h"
+#include "kernel_types.h"
 #include <chino/os/file.h>
+#include <chino/os/hal/arch.h>
 #include <span>
 #include <sys/uio.h>
 
 namespace chino::os {
-
 using control_code_t = uint32_t;
 
 class device : public object {
@@ -25,6 +26,10 @@ class device : public object {
 };
 
 namespace kernel::io {
+typedef result<void> (*irq_handler_t)(hal::arch_irq_number_t irq_number, void *context);
+
+result<void> register_irq_handler(hal::arch_irq_number_t irq_number, irq_handler_t handler, void *context) noexcept;
+
 result<void> attach_device(device &device) noexcept;
 
 result<file> open_file(device &device, std::string_view path, create_disposition disposition) noexcept;
@@ -45,3 +50,8 @@ result<size_t> control_file(file &file, control_code_t code, std::span<const std
 result<void> allocate_console() noexcept;
 } // namespace kernel::io
 } // namespace chino::os
+
+extern "C" {
+void io_handle_irq(chino::os::hal::arch_irq_number_t irq_number, chino::os::kernel::syscall_number number,
+                   void *arg) noexcept;
+}

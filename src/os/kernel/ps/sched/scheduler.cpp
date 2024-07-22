@@ -23,12 +23,15 @@ std::array<std::atomic<thread *>, hal::chip_t::cpus_count> chino_current_threads
 
 void ps_switch_task() noexcept { scheduler::current().switch_task(); }
 
-void ps_yield() noexcept { hal::arch_t::syscall(syscall_number::yield, nullptr); }
-
-scheduler &scheduler::current() noexcept { return schedulers_[hal::arch_t::current_cpu_id()]; }
-thread &scheduler::current_thread() noexcept {
+thread &ps::current_thread() noexcept {
     return *chino_current_threads[hal::arch_t::current_cpu_id()].load(std::memory_order_acquire);
 }
+
+process &ps::current_process() noexcept { return current_thread().process(); }
+
+void ps::yield() noexcept { hal::arch_t::yield(); }
+
+scheduler &scheduler::current() noexcept { return schedulers_[hal::arch_t::current_cpu_id()]; }
 
 void scheduler::unblock_thread(thread &thread, irq_spin_lock &lock, hal::arch_irq_state_t irq_state) noexcept {
     current_irq_lock irq_lock;
@@ -56,7 +59,7 @@ void scheduler::attach_thread(thread &thread) noexcept {
     thread.status(thread_status::ready);
 
     if (started_.load(std::memory_order_acquire)) {
-        ps_yield();
+        yield();
     }
 }
 
@@ -114,7 +117,7 @@ void scheduler::block_current_thread(waitable_object &waiting_object, std::optio
         add_to_delay_list(cnt_thread, *timeout);
     }
     // 3. Yield
-    ps_yield();
+    yield();
     lock.unlock(irq_state);
 }
 
@@ -124,7 +127,7 @@ void scheduler::unblock_local_thread(thread &thread, irq_spin_lock &lock, hal::a
     thread.status(thread_status::ready);
     list_of(thread).push_back(&thread);
     update_max_ready_priority(thread.priority());
-    ps_yield();
+    yield();
     lock.unlock(irq_state);
 }
 

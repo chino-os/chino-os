@@ -14,8 +14,6 @@ class scheduler {
 
   public:
     static scheduler &current() noexcept;
-    static thread &current_thread() noexcept;
-    static process &current_process() noexcept { return current_thread().process(); }
 
     static void unblock_thread(thread &thread, irq_spin_lock &lock, hal::arch_irq_state_t irq_state) noexcept;
 

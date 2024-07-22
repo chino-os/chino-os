@@ -21,6 +21,7 @@ enum class emulator_irq_number {
     system_tick,
     syscall,
     host_console_stdin,
+    __count,
 };
 
 using arch_irq_number_t = emulator_irq_number;
@@ -39,6 +40,7 @@ class emulator_arch {
 
     static void yield_cpu() noexcept;
     [[noreturn]] static void start_schedule(kernel::ps::thread &thread) noexcept;
+    static void yield() noexcept;
     static void syscall(kernel::syscall_number number, void *arg) noexcept;
 
     static void enable_irq() noexcept;

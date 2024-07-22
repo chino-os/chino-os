@@ -45,6 +45,4 @@ ps::process &ke_process() noexcept;
 
 extern "C" {
 [[noreturn]] void ke_startup(const chino::os::kernel::boot_options &options) noexcept;
-void ke_handle_irq(chino::os::hal::arch_irq_number_t irq_number, chino::os::kernel::syscall_number number,
-                   void *arg) noexcept;
 }

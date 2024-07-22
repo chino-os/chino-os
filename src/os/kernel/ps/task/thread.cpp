@@ -17,10 +17,10 @@ thread::thread(const thread_create_options &create_options) noexcept
 }
 
 void thread::thread_main_thunk(thread_start_t entry_point, void *entry_arg) noexcept {
-    auto &this_thread = scheduler::current_thread();
+    auto &this_thread = current_thread();
     entry_point(entry_arg);
     scheduler::current().detach_thread(this_thread);
-    ps_yield();
+    yield();
     CHINO_UNREACHABLE();
 }
 

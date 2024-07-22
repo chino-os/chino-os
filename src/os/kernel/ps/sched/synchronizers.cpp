@@ -19,7 +19,7 @@ current_schedule_lock::~current_schedule_lock() { scheduler::current().unlock();
 
 void waitable_object::blocking_wait(std::optional<std::chrono::milliseconds> timeout,
                                     hal::arch_irq_state_t irq_state) noexcept {
-    auto &cnt_thread = scheduler::current_thread();
+    auto &cnt_thread = current_thread();
     auto &list = waiting_list(waiting_threads_);
     auto pivot = list.front();
     if (pivot) {

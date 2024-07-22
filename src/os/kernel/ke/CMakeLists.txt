@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 
-set(SRCS irq_handler.cpp
-         ke_services.cpp
+set(SRCS ke_services.cpp
          startup.cpp)
 
 target_sources(chino.kernel PRIVATE ${SRCS})
