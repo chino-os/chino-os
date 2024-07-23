@@ -30,8 +30,12 @@ public sealed class EmulatorChip : ChipDefinition
                 },
                 new SimpleDeviceNode
                 {
-                    Name = "host_netif",
-                    Compatibles = [DeviceCompatibles.HostNetIf],
+                    Name = "host_serial",
+                    Compatibles = [DeviceCompatibles.HostSerial],
+                    Properties =
+                    {
+                        { "PortName", "COM5" },
+                    },
                 },
 
                 SystemDevices.StreamConsole(host_console),
@@ -50,5 +54,6 @@ public sealed class EmulatorChip : ChipDefinition
         public static readonly Guid HostConsole = new Guid("ABA5BEB4-E5B2-4B44-A07E-969ECEA00EA6");
         public static readonly Guid HostFS = new Guid("C6F17CB5-7D0F-4DE4-AFFA-D0496495A0ED");
         public static readonly Guid HostNetIf = new Guid("59DBBA5D-ED63-4962-B597-688E9447A23B");
+        public static readonly Guid HostSerial = new Guid("8D460A89-F506-4A60-8F68-04C18E6F97ED");
     }
 }

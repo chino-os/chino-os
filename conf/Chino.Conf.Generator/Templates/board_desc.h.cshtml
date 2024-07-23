@@ -82,7 +82,7 @@ struct board_desc {
 @:                    struct properties {
                     @foreach (var prop in device.Properties)
                     {
-@:                        static constexpr @Html.Raw(PropertyType(prop.Value)) @prop.Key.Camelize() = @Html.Raw(PropertyValue(prop.Value));
+@:                        static constexpr @Html.Raw(PropertyType(prop.Value)) @prop.Key.Underscore() = @Html.Raw(PropertyValue(prop.Value));
                     }
 @:
 @:                        static constexpr size_t size() noexcept { return @device.Properties.Count; }
