@@ -108,6 +108,20 @@ struct ke_services_mt : i_ke_services {
         });
     }
 
+    int vioctl(int __fd, int req, va_list ap) noexcept override {
+        return wrap_posix<ssize_t>([=]() -> result<ssize_t> {
+            switch (__fd) {
+            case STDIN_FILENO:
+            case STDOUT_FILENO:
+            case STDERR_FILENO:
+                return err(error_code::bad_cast);
+            default:
+                try_var(file, ob::reference_handle(__fd));
+                return io::control_file(*file, req, ap);
+            }
+        });
+    }
+
   private:
     file stdio_;
 };

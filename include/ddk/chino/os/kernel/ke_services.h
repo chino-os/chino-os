@@ -11,6 +11,7 @@ struct i_ke_services {
     virtual int close(int fd) noexcept = 0;
     virtual ssize_t read(int __fd, void *__buf, size_t __nbyte) noexcept = 0;
     virtual ssize_t write(int __fd, const void *__buf, size_t __nbyte) noexcept = 0;
+    virtual int vioctl(int fd, int req, va_list ap) noexcept = 0;
 };
 
 inline static uintptr_t ke_services_address = 0x800000000;

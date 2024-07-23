@@ -21,6 +21,7 @@ enum class emulator_irq_number {
     system_tick,
     syscall,
     host_console_stdin,
+    host_serial_rx,
     __count,
 };
 

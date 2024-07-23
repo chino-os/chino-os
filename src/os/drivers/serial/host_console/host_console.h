@@ -1,8 +1,7 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
-#define NTDDI_VERSION NTDDI_WIN10_RS5
-#include <Windows.h>
+#include "../../../hal/archs/emulator/emulator.h"
 #include <chino/conf/board_desc.h>
 #include <chino/os/kernel/io.h>
 #include <chino/os/kernel/ps.h>
@@ -24,8 +23,7 @@ class host_console_device : public device {
 
     result<size_t> read(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept override;
     result<size_t> write(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept override;
-    result<size_t> control(file &file, control_code_t code, std::span<const std::byte> in_buffer,
-                           std::span<std::byte> out_buffer) noexcept override;
+    result<int> control(file &file, int request, va_list ap) noexcept override;
 
   private:
     static result<void> stdin_irq_handler(hal::arch_irq_number_t, void *context) noexcept;

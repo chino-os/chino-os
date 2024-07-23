@@ -61,8 +61,7 @@ result<size_t> host_fs_device::write(file &file, std::span<const iovec> iovs, st
     return ok(total_written);
 }
 
-result<size_t> host_fs_device::control(file &file, control_code_t code, std::span<const std::byte> in_buffer,
-                                       std::span<std::byte> out_buffer) noexcept {
+result<int> host_fs_device::control(file &file, int request, va_list ap) noexcept {
     return err(error_code::not_supported);
 }
 

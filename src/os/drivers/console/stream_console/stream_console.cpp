@@ -32,9 +32,8 @@ result<size_t> stream_console_device::write(file &file, std::span<const iovec> i
     return io::write_file(stream_file_, iovs);
 }
 
-result<size_t> stream_console_device::control(file &file, control_code_t code, std::span<const std::byte> in_buffer,
-                                              std::span<std::byte> out_buffer) noexcept {
-    return io::control_file(stream_file_, code, in_buffer, out_buffer);
+result<int> stream_console_device::control(file &file, int request, va_list ap) noexcept {
+    return io::control_file(stream_file_, request, ap);
 }
 
 result<void> stream_console_driver::install_device(stream_console_device &device,

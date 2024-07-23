@@ -86,10 +86,9 @@ result<size_t> io::write_file(file &file, std::span<const std::byte> buffer, std
     return write_file(file, iovs, offset);
 }
 
-result<size_t> io::control_file(file &file, control_code_t code, std::span<const std::byte> in_buffer,
-                                std::span<std::byte> out_buffer) noexcept {
+result<int> io::control_file(file &file, int request, va_list ap) noexcept {
     TRY_GET_DEVICE(file);
-    return dev.control(file, code, in_buffer, out_buffer);
+    return dev.control(file, request, ap);
 }
 
 result<void> io::allocate_console() noexcept { return ok(); }

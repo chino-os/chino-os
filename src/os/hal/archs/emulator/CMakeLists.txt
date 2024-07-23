@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 
 set(SRCS arch.cpp
          crt.cpp
+         emulator.cpp
          emulator_cpu.cpp
          system_tick.cpp
 )

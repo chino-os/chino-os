@@ -21,8 +21,7 @@ class device : public object {
 
     virtual result<size_t> read(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept = 0;
     virtual result<size_t> write(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept = 0;
-    virtual result<size_t> control(file &file, control_code_t code, std::span<const std::byte> in_buffer,
-                                   std::span<std::byte> out_buffer) noexcept = 0;
+    virtual result<int> control(file &file, int request, va_list ap) noexcept = 0;
 };
 
 namespace kernel::io {
@@ -45,8 +44,7 @@ result<size_t> write_file(file &file, std::span<const iovec> iovs,
 result<size_t> write_file(file &file, std::span<const std::byte> buffer,
                           std::optional<size_t> offset = std::nullopt) noexcept;
 
-result<size_t> control_file(file &file, control_code_t code, std::span<const std::byte> in_buffer,
-                            std::span<std::byte> out_buffer) noexcept;
+result<int> control_file(file &file, int request, va_list ap) noexcept;
 
 result<void> allocate_console() noexcept;
 } // namespace kernel::io
