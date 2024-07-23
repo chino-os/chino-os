@@ -21,6 +21,7 @@ struct syscall_payload {
 };
 
 [[noreturn]] extern void emulator_dispatch_irq(arch_irq_number_t irq_number) noexcept;
+extern uintptr_t emulator_dispatch_irq_end;
 
 static syscall_payload syscall_payload_;
 }
@@ -143,6 +144,16 @@ void emulator_cpu::process_irq(arch_irq_number_t irq_number, LPARAM lParam) {
     }
 
     LeaveCriticalSection(&irq_lock_);
+
+    // Wait for returning
+    CONTEXT context{.ContextFlags = CONTEXT_CONTROL};
+    while (true) {
+        GetThreadContext(cpu_thread_, &context);
+        if (context.Rip < (uintptr_t)emulator_dispatch_irq || context.Rip >= emulator_dispatch_irq_end) {
+            break;
+        }
+        Sleep(0);
+    }
 }
 
 DWORD WINAPI emulator_cpu::cpu_entry_thunk([[maybe_unused]] LPVOID pcpu) {

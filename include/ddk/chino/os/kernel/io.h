@@ -28,6 +28,7 @@ class device : public object {
 namespace kernel::io {
 typedef result<void> (*irq_handler_t)(hal::arch_irq_number_t irq_number, void *context);
 
+bool in_irq_handler() noexcept;
 result<void> register_irq_handler(hal::arch_irq_number_t irq_number, irq_handler_t handler, void *context) noexcept;
 
 result<void> attach_device(device &device) noexcept;

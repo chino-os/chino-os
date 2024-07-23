@@ -5,6 +5,7 @@
 #include <Windows.h>
 #include <chino/conf/board_desc.h>
 #include <chino/os/kernel/io.h>
+#include <chino/os/kernel/ps.h>
 
 namespace chino::os::drivers {
 class host_console_device : public device {
@@ -27,11 +28,13 @@ class host_console_device : public device {
                            std::span<std::byte> out_buffer) noexcept override;
 
   private:
-    HRESULT SetUpPseudoConsole(COORD size) noexcept;
+    static result<void> stdin_irq_handler(hal::arch_irq_number_t, void *context) noexcept;
 
   private:
     HANDLE stdin_ = nullptr;
     HANDLE stdout_ = nullptr;
+    HANDLE stdin_wait_handle_ = nullptr;
+    kernel::ps::event stdin_avail_event_;
 };
 
 class host_console_driver {

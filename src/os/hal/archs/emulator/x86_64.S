@@ -3,6 +3,7 @@
 
 .global emulator_start_schedule
 .global emulator_dispatch_irq
+.global emulator_dispatch_irq_end
 .global emulator_yield
 
 .extern emulator_restore_irq
@@ -59,8 +60,9 @@ emulator_dispatch_irq:
     push    %rbx
     push    %rax
     lea     emulator_irq_state(%rip),       %rax
-    mov     (%rax),     %rax
-    push    %rax                                    # store irq state
+    xor     %rbx,       %rbx
+    lock xchg           (%rax),     %rbx
+    push    %rbx                                    # store irq state
 
     lea     chino_current_threads(%rip),    %rax
     mov     (%rax),     %rax
@@ -102,6 +104,7 @@ emulator_dispatch_irq:
     pop     %r14
     pop     %r15
     ret
+emulator_dispatch_irq_end:
     
 emulator_yield:
     # 1. save context

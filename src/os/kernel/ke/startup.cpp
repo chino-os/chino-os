@@ -11,6 +11,8 @@
 using namespace chino::os;
 using namespace chino::os::kernel;
 
+#define SHELL_NAME "sh" // "sh"
+
 alignas(hal::cacheline_size) static std::array<uintptr_t, 128 * 1024> init_stack_;
 static constinit ps::process ke_process_;
 static constinit static_object<ps::thread> init_thread_;
@@ -51,7 +53,7 @@ int ke_init_system(void *pv_options) noexcept {
     // 3. Launch shell
     ps::thread_create_options sh_create_options{
         .process = &sh_process_, .priority = thread_priority::normal, .not_owned_stack = true, .stack = sh_stack_};
-    ps::create_process("/bin/sh.exe", sh_thread_, sh_create_options).expect("Launch shell failed.");
+    ps::create_process("/bin/" SHELL_NAME ".exe", sh_thread_, sh_create_options).expect("Launch shell failed.");
     ke_idle_loop();
 }
 

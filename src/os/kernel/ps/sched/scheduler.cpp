@@ -6,6 +6,7 @@
 #include <atomic>
 #include <chino/os/hal/arch.h>
 #include <chino/os/hal/chip.h>
+#include <chino/os/kernel/io.h>
 #include <chino/os/kernel/ke.h>
 
 using namespace chino::os;
@@ -29,7 +30,13 @@ thread &ps::current_thread() noexcept {
 
 process &ps::current_process() noexcept { return current_thread().process(); }
 
-void ps::yield() noexcept { hal::arch_t::yield(); }
+void ps::yield() noexcept {
+    if (io::in_irq_handler()) {
+        scheduler::current().switch_task();
+    } else {
+        hal::arch_t::yield();
+    }
+}
 
 scheduler &scheduler::current() noexcept { return schedulers_[hal::arch_t::current_cpu_id()]; }
 
@@ -117,8 +124,8 @@ void scheduler::block_current_thread(waitable_object &waiting_object, std::optio
         add_to_delay_list(cnt_thread, *timeout);
     }
     // 3. Yield
-    yield();
     lock.unlock(irq_state);
+    yield();
 }
 
 void scheduler::unblock_local_thread(thread &thread, irq_spin_lock &lock, hal::arch_irq_state_t irq_state) noexcept {
@@ -127,8 +134,8 @@ void scheduler::unblock_local_thread(thread &thread, irq_spin_lock &lock, hal::a
     thread.status(thread_status::ready);
     list_of(thread).push_back(&thread);
     update_max_ready_priority(thread.priority());
-    yield();
     lock.unlock(irq_state);
+    yield();
 }
 
 void scheduler::delay_current_thread(std::chrono::milliseconds timeout) noexcept {}

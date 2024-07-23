@@ -10,9 +10,6 @@ using namespace chino::os::kernel;
 using namespace chino::os::drivers;
 
 namespace {
-constinit ps::event stdin_avail_event_;
-std::array<INPUT_RECORD, 256> stdin_records_;
-
 void CALLBACK handle_ready_callback(_In_ PVOID lpParameter, _In_ BOOLEAN TimerOrWaitFired) {
     hal::arch_t::send_irq(hal::arch_irq_number_t::host_console_stdin);
 }
@@ -36,6 +33,7 @@ result<void> host_console_device::install() noexcept {
     font_info.FontWeight = FW_NORMAL;
     lstrcpy(font_info.FaceName, L"Cascadia Mono");
     SetCurrentConsoleFontEx(stdout_, FALSE, &font_info);
+    try_(io::register_irq_handler(hal::arch_irq_number_t::host_console_stdin, stdin_irq_handler, this));
     return ok();
 }
 
@@ -50,69 +48,55 @@ result<void> host_console_device::close(file &file) noexcept { return ok(); }
 
 result<size_t> host_console_device::read(file &file, std::span<const iovec> iovs,
                                          std::optional<size_t> /*offset*/) noexcept {
-#if 1
     size_t total_read = 0;
     for (auto iov : iovs) {
         DWORD to_read = iov.iov_len;
         char *iov_base = reinterpret_cast<char *>(iov.iov_base);
-        while (true) {
+        while (to_read) {
             DWORD unread_events;
-            GetNumberOfConsoleInputEvents(stdin_, &unread_events);
+            {
+                ps::current_irq_lock irq_lock;
+                GetNumberOfConsoleInputEvents(stdin_, &unread_events);
+            }
             if (!unread_events) {
                 if (!total_read) {
-                    HANDLE wait_handle;
-                    if (!RegisterWaitForSingleObject(&wait_handle, stdin_, handle_ready_callback, nullptr, INFINITE,
-                                                     WT_EXECUTEONLYONCE)) {
-                        return err(error_code::io_error);
+                    {
+                        ps::current_irq_lock irq_lock;
+                        auto wait_handle = stdin_wait_handle_;
+                        if (wait_handle) {
+                            UnregisterWait(wait_handle);
+                            stdin_wait_handle_ = nullptr;
+                        }
+                        if (!RegisterWaitForSingleObject(&stdin_wait_handle_, stdin_, handle_ready_callback, nullptr,
+                                                         INFINITE, WT_EXECUTEONLYONCE | WT_EXECUTEINWAITTHREAD)) {
+                            return err(error_code::io_error);
+                        }
                     }
                     try_(stdin_avail_event_.wait());
                 } else {
                     return ok(total_read);
                 }
             } else {
-                DWORD events_read = std::min({unread_events, to_read, (DWORD)stdin_records_.size()});
-                if (!ReadConsoleInputA(stdin_, stdin_records_.data(), events_read, &events_read)) {
-                    return err(error_code::io_error);
+                INPUT_RECORD rec;
+                DWORD events_read;
+                {
+                    ps::current_irq_lock irq_lock;
+                    if (!ReadConsoleInputA(stdin_, &rec, 1, &events_read)) {
+                        return err(error_code::io_error);
+                    }
                 }
-                for (size_t i = 0; i < events_read; i++) {
-                    auto &record = stdin_records_[i];
-                    switch (record.EventType) {
-                    case KEY_EVENT: {
-                        auto &k_record = reinterpret_cast<KEY_EVENT_RECORD &>(record);
-                        *iov_base++ = k_record.uChar.AsciiChar;
-                        to_read--;
-                        total_read++;
-                        break;
-                    }
-                    default:
-                        break;
-                    }
+                if (rec.EventType != KEY_EVENT || !rec.Event.KeyEvent.bKeyDown) { // only want key down events
+                    continue;
+                }
+                char c = rec.Event.KeyEvent.uChar.AsciiChar;
+                if (c) {
+                    *iov_base++ = c;
+                    to_read--;
+                    total_read++;
                 }
             }
         }
     }
-#else
-    size_t total_read = 0;
-    for (auto iov : iovs) {
-        DWORD read;
-        if (!ReadConsoleA(stdin_, iov.iov_base, iov.iov_len, &read, nullptr)) {
-            return err(error_code::io_error);
-        }
-
-        // interpret \r to \n
-        for (size_t i = 0; i < read; i++) {
-            auto &c = *(reinterpret_cast<char *>(iov.iov_base) + i);
-            if (c == '\r')
-                c = '\n';
-            else if (c == 0x7f)
-                c = '\b';
-        }
-
-        if (!read)
-            break;
-        total_read += read;
-    }
-#endif
     return ok(total_read);
 }
 
@@ -121,6 +105,7 @@ result<size_t> host_console_device::write(file &file, std::span<const iovec> iov
     size_t total_written = 0;
     for (auto iov : iovs) {
         DWORD written;
+        ps::current_irq_lock irq_lock;
         WriteConsoleA(stdout_, iov.iov_base, iov.iov_len, &written, nullptr);
         total_written += written;
     }
@@ -130,6 +115,12 @@ result<size_t> host_console_device::write(file &file, std::span<const iovec> iov
 result<size_t> host_console_device::control(file &file, control_code_t code, std::span<const std::byte> in_buffer,
                                             std::span<std::byte> out_buffer) noexcept {
     return err(error_code::not_supported);
+}
+
+result<void> host_console_device::stdin_irq_handler(hal::arch_irq_number_t, void *context) noexcept {
+    auto *device = reinterpret_cast<host_console_device *>(context);
+    device->stdin_avail_event_.notify_all();
+    return ok();
 }
 
 result<void> host_console_driver::install_device(host_console_device &device) noexcept {
