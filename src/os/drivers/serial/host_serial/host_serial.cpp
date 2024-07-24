@@ -125,6 +125,8 @@ void set_timeouts(COMMTIMEOUTS &timeouts, const termios *term) noexcept {
         timeouts.ReadTotalTimeoutConstant = 0;
     } else {
         timeouts.ReadIntervalTimeout = term->c_cc[VTIME] * 100; // interval
+        timeouts.ReadTotalTimeoutMultiplier = 0;
+        timeouts.ReadTotalTimeoutConstant = 0;
     }
 }
 } // namespace
@@ -154,6 +156,7 @@ result<size_t> host_serial_device::read(file &file, std::span<const iovec> iovs,
         hal::irq_overlapped overlapped{.number = hal::arch_irq_number_t::host_serial_rx};
         TRY_WIN32_IO_IF_NOT(ReadFile(port_, iov.iov_base, iov.iov_len, &overlapped.bytes_transferred, &overlapped));
         try_(rx_event_.wait());
+        rx_event_.reset();
         total_read += overlapped.bytes_transferred;
         if (overlapped.bytes_transferred < iov.iov_len)
             break;
@@ -168,6 +171,7 @@ result<size_t> host_serial_device::write(file &file, std::span<const iovec> iovs
         hal::irq_overlapped overlapped{.number = hal::arch_irq_number_t::host_serial_tx};
         TRY_WIN32_IO_IF_NOT(WriteFile(port_, iov.iov_base, iov.iov_len, &overlapped.bytes_transferred, &overlapped));
         try_(tx_event_.wait());
+        tx_event_.reset();
         total_written += overlapped.bytes_transferred;
     }
     return ok(total_written);

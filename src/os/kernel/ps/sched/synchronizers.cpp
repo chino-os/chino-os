@@ -77,6 +77,7 @@ result<void> mutex::wait(std::optional<std::chrono::milliseconds> timeout) noexc
         return ok();
     } else {
         // 2. Slow path
+        current_irq_lock irq_lock;
         auto irq_state = syncroot().lock();
         if (try_wait().is_ok()) {
             syncroot().unlock(irq_state);
@@ -105,6 +106,7 @@ result<void> event::wait(std::optional<std::chrono::milliseconds> timeout) noexc
         return ok();
     } else {
         // 2. Slow path
+        current_irq_lock irq_lock;
         auto irq_state = syncroot().lock();
         if (try_wait().is_ok()) {
             syncroot().unlock(irq_state);
@@ -129,6 +131,7 @@ result<void> condition_variable::wait(mutex &mutex, std::optional<std::chrono::m
         return ok();
     } else {
         // 2. Slow path
+        current_irq_lock irq_lock;
         mutex.release();
         auto result = event_.wait(timeout);
         try_(mutex.wait());

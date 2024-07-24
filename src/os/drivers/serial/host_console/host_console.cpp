@@ -54,42 +54,38 @@ result<size_t> host_console_device::read(file &file, std::span<const iovec> iovs
         char *iov_base = reinterpret_cast<char *>(iov.iov_base);
         while (to_read) {
             DWORD unread_events;
-            {
-                ps::current_irq_lock irq_lock;
-                GetNumberOfConsoleInputEvents(stdin_, &unread_events);
-            }
+            TRY_WIN32_IF_NOT(GetNumberOfConsoleInputEvents(stdin_, &unread_events));
             if (!unread_events) {
                 if (!total_read) {
-                    {
-                        ps::current_irq_lock irq_lock;
-                        auto wait_handle = stdin_wait_handle_;
-                        if (wait_handle) {
-                            UnregisterWait(wait_handle);
-                            stdin_wait_handle_ = nullptr;
-                        }
-                        if (!RegisterWaitForSingleObject(&stdin_wait_handle_, stdin_, handle_ready_callback, nullptr,
-                                                         INFINITE, WT_EXECUTEONLYONCE | WT_EXECUTEINWAITTHREAD)) {
-                            return err(error_code::io_error);
-                        }
+                    auto wait_handle = stdin_wait_handle_;
+                    if (wait_handle) {
+                        TRY_WIN32_IF_NOT(UnregisterWait(wait_handle));
+                        stdin_wait_handle_ = nullptr;
                     }
+                    TRY_WIN32_IF_NOT(RegisterWaitForSingleObject(&stdin_wait_handle_, stdin_, handle_ready_callback,
+                                                                 nullptr, INFINITE,
+                                                                 WT_EXECUTEONLYONCE | WT_EXECUTEINWAITTHREAD));
+#if 0
+                    char buf[256];
+                    sprintf(buf, "wait: %p\n", stdin_wait_handle_);
+                    OutputDebugStringA(buf);
+#endif
                     try_(stdin_avail_event_.wait());
+                    stdin_avail_event_.reset();
                 } else {
                     return ok(total_read);
                 }
             } else {
                 INPUT_RECORD rec;
                 DWORD events_read;
-                {
-                    ps::current_irq_lock irq_lock;
-                    if (!ReadConsoleInputA(stdin_, &rec, 1, &events_read)) {
-                        return err(error_code::io_error);
-                    }
-                }
+                TRY_WIN32_IF_NOT(ReadConsoleInputA(stdin_, &rec, 1, &events_read));
                 if (rec.EventType != KEY_EVENT || !rec.Event.KeyEvent.bKeyDown) { // only want key down events
                     continue;
                 }
                 char c = rec.Event.KeyEvent.uChar.AsciiChar;
                 if (c) {
+                    if (c == 0x7f)
+                        c = '\b';
                     *iov_base++ = c;
                     to_read--;
                     total_read++;
@@ -105,8 +101,7 @@ result<size_t> host_console_device::write(file &file, std::span<const iovec> iov
     size_t total_written = 0;
     for (auto iov : iovs) {
         DWORD written;
-        ps::current_irq_lock irq_lock;
-        WriteConsoleA(stdout_, iov.iov_base, iov.iov_len, &written, nullptr);
+        TRY_WIN32_IF_NOT(WriteConsoleA(stdout_, iov.iov_base, iov.iov_len, &written, nullptr));
         total_written += written;
     }
     return ok(total_written);

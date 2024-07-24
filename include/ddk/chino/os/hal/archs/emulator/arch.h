@@ -15,7 +15,7 @@
 #endif
 
 namespace chino::os::hal {
-using arch_irq_state_t = uint32_t;
+using arch_irq_state_t = uintptr_t;
 
 enum class emulator_irq_number {
     system_tick,

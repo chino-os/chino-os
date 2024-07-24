@@ -7,9 +7,6 @@
 #include "ke_services.h"
 #include <chino/os/hal/chip.h>
 #include <chino/os/kernel/ke.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <termios.h>
 
 using namespace chino::os;
 using namespace chino::os::kernel;
@@ -63,34 +60,6 @@ int ke_init_system(void *pv_options) noexcept {
 
     // 2. Initialize user land
     initialize_ke_services().expect("Initialize Ke Services failed.");
-
-    auto sfd = open("/dev/host_serial", O_RDWR);
-
-    struct termios tty;
-    // Read in existing settings, and handle any error
-    if (tcgetattr(sfd, &tty) != 0) {
-        printf("Error %i from tcgetattr: %s\n", errno, strerror(errno));
-    }
-
-    tty.c_cflag &= ~PARENB;        // Clear parity bit, disabling parity (most common)
-    tty.c_cflag &= ~CSTOPB;        // Clear stop field, only one stop bit used in communication (most common)
-    tty.c_cflag &= ~CSIZE;         // Clear all bits that set the data size
-    tty.c_cflag |= CS8;            // 8 bits per byte (most common)
-    tty.c_cflag &= ~CRTSCTS;       // Disable RTS/CTS hardware flow control (most common)
-    tty.c_cflag |= CREAD | CLOCAL; // Turn on READ & ignore ctrl lines (CLOCAL = 1)
-    tty.c_cc[VMIN] = 1;
-    tty.c_cc[VTIME] = 0; // nonblocking
-
-    cfsetspeed(&tty, 115200);
-    tcflush(sfd, TCIOFLUSH);
-    tcsetattr(sfd, TCSAFLUSH, &tty);
-    tcgetattr(sfd, &tty);
-    printf("Baud rate: %d\n", (int)cfgetspeed(&tty));
-    char buf[256]{};
-    auto r = write(sfd, "AT\r\n", 4);
-    printf("Write: %d\n", (int)r);
-    r = read(sfd, buf, 5);
-    printf("Read: %s\n", buf);
 
     // 3. Launch shell
     ps::thread_create_options sh_create_options{
