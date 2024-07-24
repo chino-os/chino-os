@@ -108,8 +108,8 @@ struct ke_services_mt : i_ke_services {
         });
     }
 
-    int vioctl(int __fd, int req, va_list ap) noexcept override {
-        return wrap_posix<ssize_t>([=]() -> result<ssize_t> {
+    int ioctl(int __fd, int req, void *arg) noexcept override {
+        return wrap_posix<int>([=]() -> result<int> {
             switch (__fd) {
             case STDIN_FILENO:
             case STDOUT_FILENO:
@@ -117,7 +117,7 @@ struct ke_services_mt : i_ke_services {
                 return err(error_code::bad_cast);
             default:
                 try_var(file, ob::reference_handle(__fd));
-                return io::control_file(*file, req, ap);
+                return io::control_file(*file, req, arg);
             }
         });
     }

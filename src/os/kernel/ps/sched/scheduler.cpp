@@ -31,9 +31,10 @@ thread &ps::current_thread() noexcept {
 process &ps::current_process() noexcept { return current_thread().process(); }
 
 void ps::yield() noexcept {
-    if (io::in_irq_handler()) {
+    if (hal::arch_t::in_irq_handler()) {
         scheduler::current().switch_task();
     } else {
+        current_irq_lock irq_lock;
         hal::arch_t::yield();
     }
 }

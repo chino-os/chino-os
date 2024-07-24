@@ -18,6 +18,7 @@ class emulator_cpu {
 
     void run(size_t cpu_id, size_t memory_size);
 
+    bool in_irq_handler() noexcept;
     arch_irq_state_t disable_irq();
     bool restore_irq(arch_irq_state_t irq_state);
 

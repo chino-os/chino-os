@@ -15,6 +15,7 @@ class emulator_cpu;
 
 struct irq_overlapped : OVERLAPPED {
     arch_irq_number_t number;
+    DWORD bytes_transferred;
 };
 
 class emulator {
@@ -24,8 +25,6 @@ class emulator {
     static emulator_cpu &cpu(size_t id);
     static emulator_cpu &current_cpu();
 
-    static HANDLE iocp_port() noexcept { return iocp_port_; }
-
   private:
     static void create_cpu_threads();
     static DWORD WINAPI cpu_entry([[maybe_unused]] LPVOID pcpu_id);
@@ -33,6 +32,25 @@ class emulator {
   private:
     inline static size_t memory_size_;
     inline static std::array<HANDLE, chip_t::cpus_count> cpu_threads_;
-    inline static HANDLE iocp_port_;
 };
+
+error_code win32_to_error_code(DWORD win32) noexcept;
+
+#define TRY_WIN32_IF_NOT(x)                                                                                            \
+    {                                                                                                                  \
+        chino::os::kernel::ps::current_irq_lock irq_lock;                                                              \
+        if (!(x)) {                                                                                                    \
+            return err(chino::os::hal::win32_to_error_code(GetLastError()));                                           \
+        }                                                                                                              \
+    }
+
+#define TRY_WIN32_IO_IF_NOT(x)                                                                                         \
+    {                                                                                                                  \
+        chino::os::kernel::ps::current_irq_lock irq_lock;                                                              \
+        if (!(x)) {                                                                                                    \
+            auto error = GetLastError();                                                                               \
+            if (error != ERROR_IO_PENDING)                                                                             \
+                return err(chino::os::hal::win32_to_error_code(error));                                                \
+        }                                                                                                              \
+    }
 } // namespace chino::os::hal

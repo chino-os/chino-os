@@ -23,7 +23,7 @@ class host_console_device : public device {
 
     result<size_t> read(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept override;
     result<size_t> write(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept override;
-    result<int> control(file &file, int request, va_list ap) noexcept override;
+    result<int> control(file &file, int request, void *arg) noexcept override;
 
   private:
     static result<void> stdin_irq_handler(hal::arch_irq_number_t, void *context) noexcept;

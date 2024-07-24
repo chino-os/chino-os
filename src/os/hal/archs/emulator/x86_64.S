@@ -8,6 +8,7 @@
 
 .extern emulator_restore_irq
 .extern emulator_irq_state
+.extern emulator_in_irq_handler
 .extern io_handle_irq
 .extern ps_switch_task
 
@@ -87,6 +88,9 @@ emulator_dispatch_irq:
 
     pop     %rcx
     call    emulator_restore_irq        # restore irq
+
+    lea     emulator_in_irq_handler(%rip),  %rax
+    movw    $0,         (%rax)
 
     pop     %rax
     pop     %rbx

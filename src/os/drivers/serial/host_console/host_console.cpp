@@ -112,7 +112,7 @@ result<size_t> host_console_device::write(file &file, std::span<const iovec> iov
     return ok(total_written);
 }
 
-result<int> host_console_device::control(file &file, int request, va_list ap) noexcept {
+result<int> host_console_device::control(file &file, int request, void *arg) noexcept {
     return err(error_code::not_supported);
 }
 

@@ -1,6 +1,7 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #include "emulator_cpu.h"
+#include <chino/os/kernel/io.h>
 #include <chino/os/kernel/ke.h>
 
 using namespace chino;
@@ -14,6 +15,7 @@ inline static constexpr UINT WM_ARCH_IRQ = WM_USER + 1;
 
 extern "C" {
 std::atomic<arch_irq_state_t> emulator_irq_state;
+std::atomic<uint32_t> emulator_in_irq_handler;
 
 struct syscall_payload {
     syscall_number number;
@@ -62,6 +64,7 @@ void emulator_cpu::run(size_t cpu_id, size_t memory_size) {
         DispatchMessage(&msg);
     }
 }
+bool emulator_cpu::in_irq_handler() noexcept { return emulator_in_irq_handler.load(std::memory_order_acquire); }
 
 arch_irq_state_t emulator_cpu::disable_irq() {
     arch_irq_state_t old_state = 1;
@@ -140,6 +143,7 @@ void emulator_cpu::process_irq(arch_irq_number_t irq_number, LPARAM lParam) {
         *--rsp = (uintptr_t)irq_number;
         context.Rip = (uintptr_t)emulator_dispatch_irq;
         SetThreadContext(cpu_thread_, &context);
+        emulator_in_irq_handler.store(1, std::memory_order_release);
         ResumeThread(cpu_thread_);
     }
 
@@ -149,7 +153,8 @@ void emulator_cpu::process_irq(arch_irq_number_t irq_number, LPARAM lParam) {
     CONTEXT context{.ContextFlags = CONTEXT_CONTROL};
     while (true) {
         GetThreadContext(cpu_thread_, &context);
-        if (context.Rip < (uintptr_t)emulator_dispatch_irq || context.Rip >= emulator_dispatch_irq_end) {
+        if (!in_irq_handler() &&
+            (context.Rip < (uintptr_t)emulator_dispatch_irq || context.Rip >= emulator_dispatch_irq_end)) {
             break;
         }
         Sleep(0);

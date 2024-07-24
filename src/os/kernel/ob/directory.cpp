@@ -81,7 +81,7 @@ directory::insert_or_lookup(object *insert_object, std::string_view remaining_pa
                 // 5.1.1. insert
                 if (find_result == error_code::not_found) {
                     insert_object->add_ref();
-                    pivot ? items_.insert_before(pivot, insert_object) : items_.push_front(insert_object);
+                    pivot ? items_.insert_before(pivot, insert_object) : items_.push_back(insert_object);
                     return ok(std::make_pair<object_ptr<object>, std::string_view>(insert_object, {}));
                 } else {
                     return err(find_result);
@@ -94,7 +94,7 @@ directory::insert_or_lookup(object *insert_object, std::string_view remaining_pa
             }
         } else {
             // 5.2. Save the component object
-            if (pivot) {
+            if (find_result == error_code::key_already_exists && pivot) {
                 component = pivot;
             } else {
                 return err(find_result);

@@ -23,15 +23,16 @@ class host_serial_device : public device {
 
     result<size_t> read(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept override;
     result<size_t> write(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept override;
-    result<int> control(file &file, int request, va_list ap) noexcept override;
+    result<int> control(file &file, int request, void *arg) noexcept override;
 
   private:
-    static result<void> stdin_irq_handler(hal::arch_irq_number_t, void *context) noexcept;
+    static result<void> rx_irq_handler(hal::arch_irq_number_t, void *context) noexcept;
+    static result<void> tx_irq_handler(hal::arch_irq_number_t, void *context) noexcept;
 
   private:
     HANDLE port_ = nullptr;
-    //HANDLE stdin_wait_handle_ = nullptr;
-    kernel::ps::event stdin_avail_event_;
+    kernel::ps::event rx_event_;
+    kernel::ps::event tx_event_;
 };
 
 class host_serial_driver {

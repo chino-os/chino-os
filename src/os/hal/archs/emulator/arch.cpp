@@ -54,6 +54,8 @@ void emulator_arch::syscall(kernel::syscall_number number, void *arg) noexcept {
     emulator::current_cpu().syscall(number, arg);
 }
 
+bool emulator_arch::in_irq_handler() noexcept { return emulator::current_cpu().in_irq_handler(); }
+
 void emulator_arch::enable_irq() noexcept { restore_irq(1); }
 
 arch_irq_state_t emulator_arch::disable_irq() noexcept { return emulator::current_cpu().disable_irq(); }

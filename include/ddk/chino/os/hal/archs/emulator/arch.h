@@ -22,6 +22,7 @@ enum class emulator_irq_number {
     syscall,
     host_console_stdin,
     host_serial_rx,
+    host_serial_tx,
     __count,
 };
 
@@ -44,6 +45,7 @@ class emulator_arch {
     static void yield() noexcept;
     static void syscall(kernel::syscall_number number, void *arg) noexcept;
 
+    static bool in_irq_handler() noexcept;
     static void enable_irq() noexcept;
     static arch_irq_state_t disable_irq() noexcept;
     static bool restore_irq(arch_irq_state_t state) noexcept;

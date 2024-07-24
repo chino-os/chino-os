@@ -32,8 +32,8 @@ result<size_t> stream_console_device::write(file &file, std::span<const iovec> i
     return io::write_file(stream_file_, iovs);
 }
 
-result<int> stream_console_device::control(file &file, int request, va_list ap) noexcept {
-    return io::control_file(stream_file_, request, ap);
+result<int> stream_console_device::control(file &file, int request, void *arg) noexcept {
+    return io::control_file(stream_file_, request, arg);
 }
 
 result<void> stream_console_driver::install_device(stream_console_device &device,

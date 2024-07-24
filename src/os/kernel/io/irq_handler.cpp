@@ -14,21 +14,13 @@ struct irq_handler_entry {
     void *context;
 };
 
-static std::atomic<uint32_t> in_irq_handler_;
 static std::array<irq_handler_entry, (size_t)arch_irq_number_t::__count> irq_handlers_;
-
-struct in_irq_guard {
-    in_irq_guard() noexcept { in_irq_handler_.store(1, std::memory_order_release); }
-    ~in_irq_guard() { in_irq_handler_.store(0, std::memory_order_release); }
-};
 
 result<void> io::register_irq_handler(hal::arch_irq_number_t irq_number, irq_handler_t handler,
                                       void *context) noexcept {
     irq_handlers_[(size_t)irq_number] = {.handler = handler, .context = context};
     return ok();
 }
-
-bool io::in_irq_handler() noexcept { return in_irq_handler_.load(std::memory_order_acquire); }
 
 static void io_handle_syscall(syscall_number number, void *arg) noexcept {
     switch (number) {
@@ -41,7 +33,6 @@ static void io_handle_syscall(syscall_number number, void *arg) noexcept {
 }
 
 void io_handle_irq(arch_irq_number_t irq_number, syscall_number number, void *arg) noexcept {
-    in_irq_guard irq_guard;
     switch (irq_number) {
     case arch_irq_number_t::system_tick:
         ps::scheduler::current().on_system_tick();

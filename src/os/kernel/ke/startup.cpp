@@ -16,6 +16,9 @@ using namespace chino::os::kernel;
 
 #define SHELL_NAME "sh" // "sh"
 
+alignas(hal::cacheline_size) static std::array<uintptr_t, 128 * 1024> idle_stack_;
+static constinit static_object<ps::thread> idle_thread_;
+
 alignas(hal::cacheline_size) static std::array<uintptr_t, 128 * 1024> init_stack_;
 static constinit ps::process ke_process_;
 static constinit static_object<ps::thread> init_thread_;
@@ -25,7 +28,7 @@ static constinit ps::process sh_process_;
 static constinit static_object<ps::thread> sh_thread_;
 
 [[noreturn]] static int ke_init_system(void *arg) noexcept;
-[[noreturn]] static void ke_idle_loop() noexcept;
+[[noreturn]] static int ke_idle_loop(void *arg) noexcept;
 
 ps::process &chino::os::kernel::ke_process() noexcept { return ke_process_; }
 
@@ -34,9 +37,17 @@ void ke_startup(const boot_options &options) noexcept {
     mm::initialize_phase0(options);
     ps::scheduler::current().initialize_phase0();
 
-    // 2. Setup init thread
-    init_thread_.construct(ps::thread_create_options{.process = &ke_process_,
+    // 2. Setup idle thread
+    idle_thread_.construct(ps::thread_create_options{.process = &ke_process_,
                                                      .priority = thread_priority::idle,
+                                                     .not_owned_stack = true,
+                                                     .stack = idle_stack_,
+                                                     .entry_point = ke_idle_loop,
+                                                     .entry_arg = nullptr});
+
+    // 3. Setup init thread
+    init_thread_.construct(ps::thread_create_options{.process = &ke_process_,
+                                                     .priority = thread_priority::lowest,
                                                      .not_owned_stack = true,
                                                      .stack = init_stack_,
                                                      .entry_point = ke_init_system,
@@ -54,21 +65,43 @@ int ke_init_system(void *pv_options) noexcept {
     initialize_ke_services().expect("Initialize Ke Services failed.");
 
     auto sfd = open("/dev/host_serial", O_RDWR);
-    write(sfd, "123", 3);
 
     struct termios tty;
+    // Read in existing settings, and handle any error
     if (tcgetattr(sfd, &tty) != 0) {
         printf("Error %i from tcgetattr: %s\n", errno, strerror(errno));
     }
+
+    tty.c_cflag &= ~PARENB;        // Clear parity bit, disabling parity (most common)
+    tty.c_cflag &= ~CSTOPB;        // Clear stop field, only one stop bit used in communication (most common)
+    tty.c_cflag &= ~CSIZE;         // Clear all bits that set the data size
+    tty.c_cflag |= CS8;            // 8 bits per byte (most common)
+    tty.c_cflag &= ~CRTSCTS;       // Disable RTS/CTS hardware flow control (most common)
+    tty.c_cflag |= CREAD | CLOCAL; // Turn on READ & ignore ctrl lines (CLOCAL = 1)
+    tty.c_cc[VMIN] = 1;
+    tty.c_cc[VTIME] = 0; // nonblocking
+
+    cfsetspeed(&tty, 115200);
+    tcflush(sfd, TCIOFLUSH);
+    tcsetattr(sfd, TCSAFLUSH, &tty);
+    tcgetattr(sfd, &tty);
+    printf("Baud rate: %d\n", (int)cfgetspeed(&tty));
+    char buf[256]{};
+    auto r = write(sfd, "AT\r\n", 4);
+    printf("Write: %d\n", (int)r);
+    r = read(sfd, buf, 5);
+    printf("Read: %s\n", buf);
 
     // 3. Launch shell
     ps::thread_create_options sh_create_options{
         .process = &sh_process_, .priority = thread_priority::normal, .not_owned_stack = true, .stack = sh_stack_};
     ps::create_process("/bin/" SHELL_NAME ".exe", sh_thread_, sh_create_options).expect("Launch shell failed.");
-    ke_idle_loop();
+    while (true) {
+        hal::arch_t::yield_cpu();
+    }
 }
 
-void ke_idle_loop() noexcept {
+int ke_idle_loop(void *arg) noexcept {
     while (true) {
         hal::arch_t::yield_cpu();
     }

@@ -4,6 +4,7 @@
 #include "emulator_cpu.h"
 
 using namespace chino;
+using namespace chino::os;
 using namespace chino::os::hal;
 using namespace chino::os::kernel;
 
@@ -11,9 +12,6 @@ static std::array<emulator_cpu, chip_t::cpus_count> cpus_;
 
 void emulator::run(size_t memory_size) {
     memory_size_ = memory_size;
-
-    // 1. Initialize IOCP
-    iocp_port_ = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 0);
 
     emulator_cpu::register_message_queue();
     create_cpu_threads();
@@ -34,4 +32,13 @@ DWORD WINAPI emulator::cpu_entry([[maybe_unused]] LPVOID pcpu_id) {
     auto cpu_id = (size_t)pcpu_id;
     cpu(cpu_id).run(cpu_id, memory_size_);
     return 0;
+}
+
+error_code hal::win32_to_error_code(DWORD win32) noexcept {
+    switch (win32) {
+    case ERROR_SUCCESS:
+        return error_code::success;
+    default:
+        return error_code::fail;
+    }
 }

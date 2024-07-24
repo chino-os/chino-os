@@ -22,7 +22,7 @@ class host_fs_device : public device {
 
     result<size_t> read(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept override;
     result<size_t> write(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept override;
-    result<int> control(file &file, int request, va_list ap) noexcept override;
+    result<int> control(file &file, int request, void *arg) noexcept override;
 
   private:
     char base_dirname_[MAX_PATH] = {};

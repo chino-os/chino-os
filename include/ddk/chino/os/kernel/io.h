@@ -21,13 +21,12 @@ class device : public object {
 
     virtual result<size_t> read(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept = 0;
     virtual result<size_t> write(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept = 0;
-    virtual result<int> control(file &file, int request, va_list ap) noexcept = 0;
+    virtual result<int> control(file &file, int request, void *arg) noexcept = 0;
 };
 
 namespace kernel::io {
 typedef result<void> (*irq_handler_t)(hal::arch_irq_number_t irq_number, void *context);
 
-bool in_irq_handler() noexcept;
 result<void> register_irq_handler(hal::arch_irq_number_t irq_number, irq_handler_t handler, void *context) noexcept;
 
 result<void> attach_device(device &device) noexcept;
@@ -44,7 +43,7 @@ result<size_t> write_file(file &file, std::span<const iovec> iovs,
 result<size_t> write_file(file &file, std::span<const std::byte> buffer,
                           std::optional<size_t> offset = std::nullopt) noexcept;
 
-result<int> control_file(file &file, int request, va_list ap) noexcept;
+result<int> control_file(file &file, int request, void *arg) noexcept;
 
 result<void> allocate_console() noexcept;
 } // namespace kernel::io
