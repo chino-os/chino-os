@@ -15,7 +15,7 @@ void emulator_cpu::on_system_tick_timer(_Inout_ PTP_CALLBACK_INSTANCE Instance, 
     cpu->send_irq(arch_irq_number_t::system_tick);
 }
 
-void emulator_cpu::enable_system_tick(std::chrono::milliseconds ticks) {
-    int64_t dueTime = -(int64_t)ticks.count() * 10000; // in 100ns
+void emulator_cpu::enable_system_tick(std::chrono::nanoseconds ticks) {
+    int64_t dueTime = -(int64_t)ticks.count() / 100; // in 100ns
     SetThreadpoolTimer(systick_timer_, (FILETIME *)&dueTime, 0, 0);
 }

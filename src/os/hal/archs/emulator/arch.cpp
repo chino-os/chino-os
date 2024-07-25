@@ -21,8 +21,8 @@ extern void emulator_yield() noexcept;
 
 void emulator_arch::arch_startup(size_t memory_size) { emulator::run(memory_size); }
 
-std::chrono::milliseconds emulator_arch::current_cpu_time() noexcept {
-    return std::chrono::milliseconds(GetTickCount64());
+std::chrono::nanoseconds emulator_arch::current_cpu_time() noexcept {
+    return std::chrono::nanoseconds(GetTickCount64() * 1000000);
 }
 
 void emulator_arch::initialize_thread_stack(uintptr_t *&stack_top, kernel::ps::thread_main_thunk_t thunk,
@@ -64,6 +64,6 @@ bool emulator_arch::restore_irq(arch_irq_state_t state) noexcept { return emulat
 
 void emulator_arch::send_irq(arch_irq_number_t irq_number) { emulator::current_cpu().send_irq(irq_number); }
 
-void emulator_arch::enable_system_tick(std::chrono::milliseconds due_time) noexcept {
+void emulator_arch::enable_system_tick(std::chrono::nanoseconds due_time) noexcept {
     emulator::current_cpu().enable_system_tick(due_time);
 }

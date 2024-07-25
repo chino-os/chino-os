@@ -12,6 +12,7 @@
 
 namespace chino::os::kernel::ps {
 class process;
+class thread;
 
 struct thread_create_options {
     ps::process *process;
@@ -53,6 +54,7 @@ class irq_spin_lock {
         uint32_t expected = 0;
         while (!held_.compare_exchange_strong(expected, 1, std::memory_order_acq_rel)) {
             expected = 0;
+            hal::arch_t::yield_cpu();
         }
         return irq_state;
     }
@@ -64,6 +66,18 @@ class irq_spin_lock {
 
   private:
     std::atomic<uint32_t> held_;
+};
+
+class kspsc_pulse_event {
+  public:
+    constexpr kspsc_pulse_event() noexcept : waiter_(nullptr) {}
+
+    result<void> wait(std::optional<std::chrono::milliseconds> timeout = std::nullopt) noexcept;
+    void notify_one() noexcept;
+
+  private:
+    irq_spin_lock syncroot_;
+    std::atomic<thread *> waiter_;
 };
 
 class waitable_object : public object {

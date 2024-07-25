@@ -97,7 +97,6 @@ void scheduler::switch_task() noexcept {
 void scheduler::start_schedule(thread &first_thread) noexcept {
     chino_current_threads[hal::arch_t::current_cpu_id()] = &first_thread;
     first_thread.status(thread_status::running);
-    first_thread.set_scheduled();
     setup_next_system_tick();
     started_.store(1, std::memory_order_release);
     hal::arch_t::start_schedule(first_thread);
@@ -110,11 +109,10 @@ void scheduler::on_system_tick() noexcept {
     switch_task();
 }
 
-void scheduler::block_current_thread(waitable_object &waiting_object, std::optional<std::chrono::milliseconds> timeout,
-                                     irq_spin_lock &lock, hal::arch_irq_state_t irq_state) noexcept {
+void scheduler::block_current_thread(std::optional<std::chrono::nanoseconds> timeout, irq_spin_lock &lock,
+                                     hal::arch_irq_state_t irq_state) noexcept {
     auto &cnt_thread = current_thread();
     list_of(cnt_thread).remove(&cnt_thread);
-    cnt_thread.waiting_object = &waiting_object;
 
     if (!timeout) {
         // 1. Add to blocked list
@@ -131,7 +129,6 @@ void scheduler::block_current_thread(waitable_object &waiting_object, std::optio
 
 void scheduler::unblock_local_thread(thread &thread, irq_spin_lock &lock, hal::arch_irq_state_t irq_state) noexcept {
     blocked_threads_.remove(&thread);
-    thread.waiting_object = nullptr;
     thread.status(thread_status::ready);
     list_of(thread).push_back(&thread);
     update_max_ready_priority(thread.priority());
@@ -139,7 +136,7 @@ void scheduler::unblock_local_thread(thread &thread, irq_spin_lock &lock, hal::a
     yield();
 }
 
-void scheduler::delay_current_thread(std::chrono::milliseconds timeout) noexcept {}
+void scheduler::delay_current_thread(std::chrono::nanoseconds timeout) noexcept {}
 
 scheduler::scheduler_list_t &scheduler::list_of(thread &thread) noexcept {
     switch (thread.status()) {
@@ -203,13 +200,13 @@ void scheduler::update_max_ready_priority(thread_priority priority) noexcept {
 
 void scheduler::setup_next_system_tick() noexcept { hal::arch_t::enable_system_tick(system_tick_interval); }
 
-void scheduler::add_to_delay_list(thread &thread, std::chrono::milliseconds timeout) noexcept {
+void scheduler::add_to_delay_list(thread &thread, std::chrono::nanoseconds timeout) noexcept {
     auto wakeup_time = current_time_ + timeout;
     auto pivot = delayed_threads_.front();
     if (pivot) {
         ps::thread *next;
         // 1. Find the last thread.wakeup_time <= cnt_thread.wakeup_time
-        while ((next = delayed_threads_.next(pivot)) && next->wakeup_time_ <= wakeup_time) {
+        while ((next = delayed_threads_.next(pivot)) && next->wakeup_time <= wakeup_time) {
             pivot = next;
         }
 
@@ -224,7 +221,7 @@ void scheduler::add_to_delay_list(thread &thread, std::chrono::milliseconds time
 void scheduler::wakeup_delayed_threads() noexcept {
     auto current_time = current_time_;
     auto head = delayed_threads_.front();
-    while (head && head->wakeup_time_ <= current_time) {
+    while (head && head->wakeup_time <= current_time) {
         auto wake = head;
         head = delayed_threads_.next(head);
         delayed_threads_.remove(wake);

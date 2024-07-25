@@ -14,7 +14,7 @@ class emulator_chip {
     inline static constexpr size_t cpus_count = 1;
 
     static void enable_systick(uint64_t ticks) noexcept;
-    static void debug_print(const char *format, ...) noexcept;
+    static void debug_print(const char *str) noexcept;
 };
 
 using chip_t = emulator_chip;

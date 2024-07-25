@@ -7,15 +7,23 @@
 namespace chino::os::kernel::ob {
 inline constexpr char directory_separator = '/';
 
-result<void> insert_object(object &object, std::string_view full_path) noexcept;
-result<object_ptr<object>> lookup_object(std::string_view fullpath) noexcept;
+class named_object : public object {
+  public:
+    virtual std::string_view name() const noexcept { return {}; }
+
+    intrusive_list_node directory_list_node;
+};
+
+result<void> insert_object(named_object &object, std::string_view full_path) noexcept;
+result<object_ptr<named_object>> lookup_object(std::string_view fullpath) noexcept;
 
 template <class T> result<object_ptr<T>> lookup_object(std::string_view fullpath) noexcept {
     try_var(object, lookup_object(fullpath));
     return object.as<T>();
 }
 
-result<std::pair<object_ptr<object>, std::string_view>> lookup_object_partial(std::string_view remaining_path) noexcept;
+result<std::pair<object_ptr<named_object>, std::string_view>>
+lookup_object_partial(std::string_view remaining_path) noexcept;
 
 template <class T>
 result<std::pair<object_ptr<T>, std::string_view>> lookup_object_partial(std::string_view remaining_path) noexcept {

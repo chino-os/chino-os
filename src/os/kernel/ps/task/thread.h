@@ -17,7 +17,6 @@ struct thread_flags {
     uint32_t not_owned_stack : 1;
     uint32_t priority : 3;
     uint32_t status : 3;
-    uint32_t scheduled : 1;
 };
 
 class thread : public object {
@@ -32,15 +31,6 @@ class thread : public object {
     thread_status status() const noexcept { return (thread_status)flags_.status; }
     void status(thread_status value) noexcept { flags_.status = (uint32_t)value; }
 
-    bool set_scheduled() noexcept {
-        if (flags_.scheduled) {
-            return true;
-        } else {
-            flags_.scheduled = 1;
-            return false;
-        }
-    }
-
     ps::scheduler *scheduler() const noexcept { return scheduler_.load(std::memory_order_acquire); }
     void scheduler(ps::scheduler *value) noexcept { scheduler_.store(value, std::memory_order_release); }
 
@@ -54,11 +44,9 @@ class thread : public object {
 
     intrusive_list_node scheduler_list_node;
     intrusive_list_node process_list_node;
-
-    object_ptr<waitable_object> waiting_object;
     intrusive_list_node waiting_list_node;
 
-    std::chrono::milliseconds wakeup_time_;
+    std::chrono::nanoseconds wakeup_time;
 
   private:
     thread_flags flags_;

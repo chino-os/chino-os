@@ -1,8 +1,8 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
-#include "../object.h"
 #include "kernel_types.h"
+#include "ob.h"
 #include <chino/os/file.h>
 #include <chino/os/hal/arch.h>
 #include <span>
@@ -11,8 +11,8 @@
 namespace chino::os {
 using control_code_t = uint32_t;
 
-class device : public object {
-    CHINO_DEFINE_KERNEL_OBJECT_KIND(object, object_kind_device);
+class device : public kernel::ob::named_object {
+    CHINO_DEFINE_KERNEL_OBJECT_KIND(named_object, object_kind_device);
 
   public:
     virtual result<file> open(std::string_view path, create_disposition create_disposition) noexcept = 0;

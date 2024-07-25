@@ -12,8 +12,8 @@
 .extern io_handle_irq
 .extern ps_switch_task
 
-STACK_TOP_OFFSET    = 0x20
-STACK_BOTTOM_OFFSET = 0x28
+STACK_TOP_OFFSET    = 0x08
+STACK_BOTTOM_OFFSET = 0x10
 
 .text
 .align 16

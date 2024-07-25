@@ -22,22 +22,37 @@ class object;
 template <class T>
 concept Object = std::is_same_v<T, object> || std::is_base_of_v<object, T>;
 
-class object {
+namespace detail {
+class ref_counted_base {
   public:
-    CHINO_NONCOPYABLE(object);
-
-    constexpr object() noexcept : ref_count_(1) {}
-    virtual ~object() = default;
+    constexpr ref_counted_base() noexcept : ref_count_(1) {}
 
     uint32_t add_ref() const noexcept { return ref_count_.fetch_add(1, std::memory_order_relaxed); }
 
     uint32_t dec_ref() const noexcept {
         auto count = ref_count_.fetch_sub(1, std::memory_order_acq_rel);
         if (count == 1) {
-            delete this;
+            internal_release();
         }
         return count;
     }
+
+  protected:
+    virtual void internal_release() const noexcept {}
+
+  private:
+    mutable std::atomic<uint32_t> ref_count_;
+};
+} // namespace detail
+
+class object {
+  public:
+    CHINO_NONCOPYABLE(object);
+    constexpr object() noexcept = default;
+    virtual ~object() = default;
+
+    virtual uint32_t add_ref() const noexcept { return 1; }
+    virtual uint32_t dec_ref() const noexcept { return 1; }
 
     void operator delete(void *) {}
 
@@ -46,17 +61,6 @@ class object {
 
     /** @brief Is the object an instance of specific kind */
     virtual bool is_a(const object_kind &kind) const noexcept;
-
-    virtual std::string_view name() const noexcept { return {}; }
-
-  protected:
-    template <class T> friend class object_ptr;
-
-  public:
-    intrusive_list_node directory_list_node;
-
-  private:
-    mutable std::atomic<uint32_t> ref_count_;
 };
 
 template <class T> class object_ptr {

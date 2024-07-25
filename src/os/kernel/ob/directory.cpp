@@ -8,7 +8,7 @@ using namespace chino::os;
 using namespace chino::os::kernel;
 using namespace chino::os::kernel::ob;
 
-result<void> directory::remove(object &object) noexcept {
+result<void> directory::remove(named_object &object) noexcept {
     {
         std::unique_lock<decltype(items_mutex_)> lock(items_mutex_);
         items_.remove(&object);
@@ -17,27 +17,27 @@ result<void> directory::remove(object &object) noexcept {
     return ok();
 }
 
-result<void> directory::insert(object &object, std::string_view full_path) noexcept {
+result<void> directory::insert(named_object &object, std::string_view full_path) noexcept {
     try_(insert_or_lookup(&object, full_path));
     return ok();
 }
 
-result<object_ptr<object>> directory::lookup(std::string_view full_path) noexcept {
+result<object_ptr<named_object>> directory::lookup(std::string_view full_path) noexcept {
     try_var(result, insert_or_lookup(nullptr, full_path));
     return result.second.empty() ? ok(std::move(result.first)) : err(error_code::not_found);
 }
 
-result<std::pair<object_ptr<object>, std::string_view>>
+result<std::pair<object_ptr<named_object>, std::string_view>>
 directory::lookup_partial(std::string_view remaining_path) noexcept {
     return insert_or_lookup(nullptr, remaining_path);
 }
 
-result<std::pair<object_ptr<object>, std::string_view>>
-directory::insert_or_lookup(object *insert_object, std::string_view remaining_path) noexcept {
+result<std::pair<object_ptr<named_object>, std::string_view>>
+directory::insert_or_lookup(named_object *insert_object, std::string_view remaining_path) noexcept {
     // 1. Empty name
     if (remaining_path.empty()) {
         if (!insert_object)
-            return ok(std::make_pair<object_ptr<object>, std::string_view>(this, {}));
+            return ok(std::make_pair<object_ptr<named_object>, std::string_view>(this, {}));
         return err(error_code::invalid_path);
     }
 
@@ -54,12 +54,12 @@ directory::insert_or_lookup(object *insert_object, std::string_view remaining_pa
     // 4. Empty component name
     if (component_name.empty()) {
         if (remaining_path.empty() && !insert_object)
-            return ok(std::make_pair<object_ptr<object>, std::string_view>(this, {}));
+            return ok(std::make_pair<object_ptr<named_object>, std::string_view>(this, {}));
         return err(error_code::invalid_path);
     }
 
     // 5. Find the component object
-    object_ptr<object> component;
+    object_ptr<named_object> component;
     {
         std::unique_lock<decltype(items_mutex_)> lock(items_mutex_);
         auto pivot = items_.front();
@@ -82,14 +82,14 @@ directory::insert_or_lookup(object *insert_object, std::string_view remaining_pa
                 if (find_result == error_code::not_found) {
                     insert_object->add_ref();
                     pivot ? items_.insert_before(pivot, insert_object) : items_.push_back(insert_object);
-                    return ok(std::make_pair<object_ptr<object>, std::string_view>(insert_object, {}));
+                    return ok(std::make_pair<object_ptr<named_object>, std::string_view>(insert_object, {}));
                 } else {
                     return err(find_result);
                 }
             } else {
                 // 5.1.1. lookup
                 return find_result == error_code::key_already_exists
-                           ? ok(std::make_pair<object_ptr<object>, std::string_view>(pivot, {}))
+                           ? ok(std::make_pair<object_ptr<named_object>, std::string_view>(pivot, {}))
                            : err(find_result);
             }
         } else {

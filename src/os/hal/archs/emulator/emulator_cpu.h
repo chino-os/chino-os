@@ -22,7 +22,7 @@ class emulator_cpu {
     arch_irq_state_t disable_irq();
     bool restore_irq(arch_irq_state_t irq_state);
 
-    void enable_system_tick(std::chrono::milliseconds ticks);
+    void enable_system_tick(std::chrono::nanoseconds ticks);
     void syscall(kernel::syscall_number number, void *arg) noexcept;
     void send_irq(arch_irq_number_t irq_number);
 

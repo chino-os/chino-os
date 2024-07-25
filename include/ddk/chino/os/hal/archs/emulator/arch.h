@@ -35,7 +35,7 @@ class emulator_arch {
     static void arch_startup(size_t memory_size);
 
     static constexpr size_t current_cpu_id() noexcept { return 0; }
-    static std::chrono::milliseconds current_cpu_time() noexcept;
+    static std::chrono::nanoseconds current_cpu_time() noexcept;
 
     static void initialize_thread_stack(uintptr_t *&stack_top, kernel::ps::thread_main_thunk_t thunk,
                                         thread_start_t entrypoint, void *entry_arg) noexcept;
@@ -51,7 +51,7 @@ class emulator_arch {
     static bool restore_irq(arch_irq_state_t state) noexcept;
     static void send_irq(arch_irq_number_t irq_number);
 
-    static void enable_system_tick(std::chrono::milliseconds due_time) noexcept;
+    static void enable_system_tick(std::chrono::nanoseconds due_time) noexcept;
 };
 
 using arch_t = emulator_arch;
