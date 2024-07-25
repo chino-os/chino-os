@@ -10,6 +10,23 @@
 
 namespace chino::os {
 using control_code_t = uint32_t;
+class device;
+
+enum class io_request_kind {
+    open,
+
+};
+
+struct io_request {
+    io_request *next;
+    device *dev;
+    io_request_kind kind;
+};
+
+struct io_request_open : io_request {
+    std::string_view path;
+    create_disposition create_disposition;
+};
 
 class device : public kernel::ob::named_object {
     CHINO_DEFINE_KERNEL_OBJECT_KIND(named_object, object_kind_device);
