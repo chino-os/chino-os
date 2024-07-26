@@ -9,9 +9,14 @@
 using namespace chino;
 using namespace chino::os;
 using namespace chino::os::kernel;
+using namespace chino::os::kernel::io;
 using namespace chino::os::drivers;
 
 namespace {
+struct host_serial_generic_params : io_frame_params_generic {
+    hal::irq_overlapped overlapped;
+};
+
 void WINAPI port_io_completed(_In_ DWORD dwErrorCode, _In_ DWORD dwNumberOfBytesTransfered,
                               _Inout_ LPOVERLAPPED lpOverlapped) {
     auto *overlapped = static_cast<hal::irq_overlapped *>(lpOverlapped);
@@ -140,45 +145,32 @@ result<void> host_serial_device::install(std::string_view port_name) noexcept {
     return ok();
 }
 
-result<file> host_serial_device::open(std::string_view path, create_disposition disposition) noexcept {
-    if (path.empty()) {
-        return ok(file(*this, access_mask::generic_all));
-    }
-    return err(error_code::invalid_path);
-}
-
-result<void> host_serial_device::close(file &file) noexcept { return ok(); }
-
-result<size_t> host_serial_device::read(file &file, std::span<const iovec> iovs,
-                                        std::optional<size_t> /*offset*/) noexcept {
-    size_t total_read = 0;
-    for (auto iov : iovs) {
-        hal::irq_overlapped overlapped{.number = hal::arch_irq_number_t::host_serial_rx};
-        TRY_WIN32_IO_IF_NOT(ReadFile(port_, iov.iov_base, iov.iov_len, &overlapped.bytes_transferred, &overlapped));
-        try_(rx_event_.wait());
-        rx_event_.reset();
-        total_read += overlapped.bytes_transferred;
-        if (overlapped.bytes_transferred < iov.iov_len)
+result<void> host_serial_device::process_io(io_request &irp) noexcept {
+    auto &frame = irp.current_frame();
+    if (frame.kind().major == io_frame_major_kind::generic) {
+        auto &params = frame.params<host_serial_generic_params>();
+        switch ((io_frame_generic_kind)frame.kind().minor) {
+        case io_frame_generic_kind::read: {
+            params.overlapped = {.number = hal::arch_irq_number_t::host_serial_rx};
+            TRY_WIN32_IO_IF_NOT(ReadFile(port_, params.read.buffer.data(), params.read.buffer.size_bytes(),
+                                         &params.overlapped.bytes_transferred, &params.overlapped));
             break;
+        }
+        case io_frame_generic_kind::write: {
+            params.overlapped = {.number = hal::arch_irq_number_t::host_serial_tx};
+            TRY_WIN32_IO_IF_NOT(WriteFile(port_, params.write.buffer.data(), params.write.buffer.size_bytes(),
+                                          &params.overlapped.bytes_transferred, &params.overlapped));
+            break;
+        }
+        default:
+            break;
+        }
     }
-    return ok(total_read);
+    return device::process_io(irp);
 }
 
-result<size_t> host_serial_device::write(file &file, std::span<const iovec> iovs,
-                                         std::optional<size_t> /*offset*/) noexcept {
-    size_t total_written = 0;
-    for (auto iov : iovs) {
-        hal::irq_overlapped overlapped{.number = hal::arch_irq_number_t::host_serial_tx};
-        TRY_WIN32_IO_IF_NOT(WriteFile(port_, iov.iov_base, iov.iov_len, &overlapped.bytes_transferred, &overlapped));
-        try_(tx_event_.wait());
-        tx_event_.reset();
-        total_written += overlapped.bytes_transferred;
-    }
-    return ok(total_written);
-}
-
-result<int> host_serial_device::control(file &file, int request, void *arg) noexcept {
-    switch (request) {
+result<size_t> host_serial_device::fast_control(file &file, control_code_t code, void *arg) noexcept {
+    switch (code) {
     case TCGETS: {
         auto term = reinterpret_cast<termios *>(arg);
         if (!term) {
@@ -251,13 +243,17 @@ result<int> host_serial_device::control(file &file, int request, void *arg) noex
 
 result<void> host_serial_device::rx_irq_handler(hal::arch_irq_number_t, void *context) noexcept {
     auto *device = reinterpret_cast<host_serial_device *>(context);
-    device->rx_event_.notify_all();
+    auto irp = device->current_irp();
+    auto &frame = irp->current_frame();
+    irp->complete(ok(frame.params<host_serial_generic_params>().overlapped.bytes_transferred));
     return ok();
 }
 
 result<void> host_serial_device::tx_irq_handler(hal::arch_irq_number_t, void *context) noexcept {
     auto *device = reinterpret_cast<host_serial_device *>(context);
-    device->tx_event_.notify_all();
+    auto irp = device->current_irp();
+    auto &frame = irp->current_frame();
+    irp->complete(ok(frame.params<host_serial_generic_params>().overlapped.bytes_transferred));
     return ok();
 }
 

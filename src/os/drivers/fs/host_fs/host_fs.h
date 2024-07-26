@@ -1,12 +1,12 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
-#include <Windows.h>
+#include "../../../hal/archs/emulator/emulator.h"
 #include <chino/conf/board_desc.h>
 #include <chino/os/kernel/io.h>
 
 namespace chino::os::drivers {
-class host_fs_device : public device {
+class host_fs_device : public kernel::io::device {
   public:
     constexpr host_fs_device(hal::meta::board_desc::chip::machine::devices::host_fs) noexcept {}
 
@@ -17,12 +17,11 @@ class host_fs_device : public device {
 
     result<void> install() noexcept;
 
-    result<file> open(std::string_view path, create_disposition create_disposition) noexcept override;
     result<void> close(file &file) noexcept override;
-
-    result<size_t> read(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept override;
-    result<size_t> write(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept override;
-    result<int> control(file &file, int request, void *arg) noexcept override;
+    result<void> fast_open(file &file, std::string_view path, create_disposition create_disposition) noexcept override;
+    result<size_t> fast_read(file &file, std::span<std::byte> buffer, std::optional<size_t> offset) noexcept override;
+    result<size_t> fast_write(file &file, std::span<const std::byte> buffer,
+                              std::optional<size_t> offset) noexcept override;
 
   private:
     char base_dirname_[MAX_PATH] = {};

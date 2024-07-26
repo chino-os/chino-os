@@ -6,4 +6,6 @@
 
 namespace chino::os::kernel::io {
 result<void> initialize_phase1(const boot_options &options) noexcept;
+
+[[noreturn]] int io_worker_main(void *) noexcept;
 } // namespace chino::os::kernel::io

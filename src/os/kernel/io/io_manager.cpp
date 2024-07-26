@@ -16,9 +16,9 @@ using namespace std::string_view_literals;
     std::span<const iovec> iovs(&iovs##0, 1)
 
 #define TRY_GET_DEVICE(file)                                                                                           \
-    if (!file.object().is_a(os::device::kind())) [[unlikely]]                                                          \
+    if (!file.object().is_a(os::kernel::io::device::kind())) [[unlikely]]                                              \
         return err(error_code::not_supported);                                                                         \
-    auto &dev = static_cast<os::device &>(file.object())
+    auto &dev = static_cast<os::kernel::io::device &>(file.object())
 
 namespace {
 class dev_directory : public ob::directory {
@@ -27,6 +27,9 @@ class dev_directory : public ob::directory {
 };
 
 constinit dev_directory dev_directory_;
+constinit ps::irq_spin_lock device_work_list_lock_;
+constinit ps::event device_work_list_avail_event_;
+constinit intrusive_list<device, &device::work_list_node> device_work_list_;
 } // namespace
 
 result<void> io::initialize_phase1(const boot_options &options) noexcept {
@@ -35,13 +38,40 @@ result<void> io::initialize_phase1(const boot_options &options) noexcept {
     return ok();
 }
 
+int io::io_worker_main(void *) noexcept {
+    while (true) {
+        device *head;
+        {
+            std::unique_lock<ps::irq_spin_lock> lock(device_work_list_lock_);
+            head = device_work_list_.front();
+            if (head)
+                device_work_list_.remove(head);
+            else
+                device_work_list_avail_event_.reset();
+        }
+
+        if (head)
+            head->process_queued_ios();
+        else
+            device_work_list_avail_event_.wait().expect("Wait event failed.");
+    }
+}
+
+void io::register_device_process_io(device &device) noexcept {
+    std::unique_lock<ps::irq_spin_lock> lock(device_work_list_lock_);
+    device_work_list_.push_back(&device);
+    device_work_list_avail_event_.notify_all();
+}
+
 result<void> io::attach_device(device &device) noexcept {
     try_(dev_directory_.insert(device, device.name()));
     return ok();
 }
 
 result<file> io::open_file(device &device, std::string_view path, create_disposition disposition) noexcept {
-    return device.open(path, disposition);
+    file file(device, access_mask::generic_all);
+    try_(device.fast_open(file, path, disposition));
+    return ok(std::move(file));
 }
 
 result<file> io::open_file(std::string_view path, create_disposition disposition) noexcept {
@@ -66,29 +96,19 @@ result<void> io::close_file(file &file) noexcept {
     return dev.close(file);
 }
 
-result<size_t> io::read_file(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept {
-    TRY_GET_DEVICE(file);
-    return dev.read(file, iovs, offset);
-}
-
 result<size_t> io::read_file(file &file, std::span<std::byte> buffer, std::optional<size_t> offset) noexcept {
-    BUFFER_TO_IOVS(buffer, iovs);
-    return read_file(file, iovs, offset);
-}
-
-result<size_t> io::write_file(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept {
     TRY_GET_DEVICE(file);
-    return dev.write(file, iovs, offset);
+    return dev.fast_read(file, buffer, offset);
 }
 
 result<size_t> io::write_file(file &file, std::span<const std::byte> buffer, std::optional<size_t> offset) noexcept {
-    BUFFER_TO_IOVS(buffer, iovs);
-    return write_file(file, iovs, offset);
+    TRY_GET_DEVICE(file);
+    return dev.fast_write(file, buffer, offset);
 }
 
 result<int> io::control_file(file &file, int request, void *arg) noexcept {
     TRY_GET_DEVICE(file);
-    return dev.control(file, request, arg);
+    return dev.fast_control(file, request, arg);
 }
 
 result<void> io::allocate_console() noexcept { return ok(); }

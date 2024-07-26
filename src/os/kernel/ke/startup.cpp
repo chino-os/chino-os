@@ -20,6 +20,9 @@ alignas(hal::cacheline_size) static std::array<uintptr_t, 128 * 1024> init_stack
 static constinit ps::process ke_process_;
 static constinit static_object<ps::thread> init_thread_;
 
+alignas(hal::cacheline_size) static std::array<uintptr_t, 128 * 1024> io_stack_;
+static constinit static_object<ps::thread> io_thread_;
+
 alignas(hal::cacheline_size) static std::array<uintptr_t, 128 * 1024 * 2> sh_stack_;
 static constinit ps::process sh_process_;
 static constinit static_object<ps::thread> sh_thread_;
@@ -61,7 +64,15 @@ int ke_init_system(void *pv_options) noexcept {
     // 2. Initialize user land
     initialize_ke_services().expect("Initialize Ke Services failed.");
 
-    // 3. Launch shell
+    // 3. Setup IO thread
+    io_thread_.construct(ps::thread_create_options{.process = &ke_process_,
+                                                   .priority = thread_priority::highest,
+                                                   .not_owned_stack = true,
+                                                   .stack = io_stack_,
+                                                   .entry_point = io::io_worker_main,
+                                                   .entry_arg = nullptr});
+
+    // 4. Launch shell
     ps::thread_create_options sh_create_options{
         .process = &sh_process_, .priority = thread_priority::normal, .not_owned_stack = true, .stack = sh_stack_};
     ps::create_process("/bin/" SHELL_NAME ".exe", sh_thread_, sh_create_options).expect("Launch shell failed.");

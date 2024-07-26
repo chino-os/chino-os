@@ -7,7 +7,7 @@
 #include <chino/os/kernel/ps.h>
 
 namespace chino::os::drivers {
-class host_serial_device : public device {
+class host_serial_device : public kernel::io::device {
   public:
     constexpr host_serial_device(hal::meta::board_desc::chip::machine::devices::host_serial) noexcept {}
 
@@ -18,12 +18,9 @@ class host_serial_device : public device {
 
     result<void> install(std::string_view port_name) noexcept;
 
-    result<file> open(std::string_view path, create_disposition create_disposition) noexcept override;
-    result<void> close(file &file) noexcept override;
+    result<size_t> fast_control(file &file, control_code_t code, void *arg) noexcept override;
 
-    result<size_t> read(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept override;
-    result<size_t> write(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept override;
-    result<int> control(file &file, int request, void *arg) noexcept override;
+    result<void> process_io(kernel::io::io_request &irp) noexcept override;
 
   private:
     static result<void> rx_irq_handler(hal::arch_irq_number_t, void *context) noexcept;
@@ -31,8 +28,6 @@ class host_serial_device : public device {
 
   private:
     HANDLE port_ = nullptr;
-    kernel::ps::event rx_event_;
-    kernel::ps::event tx_event_;
 };
 
 class host_serial_driver {

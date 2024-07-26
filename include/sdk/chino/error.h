@@ -21,5 +21,6 @@ enum class error_code : int32_t {
     io_error = 12,
     bad_cast = 13,
     timeout = 14,
+    again = 15,
 };
 }

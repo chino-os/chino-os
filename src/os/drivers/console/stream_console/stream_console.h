@@ -5,7 +5,7 @@
 #include <chino/os/kernel/io.h>
 
 namespace chino::os::drivers {
-class stream_console_device : public device {
+class stream_console_device : public kernel::io::device {
   public:
     constexpr stream_console_device(hal::meta::board_desc::chip::machine::devices::stream_console) noexcept {}
 
@@ -14,14 +14,11 @@ class stream_console_device : public device {
         return "console"sv;
     }
 
-    result<void> install(os::device &stream_device) noexcept;
+    result<void> install(kernel::io::device &stream_device) noexcept;
 
-    result<file> open(std::string_view path, create_disposition create_disposition) noexcept override;
-    result<void> close(file &file) noexcept override;
-
-    result<size_t> read(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept override;
-    result<size_t> write(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept override;
-    result<int> control(file &file, int request, void *arg) noexcept override;
+    result<size_t> fast_read(file &file, std::span<std::byte> buffer, std::optional<size_t> offset) noexcept override;
+    result<size_t> fast_write(file &file, std::span<const std::byte> buffer,
+                              std::optional<size_t> offset) noexcept override;
 
   private:
     file stream_file_;
@@ -31,6 +28,6 @@ class stream_console_driver {
   public:
     template <class TDevice, class TBottomDevice> using device_t = stream_console_device;
 
-    static result<void> install_device(stream_console_device &device, os::device &stream_device) noexcept;
+    static result<void> install_device(stream_console_device &device, kernel::io::device &stream_device) noexcept;
 };
 } // namespace chino::os::drivers

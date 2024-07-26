@@ -19,7 +19,9 @@ class file {
 
     object &object() const noexcept { return *object_; }
     access_mask granted_access() const noexcept { return granted_access_; }
-    template <class T> T *data() noexcept { return reinterpret_cast<T *>(data_); }
+
+    template <class T> T *data() const noexcept { return reinterpret_cast<T *>(data_); }
+    void data(void *value) noexcept { data_ = value; }
 
   private:
     object_ptr<os::object> object_;

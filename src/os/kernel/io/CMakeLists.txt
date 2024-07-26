@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.13)
 
-set(SRCS io_manager.cpp
+set(SRCS device.cpp
+         io_manager.cpp
+         io_request.cpp
          irq_handler.cpp
 )
 

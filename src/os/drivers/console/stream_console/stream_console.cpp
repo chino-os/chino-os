@@ -8,36 +8,26 @@ using namespace chino::os;
 using namespace chino::os::kernel;
 using namespace chino::os::drivers;
 
+#define GET_BOTTOM_DEVICE(file) auto &dev = static_cast<device &>(file.object())
+
 result<void> stream_console_device::install(device &stream_device) noexcept {
     try_set(stream_file_, io::open_file(stream_device, {}, create_disposition::open_existing));
     return ok();
 }
 
-result<file> stream_console_device::open(std::string_view path, create_disposition create_disposition) noexcept {
-    if (path.empty()) {
-        return ok(file(*this, access_mask::generic_all));
-    }
-    return err(error_code::invalid_path);
+result<size_t> stream_console_device::fast_read(file &file, std::span<std::byte> buffer,
+                                                std::optional<size_t> /*offset*/) noexcept {
+    GET_BOTTOM_DEVICE(stream_file_);
+    return dev.fast_read(stream_file_, buffer);
 }
 
-result<void> stream_console_device::close(file &file) noexcept { return ok(); }
-
-result<size_t> stream_console_device::read(file &file, std::span<const iovec> iovs,
-                                           std::optional<size_t> /*offset*/) noexcept {
-    return io::read_file(stream_file_, iovs);
+result<size_t> stream_console_device::fast_write(file &file, std::span<const std::byte> buffer,
+                                                 std::optional<size_t> /*offset*/) noexcept {
+    GET_BOTTOM_DEVICE(stream_file_);
+    return dev.fast_write(stream_file_, buffer);
 }
 
-result<size_t> stream_console_device::write(file &file, std::span<const iovec> iovs,
-                                            std::optional<size_t> /*offset*/) noexcept {
-    return io::write_file(stream_file_, iovs);
-}
-
-result<int> stream_console_device::control(file &file, int request, void *arg) noexcept {
-    return io::control_file(stream_file_, request, arg);
-}
-
-result<void> stream_console_driver::install_device(stream_console_device &device,
-                                                   chino::os::device &stream_device) noexcept {
+result<void> stream_console_driver::install_device(stream_console_device &device, io::device &stream_device) noexcept {
     try_(device.install(stream_device));
     try_(io::attach_device(device));
     return ok();

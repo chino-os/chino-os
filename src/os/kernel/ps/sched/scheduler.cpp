@@ -132,8 +132,8 @@ void scheduler::unblock_local_thread(thread &thread, irq_spin_lock &lock, hal::a
     thread.status(thread_status::ready);
     list_of(thread).push_back(&thread);
     update_max_ready_priority(thread.priority());
+    hal::arch_t::syscall(syscall_number::yield, nullptr);
     lock.unlock(irq_state);
-    yield();
 }
 
 void scheduler::delay_current_thread(std::chrono::nanoseconds timeout) noexcept {}

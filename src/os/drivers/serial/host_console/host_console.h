@@ -7,7 +7,7 @@
 #include <chino/os/kernel/ps.h>
 
 namespace chino::os::drivers {
-class host_console_device : public device {
+class host_console_device : public kernel::io::device {
   public:
     constexpr host_console_device(hal::meta::board_desc::chip::machine::devices::host_console) noexcept {}
 
@@ -18,12 +18,9 @@ class host_console_device : public device {
 
     result<void> install() noexcept;
 
-    result<file> open(std::string_view path, create_disposition create_disposition) noexcept override;
-    result<void> close(file &file) noexcept override;
-
-    result<size_t> read(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept override;
-    result<size_t> write(file &file, std::span<const iovec> iovs, std::optional<size_t> offset) noexcept override;
-    result<int> control(file &file, int request, void *arg) noexcept override;
+    result<size_t> fast_read(file &file, std::span<std::byte> buffer, std::optional<size_t> offset) noexcept override;
+    result<size_t> fast_write(file &file, std::span<const std::byte> buffer,
+                              std::optional<size_t> offset) noexcept override;
 
   private:
     static result<void> stdin_irq_handler(hal::arch_irq_number_t, void *context) noexcept;
@@ -31,7 +28,7 @@ class host_console_device : public device {
   private:
     HANDLE stdin_ = nullptr;
     HANDLE stdout_ = nullptr;
-    HANDLE stdin_wait_handle_ = nullptr;
+    //HANDLE stdin_wait_handle_ = nullptr;
     kernel::ps::event stdin_avail_event_;
 };
 
