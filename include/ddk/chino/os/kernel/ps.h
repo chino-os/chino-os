@@ -45,10 +45,6 @@ class current_irq_lock {
 
 class irq_spin_lock {
   public:
-    CHINO_NONCOPYABLE(irq_spin_lock);
-
-    constexpr irq_spin_lock() noexcept {}
-
     hal::arch_irq_state_t lock() noexcept {
         auto irq_state = hal::arch_t::disable_irq();
         uint32_t expected = 0;

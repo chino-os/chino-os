@@ -21,7 +21,7 @@ class stream_console_device : public kernel::io::device {
                               std::optional<size_t> offset) noexcept override;
 
   private:
-    file stream_file_;
+    file *stream_file_;
 };
 
 class stream_console_driver {

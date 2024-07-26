@@ -32,7 +32,7 @@ result<std::pair<object_ptr<T>, std::string_view>> lookup_object_partial(std::st
     return ok(std::make_pair(std::move(object), result.second));
 }
 
-result<int> insert_handle(file &&file) noexcept;
+result<std::pair<file *, int>> alloc_handle(object &ob, access_mask granted_access) noexcept;
 result<file *> reference_handle(int handle) noexcept;
 result<void> close_handle(int handle) noexcept;
 } // namespace chino::os::kernel::ob

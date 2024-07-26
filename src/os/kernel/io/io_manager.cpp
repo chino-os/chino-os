@@ -68,13 +68,13 @@ result<void> io::attach_device(device &device) noexcept {
     return ok();
 }
 
-result<file> io::open_file(device &device, std::string_view path, create_disposition disposition) noexcept {
-    file file(device, access_mask::generic_all);
-    try_(device.fast_open(file, path, disposition));
-    return ok(std::move(file));
+result<int> io::open_file(device &device, std::string_view path, create_disposition disposition) noexcept {
+    try_var(handle, ob::alloc_handle(device, access_mask::generic_all));
+    try_(device.fast_open(*handle.first, path, disposition));
+    return ok(handle.second);
 }
 
-result<file> io::open_file(std::string_view path, create_disposition disposition) noexcept {
+result<int> io::open_file(std::string_view path, create_disposition disposition) noexcept {
     // 1. Search by absolute path
     auto result = ob::lookup_object_partial<device>(path);
 

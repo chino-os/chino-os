@@ -37,8 +37,8 @@ class intrusive_list_storage {
     node_type *prev(node_type *pivot) noexcept { return pivot->prev != &dummy_ ? pivot->prev : nullptr; }
     node_type *next(node_type *pivot) noexcept { return pivot->next != &dummy_ ? pivot->next : nullptr; }
 
-    bool empty() const noexcept { return size() == 0; }
-    size_t size() const noexcept { return size_; }
+    constexpr bool empty() const noexcept { return size() == 0; }
+    constexpr size_t size() const noexcept { return size_; }
 
     node_type *front() noexcept { return head() != &dummy_ ? head() : nullptr; }
     node_type *back() noexcept { return tail() != &dummy_ ? tail() : nullptr; }

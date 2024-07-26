@@ -151,8 +151,8 @@ void register_device_process_io(device &device) noexcept;
 
 result<void> attach_device(device &device) noexcept;
 
-result<file> open_file(device &device, std::string_view path, create_disposition disposition) noexcept;
-result<file> open_file(std::string_view path, create_disposition disposition) noexcept;
+result<int> open_file(device &device, std::string_view path, create_disposition disposition) noexcept;
+result<int> open_file(std::string_view path, create_disposition disposition) noexcept;
 
 result<void> close_file(file &file) noexcept;
 

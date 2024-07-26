@@ -10,11 +10,11 @@ using namespace chino::os;
 using namespace chino::os::kernel;
 using namespace chino::os::kernel::ob;
 
-result<int> ob::insert_handle(file &&file) noexcept {
+result<std::pair<file *, int>> ob::alloc_handle(object &ob, access_mask granted_access) noexcept {
     auto &ht = ps::current_process().handle_table();
     try_var(handle, ht.allocate());
-    std::construct_at(handle.first, std::move(file));
-    return ok(handle.second);
+    std::construct_at(handle.first, ob, granted_access);
+    return ok(handle);
 }
 
 result<file *> ob::reference_handle(int handle) noexcept {
