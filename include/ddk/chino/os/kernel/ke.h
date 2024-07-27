@@ -18,10 +18,6 @@
 #endif
 
 namespace chino::os::kernel {
-namespace ps {
-class process;
-}
-
 enum class boot_memory_kind {
     free,
     boot,
@@ -41,6 +37,7 @@ struct boot_options {
 };
 
 ps::process &ke_process() noexcept;
+bool is_io_worker_thread(ps::thread &thread) noexcept;
 } // namespace chino::os::kernel
 
 extern "C" {

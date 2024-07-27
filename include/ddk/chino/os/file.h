@@ -2,6 +2,7 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
 #include "object.h"
+#include <chino/os/kernel/kd.h>
 #include <chino/os/kernel/ps.h>
 #include <chino/os/objectapi.h>
 
@@ -10,9 +11,7 @@ class file {
   public:
     CHINO_NONCOPYABLE(file);
 
-    file(os::object &object, access_mask granted_access, void *data = nullptr) noexcept
-        : object_(&object), granted_access_(granted_access), data_(data) {}
-    file(file &&) noexcept = default;
+    constexpr file() noexcept {}
     ~file();
 
     object &object() const noexcept { return *object_; }
@@ -23,10 +22,21 @@ class file {
 
     kernel::ps::event &event() noexcept { return event_; }
 
+    void prepare_to_open(os::object &object, access_mask desired_access) noexcept {
+        kassert(object_.empty());
+        object_ = &object;
+        granted_access_ = desired_access;
+    }
+
+    void failed_to_open() noexcept {
+        object_ = nullptr;
+        granted_access_ = access_mask::none;
+    }
+
   private:
     object_ptr<os::object> object_;
-    access_mask granted_access_;
-    void *data_;
+    access_mask granted_access_ = access_mask::none;
+    void *data_ = nullptr;
     kernel::ps::event event_;
 };
 } // namespace chino::os

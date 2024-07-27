@@ -34,8 +34,9 @@ result<void> pe_loader::load(std::string_view filepath) {
 #ifdef CHINO_EMULATOR
     char host_filename[MAX_PATH];
     {
-        try_var(file, io::open_file(filepath, create_disposition::open_existing));
-        TRY_WIN32_IF_NOT(GetFinalPathNameByHandleA(file.data<HANDLE>(), host_filename, MAX_PATH,
+        file f;
+        try_(io::open_file(f, access_mask::generic_read, filepath, create_disposition::open_existing));
+        TRY_WIN32_IF_NOT(GetFinalPathNameByHandleA(f.data<HANDLE>(), host_filename, MAX_PATH,
                                                    FILE_NAME_NORMALIZED | VOLUME_NAME_DOS));
     }
 

@@ -15,7 +15,7 @@ namespace detail {
 class handle_segment {
     struct free_entry {
         free_entry *next;
-        bool used;
+        uintptr_t used;
     };
 
     union element {

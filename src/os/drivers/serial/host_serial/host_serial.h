@@ -28,6 +28,8 @@ class host_serial_device : public kernel::io::device {
 
   private:
     HANDLE port_ = nullptr;
+    hal::irq_overlapped rx_overlapped_ = {};
+    hal::irq_overlapped tx_overlapped_ = {};
 };
 
 class host_serial_driver {

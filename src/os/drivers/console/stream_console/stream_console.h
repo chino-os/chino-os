@@ -20,8 +20,10 @@ class stream_console_device : public kernel::io::device {
     result<size_t> fast_write(file &file, std::span<const std::byte> buffer,
                               std::optional<size_t> offset) noexcept override;
 
+    result<void> process_io(kernel::io::io_request &irp) noexcept override;
+
   private:
-    file *stream_file_;
+    file stream_file_;
 };
 
 class stream_console_driver {

@@ -3,6 +3,7 @@
 #include "io_manager.h"
 #include "../ob/directory.h"
 #include <chino/conf/board_init.inl>
+#include <chino/os/kernel/kd.h>
 #include <chino/os/kernel/ob.h>
 
 using namespace chino;
@@ -38,7 +39,7 @@ result<void> io::initialize_phase1(const boot_options &options) noexcept {
     return ok();
 }
 
-int io::io_worker_main(void *) noexcept {
+void io::process_queued_ios(io_request *wait_irp) {
     while (true) {
         device *head;
         {
@@ -50,11 +51,18 @@ int io::io_worker_main(void *) noexcept {
                 device_work_list_avail_event_.reset();
         }
 
-        if (head)
-            head->process_queued_ios();
-        else
+        if (head) {
+            if (head->process_queued_ios(wait_irp))
+                return;
+        } else {
             device_work_list_avail_event_.wait().expect("Wait event failed.");
+        }
     }
+}
+
+int io::io_worker_main(void *) noexcept {
+    process_queued_ios(nullptr);
+    CHINO_UNREACHABLE();
 }
 
 void io::register_device_process_io(device &device) noexcept {
@@ -68,13 +76,30 @@ result<void> io::attach_device(device &device) noexcept {
     return ok();
 }
 
-result<int> io::open_file(device &device, std::string_view path, create_disposition disposition) noexcept {
-    try_var(handle, ob::alloc_handle(device, access_mask::generic_all));
-    try_(device.fast_open(*handle.first, path, disposition));
-    return ok(handle.second);
+result<void> io::open_file(file &file, access_mask desired_access, device &device, std::string_view path,
+                           create_disposition disposition) noexcept {
+    file.prepare_to_open(device, desired_access);
+    auto r = device.fast_open(file, path, disposition);
+    if (r.is_ok()) {
+        return r;
+    }
+    auto errcode = r.unwrap_err();
+    if (errcode == error_code::slow_io) {
+        io_request irp(make_io_frame_kind(io_frame_major_kind::generic, io_frame_generic_kind::open), file);
+        try_var(frame, irp.current_frame());
+        frame->params<io_frame_params_generic>().open = {.path = path, .create_disposition = disposition};
+        try_(irp.queue());
+        r = irp.wait();
+        if (r.is_ok()) {
+            return r;
+        }
+    }
+    file.failed_to_open();
+    return err(r.unwrap_err());
 }
 
-result<int> io::open_file(std::string_view path, create_disposition disposition) noexcept {
+result<void> io::open_file(file &file, access_mask desired_access, std::string_view path,
+                           create_disposition disposition) noexcept {
     // 1. Search by absolute path
     auto result = ob::lookup_object_partial<device>(path);
 
@@ -82,13 +107,13 @@ result<int> io::open_file(std::string_view path, create_disposition disposition)
     if (result.is_err()) {
         if (result.unwrap_err() == error_code::not_found && !path.empty() && path[0] == ob::directory_separator) {
             try_var(fs0, ob::lookup_object<device>("/dev/fs0"));
-            return open_file(*fs0, path.substr(1), disposition);
+            return open_file(file, desired_access, *fs0, path.substr(1), disposition);
         } else {
             return err(result.unwrap_err());
         }
     }
 
-    return open_file(*result.unwrap().first, result.unwrap().second, disposition);
+    return open_file(file, desired_access, *result.unwrap().first, result.unwrap().second, disposition);
 }
 
 result<void> io::close_file(file &file) noexcept {
@@ -98,7 +123,23 @@ result<void> io::close_file(file &file) noexcept {
 
 result<size_t> io::read_file(file &file, std::span<std::byte> buffer, std::optional<size_t> offset) noexcept {
     TRY_GET_DEVICE(file);
-    return dev.fast_read(file, buffer, offset);
+    file.event().reset();
+    auto r = dev.fast_read(file, buffer, offset);
+    if (r.is_ok()) {
+        return r;
+    }
+    auto errcode = r.unwrap_err();
+    if (errcode == error_code::slow_io) {
+        io_request irp(make_io_frame_kind(io_frame_major_kind::generic, io_frame_generic_kind::read), file);
+        try_var(frame, irp.current_frame());
+        frame->params<io_frame_params_generic>().read = {.buffer = buffer, .offset = offset};
+        try_(irp.queue());
+        r = irp.wait<size_t>();
+        if (r.is_ok()) {
+            return r;
+        }
+    }
+    return err(r.unwrap_err());
 }
 
 result<size_t> io::write_file(file &file, std::span<const std::byte> buffer, std::optional<size_t> offset) noexcept {

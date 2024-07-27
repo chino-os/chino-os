@@ -63,14 +63,22 @@ template <class T, class Callable> auto wrap_posix(Callable &&callable) noexcept
 
 struct ke_services_mt : i_ke_services {
   public:
-    ke_services_mt() noexcept : stdio_(io::open_file("/dev/console", create_disposition::open_existing).unwrap()) {}
+    ke_services_mt() noexcept {
+        io::open_file(stdio_, access_mask::generic_all, "/dev/console", create_disposition::open_existing)
+            .expect("Open console failed.");
+    }
 
     int errno_() noexcept override { return errno; }
 
     int open(const char *pathname, int flags, mode_t mode) noexcept override {
         return wrap_posix<ssize_t>([=]() -> result<int> {
-            try_var(file, io::open_file(pathname, create_disposition::open_existing));
-            return ob::insert_handle(std::move(file));
+            try_var(handle, ob::alloc_handle());
+            auto r =
+                io::open_file(*handle.first, access_mask::generic_all, pathname, create_disposition::open_existing);
+            if (r.is_ok())
+                return ok(handle.second);
+            (void)ob::close_handle(handle.second);
+            return err(r.unwrap_err());
         });
     }
 

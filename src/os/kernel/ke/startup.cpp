@@ -32,6 +32,8 @@ static constinit static_object<ps::thread> sh_thread_;
 
 ps::process &chino::os::kernel::ke_process() noexcept { return ke_process_; }
 
+bool chino::os::kernel::is_io_worker_thread(ps::thread &thread) noexcept { return &thread == io_thread_.get(); }
+
 void ke_startup(const boot_options &options) noexcept {
     // 1. Phase 0
     mm::initialize_phase0(options);

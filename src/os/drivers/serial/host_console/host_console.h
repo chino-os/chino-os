@@ -22,14 +22,15 @@ class host_console_device : public kernel::io::device {
     result<size_t> fast_write(file &file, std::span<const std::byte> buffer,
                               std::optional<size_t> offset) noexcept override;
 
+    result<void> process_io(kernel::io::io_request &irp) noexcept override;
+
   private:
     static result<void> stdin_irq_handler(hal::arch_irq_number_t, void *context) noexcept;
 
   private:
     HANDLE stdin_ = nullptr;
     HANDLE stdout_ = nullptr;
-    //HANDLE stdin_wait_handle_ = nullptr;
-    kernel::ps::event stdin_avail_event_;
+    HANDLE stdin_wait_handle_ = nullptr;
 };
 
 class host_console_driver {

@@ -13,7 +13,7 @@ namespace chino::os {
 using control_code_t = uint32_t;
 
 namespace kernel::io {
-inline constexpr size_t max_io_parameters_size = sizeof(uintptr_t) * 16;
+inline constexpr size_t max_io_parameters_size = sizeof(uintptr_t) * 8;
 
 enum class io_frame_major_kind : uint16_t {
     generic,
@@ -23,6 +23,10 @@ struct io_frame_kind {
     io_frame_major_kind major;
     uint16_t minor;
 };
+
+template <class TMinor> constexpr io_frame_kind make_io_frame_kind(io_frame_major_kind major, TMinor minor) noexcept {
+    return {.major = major, .minor = static_cast<uint16_t>(minor)};
+}
 
 enum class io_frame_generic_kind : uint16_t {
     open,
@@ -74,9 +78,6 @@ class io_frame {
         return *reinterpret_cast<T *>(params_.data());
     }
 
-  public:
-    io_frame *next;
-
   private:
     io_frame_kind kind_;
     os::file &file_;
@@ -85,26 +86,60 @@ class io_frame {
 
 class io_request {
   public:
-    io_frame &current_frame() const noexcept { return *current_frame_; }
+    constexpr io_request(io_frame_kind kind, file &file) noexcept
+        : status_{.code = error_code::io_pending, .bytes_transferred = 0}, current_frame_(frames_) {
+        std::construct_at(current_frame_, kind, file);
+    }
 
-    void complete(result<void> r) noexcept;
+    ~io_request();
 
-    void complete(result<size_t> r) noexcept {
+    result<io_frame *> current_frame() const noexcept {
+        return current_frame_ ? ok(current_frame_) : err(error_code::unavailable);
+    }
+
+    result<io_frame *> move_next_frame(io_frame_kind kind, file &file) noexcept;
+
+    bool is_completed() const noexcept { return !current_frame_; }
+    io_status status() const noexcept { return status_; }
+
+    result<void> queue() noexcept;
+
+    void complete() noexcept;
+
+    template <class T> void complete(result<T> r) noexcept {
+        status_.code = r.unwrap_err();
         if (r.is_ok()) {
-            status.bytes_transferred = r.unwrap();
-            complete(ok());
+            if constexpr (!std::is_void_v<T>) {
+                status_.bytes_transferred = static_cast<T>(r.unwrap());
+            }
+        }
+        complete();
+    }
+
+    template <class T = void> result<T> wait() noexcept {
+        try_(internal_wait());
+        if (status_.code == error_code::success) {
+            if constexpr (std::is_void_v<T>)
+                return ok();
+            else
+                return ok(static_cast<T>(status_.bytes_transferred));
         } else {
-            complete(result<void>(r.unwrap_err()));
+            return err(status_.code);
         }
     }
+
+  private:
+    result<void> internal_wait() noexcept;
 
   public:
     intrusive_list_node request_list_node;
 
   private:
-    io_status status;
-    io_frame *current_frame_ = frames;
-    io_frame frames[3];
+    io_status status_;
+    union {
+        io_frame frames_[3];
+    };
+    io_frame *current_frame_;
 };
 
 struct io_request_open : io_request {
@@ -129,11 +164,11 @@ class device : public kernel::ob::named_object {
     // Slow IO
     io_request *current_irp() const noexcept { return current_irp_; }
     result<void> queue_io(io_request &irp) noexcept;
-    void process_queued_ios() noexcept;
+    bool process_queued_ios(io_request *wait_irp = nullptr) noexcept;
 
     virtual result<void> process_io(io_request &irp) noexcept;
     virtual result<void> cancel_io(io_request &irp) noexcept;
-    virtual result<void> on_io_completion(io_request &irp) noexcept;
+    virtual void on_io_completion(io_request &irp) noexcept;
 
   public:
     intrusive_list_node work_list_node;
@@ -151,8 +186,10 @@ void register_device_process_io(device &device) noexcept;
 
 result<void> attach_device(device &device) noexcept;
 
-result<int> open_file(device &device, std::string_view path, create_disposition disposition) noexcept;
-result<int> open_file(std::string_view path, create_disposition disposition) noexcept;
+result<void> open_file(file &file, access_mask desired_access, device &device, std::string_view path,
+                       create_disposition disposition) noexcept;
+result<void> open_file(file &file, access_mask desired_access, std::string_view path,
+                       create_disposition disposition) noexcept;
 
 result<void> close_file(file &file) noexcept;
 

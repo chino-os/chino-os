@@ -7,6 +7,7 @@
 using namespace chino;
 using namespace chino::os;
 using namespace chino::os::kernel;
+using namespace chino::os::kernel::io;
 using namespace chino::os::drivers;
 
 namespace {
@@ -69,7 +70,36 @@ result<size_t> host_console_device::fast_read(file &file, std::span<std::byte> b
             }
         }
     }
-    return bytes_read ? ok(bytes_read) : err(error_code::again);
+    return bytes_read ? ok(bytes_read) : err(error_code::slow_io);
+}
+
+result<void> host_console_device::process_io(io_request &irp) noexcept {
+    try_var(frame, irp.current_frame());
+    if (frame->kind().major == io_frame_major_kind::generic) {
+        auto &params = frame->params<io_frame_params_generic>();
+        switch ((io_frame_generic_kind)frame->kind().minor) {
+        case io_frame_generic_kind::read: {
+            auto wait_handle = stdin_wait_handle_;
+            if (wait_handle) {
+                TRY_WIN32_IF_NOT(UnregisterWait(wait_handle));
+                stdin_wait_handle_ = nullptr;
+            }
+
+            auto r = fast_read(frame->file(), params.read.buffer, std::nullopt);
+            if (r.is_ok()) {
+                irp.complete(std::move(r));
+                return ok();
+            }
+
+            TRY_WIN32_IF_NOT(RegisterWaitForSingleObject(&stdin_wait_handle_, stdin_, handle_ready_callback, nullptr,
+                                                         INFINITE, WT_EXECUTEONLYONCE | WT_EXECUTEINWAITTHREAD));
+            return ok();
+        }
+        default:
+            break;
+        }
+    }
+    return device::process_io(irp);
 }
 
 result<size_t> host_console_device::fast_write(file &file, std::span<const std::byte> buffer,
@@ -78,44 +108,11 @@ result<size_t> host_console_device::fast_write(file &file, std::span<const std::
     TRY_WIN32_IF_NOT(WriteConsoleA(stdout_, buffer.data(), buffer.size_bytes(), &bytes_written, nullptr));
     return ok(bytes_written);
 }
-// while (!bytes_read) {
-// }
-// for (auto iov : iovs) {
-//     DWORD to_read = iov.iov_len;
-//     char *iov_base = reinterpret_cast<char *>(iov.iov_base);
-//     while (to_read) {
-//         if (!unread_events) {
-//             if (!total_read) {
-//                 auto wait_handle = stdin_wait_handle_;
-//                 if (wait_handle) {
-//                     TRY_WIN32_IF_NOT(UnregisterWait(wait_handle));
-//                     stdin_wait_handle_ = nullptr;
-//                 }
-//                 TRY_WIN32_IF_NOT(RegisterWaitForSingleObject(&stdin_wait_handle_, stdin_, handle_ready_callback,
-//                                                              nullptr, INFINITE,
-//                                                              WT_EXECUTEONLYONCE | WT_EXECUTEINWAITTHREAD));
-// #if 0
-//                     char buf[256];
-//                     sprintf(buf, "wait: %p\n", stdin_wait_handle_);
-//                     OutputDebugStringA(buf);
-// #endif
-//                 try_(stdin_avail_event_.wait());
-//                 stdin_avail_event_.reset();
-//             } else {
-//                 return ok(total_read);
-//             }
-//         } else {
-//         }
-//     }
-// }
-// }
-// return ok(total_read);
-// }
 
 result<void> host_console_device::stdin_irq_handler(hal::arch_irq_number_t, void *context) noexcept {
     auto *device = reinterpret_cast<host_console_device *>(context);
-    device->stdin_avail_event_.notify_all();
-    return ok();
+    auto irp = device->current_irp();
+    return irp->queue();
 }
 
 result<void> host_console_driver::install_device(host_console_device &device) noexcept {

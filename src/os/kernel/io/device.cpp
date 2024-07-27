@@ -18,16 +18,16 @@ result<void> device::fast_open(file &file, std::string_view path, create_disposi
 }
 
 result<size_t> device::fast_read(file &file, std::span<std::byte> buffer, std::optional<size_t> offset) noexcept {
-    return err(error_code::not_supported);
+    return err(error_code::slow_io);
 }
 
 result<size_t> device::fast_write(file &file, std::span<const std::byte> buffer,
                                   std::optional<size_t> offset) noexcept {
-    return err(error_code::not_supported);
+    return err(error_code::slow_io);
 }
 
 result<size_t> device::fast_control(file &file, control_code_t code, void *arg) noexcept {
-    return err(error_code::not_supported);
+    return err(error_code::slow_io);
 }
 
 result<void> device::queue_io(io_request &irp) noexcept {
@@ -39,7 +39,7 @@ result<void> device::queue_io(io_request &irp) noexcept {
     return ok();
 }
 
-void device::process_queued_ios() noexcept {
+bool device::process_queued_ios(io_request *wait_irp) noexcept {
     while (true) {
         io_request *head;
         {
@@ -51,35 +51,42 @@ void device::process_queued_ios() noexcept {
 
         if (head) {
             current_irp_ = head;
-            (void)process_io(*head);
+            auto r = process_io(*head);
+            if (r.is_err()) {
+                head->complete(r);
+            }
+
+            if (head == wait_irp && head->is_completed())
+                return true;
         } else
             break;
     }
+    return false;
 }
 
 result<void> device::process_io(io_request &irp) noexcept {
-    auto &frame = irp.current_frame();
-    auto kind = frame.kind();
+    try_var(frame, irp.current_frame());
+    auto kind = frame->kind();
     if (kind.major == io_frame_major_kind::generic) {
-        auto &params = frame.params<io_frame_params_generic>();
+        auto &params = frame->params<io_frame_params_generic>();
         switch ((io_frame_generic_kind)kind.minor) {
         case io_frame_generic_kind::open: {
-            try_(fast_open(frame.file(), params.open.path, params.open.create_disposition));
+            try_(fast_open(frame->file(), params.open.path, params.open.create_disposition));
             irp.complete(ok());
             return ok();
         }
         case io_frame_generic_kind::read: {
-            try_var(bytes, fast_read(frame.file(), params.read.buffer, params.read.offset));
+            try_var(bytes, fast_read(frame->file(), params.read.buffer, params.read.offset));
             irp.complete(ok(bytes));
             return ok();
         }
         case io_frame_generic_kind::write: {
-            try_var(bytes, fast_write(frame.file(), params.write.buffer, params.write.offset));
+            try_var(bytes, fast_write(frame->file(), params.write.buffer, params.write.offset));
             irp.complete(ok(bytes));
             return ok();
         }
         case io_frame_generic_kind::control: {
-            try_var(status, fast_control(frame.file(), params.control.code, params.control.arg));
+            try_var(status, fast_control(frame->file(), params.control.code, params.control.arg));
             irp.complete(ok(status));
             return ok();
         }
@@ -90,4 +97,4 @@ result<void> device::process_io(io_request &irp) noexcept {
 
 result<void> device::cancel_io(io_request &irp) noexcept { return err(error_code::not_supported); }
 
-result<void> device::on_io_completion(io_request &irp) noexcept { return ok(); }
+void device::on_io_completion(io_request &irp) noexcept { irp.complete(); }
