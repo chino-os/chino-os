@@ -18,23 +18,16 @@ waiting_list_t &waiting_list(chino::detail::intrusive_list_storage &list) noexce
 current_schedule_lock::current_schedule_lock() noexcept { scheduler::current().lock(); }
 current_schedule_lock::~current_schedule_lock() { scheduler::current().unlock(); }
 
-result<void> kspsc_pulse_event::wait(std::optional<std::chrono::milliseconds> timeout) noexcept {
-    auto irq_state = syncroot_.lock();
-    auto &cnt_thread = current_thread();
-    cnt_thread.add_ref();
-    kassert(!waiter_.load(std::memory_order_relaxed));
-    waiter_.store(&cnt_thread, std::memory_order_relaxed);
-    scheduler::current().block_current_thread(timeout, syncroot_, irq_state);
-    return !waiter_.load(std::memory_order_acquire) ? ok() : err(error_code::timeout);
+result<void> ps::wait_on_address(void *address,
+                                 std::optional<std::chrono::milliseconds> timeout = std::nullopt) noexcept {
+    scheduler::current().block_current_thread(address, timeout);
+    // TODO: check timeout
+    return ok();
 }
 
-void kspsc_pulse_event::notify_one() noexcept {
-    auto irq_state = syncroot_.lock();
-    auto waiter = waiter_.exchange(nullptr, std::memory_order_release);
-    kassert(waiter);
-    scheduler::unblock_thread(*waiter, syncroot_, irq_state);
-    waiter->dec_ref();
-}
+void ps::notify_one_by_address(void *address) noexcept { scheduler::unblock_threads(address, false); }
+
+void ps::notify_all_by_address(void *address) noexcept { scheduler::unblock_threads(address, true); }
 
 void waitable_object::blocking_wait(std::optional<std::chrono::milliseconds> timeout,
                                     hal::arch_irq_state_t irq_state) noexcept {

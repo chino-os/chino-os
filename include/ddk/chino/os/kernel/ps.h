@@ -64,16 +64,40 @@ class irq_spin_lock {
     std::atomic<uint32_t> held_;
 };
 
-class kspsc_pulse_event {
+class waitable_value {
   public:
-    constexpr kspsc_pulse_event() noexcept : waiter_(nullptr) {}
+    constexpr waitable_value() noexcept {}
 
-    result<void> wait(std::optional<std::chrono::milliseconds> timeout = std::nullopt) noexcept;
-    void notify_one() noexcept;
+    bool try_wait(uint32_t origin_value) const noexcept {
+        return value_.load(std::memory_order_acquire) != origin_value;
+    }
+
+    bool wait(uint32_t origin_value, std::optional<std::chrono::milliseconds> timeout = std::nullopt) noexcept {}
+
+    void set(uint32_t value) noexcept { value_.store(value, std::memory_order_release); }
+
+    void notify_one() const noexcept;
 
   private:
-    irq_spin_lock syncroot_;
-    std::atomic<thread *> waiter_;
+    void slow_wait(uint32_t origin_value, std::optional<std::chrono::milliseconds> timeout) noexcept;
+
+  private:
+    std::atomic<uint32_t> value_;
+};
+
+class critical_section {
+  public:
+    constexpr critical_section() noexcept {}
+
+    result<void> try_wait() noexcept {
+        uint32_t held = 0;
+        return held_.compare_exchange_strong(held, 1, std::memory_order_acq_rel) ? ok() : err(error_code::unavailable);
+    }
+
+    result<void> wait(std::optional<std::chrono::milliseconds> timeout = std::nullopt) noexcept;
+
+  private:
+    std::atomic<uint32_t> held_;
 };
 
 class waitable_object : public object {
@@ -136,6 +160,8 @@ result<void> create_process(std::string_view filepath) noexcept;
 thread &current_thread() noexcept;
 process &current_process() noexcept;
 void yield() noexcept;
+
+result<void> critical_section::wait(std::optional<std::chrono::milliseconds> timeout = std::nullopt) noexcept {}
 } // namespace chino::os::kernel::ps
 
 namespace std {

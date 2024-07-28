@@ -25,8 +25,9 @@ class dev_directory : public ob::directory {
 
 constinit dev_directory dev_directory_;
 constinit ps::irq_spin_lock device_work_list_lock_;
-constinit ps::event device_work_list_avail_event_;
+constinit ps::kmpsc_pulse_event device_work_list_avail_event_;
 constinit intrusive_list<device, &device::work_list_node> device_work_list_;
+constinit object_pool<io::file> file_table_;
 
 template <io_frame_generic_kind Minor, auto FastCall, class... TArgs>
 auto dispatch_io_fast_slow(file &file, TArgs &&...args) noexcept
@@ -64,6 +65,10 @@ result<std::pair<object_ptr<device>, std::string_view>> find_device(std::string_
 }
 } // namespace
 
+template <> void object_pool<io::file>::object_pool_object::internal_release() noexcept {
+    (void)file_table_.free(this);
+}
+
 result<void> io::initialize_phase1(const boot_options &options) noexcept {
     try_(ob::insert_object(dev_directory_, "/dev"));
     try_(hal::hal_install_devices());
@@ -78,8 +83,6 @@ void io::process_queued_ios(io_request *wait_irp) {
             head = device_work_list_.front();
             if (head)
                 device_work_list_.remove(head);
-            else
-                device_work_list_avail_event_.reset();
         }
 
         if (head) {
@@ -100,7 +103,7 @@ void io::register_device_process_io(device &device) noexcept {
     std::unique_lock<ps::irq_spin_lock> lock(device_work_list_lock_);
     if (!device.work_list_node.in_list()) {
         device_work_list_.push_back(&device);
-        device_work_list_avail_event_.notify_all();
+        device_work_list_avail_event_.notify_one();
     }
 }
 
@@ -112,7 +115,7 @@ result<void> io::attach_device(device &device) noexcept {
 result<object_ptr<file>> io::open_file(access_mask desired_access, std::string_view path,
                                        create_disposition disposition) noexcept {
     try_var(d, find_device(path));
-    try_var(f, ps::current_process().file_table().allocate());
+    try_var(f, file_table_.allocate());
     try_(open_file(*f.first, desired_access, *d.first, d.second, disposition));
     return ok(f.first);
 }

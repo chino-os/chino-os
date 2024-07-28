@@ -22,7 +22,3 @@ result<void> ps::create_process(std::string_view filepath, lazy_construct<thread
 }
 
 result<void> ps::create_process(std::string_view filepath) noexcept { return err(error_code::not_implemented); }
-
-template <> void object_pool<io::file>::object_pool_object::internal_release() noexcept {
-    (void)current_process().file_table().free(this);
-}

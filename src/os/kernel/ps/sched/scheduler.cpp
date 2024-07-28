@@ -41,11 +41,10 @@ void ps::yield() noexcept {
 
 scheduler &scheduler::current() noexcept { return schedulers_[hal::arch_t::current_cpu_id()]; }
 
-void scheduler::unblock_thread(thread &thread, irq_spin_lock &lock, hal::arch_irq_state_t irq_state) noexcept {
+void scheduler::unblock_threads(void *wait_address, bool unblock_all) noexcept {
     current_irq_lock irq_lock;
-    if (thread.scheduler() == &scheduler::current()) {
-        scheduler::current().unblock_local_thread(thread, lock, irq_state);
-    } else {
+    auto unblocked = scheduler::current().unblock_local_threads(wait_address, unblock_all);
+    if (unblock_all || !unblocked) {
         // IPI
         while (1)
             ;
@@ -109,9 +108,11 @@ void scheduler::on_system_tick() noexcept {
     switch_task();
 }
 
-void scheduler::block_current_thread(std::optional<std::chrono::nanoseconds> timeout, irq_spin_lock &lock,
-                                     hal::arch_irq_state_t irq_state) noexcept {
+void scheduler::block_current_thread(void *wait_address, std::optional<std::chrono::nanoseconds> timeout) noexcept {
+    current_irq_lock irq_lock;
     auto &cnt_thread = current_thread();
+    kassert(wait_address && !cnt_thread.wait_address);
+    cnt_thread.wait_address = wait_address;
     list_of(cnt_thread).remove(&cnt_thread);
 
     if (!timeout) {
@@ -123,17 +124,7 @@ void scheduler::block_current_thread(std::optional<std::chrono::nanoseconds> tim
         add_to_delay_list(cnt_thread, *timeout);
     }
     // 3. Yield
-    lock.unlock(irq_state);
     yield();
-}
-
-void scheduler::unblock_local_thread(thread &thread, irq_spin_lock &lock, hal::arch_irq_state_t irq_state) noexcept {
-    blocked_threads_.remove(&thread);
-    thread.status(thread_status::ready);
-    list_of(thread).push_back(&thread);
-    update_max_ready_priority(thread.priority());
-    hal::arch_t::syscall(syscall_number::yield, nullptr);
-    lock.unlock(irq_state);
 }
 
 void scheduler::delay_current_thread(std::chrono::nanoseconds timeout) noexcept {}
@@ -199,6 +190,28 @@ void scheduler::update_max_ready_priority(thread_priority priority) noexcept {
 }
 
 void scheduler::setup_next_system_tick() noexcept { hal::arch_t::enable_system_tick(system_tick_interval); }
+
+bool scheduler::unblock_local_threads(void *wait_address, bool unblock_all) noexcept {
+    bool unblocked = false;
+    auto thread = blocked_threads_.front();
+    while (thread) {
+        auto next = blocked_threads_.next(thread);
+        if (thread->wait_address == wait_address) {
+            thread->wait_address = nullptr;
+            blocked_threads_.remove(thread);
+            thread->status(thread_status::ready);
+            list_of(*thread).push_back(thread);
+            update_max_ready_priority(thread->priority());
+            unblocked = true;
+            if (!unblock_all)
+                break;
+        }
+        thread = next;
+    }
+    if (unblocked)
+        hal::arch_t::syscall(syscall_number::yield, nullptr);
+    return unblocked;
+}
 
 void scheduler::add_to_delay_list(thread &thread, std::chrono::nanoseconds timeout) noexcept {
     auto wakeup_time = current_time_ + timeout;

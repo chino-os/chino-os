@@ -168,9 +168,9 @@ template <class T> class ref_counted_object : public T {
   public:
     constexpr ref_counted_object() noexcept : ref_count_(1) {}
 
-    uint32_t add_ref() noexcept { return ref_count_.fetch_add(1, std::memory_order_relaxed); }
+    uint32_t add_ref() noexcept override { return ref_count_.fetch_add(1, std::memory_order_relaxed); }
 
-    uint32_t dec_ref() noexcept {
+    uint32_t dec_ref() noexcept override {
         auto count = ref_count_.fetch_sub(1, std::memory_order_acq_rel);
         if (count == 1) {
             internal_release();
@@ -179,7 +179,7 @@ template <class T> class ref_counted_object : public T {
     }
 
   protected:
-    virtual void internal_release() noexcept {}
+    virtual void internal_release() noexcept = 0;
 
   private:
     std::atomic<uint32_t> ref_count_;

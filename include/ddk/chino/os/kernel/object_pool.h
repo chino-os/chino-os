@@ -144,6 +144,7 @@ template <class T> class object_pool : private detail::object_pool_impl {
     };
 
     using entry_type = std::conditional_t<Object<T>, object_pool_object, T>;
+    using entry_pointer_type = std::conditional_t<Object<T>, object_ptr<T>, T *>;
 
     union element {
         detail::object_entry free;
@@ -177,11 +178,16 @@ template <class T> class object_pool : private detail::object_pool_impl {
 
     constexpr object_pool() noexcept {}
 
-    template <class... TArgs> result<std::pair<T *, size_t>> allocate(TArgs &&...args) noexcept {
+    template <class... TArgs> result<std::pair<entry_pointer_type, size_t>> allocate(TArgs &&...args) noexcept {
         try_var(r, object_pool_impl::allocate(object_segment::elements_count));
-        auto obj = reinterpret_cast<T *>(r.first);
-        std::construct_at(obj, std::forward<TArgs>(args)...);
-        return ok(std::make_pair(obj, r.second));
+        auto entry = reinterpret_cast<entry_type *>(r.first);
+        std::construct_at(entry, std::forward<TArgs>(args)...);
+        auto obj = static_cast<T *>(entry);
+        if constexpr (Object<T>) {
+            return ok(std::make_pair(entry_pointer_type(std::in_place, obj), r.second));
+        } else {
+            return ok(std::make_pair(obj, r.second));
+        }
     }
 
     result<void> free(T *object) noexcept {
@@ -192,7 +198,7 @@ template <class T> class object_pool : private detail::object_pool_impl {
         return object_pool_impl::free(index, &std::destroy_at, object_segment::elements_count);
     }
 
-    result<T *> at(size_t index) noexcept {
+    result<entry_pointer_type> at(size_t index) noexcept {
         try_var(obj, object_pool_impl::at(index, object_segment::elements_count));
         return ok(reinterpret_cast<T *>(obj));
     }

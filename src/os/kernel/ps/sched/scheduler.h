@@ -15,7 +15,7 @@ class scheduler {
   public:
     static scheduler &current() noexcept;
 
-    static void unblock_thread(thread &thread, irq_spin_lock &lock, hal::arch_irq_state_t irq_state) noexcept;
+    static void unblock_threads(void *wait_address, bool unblock_all) noexcept;
 
     constexpr scheduler() noexcept : max_ready_priority_(thread_priority::idle), current_time_(0) {}
 
@@ -28,8 +28,7 @@ class scheduler {
     void attach_thread(thread &thread) noexcept;
     void detach_thread(thread &thread) noexcept;
 
-    void block_current_thread(std::optional<std::chrono::nanoseconds> timeout, irq_spin_lock &lock,
-                              hal::arch_irq_state_t irq_state) noexcept;
+    void block_current_thread(void *wait_address, std::optional<std::chrono::nanoseconds> timeout) noexcept;
     void delay_current_thread(std::chrono::nanoseconds timeout) noexcept;
 
     [[noreturn]] void start_schedule(thread &first_thread) noexcept;
@@ -43,7 +42,7 @@ class scheduler {
     void update_max_ready_priority(thread_priority priority) noexcept;
     void setup_next_system_tick() noexcept;
 
-    void unblock_local_thread(thread &thread, irq_spin_lock &lock, hal::arch_irq_state_t irq_state) noexcept;
+    bool unblock_local_threads(void *wait_address, bool unblock_all) noexcept;
     void add_to_delay_list(thread &thread, std::chrono::nanoseconds timeout) noexcept;
     void wakeup_delayed_threads() noexcept;
 
