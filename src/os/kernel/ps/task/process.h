@@ -3,6 +3,8 @@
 #pragma once
 #include "../../ob/handle_table.h"
 #include "thread.h"
+#include <chino/os/kernel/io/file.h>
+#include <chino/os/kernel/object_pool.h>
 
 namespace chino::os::kernel::ps {
 class process : public object {
@@ -14,11 +16,13 @@ class process : public object {
     constexpr process() noexcept {};
 
     ob::handle_table &handle_table() noexcept { return handle_table_; }
+    object_pool<io::file> &file_table() noexcept { return file_table_; }
 
     void attach_thread(thread &thread) noexcept;
 
   private:
     process_list_t threads_;
     ob::handle_table handle_table_;
+    object_pool<io::file> file_table_;
 };
 } // namespace chino::os::kernel::ps

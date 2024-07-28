@@ -15,6 +15,8 @@ class intrusive_list_node {
     constexpr intrusive_list_node(intrusive_list_node *prev = nullptr, intrusive_list_node *next = nullptr) noexcept
         : prev(prev), next(next) {}
 
+    bool in_list() const noexcept { return prev; }
+
   private:
     friend class detail::intrusive_list_storage;
 

@@ -2,6 +2,7 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #include "io_manager.h"
 #include "../ob/directory.h"
+#include "../ps/task/process.h"
 #include <chino/conf/board_init.inl>
 #include <chino/os/kernel/kd.h>
 #include <chino/os/kernel/ob.h>
@@ -16,11 +17,6 @@ using namespace std::string_view_literals;
     iovec iovs##0 {.iov_base = (void *)buffer.data(), .iov_len = buffer.size_bytes()};                                 \
     std::span<const iovec> iovs(&iovs##0, 1)
 
-#define TRY_GET_DEVICE(file)                                                                                           \
-    if (!file.object().is_a(os::kernel::io::device::kind())) [[unlikely]]                                              \
-        return err(error_code::not_supported);                                                                         \
-    auto &dev = static_cast<os::kernel::io::device &>(file.object())
-
 namespace {
 class dev_directory : public ob::directory {
   public:
@@ -31,6 +27,41 @@ constinit dev_directory dev_directory_;
 constinit ps::irq_spin_lock device_work_list_lock_;
 constinit ps::event device_work_list_avail_event_;
 constinit intrusive_list<device, &device::work_list_node> device_work_list_;
+
+template <io_frame_generic_kind Minor, auto FastCall, class... TArgs>
+auto dispatch_io_fast_slow(file &file, TArgs &&...args) noexcept
+    -> decltype((std::declval<device>().*FastCall)(file, std::forward<TArgs>(args)...)) {
+    file.event().reset();
+    auto r = (file.device().*FastCall)(file, std::forward<TArgs>(args)...);
+    if (r.is_ok()) {
+        return r;
+    }
+    auto errcode = r.unwrap_err();
+    if (errcode == error_code::slow_io) {
+        io_request irp(make_io_frame_kind(io_frame_major_kind::generic, Minor), file);
+        try_var(frame, irp.current_frame());
+        frame->params<io_frame_major_kind::generic, Minor>() = {std::forward<TArgs>(args)...};
+        try_(irp.queue());
+        r = irp.wait<typename std::decay_t<decltype(r)>::value_type>();
+        if (r.is_ok()) {
+            return r;
+        }
+    }
+    return err(r.unwrap_err());
+}
+
+result<std::pair<object_ptr<device>, std::string_view>> find_device(std::string_view path) {
+    // 1. Search by absolute path
+    auto result = ob::lookup_object_partial<device>(path);
+    if (result.is_ok()) {
+        return result;
+    } else if (result.unwrap_err() == error_code::not_found && !path.empty() && path[0] == ob::directory_separator) {
+        // 2. Search in fs0
+        try_var(fs0, ob::lookup_object<device>("/dev/fs0"));
+        return ok(std::make_pair(std::move(fs0), path.substr(1)));
+    }
+    return err(result.unwrap_err());
+}
 } // namespace
 
 result<void> io::initialize_phase1(const boot_options &options) noexcept {
@@ -67,8 +98,10 @@ int io::io_worker_main(void *) noexcept {
 
 void io::register_device_process_io(device &device) noexcept {
     std::unique_lock<ps::irq_spin_lock> lock(device_work_list_lock_);
-    device_work_list_.push_back(&device);
-    device_work_list_avail_event_.notify_all();
+    if (!device.work_list_node.in_list()) {
+        device_work_list_.push_back(&device);
+        device_work_list_avail_event_.notify_all();
+    }
 }
 
 result<void> io::attach_device(device &device) noexcept {
@@ -76,80 +109,42 @@ result<void> io::attach_device(device &device) noexcept {
     return ok();
 }
 
+result<object_ptr<file>> io::open_file(access_mask desired_access, std::string_view path,
+                                       create_disposition disposition) noexcept {
+    try_var(d, find_device(path));
+    try_var(f, ps::current_process().file_table().allocate());
+    try_(open_file(*f.first, desired_access, *d.first, d.second, disposition));
+    return ok(f.first);
+}
+
 result<void> io::open_file(file &file, access_mask desired_access, device &device, std::string_view path,
                            create_disposition disposition) noexcept {
-    file.prepare_to_open(device, desired_access);
-    auto r = device.fast_open(file, path, disposition);
-    if (r.is_ok()) {
-        return r;
-    }
-    auto errcode = r.unwrap_err();
-    if (errcode == error_code::slow_io) {
-        io_request irp(make_io_frame_kind(io_frame_major_kind::generic, io_frame_generic_kind::open), file);
-        try_var(frame, irp.current_frame());
-        frame->params<io_frame_params_generic>().open = {.path = path, .create_disposition = disposition};
-        try_(irp.queue());
-        r = irp.wait();
-        if (r.is_ok()) {
-            return r;
-        }
-    }
-    file.failed_to_open();
-    return err(r.unwrap_err());
+    file.prepare_to_open(device);
+    return dispatch_io_fast_slow<io_frame_generic_kind::open, &device::fast_open>(file, path, disposition)
+        .map_err([&](error_code e) {
+            file.failed_to_open();
+            return e;
+        });
 }
 
 result<void> io::open_file(file &file, access_mask desired_access, std::string_view path,
                            create_disposition disposition) noexcept {
-    // 1. Search by absolute path
-    auto result = ob::lookup_object_partial<device>(path);
-
-    // 2. Search in fs0
-    if (result.is_err()) {
-        if (result.unwrap_err() == error_code::not_found && !path.empty() && path[0] == ob::directory_separator) {
-            try_var(fs0, ob::lookup_object<device>("/dev/fs0"));
-            return open_file(file, desired_access, *fs0, path.substr(1), disposition);
-        } else {
-            return err(result.unwrap_err());
-        }
-    }
-
-    return open_file(file, desired_access, *result.unwrap().first, result.unwrap().second, disposition);
+    try_var(r, find_device(path));
+    return open_file(file, desired_access, *r.first, r.second, disposition);
 }
 
-result<void> io::close_file(file &file) noexcept {
-    TRY_GET_DEVICE(file);
-    return dev.close(file);
-}
+result<void> io::close_file(file &file) noexcept { return file.device().close(file); }
 
 result<size_t> io::read_file(file &file, std::span<std::byte> buffer, std::optional<size_t> offset) noexcept {
-    TRY_GET_DEVICE(file);
-    file.event().reset();
-    auto r = dev.fast_read(file, buffer, offset);
-    if (r.is_ok()) {
-        return r;
-    }
-    auto errcode = r.unwrap_err();
-    if (errcode == error_code::slow_io) {
-        io_request irp(make_io_frame_kind(io_frame_major_kind::generic, io_frame_generic_kind::read), file);
-        try_var(frame, irp.current_frame());
-        frame->params<io_frame_params_generic>().read = {.buffer = buffer, .offset = offset};
-        try_(irp.queue());
-        r = irp.wait<size_t>();
-        if (r.is_ok()) {
-            return r;
-        }
-    }
-    return err(r.unwrap_err());
+    return dispatch_io_fast_slow<io_frame_generic_kind::read, &device::fast_read>(file, buffer, offset);
 }
 
 result<size_t> io::write_file(file &file, std::span<const std::byte> buffer, std::optional<size_t> offset) noexcept {
-    TRY_GET_DEVICE(file);
-    return dev.fast_write(file, buffer, offset);
+    return dispatch_io_fast_slow<io_frame_generic_kind::write, &device::fast_write>(file, buffer, offset);
 }
 
-result<int> io::control_file(file &file, int request, void *arg) noexcept {
-    TRY_GET_DEVICE(file);
-    return dev.fast_control(file, request, arg);
+result<int> io::control_file(file &file, control_code_t code, void *arg) noexcept {
+    return dispatch_io_fast_slow<io_frame_generic_kind::control, &device::fast_control>(file, code, arg);
 }
 
 result<void> io::allocate_console() noexcept { return ok(); }

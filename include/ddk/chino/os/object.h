@@ -22,37 +22,14 @@ class object;
 template <class T>
 concept Object = std::is_same_v<T, object> || std::is_base_of_v<object, T>;
 
-namespace detail {
-class ref_counted_base {
-  public:
-    constexpr ref_counted_base() noexcept : ref_count_(1) {}
-
-    uint32_t add_ref() const noexcept { return ref_count_.fetch_add(1, std::memory_order_relaxed); }
-
-    uint32_t dec_ref() const noexcept {
-        auto count = ref_count_.fetch_sub(1, std::memory_order_acq_rel);
-        if (count == 1) {
-            internal_release();
-        }
-        return count;
-    }
-
-  protected:
-    virtual void internal_release() const noexcept {}
-
-  private:
-    mutable std::atomic<uint32_t> ref_count_;
-};
-} // namespace detail
-
 class object {
   public:
     CHINO_NONCOPYABLE(object);
     constexpr object() noexcept = default;
     virtual ~object() = default;
 
-    virtual uint32_t add_ref() const noexcept { return 1; }
-    virtual uint32_t dec_ref() const noexcept { return 1; }
+    virtual uint32_t add_ref() noexcept { return 1; }
+    virtual uint32_t dec_ref() noexcept { return 1; }
 
     void operator delete(void *) {}
 
@@ -168,11 +145,11 @@ template <class T> class object_ptr {
     T *object_;
 };
 
-template <class T> class static_object {
+template <class T> class lazy_construct {
   public:
-    CHINO_NONCOPYABLE(static_object);
+    CHINO_NONCOPYABLE(lazy_construct);
 
-    constexpr static_object() noexcept : storage_{} {}
+    constexpr lazy_construct() noexcept : storage_{} {}
 
     template <class... TArgs> void construct(TArgs &&...args) noexcept {
         std::construct_at(get(), std::forward<TArgs>(args)...);
@@ -185,5 +162,26 @@ template <class T> class static_object {
 
   private:
     alignas(alignof(T)) std::byte storage_[sizeof(T)];
+};
+
+template <class T> class ref_counted_object : public T {
+  public:
+    constexpr ref_counted_object() noexcept : ref_count_(1) {}
+
+    uint32_t add_ref() noexcept { return ref_count_.fetch_add(1, std::memory_order_relaxed); }
+
+    uint32_t dec_ref() noexcept {
+        auto count = ref_count_.fetch_sub(1, std::memory_order_acq_rel);
+        if (count == 1) {
+            internal_release();
+        }
+        return count;
+    }
+
+  protected:
+    virtual void internal_release() noexcept {}
+
+  private:
+    std::atomic<uint32_t> ref_count_;
 };
 } // namespace chino::os

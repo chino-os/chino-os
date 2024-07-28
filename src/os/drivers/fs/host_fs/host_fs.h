@@ -17,10 +17,12 @@ class host_fs_device : public kernel::io::device {
 
     result<void> install() noexcept;
 
-    result<void> close(file &file) noexcept override;
-    result<void> fast_open(file &file, std::string_view path, create_disposition create_disposition) noexcept override;
-    result<size_t> fast_read(file &file, std::span<std::byte> buffer, std::optional<size_t> offset) noexcept override;
-    result<size_t> fast_write(file &file, std::span<const std::byte> buffer,
+    result<void> close(kernel::io::file &file) noexcept override;
+    result<void> fast_open(kernel::io::file &file, std::string_view path,
+                           create_disposition create_disposition) noexcept override;
+    result<size_t> fast_read(kernel::io::file &file, std::span<std::byte> buffer,
+                             std::optional<size_t> offset) noexcept override;
+    result<size_t> fast_write(kernel::io::file &file, std::span<const std::byte> buffer,
                               std::optional<size_t> offset) noexcept override;
 
   private:

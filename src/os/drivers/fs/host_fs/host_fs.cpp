@@ -8,6 +8,7 @@
 using namespace chino;
 using namespace chino::os;
 using namespace chino::os::kernel;
+using namespace chino::os::kernel::io;
 using namespace chino::os::drivers;
 
 result<void> host_fs_device::install() noexcept {

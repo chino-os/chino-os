@@ -20,13 +20,11 @@ result<io_frame *> io_request::move_next_frame(io_frame_kind kind, file &file) n
     return err(error_code::out_of_memory);
 }
 
-result<void> io_request::queue() noexcept {
-    auto &dev = static_cast<device &>(current_frame_->file().object());
-    return dev.queue_io(*this);
-}
+result<void> io_request::queue() noexcept { return current_frame_->file().device().queue_io(*this); }
 
 void io_request::complete() noexcept {
     kassert(!is_completed());
+    kassert(!hal::arch_t::in_irq_handler());
     kassert(status_.code != error_code::io_pending); // Must set status
     current_frame_->file().event().notify_all();
     std::destroy_at(current_frame_);
@@ -35,8 +33,7 @@ void io_request::complete() noexcept {
         current_frame_ = nullptr;
     } else {
         current_frame_--;
-        auto &dev = static_cast<device &>(current_frame_->file().object());
-        dev.on_io_completion(*this);
+        current_frame_->file().device().on_io_completion(*this);
     }
 }
 

@@ -18,7 +18,7 @@ class host_serial_device : public kernel::io::device {
 
     result<void> install(std::string_view port_name) noexcept;
 
-    result<size_t> fast_control(file &file, control_code_t code, void *arg) noexcept override;
+    result<size_t> fast_control(kernel::io::file &file, control_code_t code, void *arg) noexcept override;
 
     result<void> process_io(kernel::io::io_request &irp) noexcept override;
 
@@ -28,8 +28,10 @@ class host_serial_device : public kernel::io::device {
 
   private:
     HANDLE port_ = nullptr;
-    hal::irq_overlapped rx_overlapped_ = {};
-    hal::irq_overlapped tx_overlapped_ = {};
+    hal::irq_overlapped rx_overlapped_ = {.number = hal::arch_irq_number_t::host_serial_rx,
+                                          .error = error_code::io_pending};
+    hal::irq_overlapped tx_overlapped_ = {.number = hal::arch_irq_number_t::host_serial_tx,
+                                          .error = error_code::io_pending};
 };
 
 class host_serial_driver {

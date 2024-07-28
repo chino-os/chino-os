@@ -10,7 +10,7 @@ namespace chino::os::kernel {
 #ifndef NDEBUG
 #define kassert(x)                                                                                                     \
     if (!(x)) {                                                                                                        \
-        chino::os::kernel::ke_bugcheck("Assertion at %s:%d: %s", __FILE__, __LINE__, #x);                              \
+        chino::os::kernel::ke_bugcheck("Assertion at %s:%d: %s\n", __FILE__, __LINE__, #x);                            \
     }
 #else
 #define kassert(x)

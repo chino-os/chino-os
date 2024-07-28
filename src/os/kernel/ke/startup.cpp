@@ -14,18 +14,18 @@ using namespace chino::os::kernel;
 #define SHELL_NAME "sh" // "sh"
 
 alignas(hal::cacheline_size) static std::array<uintptr_t, 128 * 1024> idle_stack_;
-static constinit static_object<ps::thread> idle_thread_;
+static constinit lazy_construct<ps::thread> idle_thread_;
 
 alignas(hal::cacheline_size) static std::array<uintptr_t, 128 * 1024> init_stack_;
 static constinit ps::process ke_process_;
-static constinit static_object<ps::thread> init_thread_;
+static constinit lazy_construct<ps::thread> init_thread_;
 
 alignas(hal::cacheline_size) static std::array<uintptr_t, 128 * 1024> io_stack_;
-static constinit static_object<ps::thread> io_thread_;
+static constinit lazy_construct<ps::thread> io_thread_;
 
 alignas(hal::cacheline_size) static std::array<uintptr_t, 128 * 1024 * 2> sh_stack_;
 static constinit ps::process sh_process_;
-static constinit static_object<ps::thread> sh_thread_;
+static constinit lazy_construct<ps::thread> sh_thread_;
 
 [[noreturn]] static int ke_init_system(void *arg) noexcept;
 [[noreturn]] static int ke_idle_loop(void *arg) noexcept;

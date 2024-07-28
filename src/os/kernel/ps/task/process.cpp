@@ -12,7 +12,7 @@ using namespace chino::os::kernel::ps;
 
 void process::attach_thread(thread &thread) noexcept { threads_.push_back(&thread); }
 
-result<void> ps::create_process(std::string_view filepath, static_object<thread> &thread,
+result<void> ps::create_process(std::string_view filepath, lazy_construct<thread> &thread,
                                 thread_create_options &options) noexcept {
     pe_loader loader;
     try_(loader.load(filepath));
@@ -22,3 +22,7 @@ result<void> ps::create_process(std::string_view filepath, static_object<thread>
 }
 
 result<void> ps::create_process(std::string_view filepath) noexcept { return err(error_code::not_implemented); }
+
+template <> void object_pool<io::file>::object_pool_object::internal_release() noexcept {
+    (void)current_process().file_table().free(this);
+}

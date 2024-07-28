@@ -13,8 +13,10 @@
 namespace chino::os::hal {
 class emulator_cpu;
 
-struct irq_overlapped : OVERLAPPED {
+struct irq_overlapped {
+    OVERLAPPED overlapped;
     arch_irq_number_t number;
+    error_code error;
     DWORD bytes_transferred;
 };
 
@@ -35,6 +37,12 @@ class emulator {
 };
 
 error_code win32_to_error_code(DWORD win32) noexcept;
+
+#define TRY_WIN32_IGNORE(x)                                                                                            \
+    {                                                                                                                  \
+        chino::os::kernel::ps::current_irq_lock irq_lock;                                                              \
+        x;                                                                                                             \
+    }
 
 #define TRY_WIN32_IF_NOT(x)                                                                                            \
     {                                                                                                                  \

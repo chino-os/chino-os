@@ -1,7 +1,7 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
-#include "../file.h"
+#include "../handle.h"
 #include "../object.h"
 
 namespace chino::os::kernel::ob {
@@ -32,7 +32,16 @@ result<std::pair<object_ptr<T>, std::string_view>> lookup_object_partial(std::st
     return ok(std::make_pair(std::move(object), result.second));
 }
 
-result<std::pair<file *, int>> alloc_handle() noexcept;
-result<file *> reference_handle(int handle) noexcept;
+result<std::pair<handle_entry *, int>> alloc_handle(object &object, access_mask granted_access) noexcept;
+result<handle_entry *> reference_handle(int handle) noexcept;
 result<void> close_handle(int handle) noexcept;
+
+template <class T> result<object_ptr<T>> reference_object(int handle) noexcept {
+    try_var(entry, reference_handle(handle));
+    auto &obj = entry->object();
+    if (obj.is_a(T::kind())) {
+        return ok(static_cast<T *>(&obj));
+    }
+    return err(error_code::bad_cast);
+}
 } // namespace chino::os::kernel::ob

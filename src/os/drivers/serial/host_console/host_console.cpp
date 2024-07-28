@@ -81,8 +81,8 @@ result<void> host_console_device::process_io(io_request &irp) noexcept {
         case io_frame_generic_kind::read: {
             auto wait_handle = stdin_wait_handle_;
             if (wait_handle) {
-                TRY_WIN32_IF_NOT(UnregisterWait(wait_handle));
                 stdin_wait_handle_ = nullptr;
+                TRY_WIN32_IGNORE(UnregisterWait(wait_handle));
             }
 
             auto r = fast_read(frame->file(), params.read.buffer, std::nullopt);
@@ -111,8 +111,8 @@ result<size_t> host_console_device::fast_write(file &file, std::span<const std::
 
 result<void> host_console_device::stdin_irq_handler(hal::arch_irq_number_t, void *context) noexcept {
     auto *device = reinterpret_cast<host_console_device *>(context);
-    auto irp = device->current_irp();
-    return irp->queue();
+    io::register_device_process_io(*device);
+    return ok();
 }
 
 result<void> host_console_driver::install_device(host_console_device &device) noexcept {

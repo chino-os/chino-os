@@ -72,13 +72,9 @@ struct ke_services_mt : i_ke_services {
 
     int open(const char *pathname, int flags, mode_t mode) noexcept override {
         return wrap_posix<ssize_t>([=]() -> result<int> {
-            try_var(handle, ob::alloc_handle());
-            auto r =
-                io::open_file(*handle.first, access_mask::generic_all, pathname, create_disposition::open_existing);
-            if (r.is_ok())
-                return ok(handle.second);
-            (void)ob::close_handle(handle.second);
-            return err(r.unwrap_err());
+            try_var(file, io::open_file(access_mask::generic_all, pathname, create_disposition::open_existing));
+            try_var(handle, ob::alloc_handle(*file, access_mask::generic_all));
+            return ok(handle.second);
         });
     }
 
@@ -95,7 +91,7 @@ struct ke_services_mt : i_ke_services {
             case STDERR_FILENO:
                 return err(error_code::bad_cast);
             default:
-                try_var(file, ob::reference_handle(__fd));
+                try_var(file, ob::reference_object<io::file>(__fd));
                 return io::read_file(*file, {reinterpret_cast<std::byte *>(__buf), __nbyte});
             }
         });
@@ -110,7 +106,7 @@ struct ke_services_mt : i_ke_services {
             case STDERR_FILENO:
                 return io::write_file(stdio_, {reinterpret_cast<const std::byte *>(__buf), __nbyte});
             default:
-                try_var(file, ob::reference_handle(__fd));
+                try_var(file, ob::reference_object<io::file>(__fd));
                 return io::write_file(*file, {reinterpret_cast<const std::byte *>(__buf), __nbyte});
             }
         });
@@ -124,14 +120,14 @@ struct ke_services_mt : i_ke_services {
             case STDERR_FILENO:
                 return err(error_code::bad_cast);
             default:
-                try_var(file, ob::reference_handle(__fd));
+                try_var(file, ob::reference_object<io::file>(__fd));
                 return io::control_file(*file, req, arg);
             }
         });
     }
 
   private:
-    file stdio_;
+    kernel::io::file stdio_;
 };
 
 result<void> kernel::initialize_ke_services() noexcept {

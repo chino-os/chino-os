@@ -31,35 +31,54 @@ result<size_t> device::fast_control(file &file, control_code_t code, void *arg) 
 }
 
 result<void> device::queue_io(io_request &irp) noexcept {
-    {
-        std::unique_lock<irq_spin_lock> lock(irps_lock_);
-        irps_.push_back(&irp);
-    }
-    io::register_device_process_io(*this);
+    kassert(!hal::arch_t::in_irq_handler());
+    std::unique_lock<irq_spin_lock> lock(irps_lock_);
+    irps_.push_back(&irp);
+    if (!current_irp_)
+        io::register_device_process_io(*this);
     return ok();
 }
 
 bool device::process_queued_ios(io_request *wait_irp) noexcept {
+    kassert(!hal::arch_t::in_irq_handler());
     while (true) {
-        io_request *head;
+        io_request *irp;
         {
             std::unique_lock<ps::irq_spin_lock> lock(irps_lock_);
-            head = irps_.front();
-            if (head)
-                irps_.remove(head);
+            irp = current_irp_;
+            if (!irp) {
+                irp = irps_.front();
+                if (irp) {
+                    current_irp_ = irp;
+                    irps_.remove(irp);
+                }
+            }
         }
 
-        if (head) {
-            current_irp_ = head;
-            auto r = process_io(*head);
+        if (irp) {
+            auto last_frame = irp->current_frame().expect("Failed to get frame");
+            auto r = process_io(*irp);
             if (r.is_err()) {
-                head->complete(r);
+                irp->complete(r);
+            }
+            auto new_frame = irp->current_frame();
+            if (new_frame.is_err() || new_frame.unwrap() != last_frame) {
+                // Last frame is completed
+                current_irp_ = nullptr;
             }
 
-            if (head == wait_irp && head->is_completed())
-                return true;
-        } else
+            if (irp->is_completed()) {
+                if (irp == wait_irp) {
+                    return true;
+                } else {
+                    continue;
+                }
+            } else {
+                break;
+            }
+        } else {
             break;
+        }
     }
     return false;
 }

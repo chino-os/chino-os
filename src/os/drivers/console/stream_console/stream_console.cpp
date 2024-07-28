@@ -9,8 +9,6 @@ using namespace chino::os::kernel;
 using namespace chino::os::kernel::io;
 using namespace chino::os::drivers;
 
-#define GET_BOTTOM_DEVICE(file) auto &dev = static_cast<device &>(file.object())
-
 result<void> stream_console_device::install(device &stream_device) noexcept {
     try_(io::open_file(stream_file_, access_mask::generic_all, stream_device, {}, create_disposition::open_existing));
     return ok();
@@ -18,14 +16,12 @@ result<void> stream_console_device::install(device &stream_device) noexcept {
 
 result<size_t> stream_console_device::fast_read(file &file, std::span<std::byte> buffer,
                                                 std::optional<size_t> /*offset*/) noexcept {
-    GET_BOTTOM_DEVICE(stream_file_);
-    return dev.fast_read(stream_file_, buffer);
+    return stream_file_.device().fast_read(stream_file_, buffer);
 }
 
 result<size_t> stream_console_device::fast_write(file &file, std::span<const std::byte> buffer,
                                                  std::optional<size_t> /*offset*/) noexcept {
-    GET_BOTTOM_DEVICE(stream_file_);
-    return dev.fast_write(stream_file_, buffer);
+    return stream_file_.device().fast_write(stream_file_, buffer);
 }
 
 result<void> stream_console_device::process_io(kernel::io::io_request &irp) noexcept {

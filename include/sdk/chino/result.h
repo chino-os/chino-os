@@ -220,6 +220,8 @@ template <class T> class [[nodiscard]] result {
 
 template <> class [[nodiscard]] result<void> {
   public:
+    using value_type = void;
+
     constexpr result() noexcept : err_(error_code::success) {}
     constexpr result(error_code err) noexcept : err_(err) {}
 
@@ -243,12 +245,11 @@ template <> class [[nodiscard]] result<void> {
             return std::move(*this);
     }
 
-    template <class Func, class Traits = detail::map_err_traits<void, Func>>
-    typename Traits::result_t &&map_err(Func &&func) && noexcept {
+    template <class Func> result<void> map_err(Func &&func) && noexcept {
         if (is_ok())
             return std::move(*this);
         else
-            return Traits()(std::forward<Func>(func), err_);
+            return func(err_);
     }
 
     template <class Func, class Traits = detail::and_then_traits<void, Func>>

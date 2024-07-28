@@ -129,7 +129,7 @@ class condition_variable {
     event event_;
 };
 
-result<void> create_process(std::string_view filepath, static_object<thread> &thread,
+result<void> create_process(std::string_view filepath, lazy_construct<thread> &thread,
                             thread_create_options &options) noexcept;
 result<void> create_process(std::string_view filepath) noexcept;
 
