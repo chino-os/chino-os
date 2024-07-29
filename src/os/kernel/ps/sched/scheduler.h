@@ -15,7 +15,7 @@ class scheduler {
   public:
     static scheduler &current() noexcept;
 
-    static void unblock_threads(void *wait_address, bool unblock_all) noexcept;
+    static void unblock_threads(const void *wait_address, bool unblock_all) noexcept;
 
     constexpr scheduler() noexcept : max_ready_priority_(thread_priority::idle), current_time_(0) {}
 
@@ -28,7 +28,8 @@ class scheduler {
     void attach_thread(thread &thread) noexcept;
     void detach_thread(thread &thread) noexcept;
 
-    void block_current_thread(void *wait_address, std::optional<std::chrono::nanoseconds> timeout) noexcept;
+    result<void> block_current_thread(std::atomic<uint32_t> &wait_address, uint32_t old,
+                                      std::optional<std::chrono::nanoseconds> timeout) noexcept;
     void delay_current_thread(std::chrono::nanoseconds timeout) noexcept;
 
     [[noreturn]] void start_schedule(thread &first_thread) noexcept;

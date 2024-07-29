@@ -1,8 +1,10 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #include "ke_services.h"
+#include "../ps/sched/scheduler.h"
 #include <chino/os/kernel/io.h>
 #include <chino/os/kernel/ob.h>
+#include <chino/os/kernel/ps.h>
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
@@ -124,6 +126,25 @@ struct ke_services_mt : i_ke_services {
                 return io::control_file(*file, req, arg);
             }
         });
+    }
+
+    result<void> atomic_wait(std::atomic<uint32_t> &atomic, uint32_t old,
+                             std::optional<std::chrono::milliseconds> timeout = std::nullopt) noexcept override {
+        if (atomic.load(std::memory_order_acquire) != old) {
+            // 1. Fast path
+            return ok();
+        } else {
+            // 2. Slow path
+            return ps::scheduler::current().block_current_thread(atomic, old, timeout);
+        }
+    }
+
+    void atomic_notify_one(std::atomic<uint32_t> &atomic) noexcept override {
+        ps::scheduler::unblock_threads(&atomic, false);
+    }
+
+    void atomic_notify_all(std::atomic<uint32_t> &atomic) noexcept override {
+        ps::scheduler::unblock_threads(&atomic, true);
     }
 
   private:

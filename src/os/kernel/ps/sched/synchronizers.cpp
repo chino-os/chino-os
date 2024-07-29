@@ -18,16 +18,33 @@ waiting_list_t &waiting_list(chino::detail::intrusive_list_storage &list) noexce
 current_schedule_lock::current_schedule_lock() noexcept { scheduler::current().lock(); }
 current_schedule_lock::~current_schedule_lock() { scheduler::current().unlock(); }
 
-result<void> ps::wait_on_address(void *address,
-                                 std::optional<std::chrono::milliseconds> timeout = std::nullopt) noexcept {
-    scheduler::current().block_current_thread(address, timeout);
-    // TODO: check timeout
-    return ok();
+result<void> critical_section::enter(std::optional<std::chrono::milliseconds> timeout = std::nullopt) noexcept {
+    while (!try_enter()) {
+        return atomic_wait(held_, 1, timeout);
+    }
+    if (try_enter()) {
+        // 1. Fast path
+        return ok();
+    } else {
+        // 2. Slow path
+        return atomic_wait()
+        current_irq_lock irq_lock;
+        auto irq_state = syncroot().lock();
+        if (try_wait().is_ok()) {
+            syncroot().unlock(irq_state);
+            return ok();
+        } else {
+            blocking_wait(timeout, irq_state);
+            return try_wait().is_ok() ? ok() : err(error_code::timeout);
+        }
+    }
 }
 
-void ps::notify_one_by_address(void *address) noexcept { scheduler::unblock_threads(address, false); }
+void critical_section::leave() noexcept;
 
-void ps::notify_all_by_address(void *address) noexcept { scheduler::unblock_threads(address, true); }
+void waitable_value::notify_one() const noexcept { scheduler::unblock_threads(&value_, false); }
+
+void waitable_value::notify_all() const noexcept { scheduler::unblock_threads(&value_, true); }
 
 void waitable_object::blocking_wait(std::optional<std::chrono::milliseconds> timeout,
                                     hal::arch_irq_state_t irq_state) noexcept {
@@ -80,6 +97,7 @@ void waitable_object::notify_all() noexcept {
 
 result<void> mutex::try_wait() noexcept {
     uint32_t held = 0;
+    held_.wait(0);
     return held_.compare_exchange_strong(held, 1, std::memory_order_acq_rel) ? ok() : err(error_code::unavailable);
 }
 

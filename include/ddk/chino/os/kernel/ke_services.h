@@ -12,6 +12,11 @@ struct i_ke_services {
     virtual ssize_t read(int __fd, void *__buf, size_t __nbyte) noexcept = 0;
     virtual ssize_t write(int __fd, const void *__buf, size_t __nbyte) noexcept = 0;
     virtual int ioctl(int fd, int req, void *arg) noexcept = 0;
+
+    virtual result<void> atomic_wait(std::atomic<uint32_t> &atomic, uint32_t old,
+                                     std::optional<std::chrono::milliseconds> timeout = std::nullopt) noexcept = 0;
+    virtual void atomic_notify_one(std::atomic<uint32_t> &atomic) noexcept = 0;
+    virtual void atomic_notify_all(std::atomic<uint32_t> &atomic) noexcept = 0;
 };
 
 inline static uintptr_t ke_services_address = 0x800000000;
