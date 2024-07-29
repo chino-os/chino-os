@@ -36,7 +36,7 @@ void emulator_arch::initialize_thread_stack(uintptr_t *&stack_top, kernel::ps::t
     *--stack_top = 1;                     // irq = 1
 }
 
-void emulator_arch::yield_cpu() noexcept { YieldProcessor(); }
+void emulator_arch::yield_cpu() noexcept { Sleep(1); }
 
 void emulator_arch::start_schedule(ps::thread &thread) noexcept {
     __asm {

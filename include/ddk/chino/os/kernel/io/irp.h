@@ -1,10 +1,10 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
-#include "../kernel_types.h"
-#include "../ob.h"
+#include "file.h"
 #include <chino/intrusive_list.h>
 #include <chino/os/ioapi.h>
+#include <chino/os/kernel/object_pool.h>
 #include <span>
 
 namespace chino::os::kernel::io {
@@ -86,10 +86,10 @@ template <> struct io_frame_minor_kind_traits<io_frame_major_kind::generic> {
 
 class io_frame {
   public:
-    constexpr io_frame(io_frame_kind kind, file &file) noexcept : kind_(kind), file_(file) {}
+    io_frame(io_frame_kind kind, file &file) noexcept : kind_(kind), file_(&file) {}
 
     io_frame_kind kind() const noexcept { return kind_; }
-    io::file &file() const noexcept { return file_; }
+    io::file &file() const noexcept { return *file_; }
 
     template <class T> T &params() noexcept {
         static_assert(sizeof(T) <= max_io_parameters_size && std::is_trivially_destructible_v<T>);
@@ -103,13 +103,17 @@ class io_frame {
 
   private:
     io_frame_kind kind_;
-    io::file &file_;
+    object_ptr<io::file> file_;
     alignas(std::max_align_t) std::array<std::byte, max_io_parameters_size> params_;
 };
 
-class io_request {
+class io_request : public object {
+    CHINO_DEFINE_KERNEL_OBJECT_KIND(object, object_kind_irp);
+
   public:
-    constexpr io_request(io_frame_kind kind, file &file) noexcept
+    static result<object_ptr<io_request>> allocate(io_frame_kind kind, file &file) noexcept;
+
+    io_request(io_frame_kind kind, file &file) noexcept
         : status_{.code = error_code::io_pending, .bytes_transferred = 0}, current_frame_(frames_) {
         std::construct_at(current_frame_, kind, file);
     }

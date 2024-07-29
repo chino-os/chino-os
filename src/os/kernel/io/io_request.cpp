@@ -2,12 +2,24 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #include "io_manager.h"
 #include <chino/os/kernel/io.h>
+#include <chino/os/kernel/kd.h>
 
 using namespace chino;
 using namespace chino::os;
 using namespace chino::os::kernel;
 using namespace chino::os::kernel::io;
 using namespace chino::os::kernel::ps;
+
+constinit object_pool<io_request> io_request_pool_;
+
+template <> void object_pool<io_request>::object_pool_object::internal_release() noexcept {
+    (void)io_request_pool_.free(this);
+}
+
+result<object_ptr<io_request>> io_request::allocate(io_frame_kind kind, file &file) noexcept {
+    try_var(r, io_request_pool_.allocate(kind, file));
+    return ok(r.first);
+}
 
 io_request::~io_request() {}
 

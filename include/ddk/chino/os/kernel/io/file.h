@@ -1,13 +1,13 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
-#include "device.h"
-#include <chino/os/kernel/kd.h>
 #include <chino/os/kernel/ps.h>
 #include <chino/os/object.h>
 #include <chino/os/objectapi.h>
 
 namespace chino::os::kernel::io {
+class device;
+
 class file : public object {
     CHINO_DEFINE_KERNEL_OBJECT_KIND(object, object_kind_file);
 
@@ -22,12 +22,8 @@ class file : public object {
 
     os::event &event() noexcept { return event_; }
 
-    void prepare_to_open(io::device &device) noexcept {
-        kassert(device_.empty());
-        device_ = &device;
-    }
-
-    void failed_to_open() noexcept { device_ = nullptr; }
+    void prepare_to_open(io::device &device) noexcept;
+    void failed_to_open() noexcept;
 
   private:
     object_ptr<io::device> device_;

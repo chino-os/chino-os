@@ -54,6 +54,4 @@ class thread : public object {
     object_ptr<ps::process> process_;
     std::atomic<ps::scheduler *> scheduler_;
 };
-
-object_ptr<thread> create_thread();
 } // namespace chino::os::kernel::ps

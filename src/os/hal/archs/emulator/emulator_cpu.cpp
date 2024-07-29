@@ -23,7 +23,7 @@ struct syscall_payload {
 };
 
 [[noreturn]] extern void emulator_dispatch_irq(arch_irq_number_t irq_number) noexcept;
-extern uintptr_t emulator_dispatch_irq_end;
+extern void emulator_dispatch_irq_end();
 
 static syscall_payload syscall_payload_;
 }
@@ -154,7 +154,7 @@ void emulator_cpu::process_irq(arch_irq_number_t irq_number, LPARAM lParam) {
     while (true) {
         GetThreadContext(cpu_thread_, &context);
         if (!in_irq_handler() &&
-            (context.Rip < (uintptr_t)emulator_dispatch_irq || context.Rip >= emulator_dispatch_irq_end)) {
+            (context.Rip < (uintptr_t)emulator_dispatch_irq || context.Rip >= (uintptr_t)emulator_dispatch_irq_end)) {
             break;
         }
         Sleep(0);

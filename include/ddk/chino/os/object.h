@@ -166,7 +166,7 @@ template <class T> class lazy_construct {
 
 template <class T> class ref_counted_object : public T {
   public:
-    constexpr ref_counted_object() noexcept : ref_count_(1) {}
+    using T::T;
 
     uint32_t add_ref() noexcept override { return ref_count_.fetch_add(1, std::memory_order_relaxed); }
 
@@ -182,6 +182,6 @@ template <class T> class ref_counted_object : public T {
     virtual void internal_release() noexcept = 0;
 
   private:
-    std::atomic<uint32_t> ref_count_;
+    std::atomic<uint32_t> ref_count_ = 1;
 };
 } // namespace chino::os

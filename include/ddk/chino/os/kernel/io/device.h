@@ -3,6 +3,7 @@
 #pragma once
 #include "irp.h"
 #include <chino/os/ioapi.h>
+#include <chino/os/kernel/ob.h>
 #include <chino/os/kernel/ps.h>
 
 namespace chino::os::kernel::io {

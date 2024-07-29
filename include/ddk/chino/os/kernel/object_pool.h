@@ -139,6 +139,9 @@ class object_pool_impl {
 
 template <class T> class object_pool : private detail::object_pool_impl {
     class object_pool_object : public ref_counted_object<T> {
+      public:
+        using ref_counted_object<T>::ref_counted_object;
+
       protected:
         virtual void internal_release() noexcept;
     };

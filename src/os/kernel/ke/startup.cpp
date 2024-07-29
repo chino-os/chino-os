@@ -13,17 +13,14 @@ using namespace chino::os::kernel;
 
 #define SHELL_NAME "sh" // "sh"
 
-alignas(hal::cacheline_size) static std::array<uintptr_t, 128 * 1024> idle_stack_;
+alignas(hal::cacheline_size) static std::array<uintptr_t, 256> idle_stack_;
 static constinit lazy_construct<ps::thread> idle_thread_;
 
 alignas(hal::cacheline_size) static std::array<uintptr_t, 128 * 1024> init_stack_;
 static constinit ps::process ke_process_;
 static constinit lazy_construct<ps::thread> init_thread_;
 
-alignas(hal::cacheline_size) static std::array<uintptr_t, 128 * 1024> io_stack_;
-static constinit lazy_construct<ps::thread> io_thread_;
-
-alignas(hal::cacheline_size) static std::array<uintptr_t, 128 * 1024 * 2> sh_stack_;
+alignas(hal::cacheline_size) static std::array<uintptr_t, 128 * 1024> sh_stack_;
 static constinit ps::process sh_process_;
 static constinit lazy_construct<ps::thread> sh_thread_;
 
@@ -32,7 +29,7 @@ static constinit lazy_construct<ps::thread> sh_thread_;
 
 ps::process &chino::os::kernel::ke_process() noexcept { return ke_process_; }
 
-bool chino::os::kernel::is_io_worker_thread(ps::thread &thread) noexcept { return &thread == io_thread_.get(); }
+bool chino::os::kernel::is_io_worker_thread(ps::thread &thread) noexcept { return &thread == init_thread_.get(); }
 
 void ke_startup(const boot_options &options) noexcept {
     // 1. Phase 0
@@ -49,7 +46,7 @@ void ke_startup(const boot_options &options) noexcept {
 
     // 3. Setup init thread
     init_thread_.construct(ps::thread_create_options{.process = &ke_process_,
-                                                     .priority = thread_priority::lowest,
+                                                     .priority = thread_priority::highest,
                                                      .not_owned_stack = true,
                                                      .stack = init_stack_,
                                                      .entry_point = ke_init_system,
@@ -66,21 +63,13 @@ int ke_init_system(void *pv_options) noexcept {
     // 2. Initialize user land
     initialize_ke_services().expect("Initialize Ke Services failed.");
 
-    // 3. Setup IO thread
-    io_thread_.construct(ps::thread_create_options{.process = &ke_process_,
-                                                   .priority = thread_priority::highest,
-                                                   .not_owned_stack = true,
-                                                   .stack = io_stack_,
-                                                   .entry_point = io::io_worker_main,
-                                                   .entry_arg = nullptr});
-
-    // 4. Launch shell
+    // 3. Launch shell
     ps::thread_create_options sh_create_options{
         .process = &sh_process_, .priority = thread_priority::normal, .not_owned_stack = true, .stack = sh_stack_};
     ps::create_process("/bin/" SHELL_NAME ".exe", sh_thread_, sh_create_options).expect("Launch shell failed.");
-    while (true) {
-        hal::arch_t::yield_cpu();
-    }
+
+    // 4. Run IO worker
+    io::io_worker_main(nullptr);
 }
 
 int ke_idle_loop(void *arg) noexcept {

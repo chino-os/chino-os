@@ -39,11 +39,11 @@ auto dispatch_io_fast_slow(file &file, TArgs &&...args) noexcept
     }
     auto errcode = r.unwrap_err();
     if (errcode == error_code::slow_io) {
-        io_request irp(make_io_frame_kind(io_frame_major_kind::generic, Minor), file);
-        try_var(frame, irp.current_frame());
-        frame->params<io_frame_major_kind::generic, Minor>() = {std::forward<TArgs>(args)...};
-        try_(irp.queue());
-        r = irp.wait<typename std::decay_t<decltype(r)>::value_type>();
+        try_var(irp, io_request::allocate(make_io_frame_kind(io_frame_major_kind::generic, Minor), file));
+        try_var(frame, irp->current_frame());
+        frame->template params<io_frame_major_kind::generic, Minor>() = {std::forward<TArgs>(args)...};
+        try_(irp->queue());
+        r = irp->template wait<typename std::decay_t<decltype(r)>::value_type>();
         if (r.is_ok()) {
             return r;
         }

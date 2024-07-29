@@ -7,6 +7,7 @@
 #include <chino/os/hal/arch.h>
 #include <chino/os/hal/chip.h>
 #include <chino/os/kernel/io.h>
+#include <chino/os/kernel/kd.h>
 #include <chino/os/kernel/ke.h>
 
 using namespace chino;
