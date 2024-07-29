@@ -43,7 +43,7 @@ class scheduler {
     void update_max_ready_priority(thread_priority priority) noexcept;
     void setup_next_system_tick() noexcept;
 
-    bool unblock_local_threads(void *wait_address, bool unblock_all) noexcept;
+    bool unblock_local_threads(const void *wait_address, bool unblock_all) noexcept;
     void add_to_delay_list(thread &thread, std::chrono::nanoseconds timeout) noexcept;
     void wakeup_delayed_threads() noexcept;
 

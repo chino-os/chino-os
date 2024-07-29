@@ -25,7 +25,7 @@ class dev_directory : public ob::directory {
 
 constinit dev_directory dev_directory_;
 constinit ps::irq_spin_lock device_work_list_lock_;
-constinit ps::kmpsc_pulse_event device_work_list_avail_event_;
+constinit os::event device_work_list_avail_event_;
 constinit intrusive_list<device, &device::work_list_node> device_work_list_;
 constinit object_pool<io::file> file_table_;
 
@@ -83,6 +83,8 @@ void io::process_queued_ios(io_request *wait_irp) {
             head = device_work_list_.front();
             if (head)
                 device_work_list_.remove(head);
+            else
+                device_work_list_avail_event_.reset();
         }
 
         if (head) {

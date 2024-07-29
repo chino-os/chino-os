@@ -1,9 +1,11 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
+#include "../compiler.h"
 #include "../result.h"
 #include <atomic>
 #include <chrono>
+#include <optional>
 
 namespace chino::os {
 enum class thread_priority { idle = 0, lowest = 1, low = 2, normal = 3, high = 4, highest = 5, max = highest };
@@ -63,32 +65,54 @@ class mutex {
 
 class event {
   public:
-    constexpr event(bool signal) noexcept : signal_(signal ? 1 : 0) {}
+    constexpr event(bool signal = false) noexcept : signal_(signal) {}
 
-    bool try_wait() noexcept {
-        uint32_t signal;
-        while (avail = avail_.load(std::memory_order_acquire)) {
-            if (avail_.compare_exchange_strong(avail, avail - 1, std::memory_order_acq_rel)) {
-                return true;
-            }
-        }
-        return false;
-    }
+    bool try_wait() noexcept { return signal_.load(std::memory_order_acquire); }
 
     result<void> wait(std::optional<std::chrono::milliseconds> timeout = std::nullopt) noexcept {
-        while (!try_enter()) {
-            return atomic_wait(held_, 1, timeout);
-        }
+        if (try_wait())
+            return ok();
+
+        detail::waiters_guard wg(waiters_);
+        try_(atomic_wait(signal_, 0, timeout));
+        return ok();
     }
 
     void reset() noexcept { signal_.store(0, std::memory_order_release); }
 
+    void notify_one() noexcept {
+        signal_.store(1, std::memory_order_release);
+        if (waiters_.load(std::memory_order_acquire) != 0)
+            atomic_notify_one(signal_);
+    }
+
     void notify_all() noexcept {
-        held_.store(0, std::memory_order_release);
-        atomic_notify_one(held_);
+        signal_.store(1, std::memory_order_release);
+        if (waiters_.load(std::memory_order_acquire) != 0)
+            atomic_notify_all(signal_);
     }
 
   private:
     std::atomic<uint32_t> signal_;
+    std::atomic<uint32_t> waiters_;
 };
+
+// TODO:
+class semaphore;
+class condition_variable;
 } // namespace chino::os
+
+namespace std {
+template <class T> class unique_lock;
+
+template <> class unique_lock<chino::os::mutex> {
+  public:
+    CHINO_NONCOPYABLE(unique_lock);
+
+    unique_lock(chino::os::mutex &mutex) noexcept : lock_(mutex) { lock_.lock().expect(nullptr); }
+    ~unique_lock() { lock_.unlock(); }
+
+  private:
+    chino::os::mutex &lock_;
+};
+} // namespace std

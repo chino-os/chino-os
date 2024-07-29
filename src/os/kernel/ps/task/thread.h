@@ -45,7 +45,7 @@ class thread : public object {
     intrusive_list_node scheduler_list_node;
     intrusive_list_node process_list_node;
     intrusive_list_node waiting_list_node;
-    void *wait_address;
+    const void *wait_address;
 
     std::chrono::nanoseconds wakeup_time;
 

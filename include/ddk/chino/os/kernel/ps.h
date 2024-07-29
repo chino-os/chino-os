@@ -2,7 +2,6 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
 #include "../object.h"
-#include "ps/atomic_wait.h"
 #include <atomic>
 #include <chino/intrusive_list.h>
 #include <chino/os/hal/arch.h>
@@ -65,59 +64,6 @@ class irq_spin_lock {
     std::atomic<uint32_t> held_;
 };
 
-class waitable_object : public object {
-  public:
-    constexpr waitable_object() noexcept {}
-
-    virtual result<void> try_wait() noexcept = 0;
-    virtual result<void> wait(std::optional<std::chrono::milliseconds> timeout = std::nullopt) noexcept = 0;
-
-  protected:
-    irq_spin_lock &syncroot() noexcept { return syncroot_; }
-
-    void blocking_wait(std::optional<std::chrono::milliseconds> timeout, hal::arch_irq_state_t irq_state) noexcept;
-    void notify_one() noexcept;
-    void notify_all() noexcept;
-
-  private:
-    irq_spin_lock syncroot_;
-    chino::detail::intrusive_list_storage waiting_threads_;
-};
-
-class mutex final : public waitable_object {
-    CHINO_DEFINE_KERNEL_OBJECT_KIND(waitable_object, object_kind_mutex);
-
-  public:
-    result<void> try_wait() noexcept override;
-    result<void> wait(std::optional<std::chrono::milliseconds> timeout = std::nullopt) noexcept override;
-    void release() noexcept;
-
-  private:
-    std::atomic<uint32_t> held_;
-};
-
-class event final : public waitable_object {
-    CHINO_DEFINE_KERNEL_OBJECT_KIND(waitable_object, object_kind_event);
-
-  public:
-    result<void> try_wait() noexcept override;
-    result<void> wait(std::optional<std::chrono::milliseconds> timeout = std::nullopt) noexcept override;
-    void notify_all() noexcept;
-    void reset() noexcept;
-
-  private:
-    std::atomic<uint32_t> signal_;
-};
-
-class condition_variable {
-  public:
-    result<void> wait(mutex &mutex, std::optional<std::chrono::milliseconds> timeout = std::nullopt) noexcept;
-    result<void> notify() noexcept;
-
-  private:
-    event event_;
-};
-
 result<void> create_process(std::string_view filepath, lazy_construct<thread> &thread,
                             thread_create_options &options) noexcept;
 result<void> create_process(std::string_view filepath) noexcept;
@@ -141,17 +87,6 @@ template <> class unique_lock<chino::os::kernel::ps::irq_spin_lock> {
   private:
     chino::os::kernel::ps::irq_spin_lock &lock_;
     chino::os::hal::arch_irq_state_t irq_state_;
-};
-
-template <> class unique_lock<chino::os::kernel::ps::mutex> {
-  public:
-    CHINO_NONCOPYABLE(unique_lock);
-
-    unique_lock(chino::os::kernel::ps::mutex &mutex) noexcept : lock_(mutex) { lock_.wait().expect(nullptr); }
-    ~unique_lock() { lock_.release(); }
-
-  private:
-    chino::os::kernel::ps::mutex &lock_;
 };
 } // namespace std
 

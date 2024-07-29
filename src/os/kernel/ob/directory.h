@@ -23,6 +23,6 @@ class directory : public named_object {
 
   private:
     intrusive_list<named_object, &named_object::directory_list_node> items_;
-    ps::mutex items_mutex_;
+    os::mutex items_mutex_;
 };
 } // namespace chino::os::kernel::ob

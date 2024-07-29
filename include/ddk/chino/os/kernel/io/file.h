@@ -20,7 +20,7 @@ class file : public object {
     template <class T> T *data() const noexcept { return reinterpret_cast<T *>(data_); }
     void data(void *value) noexcept { data_ = value; }
 
-    kernel::ps::event &event() noexcept { return event_; }
+    os::event &event() noexcept { return event_; }
 
     void prepare_to_open(io::device &device) noexcept {
         kassert(device_.empty());
@@ -32,6 +32,6 @@ class file : public object {
   private:
     object_ptr<io::device> device_;
     void *data_ = nullptr;
-    kernel::ps::event event_;
+    os::event event_;
 };
 } // namespace chino::os::kernel::io

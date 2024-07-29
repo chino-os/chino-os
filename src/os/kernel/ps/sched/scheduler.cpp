@@ -9,6 +9,7 @@
 #include <chino/os/kernel/io.h>
 #include <chino/os/kernel/ke.h>
 
+using namespace chino;
 using namespace chino::os;
 using namespace chino::os::kernel;
 using namespace chino::os::kernel::ps;
@@ -41,14 +42,15 @@ void ps::yield() noexcept {
 
 scheduler &scheduler::current() noexcept { return schedulers_[hal::arch_t::current_cpu_id()]; }
 
-void scheduler::unblock_threads(void *wait_address, bool unblock_all) noexcept {
+void scheduler::unblock_threads(const void *wait_address, bool unblock_all) noexcept {
     current_irq_lock irq_lock;
     auto unblocked = scheduler::current().unblock_local_threads(wait_address, unblock_all);
-    if (unblock_all || !unblocked) {
-        // IPI
-        while (1)
-            ;
-    }
+    // IPI
+    // if (unblock_all || !unblocked) {
+    //    while (1)
+    //        ;
+    //}
+    (void)unblocked;
 }
 
 void scheduler::initialize_phase0() noexcept {}
@@ -108,23 +110,39 @@ void scheduler::on_system_tick() noexcept {
     switch_task();
 }
 
-void scheduler::block_current_thread(void *wait_address, std::optional<std::chrono::nanoseconds> timeout) noexcept {
-    current_irq_lock irq_lock;
-    auto &cnt_thread = current_thread();
-    kassert(wait_address && !cnt_thread.wait_address);
-    cnt_thread.wait_address = wait_address;
-    list_of(cnt_thread).remove(&cnt_thread);
+result<void> scheduler::block_current_thread(std::atomic<uint32_t> &wait_address, uint32_t old,
+                                             std::optional<std::chrono::nanoseconds> timeout) noexcept {
+    auto last_time = hal::arch_t::current_cpu_time();
+    {
+        current_irq_lock irq_lock;
+        auto &cnt_thread = current_thread();
+        kassert(!cnt_thread.wait_address);
+        if (wait_address.load(std::memory_order_acquire) == old) {
+            cnt_thread.wait_address = &wait_address;
+            list_of(cnt_thread).remove(&cnt_thread);
 
-    if (!timeout) {
-        // 1. Add to blocked list
-        blocked_threads_.push_back(&cnt_thread);
-        cnt_thread.status(thread_status::blocked);
-    } else {
-        // 2. Add to delayed list
-        add_to_delay_list(cnt_thread, *timeout);
+            if (!timeout) {
+                // 1. Add to blocked list
+                blocked_threads_.push_back(&cnt_thread);
+                cnt_thread.status(thread_status::blocked);
+            } else {
+                // 2. Add to delayed list
+                add_to_delay_list(cnt_thread, *timeout);
+            }
+        } else {
+            return ok();
+        }
     }
+
     // 3. Yield
-    yield();
+    while (true) {
+        yield();
+        if (wait_address.load(std::memory_order_acquire) != old) {
+            return ok();
+        } else if (timeout && hal::arch_t::current_cpu_time() >= last_time + *timeout) {
+            return err(error_code::timeout);
+        }
+    }
 }
 
 void scheduler::delay_current_thread(std::chrono::nanoseconds timeout) noexcept {}
@@ -191,7 +209,7 @@ void scheduler::update_max_ready_priority(thread_priority priority) noexcept {
 
 void scheduler::setup_next_system_tick() noexcept { hal::arch_t::enable_system_tick(system_tick_interval); }
 
-bool scheduler::unblock_local_threads(void *wait_address, bool unblock_all) noexcept {
+bool scheduler::unblock_local_threads(const void *wait_address, bool unblock_all) noexcept {
     bool unblocked = false;
     auto thread = blocked_threads_.front();
     while (thread) {
