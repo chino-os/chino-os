@@ -2,6 +2,7 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
 #include "file.h"
+#include "iocp.h"
 #include <chino/intrusive_list.h>
 #include <chino/os/ioapi.h>
 #include <chino/os/kernel/object_pool.h>
@@ -21,16 +22,13 @@ struct io_frame_kind {
     uint16_t minor;
 };
 
+inline constexpr bool operator==(const io_frame_kind &left, const io_frame_kind &right) noexcept {
+    return left.major == right.major && left.minor == right.minor;
+}
+
 template <class TMinor> constexpr io_frame_kind make_io_frame_kind(io_frame_major_kind major, TMinor minor) noexcept {
     return {.major = major, .minor = static_cast<uint16_t>(minor)};
 }
-
-struct io_status {
-    error_code code;
-    union {
-        size_t bytes_transferred;
-    };
-};
 
 template <io_frame_major_kind Major> struct io_frame_minor_kind_traits;
 
@@ -111,10 +109,13 @@ class io_request : public object {
     CHINO_DEFINE_KERNEL_OBJECT_KIND(object, object_kind_irp);
 
   public:
-    static result<object_ptr<io_request>> allocate(io_frame_kind kind, file &file) noexcept;
+    static result<object_ptr<io_request>> allocate(async_io_block *async_io_block, io_frame_kind kind,
+                                                   file &file) noexcept;
 
-    io_request(io_frame_kind kind, file &file) noexcept
-        : status_{.code = error_code::io_pending, .bytes_transferred = 0}, current_frame_(frames_) {
+    io_request(async_io_block *async_io_block, io_frame_kind kind, file &file) noexcept
+        : async_io_block_(async_io_block),
+          status_{.code = error_code::io_pending, .bytes_transferred = 0},
+          current_frame_(frames_) {
         std::construct_at(current_frame_, kind, file);
     }
 
@@ -129,7 +130,7 @@ class io_request : public object {
     bool is_completed() const noexcept { return !current_frame_; }
     io_status status() const noexcept { return status_; }
 
-    result<void> queue() noexcept;
+    void queue() noexcept;
 
     void complete() noexcept;
 
@@ -164,6 +165,7 @@ class io_request : public object {
     intrusive_list_node request_list_node;
 
   private:
+    async_io_block *async_io_block_;
     io_status status_;
     union {
         io_frame frames_[3];

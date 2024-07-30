@@ -17,6 +17,10 @@ struct i_ke_services {
                                      std::optional<std::chrono::milliseconds> timeout = std::nullopt) noexcept = 0;
     virtual void atomic_notify_one(std::atomic<uint32_t> &atomic) noexcept = 0;
     virtual void atomic_notify_all(std::atomic<uint32_t> &atomic) noexcept = 0;
+
+    virtual result<async_io_result *> wait_queued_io() noexcept = 0;
+    virtual result<void> read_async(int fd, std::span<std::byte> buffer, size_t offset,
+                                    async_io_result &result) noexcept = 0;
 };
 
 inline static uintptr_t ke_services_address = 0x800000000;

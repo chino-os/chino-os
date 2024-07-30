@@ -258,13 +258,13 @@ result<size_t> host_serial_device::fast_control(file &file, control_code_t code,
 
 result<void> host_serial_device::rx_irq_handler(hal::arch_irq_number_t, void *context) noexcept {
     auto *device = reinterpret_cast<host_serial_device *>(context);
-    io::register_device_process_io(*device);
+    device->requeue_pending_io(make_io_frame_kind(io_frame_major_kind::generic, io_frame_generic_kind::read));
     return ok();
 }
 
 result<void> host_serial_device::tx_irq_handler(hal::arch_irq_number_t, void *context) noexcept {
     auto *device = reinterpret_cast<host_serial_device *>(context);
-    io::register_device_process_io(*device);
+    device->requeue_pending_io(make_io_frame_kind(io_frame_major_kind::generic, io_frame_generic_kind::write));
     return ok();
 }
 

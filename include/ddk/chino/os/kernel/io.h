@@ -3,6 +3,7 @@
 #pragma once
 #include "io/device.h"
 #include "io/file.h"
+#include "io/iocp.h"
 #include "kernel_types.h"
 #include "ob.h"
 #include <chino/intrusive_list.h>
@@ -28,11 +29,14 @@ result<object_ptr<file>> open_file(access_mask desired_access, std::string_view 
 result<void> close_file(file &file) noexcept;
 
 result<size_t> read_file(file &file, std::span<std::byte> buffer, std::optional<size_t> offset = std::nullopt) noexcept;
+result<void> read_file_async(file &file, std::span<std::byte> buffer, size_t offset, async_io_result &result) noexcept;
 
 result<size_t> write_file(file &file, std::span<const std::byte> buffer,
                           std::optional<size_t> offset = std::nullopt) noexcept;
 
 result<int> control_file(file &file, control_code_t code, void *arg) noexcept;
+
+result<async_io_result *> io_wait_queued_io() noexcept;
 
 result<void> allocate_console() noexcept;
 } // namespace chino::os::kernel::io

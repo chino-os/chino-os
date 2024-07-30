@@ -14,10 +14,10 @@ namespace chino {
             return chino::err(std::move(v.unwrap_err()));                                                              \
     }
 
-#define try_var(name, x)                                                                                               \
-    typename decltype((x))::value_type name;                                                                           \
+#define try_var(name, ...)                                                                                             \
+    typename decltype((__VA_ARGS__))::value_type name;                                                                 \
     {                                                                                                                  \
-        auto v = (x);                                                                                                  \
+        auto v = (__VA_ARGS__);                                                                                        \
         if (v.is_ok())                                                                                                 \
             name = std::move(v.unwrap());                                                                              \
         else                                                                                                           \

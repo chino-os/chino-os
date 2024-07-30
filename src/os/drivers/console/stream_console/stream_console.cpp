@@ -32,7 +32,7 @@ result<void> stream_console_device::process_io(kernel::io::io_request &irp) noex
         case io_frame_generic_kind::write: {
             try_var(next_frame, irp.move_next_frame(cnt_frame->kind(), stream_file_));
             next_frame->params<io_frame_params_generic>() = cnt_frame->params<io_frame_params_generic>();
-            try_(irp.queue());
+            irp.queue();
             return ok();
         }
         default:

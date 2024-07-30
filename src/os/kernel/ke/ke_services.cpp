@@ -147,6 +147,22 @@ struct ke_services_mt : i_ke_services {
         ps::scheduler::unblock_threads(&atomic, true);
     }
 
+    result<async_io_result *> wait_queued_io() noexcept override { return io::io_wait_queued_io(); }
+
+    result<void> read_async(int fd, std::span<std::byte> buffer, size_t offset,
+                            async_io_result &result) noexcept override {
+        switch (fd) {
+        case STDIN_FILENO:
+            return io::read_file_async(stdio_, buffer, offset, result);
+        case STDOUT_FILENO:
+        case STDERR_FILENO:
+            return err(error_code::bad_cast);
+        default:
+            try_var(file, ob::reference_object<io::file>(fd));
+            return io::read_file_async(*file, buffer, offset, result);
+        }
+    }
+
   private:
     kernel::io::file stdio_;
 };

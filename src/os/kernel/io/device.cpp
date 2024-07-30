@@ -31,13 +31,10 @@ result<size_t> device::fast_control(file &file, control_code_t code, void *arg) 
     return err(error_code::slow_io);
 }
 
-result<void> device::queue_io(io_request &irp) noexcept {
-    kassert(!hal::arch_t::in_irq_handler());
+void device::queue_io(io_request &irp) noexcept {
     std::unique_lock<irq_spin_lock> lock(irps_lock_);
     irps_.push_back(&irp);
-    if (!current_irp_)
-        io::register_device_process_io(*this);
-    return ok();
+    io::register_device_process_io(*this);
 }
 
 bool device::process_queued_ios(io_request *wait_irp) noexcept {
@@ -46,13 +43,9 @@ bool device::process_queued_ios(io_request *wait_irp) noexcept {
         io_request *irp;
         {
             std::unique_lock<ps::irq_spin_lock> lock(irps_lock_);
-            irp = current_irp_;
-            if (!irp) {
-                irp = irps_.front();
-                if (irp) {
-                    current_irp_ = irp;
-                    irps_.remove(irp);
-                }
+            irp = irps_.front();
+            if (irp) {
+                irps_.remove(irp);
             }
         }
 
@@ -65,17 +58,17 @@ bool device::process_queued_ios(io_request *wait_irp) noexcept {
             auto new_frame = irp->current_frame();
             if (new_frame.is_err() || new_frame.unwrap() != last_frame) {
                 // Last frame is completed
-                current_irp_ = nullptr;
-            }
-
-            if (irp->is_completed()) {
-                if (irp == wait_irp) {
-                    return true;
-                } else {
-                    continue;
+                if (irp->is_completed()) {
+                    // IRP is completed
+                    irp->dec_ref();
+                    if (irp == wait_irp) {
+                        return true;
+                    } else {
+                        continue;
+                    }
                 }
             } else {
-                break;
+                queue_pending_io(*irp);
             }
         } else {
             break;
@@ -118,3 +111,33 @@ result<void> device::process_io(io_request &irp) noexcept {
 result<void> device::cancel_io(io_request &irp) noexcept { return err(error_code::not_supported); }
 
 void device::on_io_completion(io_request &irp) noexcept { irp.complete(); }
+
+void device::requeue_pending_io(bool (*pred)(io_request &, void *), void *arg) noexcept {
+    io_request *irp;
+    {
+        std::unique_lock<ps::irq_spin_lock> lock(irps_lock_);
+        irp = pending_irps_.front();
+        while (irp) {
+            if (!pred || pred(*irp, arg)) {
+                pending_irps_.remove(irp);
+                break;
+            }
+            irp = pending_irps_.next(irp);
+        }
+    }
+    kassert(irp);
+    queue_io(*irp);
+}
+
+void device::requeue_pending_io(io_frame_kind kind) noexcept {
+    requeue_pending_io(
+        [](io_request &irp, void *arg) {
+            return irp.current_frame().unwrap()->kind() == *reinterpret_cast<io_frame_kind *>(arg);
+        },
+        &kind);
+}
+
+void device::queue_pending_io(io_request &irp) noexcept {
+    std::unique_lock<ps::irq_spin_lock> lock(irps_lock_);
+    pending_irps_.push_back(&irp);
+}

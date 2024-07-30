@@ -16,8 +16,9 @@ template <> void object_pool<io_request>::object_pool_object::internal_release()
     (void)io_request_pool_.free(this);
 }
 
-result<object_ptr<io_request>> io_request::allocate(io_frame_kind kind, file &file) noexcept {
-    try_var(r, io_request_pool_.allocate(kind, file));
+result<object_ptr<io_request>> io_request::allocate(async_io_block *async_io_block, io_frame_kind kind,
+                                                    file &file) noexcept {
+    try_var(r, io_request_pool_.allocate(async_io_block, kind, file));
     return ok(r.first);
 }
 
@@ -32,7 +33,11 @@ result<io_frame *> io_request::move_next_frame(io_frame_kind kind, file &file) n
     return err(error_code::out_of_memory);
 }
 
-result<void> io_request::queue() noexcept { return current_frame_->file().device().queue_io(*this); }
+void io_request::queue() noexcept {
+    if (current_frame_ == frames_)
+        add_ref();
+    current_frame_->file().device().queue_io(*this);
+}
 
 void io_request::complete() noexcept {
     kassert(!is_completed());
@@ -43,6 +48,10 @@ void io_request::complete() noexcept {
     if (current_frame_ == frames_) {
         // IRP completed
         current_frame_ = nullptr;
+        if (async_io_block_) {
+            async_io_block_->result = {.error = status_.code, .bytes_transferred = status_.bytes_transferred};
+            async_io_block_->queue();
+        }
     } else {
         current_frame_--;
         current_frame_->file().device().on_io_completion(*this);

@@ -111,7 +111,7 @@ result<size_t> host_console_device::fast_write(file &file, std::span<const std::
 
 result<void> host_console_device::stdin_irq_handler(hal::arch_irq_number_t, void *context) noexcept {
     auto *device = reinterpret_cast<host_console_device *>(context);
-    io::register_device_process_io(*device);
+    device->requeue_pending_io(make_io_frame_kind(io_frame_major_kind::generic, io_frame_generic_kind::read));
     return ok();
 }
 

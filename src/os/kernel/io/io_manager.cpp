@@ -30,7 +30,7 @@ constinit intrusive_list<device, &device::work_list_node> device_work_list_;
 constinit object_pool<io::file> file_table_;
 
 template <io_frame_generic_kind Minor, auto FastCall, class... TArgs>
-auto dispatch_io_fast_slow(file &file, TArgs &&...args) noexcept
+auto dispatch_io_fast_slow(file &file, async_io_result *async_io_result, TArgs &&...args) noexcept
     -> decltype((std::declval<device>().*FastCall)(file, std::forward<TArgs>(args)...)) {
     file.event().reset();
     auto r = (file.device().*FastCall)(file, std::forward<TArgs>(args)...);
@@ -39,13 +39,18 @@ auto dispatch_io_fast_slow(file &file, TArgs &&...args) noexcept
     }
     auto errcode = r.unwrap_err();
     if (errcode == error_code::slow_io) {
-        try_var(irp, io_request::allocate(make_io_frame_kind(io_frame_major_kind::generic, Minor), file));
+        try_var(io_block, async_io_result ? async_io_block::allocate(*async_io_result) : ok<async_io_block *>(nullptr));
+        try_var(irp, io_request::allocate(io_block, make_io_frame_kind(io_frame_major_kind::generic, Minor), file));
         try_var(frame, irp->current_frame());
         frame->template params<io_frame_major_kind::generic, Minor>() = {std::forward<TArgs>(args)...};
-        try_(irp->queue());
-        r = irp->template wait<typename std::decay_t<decltype(r)>::value_type>();
-        if (r.is_ok()) {
-            return r;
+        irp->queue();
+        if (async_io_result) {
+            return err(error_code::io_pending);
+        } else {
+            r = irp->template wait<typename std::decay_t<decltype(r)>::value_type>();
+            if (r.is_ok()) {
+                return r;
+            }
         }
     }
     return err(r.unwrap_err());
@@ -125,7 +130,7 @@ result<object_ptr<file>> io::open_file(access_mask desired_access, std::string_v
 result<void> io::open_file(file &file, access_mask desired_access, device &device, std::string_view path,
                            create_disposition disposition) noexcept {
     file.prepare_to_open(device);
-    return dispatch_io_fast_slow<io_frame_generic_kind::open, &device::fast_open>(file, path, disposition)
+    return dispatch_io_fast_slow<io_frame_generic_kind::open, &device::fast_open>(file, nullptr, path, disposition)
         .map_err([&](error_code e) {
             file.failed_to_open();
             return e;
@@ -141,15 +146,23 @@ result<void> io::open_file(file &file, access_mask desired_access, std::string_v
 result<void> io::close_file(file &file) noexcept { return file.device().close(file); }
 
 result<size_t> io::read_file(file &file, std::span<std::byte> buffer, std::optional<size_t> offset) noexcept {
-    return dispatch_io_fast_slow<io_frame_generic_kind::read, &device::fast_read>(file, buffer, offset);
+    return dispatch_io_fast_slow<io_frame_generic_kind::read, &device::fast_read>(file, nullptr, buffer, offset);
+}
+
+result<void> io::read_file_async(file &file, std::span<std::byte> buffer, size_t offset,
+                                 async_io_result &result) noexcept {
+    try_var(bytes_read,
+            dispatch_io_fast_slow<io_frame_generic_kind::read, &device::fast_read>(file, &result, buffer, offset));
+    result.bytes_transferred = bytes_read;
+    return ok();
 }
 
 result<size_t> io::write_file(file &file, std::span<const std::byte> buffer, std::optional<size_t> offset) noexcept {
-    return dispatch_io_fast_slow<io_frame_generic_kind::write, &device::fast_write>(file, buffer, offset);
+    return dispatch_io_fast_slow<io_frame_generic_kind::write, &device::fast_write>(file, nullptr, buffer, offset);
 }
 
 result<int> io::control_file(file &file, control_code_t code, void *arg) noexcept {
-    return dispatch_io_fast_slow<io_frame_generic_kind::control, &device::fast_control>(file, code, arg);
+    return dispatch_io_fast_slow<io_frame_generic_kind::control, &device::fast_control>(file, nullptr, code, arg);
 }
 
 result<void> io::allocate_console() noexcept { return ok(); }
