@@ -10,6 +10,9 @@ using namespace chino::os::kernel::ps;
 thread::thread(const thread_create_options &create_options) noexcept
     : stack_top(initialize_thread_stack(create_options)),
       stack_bottom(create_options.stack.data()),
+#ifdef CHINO_EMULATOR
+      emulator_handle(hal::arch_t::initialize_thread_handle(*this)),
+#endif
       flags_{.not_owned_stack = create_options.not_owned_stack, .priority = (uint32_t)create_options.priority},
       process_(create_options.process) {
     process_->attach_thread(*this);

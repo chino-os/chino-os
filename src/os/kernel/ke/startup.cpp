@@ -13,7 +13,7 @@ using namespace chino::os::kernel;
 
 #define SHELL_NAME "sh" // "sh"
 
-alignas(hal::cacheline_size) static std::array<uintptr_t, 256> idle_stack_;
+alignas(hal::cacheline_size) static std::array<uintptr_t, 128 * 1024> idle_stack_;
 static constinit lazy_construct<ps::thread> idle_thread_;
 
 alignas(hal::cacheline_size) static std::array<uintptr_t, 128 * 1024> init_stack_;

@@ -39,6 +39,7 @@ class emulator_arch {
 
     static void initialize_thread_stack(uintptr_t *&stack_top, kernel::ps::thread_main_thunk_t thunk,
                                         thread_start_t entrypoint, void *entry_arg) noexcept;
+    static uintptr_t initialize_thread_handle(kernel::ps::thread &thread) noexcept;
 
     static void yield_cpu() noexcept;
     [[noreturn]] static void start_schedule(kernel::ps::thread &thread) noexcept;

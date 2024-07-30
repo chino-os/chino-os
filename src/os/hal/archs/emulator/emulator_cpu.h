@@ -18,6 +18,10 @@ class emulator_cpu {
 
     void run(size_t cpu_id, size_t memory_size);
 
+    [[noreturn]] void start_schedule(kernel::ps::thread &thread) noexcept;
+
+    void handle_irq(arch_irq_number_t irq_number, kernel::syscall_number number, void *arg) noexcept;
+    void yield() noexcept;
     bool in_irq_handler() noexcept;
     arch_irq_state_t disable_irq();
     bool restore_irq(arch_irq_state_t irq_state);
@@ -44,6 +48,7 @@ class emulator_cpu {
     size_t cpu_id_;
     size_t memory_size_;
     HANDLE cpu_thread_;
+    std::atomic<HANDLE> current_thread_;
     HWND event_window_;
     PTP_TIMER systick_timer_;
     arch_irq_number_t current_irq_;

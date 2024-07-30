@@ -26,7 +26,7 @@ class file : public object {
     void failed_to_open() noexcept;
 
   private:
-    object_ptr<io::device> device_;
+    io::device *device_ = nullptr;
     void *data_ = nullptr;
     os::event event_;
 };

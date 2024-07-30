@@ -1,7 +1,9 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #include "emulator_cpu.h"
+#include "../../../kernel/ps/task/thread.h"
 #include <chino/os/kernel/io.h>
+#include <chino/os/kernel/kd.h>
 #include <chino/os/kernel/ke.h>
 
 using namespace chino;
@@ -64,6 +66,27 @@ void emulator_cpu::run(size_t cpu_id, size_t memory_size) {
         DispatchMessage(&msg);
     }
 }
+
+void emulator_cpu::start_schedule(ps::thread &thread) noexcept {
+    current_thread_ = (HANDLE)thread.emulator_handle;
+    ResumeThread(current_thread_);
+    SuspendThread(GetCurrentThread());
+    CHINO_UNREACHABLE();
+}
+
+void emulator_cpu::yield() noexcept {
+    auto last_thread = current_thread_.load(std::memory_order_acquire);
+    ps::current_thread().emulator_irq_state = emulator_irq_state.load();
+    ps_switch_task();
+    auto new_thread = (HANDLE)ps::current_thread().emulator_handle;
+    if (last_thread != new_thread) {
+        current_thread_.store(new_thread, std::memory_order_release);
+        restore_irq(ps::current_thread().emulator_irq_state);
+        kassert(ResumeThread(new_thread) != -1);
+        kassert(SuspendThread(last_thread) != -1);
+    }
+}
+
 bool emulator_cpu::in_irq_handler() noexcept { return emulator_in_irq_handler.load(std::memory_order_acquire); }
 
 arch_irq_state_t emulator_cpu::disable_irq() {
@@ -125,40 +148,26 @@ void emulator_cpu::process_irq(arch_irq_number_t irq_number, LPARAM lParam) {
         SleepConditionVariableCS(&irq_state_cs_, &irq_lock_, INFINITE);
     }
 
-    {
-        SuspendThread(cpu_thread_);
-        CONTEXT context{.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER};
-        GetThreadContext(cpu_thread_, &context);
-        auto &rsp = (uintptr_t *&)context.Rsp;
-        *--rsp = context.Rip;
-
-        if (irq_number == arch_irq_number_t::syscall) {
-            auto *payload = reinterpret_cast<syscall_payload *>(lParam);
-            *--rsp = (uintptr_t)payload->arg;
-            *--rsp = (uintptr_t)payload->number;
-        } else {
-            rsp -= 2; // Skip
-        }
-
-        *--rsp = (uintptr_t)irq_number;
-        context.Rip = (uintptr_t)emulator_dispatch_irq;
-        SetThreadContext(cpu_thread_, &context);
-        emulator_in_irq_handler.store(1, std::memory_order_release);
-        ResumeThread(cpu_thread_);
-    }
-
+    auto cnt_thread = current_thread_.load(std::memory_order_acquire);
+    SuspendThread(cnt_thread);
     LeaveCriticalSection(&irq_lock_);
 
-    // Wait for returning
-    CONTEXT context{.ContextFlags = CONTEXT_CONTROL};
-    while (true) {
-        GetThreadContext(cpu_thread_, &context);
-        if (!in_irq_handler() &&
-            (context.Rip < (uintptr_t)emulator_dispatch_irq || context.Rip >= (uintptr_t)emulator_dispatch_irq_end)) {
-            break;
-        }
-        Sleep(0);
+    emulator_in_irq_handler.store(1, std::memory_order_release);
+    ps::current_thread().emulator_irq_state = emulator_irq_state.load();
+    auto last_thread = current_thread_.load(std::memory_order_acquire);
+    if (irq_number == arch_irq_number_t::syscall) {
+        auto *payload = reinterpret_cast<syscall_payload *>(lParam);
+        io_handle_irq(irq_number, payload->number, payload->arg);
+    } else {
+        io_handle_irq(irq_number, (syscall_number)0, nullptr);
     }
+    auto new_thread = (HANDLE)ps::current_thread().emulator_handle;
+    if (last_thread != new_thread) {
+        current_thread_.store(new_thread, std::memory_order_release);
+    }
+    emulator_irq_state.store(ps::current_thread().emulator_irq_state);
+    emulator_in_irq_handler.store(0, std::memory_order_release);
+    kassert(ResumeThread(new_thread) != -1);
 }
 
 DWORD WINAPI emulator_cpu::cpu_entry_thunk([[maybe_unused]] LPVOID pcpu) {

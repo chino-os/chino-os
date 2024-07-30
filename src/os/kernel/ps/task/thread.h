@@ -42,6 +42,11 @@ class thread : public object {
     uintptr_t *stack_top;
     uintptr_t *stack_bottom;
 
+#ifdef CHINO_EMULATOR
+    uintptr_t emulator_handle;
+    uintptr_t emulator_irq_state;
+#endif
+
     intrusive_list_node scheduler_list_node;
     intrusive_list_node process_list_node;
     intrusive_list_node waiting_list_node;

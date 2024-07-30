@@ -12,14 +12,21 @@ using namespace chino::os::kernel::io;
 using namespace chino::os::kernel::ps;
 
 file ::~file() {
-    if (!device_.empty()) {
+    if (device_) {
         (void)close_file(*this);
+        device_->dec_ref();
     }
 }
 
 void file::prepare_to_open(io::device &device) noexcept {
-    kassert(device_.empty());
+    kassert(!device_);
+    device.add_ref();
     device_ = &device;
 }
 
-void file::failed_to_open() noexcept { device_ = nullptr; }
+void file::failed_to_open() noexcept {
+    if (device_) {
+        device_->dec_ref();
+        device_ = nullptr;
+    }
+}

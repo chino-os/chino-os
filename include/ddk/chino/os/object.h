@@ -46,7 +46,7 @@ template <class T> class object_ptr {
 
     /** @brief Construct an empty object */
     constexpr object_ptr(std::nullptr_t = nullptr) noexcept : object_(nullptr) {}
-    ~object_ptr() { release(); }
+    ~object_ptr() { dec_ref(); }
 
     object_ptr(T *node) noexcept : object_(node) { add_ref(); }
     object_ptr(std::in_place_t, T *node) noexcept : object_(node) {}
