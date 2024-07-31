@@ -65,7 +65,7 @@ class mutex {
 
 class event {
   public:
-    constexpr event(bool signal = false) noexcept : signal_(signal) {}
+    constexpr event(bool signal = false) noexcept : signal_(signal), waiters_(0) {}
 
     bool try_wait() noexcept { return signal_.load(std::memory_order_acquire); }
 
@@ -97,8 +97,43 @@ class event {
     std::atomic<uint32_t> waiters_;
 };
 
+class semaphore {
+  public:
+    constexpr semaphore(uint32_t res = 0) noexcept : res_(res), waiters_(0) {}
+
+    bool try_take() noexcept {
+        auto res = res_.load(std::memory_order_acquire);
+        while (res) {
+            if (res_.compare_exchange_strong(res, res - 1, std::memory_order_acq_rel)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    result<void> take(std::optional<std::chrono::milliseconds> timeout = std::nullopt) noexcept {
+        if (try_take())
+            return ok();
+
+        detail::waiters_guard wg(waiters_);
+        while (!try_take()) {
+            try_(atomic_wait(res_, 0, timeout));
+        }
+        return ok();
+    }
+
+    void give() noexcept {
+        res_.fetch_add(1, std::memory_order_release);
+        if (waiters_.load(std::memory_order_acquire) != 0)
+            atomic_notify_one(res_);
+    }
+
+  private:
+    std::atomic<uint32_t> res_;
+    std::atomic<uint32_t> waiters_;
+};
+
 // TODO:
-class semaphore;
 class condition_variable;
 } // namespace chino::os
 

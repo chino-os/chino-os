@@ -13,15 +13,15 @@ class intrusive_list_storage;
 class intrusive_list_node {
   public:
     constexpr intrusive_list_node(intrusive_list_node *prev = nullptr, intrusive_list_node *next = nullptr) noexcept
-        : prev(prev), next(next) {}
+        : prev_(prev), next_(next) {}
 
-    bool in_list() const noexcept { return prev; }
+    bool in_list() const noexcept { return prev_; }
 
   private:
     friend class detail::intrusive_list_storage;
 
-    intrusive_list_node *prev;
-    intrusive_list_node *next;
+    intrusive_list_node *prev_;
+    intrusive_list_node *next_;
 };
 
 namespace detail {
@@ -32,12 +32,12 @@ class intrusive_list_storage {
     CHINO_NONCOPYABLE(intrusive_list_storage);
 
     constexpr intrusive_list_storage() noexcept : dummy_(), size_(0) {
-        dummy_.prev = &dummy_;
-        dummy_.next = &dummy_;
+        dummy_.prev_ = &dummy_;
+        dummy_.next_ = &dummy_;
     }
 
-    node_type *prev(node_type *pivot) noexcept { return pivot->prev != &dummy_ ? pivot->prev : nullptr; }
-    node_type *next(node_type *pivot) noexcept { return pivot->next != &dummy_ ? pivot->next : nullptr; }
+    node_type *prev(node_type *pivot) noexcept { return pivot->prev_ != &dummy_ ? pivot->prev_ : nullptr; }
+    node_type *next(node_type *pivot) noexcept { return pivot->next_ != &dummy_ ? pivot->next_ : nullptr; }
 
     constexpr bool empty() const noexcept { return size() == 0; }
     constexpr size_t size() const noexcept { return size_; }
@@ -46,18 +46,18 @@ class intrusive_list_storage {
     node_type *back() noexcept { return tail() != &dummy_ ? tail() : nullptr; }
 
     void insert_after(node_type *pivot, node_type *node) noexcept {
-        node->next = pivot->next;
-        node->prev = pivot;
-        pivot->next->prev = node;
-        pivot->next = node;
+        node->next_ = pivot->next_;
+        node->prev_ = pivot;
+        pivot->next_->prev_ = node;
+        pivot->next_ = node;
         size_++;
     }
 
     void insert_before(node_type *pivot, node_type *node) noexcept {
-        node->prev = pivot->prev;
-        node->next = pivot;
-        pivot->prev->next = node;
-        pivot->prev = node;
+        node->prev_ = pivot->prev_;
+        node->next_ = pivot;
+        pivot->prev_->next_ = node;
+        pivot->prev_ = node;
         size_++;
     }
 
@@ -65,15 +65,15 @@ class intrusive_list_storage {
     void push_back(node_type *node) noexcept { insert_before(&dummy_, node); }
 
     void remove(node_type *node) noexcept {
-        node->next->prev = node->prev;
-        node->prev->next = node->next;
-        node->prev = node->next = nullptr;
+        node->next_->prev_ = node->prev_;
+        node->prev_->next_ = node->next_;
+        node->prev_ = node->next_ = nullptr;
         size_--;
     }
 
   private:
-    node_type *head() noexcept { return dummy_.next; }
-    node_type *tail() noexcept { return dummy_.prev; }
+    node_type *head() noexcept { return dummy_.next_; }
+    node_type *tail() noexcept { return dummy_.prev_; }
 
   private:
     node_type dummy_;
