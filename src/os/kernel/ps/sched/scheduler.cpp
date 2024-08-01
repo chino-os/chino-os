@@ -117,7 +117,6 @@ result<void> scheduler::block_current_thread(std::atomic<uint32_t> &wait_address
     {
         current_irq_lock irq_lock;
         auto &cnt_thread = current_thread();
-        kassert(!cnt_thread.wait_address);
         if (wait_address.load(std::memory_order_acquire) == old) {
             cnt_thread.wait_address = &wait_address;
             list_of(cnt_thread).remove(&cnt_thread);

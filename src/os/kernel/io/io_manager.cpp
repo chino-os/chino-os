@@ -76,6 +76,7 @@ template <> void object_pool<io::file>::object_pool_object::internal_release() n
 
 result<void> io::initialize_phase1(const boot_options &options) noexcept {
     try_(ob::insert_object(dev_directory_, "/dev"));
+    try_(io::initialize_net_manager());
     try_(hal::hal_install_devices());
     return ok();
 }

@@ -2,6 +2,7 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #include "ke_services.h"
 #include "../ps/sched/scheduler.h"
+#include <chino/os/hal/chip.h>
 #include <chino/os/kernel/io.h>
 #include <chino/os/kernel/ob.h>
 #include <chino/os/kernel/ps.h>
@@ -63,13 +64,8 @@ template <class T, class Callable> auto wrap_posix(Callable &&callable) noexcept
 }
 } // namespace
 
-struct ke_services_mt : i_ke_services {
+struct kernel_ke_service_mt : i_ke_services {
   public:
-    ke_services_mt() noexcept {
-        io::open_file(stdio_, access_mask::generic_all, "/dev/console", create_disposition::open_existing)
-            .expect("Open console failed.");
-    }
-
     int errno_() noexcept override { return errno; }
 
     int open(const char *pathname, int flags, mode_t mode) noexcept override {
@@ -85,10 +81,10 @@ struct ke_services_mt : i_ke_services {
     }
 
     ssize_t read(int __fd, void *__buf, size_t __nbyte) noexcept override {
-        return wrap_posix<ssize_t>([=, this]() -> result<ssize_t> {
+        return wrap_posix<ssize_t>([=]() -> result<ssize_t> {
             switch (__fd) {
             case STDIN_FILENO:
-                return io::read_file(stdio_, {reinterpret_cast<std::byte *>(__buf), __nbyte});
+                return err(error_code::not_supported);
             case STDOUT_FILENO:
             case STDERR_FILENO:
                 return err(error_code::bad_cast);
@@ -100,13 +96,14 @@ struct ke_services_mt : i_ke_services {
     }
 
     ssize_t write(int __fd, const void *__buf, size_t __nbyte) noexcept override {
-        return wrap_posix<ssize_t>([=, this]() -> result<ssize_t> {
+        return wrap_posix<ssize_t>([=]() -> result<ssize_t> {
             switch (__fd) {
             case STDIN_FILENO:
                 return err(error_code::bad_cast);
             case STDOUT_FILENO:
             case STDERR_FILENO:
-                return io::write_file(stdio_, {reinterpret_cast<const std::byte *>(__buf), __nbyte});
+                hal::chip_t::debug_print(reinterpret_cast<const char *>(__buf));
+                return ok(__nbyte);
             default:
                 try_var(file, ob::reference_object<io::file>(__fd));
                 return io::write_file(*file, {reinterpret_cast<const std::byte *>(__buf), __nbyte});
@@ -153,7 +150,7 @@ struct ke_services_mt : i_ke_services {
                             async_io_result &result) noexcept override {
         switch (fd) {
         case STDIN_FILENO:
-            return io::read_file_async(stdio_, buffer, offset, result);
+            return err(error_code::not_supported);
         case STDOUT_FILENO:
         case STDERR_FILENO:
             return err(error_code::bad_cast);
@@ -162,16 +159,53 @@ struct ke_services_mt : i_ke_services {
             return io::read_file_async(*file, buffer, offset, result);
         }
     }
+};
+
+struct user_ke_services_mt : kernel_ke_service_mt {
+  public:
+    user_ke_services_mt() noexcept {
+        io::open_file(stdio_, access_mask::generic_all, "/dev/console", create_disposition::open_existing)
+            .expect("Open console failed.");
+    }
+
+    ssize_t read(int __fd, void *__buf, size_t __nbyte) noexcept override {
+        if (__fd == STDIN_FILENO || __fd == STDERR_FILENO) {
+            return wrap_posix<ssize_t>([=, this]() -> result<ssize_t> {
+                return io::read_file(stdio_, {reinterpret_cast<std::byte *>(__buf), __nbyte});
+            });
+        }
+        return kernel_ke_service_mt::read(__fd, __buf, __nbyte);
+    }
+
+    ssize_t write(int __fd, const void *__buf, size_t __nbyte) noexcept override {
+        if (__fd == STDOUT_FILENO) {
+            return wrap_posix<ssize_t>([=, this]() -> result<ssize_t> {
+                return io::write_file(stdio_, {reinterpret_cast<const std::byte *>(__buf), __nbyte});
+            });
+        }
+        return kernel_ke_service_mt::write(__fd, __buf, __nbyte);
+    }
+
+    result<void> read_async(int fd, std::span<std::byte> buffer, size_t offset,
+                            async_io_result &result) noexcept override {
+        if (fd == STDIN_FILENO)
+            return io::read_file_async(stdio_, buffer, offset, result);
+        return kernel_ke_service_mt::read_async(fd, buffer, offset, result);
+    }
 
   private:
     kernel::io::file stdio_;
 };
 
+constinit static kernel_ke_service_mt kernel_ke_mt;
+
+i_ke_services &os::ke_services() noexcept { return kernel_ke_mt; }
+
 result<void> kernel::initialize_ke_services() noexcept {
 #ifdef CHINO_ARCH_EMULATOR
-    VirtualAlloc((LPVOID)ke_services_address, sizeof(ke_services_mt), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-    std::construct_at(reinterpret_cast<ke_services_mt *>(ke_services_address));
-    VirtualProtect((LPVOID)ke_services_address, sizeof(ke_services_mt), PAGE_READONLY, nullptr);
+    VirtualAlloc((LPVOID)ke_services_address, sizeof(user_ke_services_mt), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+    std::construct_at(reinterpret_cast<user_ke_services_mt *>(ke_services_address));
+    VirtualProtect((LPVOID)ke_services_address, sizeof(user_ke_services_mt), PAGE_READONLY, nullptr);
 #endif
     return ok();
 }

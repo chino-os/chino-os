@@ -1,10 +1,10 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
-#include "io.h"
+#include "ioapi.h"
 #include <sys/unistd.h>
 
-namespace chino::os::kernel {
+namespace chino::os {
 struct i_ke_services {
     virtual int errno_() noexcept = 0;
     virtual int open(const char *pathname, int flags, mode_t mode) noexcept = 0;
@@ -25,5 +25,5 @@ struct i_ke_services {
 
 inline static uintptr_t ke_services_address = 0x800000000;
 
-inline i_ke_services &ke_services() noexcept { return *reinterpret_cast<i_ke_services *>(ke_services_address); }
+i_ke_services &ke_services() noexcept;
 } // namespace chino::os::kernel
