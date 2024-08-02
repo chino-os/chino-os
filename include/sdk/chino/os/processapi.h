@@ -97,6 +97,37 @@ class event {
     std::atomic<uint32_t> waiters_;
 };
 
+class auto_reset_event {
+  public:
+    constexpr auto_reset_event(bool signal = false) noexcept : signal_(signal), waiters_(0) {}
+
+    bool try_wait() noexcept {
+        uint32_t signal = 1;
+        return signal_.compare_exchange_strong(signal, 0, std::memory_order_acq_rel);
+    }
+
+    result<void> wait(std::optional<std::chrono::milliseconds> timeout = std::nullopt) noexcept {
+        if (try_wait())
+            return ok();
+
+        detail::waiters_guard wg(waiters_);
+        while (!try_wait()) {
+            try_(atomic_wait(signal_, 0, timeout));
+        }
+        return ok();
+    }
+
+    void notify_one() noexcept {
+        signal_.store(1, std::memory_order_release);
+        if (waiters_.load(std::memory_order_acquire) != 0)
+            atomic_notify_one(signal_);
+    }
+
+  private:
+    std::atomic<uint32_t> signal_;
+    std::atomic<uint32_t> waiters_;
+};
+
 class semaphore {
   public:
     constexpr semaphore(uint32_t res = 0) noexcept : res_(res), waiters_(0) {}
