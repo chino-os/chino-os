@@ -7,6 +7,7 @@ set(SRCS device.cpp
          io_request.cpp
          irq_handler.cpp
          net_manager.cpp
+         time.cpp
 )
 
 target_sources(chino.kernel PRIVATE ${SRCS})

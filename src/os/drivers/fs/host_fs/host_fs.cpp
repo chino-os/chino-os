@@ -24,7 +24,7 @@ result<void> host_fs_device::fast_open(file &file, std::string_view path, create
         auto handle =
             CreateFileA(host_filename, GENERIC_READ | GENERIC_WRITE, 0, nullptr, (DWORD)disposition, 0, nullptr);
         if (handle != INVALID_HANDLE_VALUE) {
-            file.data(handle);
+            file.construct_data<HANDLE>(handle);
             return ok();
         } else {
             return err(error_code::not_found);

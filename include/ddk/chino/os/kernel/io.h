@@ -23,6 +23,8 @@ result<void> open_file(file &file, access_mask desired_access, device &device, s
                        create_disposition disposition) noexcept;
 result<void> open_file(file &file, access_mask desired_access, std::string_view path,
                        create_disposition disposition) noexcept;
+result<object_ptr<file>> open_file(access_mask desired_access, device &device, std::string_view path,
+                                   create_disposition disposition) noexcept;
 result<object_ptr<file>> open_file(access_mask desired_access, std::string_view path,
                                    create_disposition disposition) noexcept;
 

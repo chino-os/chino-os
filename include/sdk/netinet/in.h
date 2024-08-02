@@ -1,6 +1,7 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
+#include <arpa/inet.h>
 #include <endian.h>
 #include <stdint.h>
 #include <sys/socket.h>
@@ -335,28 +336,6 @@ extern "C" {
 /* Global IPv6 in6addr_any */
 
 EXTERN const struct in6_addr in6addr_any;
-
-/****************************************************************************
- * Public Function Prototypes
- ****************************************************************************/
-
-/* Functions to convert between host and network byte ordering.
- *
- * REVISIT:  Since network order is defined as big-endian, the following
- * functions are equivalent to functions declared in endian.h:
- *
- *   htonl   htobe32
- *   htons   htobe16
- *   ntohl   be32toh
- *   ntohs   be16toh
- */
-
-uint32_t ntohl(uint32_t nl);
-uint16_t ntohs(uint16_t ns);
-uint64_t ntohq(uint64_t nq);
-uint32_t htonl(uint32_t hl);
-uint16_t htons(uint16_t hs);
-uint64_t htonq(uint64_t hq);
 
 #undef EXTERN
 #if defined(__cplusplus)

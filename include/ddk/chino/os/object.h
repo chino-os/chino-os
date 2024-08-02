@@ -13,8 +13,6 @@ namespace chino::os {
   public:                                                                                                              \
     static constexpr object_kind kind() noexcept { return kind_; }                                                     \
     const object_kind &runtime_kind() const noexcept override { return kind_; }                                        \
-                                                                                                                       \
-  protected:                                                                                                           \
     bool is_a(const object_kind &kind) const noexcept override { return kind == kind_ || base_t::is_a(kind); }
 
 class object;

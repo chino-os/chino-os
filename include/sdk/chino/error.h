@@ -24,5 +24,6 @@ enum class error_code : int32_t {
     again = 15,
     slow_io = 16,
     io_pending = 17,
+    message_too_long = 18,
 };
 }

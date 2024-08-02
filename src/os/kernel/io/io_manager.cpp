@@ -1,6 +1,7 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #include "io_manager.h"
+#include "../ke/ke_services.h"
 #include "../ob/directory.h"
 #include "../ps/task/process.h"
 #include <chino/conf/board_init.inl>
@@ -120,12 +121,17 @@ result<void> io::attach_device(device &device) noexcept {
     return ok();
 }
 
+result<object_ptr<file>> io::open_file(access_mask desired_access, device &device, std::string_view path,
+                                       create_disposition disposition) noexcept {
+    try_var(f, file_table_.allocate());
+    try_(open_file(*f.first, desired_access, device, path, disposition));
+    return ok(f.first);
+}
+
 result<object_ptr<file>> io::open_file(access_mask desired_access, std::string_view path,
                                        create_disposition disposition) noexcept {
     try_var(d, find_device(path));
-    try_var(f, file_table_.allocate());
-    try_(open_file(*f.first, desired_access, *d.first, d.second, disposition));
-    return ok(f.first);
+    return open_file(desired_access, *d.first, d.second, disposition);
 }
 
 result<void> io::open_file(file &file, access_mask desired_access, device &device, std::string_view path,
@@ -167,3 +173,76 @@ result<int> io::control_file(file &file, control_code_t code, void *arg) noexcep
 }
 
 result<void> io::allocate_console() noexcept { return ok(); }
+
+int kernel_ke_service_mt::open(const char *pathname, int flags, mode_t mode) noexcept {
+    return wrap_posix<ssize_t>([=]() -> result<int> {
+        try_var(file, io::open_file(access_mask::generic_all, pathname, create_disposition::open_existing));
+        try_var(handle, ob::alloc_handle(*file, access_mask::generic_all));
+        return ok(handle.second);
+    });
+}
+
+int kernel_ke_service_mt::close(int fd) noexcept {
+    return wrap_posix<void>([=]() -> result<void> { return ob::close_handle(fd); });
+}
+
+ssize_t kernel_ke_service_mt::read(int __fd, void *__buf, size_t __nbyte) noexcept {
+    return wrap_posix<ssize_t>([=]() -> result<ssize_t> {
+        switch (__fd) {
+        case STDIN_FILENO:
+            return err(error_code::not_supported);
+        case STDOUT_FILENO:
+        case STDERR_FILENO:
+            return err(error_code::bad_cast);
+        default:
+            try_var(file, ob::reference_object<io::file>(__fd));
+            return io::read_file(*file, {reinterpret_cast<std::byte *>(__buf), __nbyte});
+        }
+    });
+}
+
+ssize_t kernel_ke_service_mt::write(int __fd, const void *__buf, size_t __nbyte) noexcept {
+    return wrap_posix<ssize_t>([=]() -> result<ssize_t> {
+        switch (__fd) {
+        case STDIN_FILENO:
+            return err(error_code::bad_cast);
+        case STDOUT_FILENO:
+        case STDERR_FILENO:
+            hal::chip_t::debug_print(reinterpret_cast<const char *>(__buf));
+            return ok(__nbyte);
+        default:
+            try_var(file, ob::reference_object<io::file>(__fd));
+            return io::write_file(*file, {reinterpret_cast<const std::byte *>(__buf), __nbyte});
+        }
+    });
+}
+
+int kernel_ke_service_mt::ioctl(int __fd, int req, void *arg) noexcept {
+    return wrap_posix<int>([=]() -> result<int> {
+        switch (__fd) {
+        case STDIN_FILENO:
+        case STDOUT_FILENO:
+        case STDERR_FILENO:
+            return err(error_code::bad_cast);
+        default:
+            try_var(file, ob::reference_object<io::file>(__fd));
+            return io::control_file(*file, req, arg);
+        }
+    });
+}
+
+result<async_io_result *> kernel_ke_service_mt::wait_queued_io() noexcept { return io::io_wait_queued_io(); }
+
+result<void> kernel_ke_service_mt::read_async(int fd, std::span<std::byte> buffer, size_t offset,
+                                              async_io_result &result) noexcept {
+    switch (fd) {
+    case STDIN_FILENO:
+        return err(error_code::not_supported);
+    case STDOUT_FILENO:
+    case STDERR_FILENO:
+        return err(error_code::bad_cast);
+    default:
+        try_var(file, ob::reference_object<io::file>(fd));
+        return io::read_file_async(*file, buffer, offset, result);
+    }
+}

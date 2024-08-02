@@ -55,7 +55,7 @@ else ()
     set(CMAKE_INSTALL_RPATH "$ORIGIN")
 endif()
 
-add_compile_definitions(_CHINO=1)
+add_compile_definitions(__CHINO__=1)
 
 if (MSVC)
     add_definitions(/D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_CRT_SECURE_NO_WARNINGS /DNOMINMAX /DUNICODE)
