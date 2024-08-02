@@ -17,7 +17,7 @@ class scheduler {
 
     static void unblock_threads(const void *wait_address, bool unblock_all) noexcept;
 
-    constexpr scheduler() noexcept : max_ready_priority_(thread_priority::idle), current_time_(0) {}
+    constexpr scheduler() noexcept : max_ready_priority_(thread_priority::idle) {}
 
     void initialize_phase0() noexcept;
     void lock() noexcept;
@@ -55,7 +55,5 @@ class scheduler {
     std::array<scheduler_list_t, (size_t)thread_priority::max + 1> ready_threads_;
     scheduler_list_t blocked_threads_;
     scheduler_list_t delayed_threads_;
-
-    std::chrono::nanoseconds current_time_;
 };
 } // namespace chino::os::kernel::ps

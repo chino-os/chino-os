@@ -105,7 +105,6 @@ void scheduler::start_schedule(thread &first_thread) noexcept {
 }
 
 void scheduler::on_system_tick() noexcept {
-    current_time_ = hal::arch_t::current_cpu_time();
     setup_next_system_tick();
     wakeup_delayed_threads();
     switch_task();
@@ -183,9 +182,12 @@ thread &scheduler::select_next_thread() noexcept {
     } else {
         // 2. Round robin the same priority
         auto &threads = list_of(cnt_thread);
-        next_thread = threads.size() == 1 ? &cnt_thread : threads.next(&cnt_thread);
+        next_thread = threads.next(&cnt_thread);
+        if (!next_thread)
+            next_thread = threads.front();
     }
 
+    kassert(next_thread);
     return *next_thread;
 }
 
@@ -232,7 +234,7 @@ bool scheduler::unblock_local_threads(const void *wait_address, bool unblock_all
 }
 
 void scheduler::add_to_delay_list(thread &thread, std::chrono::nanoseconds timeout) noexcept {
-    auto wakeup_time = current_time_ + timeout;
+    auto wakeup_time = hal::arch_t::current_cpu_time() + timeout;
     auto pivot = delayed_threads_.front();
     if (pivot) {
         ps::thread *next;
@@ -246,11 +248,12 @@ void scheduler::add_to_delay_list(thread &thread, std::chrono::nanoseconds timeo
     } else {
         delayed_threads_.push_front(&thread);
     }
+    thread.wakeup_time = wakeup_time;
     thread.status(thread_status::delayed);
 }
 
 void scheduler::wakeup_delayed_threads() noexcept {
-    auto current_time = current_time_;
+    auto current_time = hal::arch_t::current_cpu_time();
     auto head = delayed_threads_.front();
     while (head && head->wakeup_time <= current_time) {
         auto wake = head;
