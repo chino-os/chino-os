@@ -5,6 +5,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="socket\lwip_socket\lwip\**" />
+    <EmbeddedResource Remove="socket\lwip_socket\lwip\**" />
+    <None Remove="socket\lwip_socket\lwip\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="bus\" />
   </ItemGroup>
 

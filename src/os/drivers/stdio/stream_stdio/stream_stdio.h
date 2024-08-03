@@ -3,15 +3,16 @@
 #pragma once
 #include <chino/conf/board_desc.h>
 #include <chino/os/kernel/io.h>
+#include <chino/os/kernel/io/devices/stdio_device.h>
 
 namespace chino::os::drivers {
-class stream_console_device : public kernel::io::device {
+class stream_stdio_device : public kernel::io::stdio_device {
   public:
-    constexpr stream_console_device(hal::meta::board_desc::chip::machine::devices::stream_console) noexcept {}
+    constexpr stream_stdio_device(hal::meta::board_desc::chip::machine::devices::stream_console) noexcept {}
 
     std::string_view name() const noexcept override {
         using namespace std::string_view_literals;
-        return "console"sv;
+        return "stdio"sv;
     }
 
     result<void> install(kernel::io::device &stream_device) noexcept;
@@ -27,10 +28,10 @@ class stream_console_device : public kernel::io::device {
     kernel::io::file stream_file_;
 };
 
-class stream_console_driver {
+class stream_stdio_driver {
   public:
-    template <class TDevice, class TBottomDevice> using device_t = stream_console_device;
+    template <class TDevice, class TBottomDevice> using device_t = stream_stdio_device;
 
-    static result<void> install_device(stream_console_device &device, kernel::io::device &stream_device) noexcept;
+    static result<void> install_device(stream_stdio_device &device, kernel::io::device &stream_device) noexcept;
 };
 } // namespace chino::os::drivers

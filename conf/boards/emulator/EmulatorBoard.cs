@@ -16,7 +16,9 @@ public class EmulatorBoard : BoardDefinition
             new HostConsoleDriver(),
             new HostFSDriver(),
             new HostSerialDriver(),
-            new StreamConsoleDriver(),
+
+            new StreamStdioDriver(),
+            new LwipSocketDriver(),
         };
     }
 

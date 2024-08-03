@@ -1,6 +1,7 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #include "ke_services.h"
+#include "../io/io_manager.h"
 #include "../ps/sched/scheduler.h"
 #include <chino/os/hal/chip.h>
 #include <chino/os/kernel/io.h>
@@ -45,6 +46,8 @@ int kernel::to_errno(error_code code) {
         return ETIMEDOUT;
     case chino::error_code::message_too_long:
         return EMSGSIZE;
+    case chino::error_code::no_such_device:
+        return ENODEV;
     default:
         return EFAULT;
     }
@@ -55,7 +58,8 @@ int kernel_ke_service_mt::errno_() noexcept { return errno; }
 struct user_ke_services_mt : kernel_ke_service_mt {
   public:
     user_ke_services_mt() noexcept {
-        io::open_file(stdio_, access_mask::generic_all, "/dev/console", create_disposition::open_existing)
+        io::open_file(stdio_, access_mask::generic_all, *io::default_stdio_device(), {},
+                      create_disposition::open_existing)
             .expect("Open console failed.");
     }
 

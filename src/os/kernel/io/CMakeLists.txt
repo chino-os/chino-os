@@ -11,4 +11,4 @@ set(SRCS device.cpp
 )
 
 target_sources(chino.kernel PRIVATE ${SRCS})
-target_link_libraries(chino.kernel PRIVATE chino.drivers lwip)
+target_link_libraries(chino.kernel PRIVATE chino.drivers)

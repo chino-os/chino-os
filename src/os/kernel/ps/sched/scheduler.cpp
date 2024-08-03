@@ -17,6 +17,7 @@ using namespace chino::os::kernel::ps;
 using namespace std::chrono_literals;
 
 namespace {
+constexpr auto system_tick_interval = std::chrono::milliseconds(1000);
 constinit std::array<scheduler, hal::chip_t::cpus_count> schedulers_;
 } // namespace
 

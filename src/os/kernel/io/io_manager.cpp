@@ -29,6 +29,7 @@ constinit ps::irq_spin_lock device_work_list_lock_;
 constinit os::event device_work_list_avail_event_;
 constinit intrusive_list<device, &device::work_list_node> device_work_list_;
 constinit object_pool<io::file> file_table_;
+constinit object_ptr<stdio_device> default_stdio_device_;
 
 template <io_frame_generic_kind Minor, auto FastCall, class... TArgs>
 auto dispatch_io_fast_slow(file &file, async_io_result *async_io_result, TArgs &&...args) noexcept
@@ -77,7 +78,6 @@ template <> void object_pool<io::file>::object_pool_object::internal_release() n
 
 result<void> io::initialize_phase1(const boot_options &options) noexcept {
     try_(ob::insert_object(dev_directory_, "/dev"));
-    try_(io::initialize_net_manager());
     try_(hal::hal_install_devices());
     return ok();
 }
@@ -103,6 +103,8 @@ void io::process_queued_ios(io_request *wait_irp) {
     }
 }
 
+object_ptr<stdio_device> io::default_stdio_device() noexcept { return default_stdio_device_; }
+
 int io::io_worker_main(void *) noexcept {
     process_queued_ios(nullptr);
     CHINO_UNREACHABLE();
@@ -118,6 +120,13 @@ void io::register_device_process_io(device &device) noexcept {
 
 result<void> io::attach_device(device &device) noexcept {
     try_(dev_directory_.insert(device, device.name()));
+    // Handle special device
+    if (device.is_a(object_kind_stdio_device)) {
+        kassert(default_stdio_device_.empty());
+        default_stdio_device_ = static_cast<stdio_device *>(&device);
+    } else if (device.is_a(object_kind_socket_device)) {
+        try_(io::initialize_net_manager(device));
+    }
     return ok();
 }
 

@@ -23,8 +23,6 @@ struct thread_create_options {
     void *entry_arg = nullptr;
 };
 
-inline constexpr auto system_tick_interval = std::chrono::milliseconds(1000);
-
 struct current_schedule_lock {
     CHINO_NONCOPYABLE(current_schedule_lock);
 

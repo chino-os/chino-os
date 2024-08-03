@@ -39,6 +39,7 @@ public sealed class EmulatorChip : ChipDefinition
                 },
 
                 SystemDevices.StreamConsole(host_console),
+                SystemDevices.LwipSocket(),
             },
         };
     }
@@ -55,5 +56,6 @@ public sealed class EmulatorChip : ChipDefinition
         public static readonly Guid HostFS = new Guid("C6F17CB5-7D0F-4DE4-AFFA-D0496495A0ED");
         public static readonly Guid HostNetIf = new Guid("59DBBA5D-ED63-4962-B597-688E9447A23B");
         public static readonly Guid HostSerial = new Guid("8D460A89-F506-4A60-8F68-04C18E6F97ED");
+        public static readonly Guid HostSocket = new Guid("9DD608EF-6E58-4078-9670-7FBEA1B479CB");
     }
 }

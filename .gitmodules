@@ -13,6 +13,6 @@
 [submodule "src/shell/micropython"]
 	path = src/shell/micropython
 	url = https://github.com/chino-os/micropython.git
-[submodule "src/net/lwip"]
-	path = src/os/drivers/socket/lwip/lwip
+[submodule "src/os/drivers/socket/lwip_socket/lwip"]
+	path = src/os/drivers/socket/lwip_socket/lwip
 	url = https://github.com/chino-os/lwip.git
