@@ -14,5 +14,5 @@
 	path = src/shell/micropython
 	url = https://github.com/chino-os/micropython.git
 [submodule "src/net/lwip"]
-	path = src/net/lwip
+	path = src/os/drivers/socket/lwip/lwip
 	url = https://github.com/chino-os/lwip.git
