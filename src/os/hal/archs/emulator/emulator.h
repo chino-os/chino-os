@@ -37,6 +37,7 @@ class emulator {
 };
 
 error_code win32_to_error_code(DWORD win32) noexcept;
+error_code wsa_to_error_code(DWORD wsa) noexcept;
 
 #define TRY_WIN32_IGNORE(x)                                                                                            \
     {                                                                                                                  \
@@ -59,6 +60,14 @@ error_code win32_to_error_code(DWORD win32) noexcept;
             auto error = GetLastError();                                                                               \
             if (error != ERROR_IO_PENDING)                                                                             \
                 return err(chino::os::hal::win32_to_error_code(error));                                                \
+        }                                                                                                              \
+    }
+
+#define TRY_WSA_IF_NOT(x)                                                                                              \
+    {                                                                                                                  \
+        chino::os::kernel::ps::current_irq_lock irq_lock;                                                              \
+        if (!(x)) {                                                                                                    \
+            return err(chino::os::hal::wsa_to_error_code(WSAGetLastError()));                                          \
         }                                                                                                              \
     }
 } // namespace chino::os::hal

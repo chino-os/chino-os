@@ -9,6 +9,8 @@ namespace Chino.Boards;
 [Board("Emulator")]
 public class EmulatorBoard : BoardDefinition
 {
+    private readonly bool _useHostSocket = true;
+
     public EmulatorBoard()
     {
         Drivers = new()
@@ -16,9 +18,9 @@ public class EmulatorBoard : BoardDefinition
             new HostConsoleDriver(),
             new HostFSDriver(),
             new HostSerialDriver(),
+            _useHostSocket ? new HostSocketDriver() : new LwipSocketDriver(),
 
             new StreamStdioDriver(),
-            new LwipSocketDriver(),
         };
     }
 

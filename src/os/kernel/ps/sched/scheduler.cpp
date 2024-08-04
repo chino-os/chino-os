@@ -145,7 +145,13 @@ result<void> scheduler::block_current_thread(std::atomic<uint32_t> &wait_address
     }
 }
 
-void scheduler::delay_current_thread(std::chrono::nanoseconds timeout) noexcept {}
+void scheduler::delay_current_thread(std::chrono::nanoseconds timeout) noexcept {
+    current_irq_lock irq_lock;
+    auto &cnt_thread = current_thread();
+    list_of(cnt_thread).remove(&cnt_thread);
+    add_to_delay_list(cnt_thread, timeout);
+    yield();
+}
 
 scheduler::scheduler_list_t &scheduler::list_of(thread &thread) noexcept {
     switch (thread.status()) {

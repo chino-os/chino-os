@@ -1,6 +1,7 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
+#ifndef _WINSOCKAPI_
 #include <fcntl.h>
 #include <sys/types.h>
 /****************************************************************************
@@ -119,112 +120,40 @@
               * descriptor received through SCM_RIGHTS.                                                                \
               */
 
-/* Protocol levels supported by get/setsockopt(): */
-
-#define SOL_SOCKET 1 /* Only socket-level options supported */
-
-/* Socket-level options */
-
-#define SO_ACCEPTCONN                                                                                                  \
-    0 /* Reports whether socket listening is enabled                                                                   \
-       * (get only).                                                                                                   \
-       * arg: pointer to integer containing a boolean                                                                  \
-       * value                                                                                                         \
-       */
-#define SO_BROADCAST                                                                                                   \
-    1 /* Permits sending of broadcast messages (get/set).                                                              \
-       * arg: pointer to integer containing a boolean                                                                  \
-       * value                                                                                                         \
-       */
-#define SO_DEBUG                                                                                                       \
-    2 /* Enables recording of debugging information                                                                    \
-       * (get/set).                                                                                                    \
-       * arg: pointer to integer containing a boolean                                                                  \
-       * value                                                                                                         \
-       */
-#define SO_DONTROUTE                                                                                                   \
-    3 /* Requests that outgoing messages bypass standard                                                               \
-       * routing (get/set)                                                                                             \
-       * arg: pointer to integer containing a boolean                                                                  \
-       * value                                                                                                         \
-       */
-#define SO_ERROR                                                                                                       \
-    4 /* Reports and clears error status (get only).                                                                   \
-       * arg: returns an integer value                                                                                 \
-       */
-#define SO_KEEPALIVE                                                                                                   \
-    5 /* Keeps connections active by enabling the periodic                                                             \
-       * transmission of messages (get/set).                                                                           \
-       * arg:  pointer to integer containing a boolean int                                                             \
-       * value                                                                                                         \
-       */
-#define SO_LINGER                                                                                                      \
-    6 /* Lingers on a close() if data is present (get/set)                                                             \
-       * arg: struct linger                                                                                            \
-       */
-#define SO_OOBINLINE                                                                                                   \
-    7 /* Leaves received out-of-band data (data marked                                                                 \
-       * urgent) inline                                                                                                \
-       * (get/set) arg: pointer to integer containing a                                                                \
-       * boolean value                                                                                                 \
-       */
-#define SO_RCVBUF                                                                                                      \
-    8 /* Sets receive buffer size.                                                                                     \
-       * arg: integer value (get/set).                                                                                 \
-       */
-#define SO_RCVLOWAT                                                                                                    \
-    9 /* Sets the minimum number of bytes to process for                                                               \
-       * socket input (get/set).                                                                                       \
-       * arg: integer value                                                                                            \
-       */
-#define SO_RCVTIMEO                                                                                                    \
-    10 /* Sets the timeout value that specifies the maximum                                                            \
-        * amount of time an input function waits until it                                                              \
-        * completes (get/set).                                                                                         \
-        * arg: struct timeval                                                                                          \
-        */
-#define SO_REUSEADDR                                                                                                   \
-    11 /* Allow reuse of local addresses (get/set)                                                                     \
-        * arg: pointer to integer containing a boolean                                                                 \
-        * value                                                                                                        \
-        */
-#define SO_SNDBUF                                                                                                      \
-    12 /* Sets send buffer size (get/set).                                                                             \
-        * arg: integer value                                                                                           \
-        */
-#define SO_SNDLOWAT                                                                                                    \
-    13 /* Sets the minimum number of bytes to process for                                                              \
-        * socket output (get/set).                                                                                     \
-        * arg: integer value                                                                                           \
-        */
-#define SO_SNDTIMEO                                                                                                    \
-    14 /* Sets the timeout value specifying the amount of                                                              \
-        * time that an output function blocks because flow                                                             \
-        * control prevents data from being sent(get/set).                                                              \
-        * arg: struct timeval                                                                                          \
-        */
-#define SO_TYPE                                                                                                        \
-    15 /* Reports the socket type (get only).                                                                          \
-        * return: int                                                                                                  \
-        */
-#define SO_TIMESTAMP                                                                                                   \
-    16 /* Generates a timestamp for each incoming packet                                                               \
-        * arg: integer value                                                                                           \
-        */
-#define SO_BINDTODEVICE                                                                                                \
-    17 /* Bind this socket to a specific network device.                                                               \
-        */
-#define SO_PEERCRED                                                                                                    \
-    18 /* Return the credentials of the peer process                                                                   \
-        * connected to this socket.                                                                                    \
-        */
-
-/* The options are unsupported but included for compatibility
- * and portability
+/*
+ * Option flags per-socket. These must match the SOF_ flags in ip.h (checked in init.c)
  */
-#define SO_SNDBUFFORCE 32
-#define SO_RCVBUFFORCE 33
-#define SO_RXQ_OVFL 40
+#define SO_REUSEADDR 0x0004 /* Allow local address reuse */
+#define SO_KEEPALIVE 0x0008 /* keep connections alive */
+#define SO_BROADCAST 0x0020 /* permit to send and to receive broadcast messages (see IP_SOF_BROADCAST option) */
+
+/*
+ * Additional options, not kept in so_options.
+ */
+#define SO_DEBUG 0x0001       /* Unimplemented: turn on debugging info recording */
+#define SO_ACCEPTCONN 0x0002  /* socket has had listen() */
+#define SO_DONTROUTE 0x0010   /* Unimplemented: just use interface addresses */
+#define SO_USELOOPBACK 0x0040 /* Unimplemented: bypass hardware when possible */
+#define SO_LINGER 0x0080      /* linger on close if data present */
+#define SO_DONTLINGER ((int)(~SO_LINGER))
+#define SO_OOBINLINE 0x0100    /* Unimplemented: leave received OOB data in line */
+#define SO_REUSEPORT 0x0200    /* Unimplemented: allow local address & port reuse */
+#define SO_SNDBUF 0x1001       /* Unimplemented: send buffer size */
+#define SO_RCVBUF 0x1002       /* receive buffer size */
+#define SO_SNDLOWAT 0x1003     /* Unimplemented: send low-water mark */
+#define SO_RCVLOWAT 0x1004     /* Unimplemented: receive low-water mark */
+#define SO_SNDTIMEO 0x1005     /* send timeout */
+#define SO_RCVTIMEO 0x1006     /* receive timeout */
+#define SO_ERROR 0x1007        /* get error status and clear */
+#define SO_TYPE 0x1008         /* get socket type */
+#define SO_CONTIMEO 0x1009     /* Unimplemented: connect timeout */
+#define SO_NO_CHECK 0x100a     /* don't create UDP checksum */
+#define SO_BINDTODEVICE 0x100b /* bind to device */
+
+/*
+ * Level number for (get/set)sockopt() to apply to socket itself.
+ */
+#define SOL_SOCKET 0xfff /* options for socket level */
 
 /* Protocol-level socket operations. */
 
@@ -309,7 +238,7 @@
 struct sockaddr_storage {
     sa_family_t ss_family; /* Address family */
     char ss_data[SS_MAXSIZE - sizeof(sa_family_t)];
-}  __attribute__((aligned(SS_ALIGNSIZE))); /* Force desired alignment */
+} __attribute__((aligned(SS_ALIGNSIZE))); /* Force desired alignment */
 
 /* The sockaddr structure is used to define a socket address which is used
  * in the bind(), connect(), getpeername(), getsockname(), recvfrom(), and
@@ -329,11 +258,11 @@ struct linger {
 };
 
 struct msghdr {
-    void *msg_name;           /* Socket name */
+    void *msg_name;               /* Socket name */
     socklen_t msg_namelen;        /* Length of name */
-    struct iovec *msg_iov;    /* Data blocks */
+    struct iovec *msg_iov;        /* Data blocks */
     unsigned long msg_iovlen;     /* Number of blocks */
-    void *msg_control;        /* Per protocol magic (eg BSD file descriptor passing) */
+    void *msg_control;            /* Per protocol magic (eg BSD file descriptor passing) */
     unsigned long msg_controllen; /* Length of cmsg list */
     unsigned int msg_flags;
 };
@@ -410,4 +339,5 @@ ssize_t sendmsg(int sockfd, struct msghdr *msg, int flags);
 #undef EXTERN
 #if defined(__cplusplus)
 }
+#endif
 #endif

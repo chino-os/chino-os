@@ -42,3 +42,14 @@ error_code hal::win32_to_error_code(DWORD win32) noexcept {
         return error_code::fail;
     }
 }
+
+error_code hal::wsa_to_error_code(DWORD wsa) noexcept {
+    switch (wsa) {
+    case ERROR_SUCCESS:
+        return error_code::success;
+    case WSAEINVAL:
+        return error_code::invalid_argument;
+    default:
+        return error_code::fail;
+    }
+}

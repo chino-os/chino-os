@@ -9,11 +9,11 @@
 
 struct iphdr {
 #if _BYTE_ORDER == _LITTLE_ENDIAN
-    unsigned int ihl : 4;
-    unsigned int version : 4;
+    uint8_t ihl : 4;
+    uint8_t version : 4;
 #elif _BYTE_ORDER == _BIG_ENDIAN
-    unsigned int version : 4;
-    unsigned int ihl : 4;
+    uint8_t version : 4;
+    uint8_t ihl : 4;
 #else
 #error "unknown endian"
 #endif

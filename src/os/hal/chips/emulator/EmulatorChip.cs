@@ -37,6 +37,11 @@ public sealed class EmulatorChip : ChipDefinition
                         { "PortName", "COM5" },
                     },
                 },
+                new SimpleDeviceNode
+                {
+                    Name = "host_socket",
+                    Compatibles = [DeviceCompatibles.HostSocket],
+                },
 
                 SystemDevices.StreamConsole(host_console),
                 SystemDevices.LwipSocket(),

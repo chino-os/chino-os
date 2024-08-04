@@ -194,16 +194,21 @@ template <class T> class object_pool : private detail::object_pool_impl {
     }
 
     result<void> free(T *object) noexcept {
-        return object_pool_impl::free(reinterpret_cast<detail::object_entry *>(object), &std::destroy_at);
+        return object_pool_impl::free(reinterpret_cast<detail::object_entry *>(object), destroy_object);
     }
 
     result<void> free(size_t index) noexcept {
-        return object_pool_impl::free(index, &std::destroy_at, object_segment::elements_count);
+        return object_pool_impl::free(index, destroy_object, object_segment::elements_count);
     }
 
     result<entry_pointer_type> at(size_t index) noexcept {
         try_var(obj, object_pool_impl::at(index, object_segment::elements_count));
         return ok(reinterpret_cast<T *>(obj));
+    }
+
+  private:
+    static void destroy_object(detail::object_entry *entry) noexcept {
+        std::destroy_at(reinterpret_cast<entry_type *>(entry));
     }
 
   private:
