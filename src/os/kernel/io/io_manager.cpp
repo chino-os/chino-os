@@ -78,6 +78,7 @@ template <> void object_pool<io::file>::object_pool_object::internal_release() n
 
 result<void> io::initialize_phase1(const boot_options &options) noexcept {
     try_(ob::insert_object(dev_directory_, "/dev"));
+    try_(io::initialize_ble_manager());
     try_(hal::hal_install_devices());
     return ok();
 }
@@ -125,7 +126,7 @@ result<void> io::attach_device(device &device) noexcept {
         kassert(default_stdio_device_.empty());
         default_stdio_device_ = static_cast<stdio_device *>(&device);
     } else if (device.is_a(object_kind_socket_device)) {
-        try_(io::initialize_net_manager(device));
+        try_(io::initialize_socket_manager(device));
     }
     return ok();
 }

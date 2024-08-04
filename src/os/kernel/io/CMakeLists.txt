@@ -6,9 +6,10 @@ set(SRCS device.cpp
          io_manager.cpp
          io_request.cpp
          irq_handler.cpp
-         net_manager.cpp
          time.cpp
 )
 
 target_sources(chino.kernel PRIVATE ${SRCS})
 target_link_libraries(chino.kernel PRIVATE chino.drivers)
+
+add_subdirectory(net)

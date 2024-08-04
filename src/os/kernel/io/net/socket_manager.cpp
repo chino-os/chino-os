@@ -1,8 +1,8 @@
 // Copyright (c) SunnyCase. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
-#include "../ke/ke_services.h"
-#include "../ps/task/process.h"
-#include "io_manager.h"
+#include "../../ke/ke_services.h"
+#include "../../ps/task/process.h"
+#include "../io_manager.h"
 #include <chino/os/kernel/io/devices/socket_device.h>
 #include <chino/os/kernel/kd.h>
 #include <chino/os/kernel/ob.h>
@@ -23,7 +23,7 @@ constinit static object_ptr<socket_device> default_socket_device_;
     else                                                                                                               \
         return err(error_code::bad_cast)
 
-result<void> io::initialize_net_manager(device &socket_device) noexcept {
+result<void> io::initialize_socket_manager(device &socket_device) noexcept {
     kassert(default_socket_device_.empty());
     default_socket_device_ = static_cast<io::socket_device *>(&socket_device);
     return ok();
