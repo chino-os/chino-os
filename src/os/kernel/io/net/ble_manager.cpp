@@ -5,13 +5,9 @@
 #include "../../ps/task/process.h"
 #include "../io_manager.h"
 #include <bluetoothleapis.h>
+#include <chino/os/kernel/io/devices/ble_device.h>
 #include <chino/os/kernel/kd.h>
 #include <chino/os/kernel/ob.h>
-#include <roapi.h>
-#include <windows.devices.bluetooth.advertisement.h>
-
-#define __WRL_ASSERT__(x) kassert(x)
-#include <wrl.h>
 
 using namespace chino;
 using namespace chino::os;
@@ -19,11 +15,11 @@ using namespace chino::os::kernel;
 using namespace chino::os::kernel::io;
 using namespace std::string_view_literals;
 
-result<void> io::initialize_ble_manager() noexcept {
-    Windows::Foundation::Initialize(RO_INIT_MULTITHREADED);
-    auto bleWatcherClsName = Microsoft::WRL::Wrappers::HString::MakeReference(
-        RuntimeClass_Windows_Devices_Bluetooth_Advertisement_BluetoothLEAdvertisementWatcher);
-    Microsoft::WRL::ComPtr<IInspectable> bleWatherInsp;
-    RoActivateInstance(bleWatcherClsName.Get(), bleWatherInsp.GetAddressOf());
+constinit static object_ptr<ble_device> default_ble_device_;
+
+result<void> io::initialize_ble_manager(device &ble_device) noexcept {
+    kassert(default_ble_device_.empty());
+    default_ble_device_ = static_cast<io::ble_device *>(&ble_device);
+    try_(default_ble_device_->scan([](void *) { return true; }, nullptr, 1000));
     return ok();
 }

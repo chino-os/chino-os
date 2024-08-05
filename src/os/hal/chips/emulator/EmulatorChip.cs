@@ -42,6 +42,11 @@ public sealed class EmulatorChip : ChipDefinition
                     Name = "host_socket",
                     Compatibles = [DeviceCompatibles.HostSocket],
                 },
+                new SimpleDeviceNode
+                {
+                    Name = "host_ble",
+                    Compatibles = [DeviceCompatibles.HostBle],
+                },
 
                 SystemDevices.StreamConsole(host_console),
                 SystemDevices.LwipSocket(),
@@ -57,6 +62,7 @@ public sealed class EmulatorChip : ChipDefinition
 
     public static class DeviceCompatibles
     {
+        public static readonly Guid HostBle = new Guid("C6D03CA6-3E69-45B7-81D4-326CC7EB9BD9");
         public static readonly Guid HostConsole = new Guid("ABA5BEB4-E5B2-4B44-A07E-969ECEA00EA6");
         public static readonly Guid HostFS = new Guid("C6F17CB5-7D0F-4DE4-AFFA-D0496495A0ED");
         public static readonly Guid HostNetIf = new Guid("59DBBA5D-ED63-4962-B597-688E9447A23B");

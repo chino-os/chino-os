@@ -15,6 +15,7 @@ inline constexpr size_t max_io_parameters_size = sizeof(uintptr_t) * 8;
 
 enum class io_frame_major_kind : uint16_t {
     generic,
+    ble,
 };
 
 struct io_frame_kind {

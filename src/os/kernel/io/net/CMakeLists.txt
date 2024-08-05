@@ -5,4 +5,3 @@ set(SRCS ble_manager.cpp
 )
 
 target_sources(chino.kernel PRIVATE ${SRCS})
-target_link_libraries(chino.kernel PRIVATE runtimeobject)

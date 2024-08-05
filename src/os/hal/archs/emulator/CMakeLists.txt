@@ -13,3 +13,4 @@ endif()
 
 target_sources(chino.hal PRIVATE ${SRCS})
 target_include_directories(chino.hal PRIVATE ${WIN_SDK_INCLUDE_DIR})
+target_link_libraries(chino.hal PRIVATE runtimeobject)

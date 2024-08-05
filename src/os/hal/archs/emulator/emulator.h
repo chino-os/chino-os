@@ -4,11 +4,13 @@
 #include <atomic>
 #include <chino/os/hal/archs/emulator/arch.h>
 #include <chino/os/hal/chip.h>
+#include <chino/os/kernel/kd.h>
 #include <chino/os/kernel/ps.h>
 
 #define NTDDI_VERSION NTDDI_WIN10_RS5
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#define __WRL_ASSERT__(x) kassert(x)
 
 namespace chino::os::hal {
 class emulator_cpu;
@@ -38,6 +40,7 @@ class emulator {
 
 error_code win32_to_error_code(DWORD win32) noexcept;
 error_code wsa_to_error_code(DWORD wsa) noexcept;
+error_code hr_to_error_code(HRESULT hr) noexcept;
 
 #define TRY_WIN32_IGNORE(x)                                                                                            \
     {                                                                                                                  \
@@ -68,6 +71,15 @@ error_code wsa_to_error_code(DWORD wsa) noexcept;
         chino::os::kernel::ps::current_irq_lock irq_lock;                                                              \
         if (!(x)) {                                                                                                    \
             return err(chino::os::hal::wsa_to_error_code(WSAGetLastError()));                                          \
+        }                                                                                                              \
+    }
+
+#define TRY_HR(x)                                                                                                      \
+    {                                                                                                                  \
+        chino::os::kernel::ps::current_irq_lock irq_lock;                                                              \
+        auto hr = (x);                                                                                                 \
+        if (FAILED(hr)) {                                                                                              \
+            return err(chino::os::hal::hr_to_error_code(hr));                                                          \
         }                                                                                                              \
     }
 } // namespace chino::os::hal

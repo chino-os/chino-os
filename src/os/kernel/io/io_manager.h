@@ -8,7 +8,7 @@
 namespace chino::os::kernel::io {
 result<void> initialize_phase1(const boot_options &options) noexcept;
 result<void> initialize_socket_manager(device &socket_device) noexcept;
-result<void> initialize_ble_manager() noexcept;
+result<void> initialize_ble_manager(device &ble_device) noexcept;
 
 [[noreturn]] int io_worker_main(void *) noexcept;
 void process_queued_ios(io_request *wait_irp = nullptr);
