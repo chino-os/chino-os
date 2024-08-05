@@ -82,4 +82,11 @@ error_code hr_to_error_code(HRESULT hr) noexcept;
             return err(chino::os::hal::hr_to_error_code(hr));                                                          \
         }                                                                                                              \
     }
+
+#define RETURN_IF_FAILED(x)                                                                                            \
+    {                                                                                                                  \
+        auto hr = (x);                                                                                                 \
+        if (FAILED(hr))                                                                                                \
+            return hr;                                                                                                 \
+    }
 } // namespace chino::os::hal

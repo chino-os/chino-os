@@ -2,27 +2,31 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #pragma once
 #include "../device.h"
+#include <chino/devices/bluetooth/ble.h>
 
 namespace chino::os::kernel::io {
-
 enum class io_frame_ble_kind : uint16_t {
-    scan,
+    dummy,
 };
 
-typedef bool (*ble_scan_callback_t)(void *);
+#define BLE_ADV_IND 0b0000
+#define BLE_ADV_DIRECT_IND 0b0001
+#define BLE_ADV_NONCONN_IND 0b0010
+#define BLE_SCAN_REQ 0b0011
+#define BLE_SCAN_RSP 0b0100
+#define BLE_CONNECT_IND 0b0101
+
+struct ble_advertising_packet {};
 
 struct io_frame_ble_params {
     union {
         struct {
-            ble_scan_callback_t callback;
-            void *callback_arg;
-            uint32_t scan_ms;
-        } scan;
+        } dummy;
     };
 
     template <io_frame_ble_kind Minor> auto &by_minor() noexcept {
-        if constexpr (Minor == io_frame_ble_kind::scan) {
-            return scan;
+        if constexpr (Minor == io_frame_ble_kind::dummy) {
+            return dummy;
         } else {
             return;
         }
@@ -38,6 +42,8 @@ class ble_device : public device {
   public:
     CHINO_DEFINE_KERNEL_OBJECT_KIND(device, object_kind_ble_device);
 
-    virtual result<void> scan(ble_scan_callback_t callback, void *callback_arg, uint32_t scan_ms) noexcept = 0;
+    virtual result<void> start_watch_advertisement(chino::devices::bluetooth::ble_advertisement_callback_t callback,
+                                                   void *callback_arg) noexcept = 0;
+    virtual void stop_watch_advertisement() noexcept = 0;
 };
 } // namespace chino::os::kernel::io

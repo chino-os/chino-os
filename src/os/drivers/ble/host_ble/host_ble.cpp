@@ -44,9 +44,9 @@ class handler
     HRESULT STDMETHODCALLTYPE Invoke(_In_ IBluetoothLEAdvertisementWatcher *sender,
                                      _In_ IBluetoothLEAdvertisementReceivedEventArgs *args) noexcept override {
         ComPtr<IBluetoothLEAdvertisement> adv;
-        args->get_Advertisement(&adv);
+        RETURN_IF_FAILED(args->get_Advertisement(&adv));
         HString local_name;
-        adv->get_LocalName(local_name.GetAddressOf());
+        RETURN_IF_FAILED(adv->get_LocalName(local_name.GetAddressOf()));
         return S_OK;
     }
 };
