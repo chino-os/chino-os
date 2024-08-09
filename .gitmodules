@@ -1,0 +1,18 @@
+[submodule "third_party/mimalloc"]
+	path = third_party/mimalloc
+	url = https://github.com/chino-os/mimalloc.git
+[submodule "src/crts/picolibc"]
+	path = src/crts/picolibc
+	url = https://github.com/chino-os/picolibc.git
+[submodule "third_party/llvm"]
+	path = third_party/llvm
+	url = https://github.com/chino-os/llvm-project.git
+[submodule "src/shell/sh"]
+	path = src/shell/sh
+	url = https://github.com/chino-os/nr_micro_shell.git
+[submodule "src/shell/micropython"]
+	path = src/shell/micropython
+	url = https://github.com/chino-os/micropython.git
+[submodule "src/os/drivers/socket/lwip_socket/lwip"]
+	path = src/os/drivers/socket/lwip_socket/lwip
+	url = https://github.com/chino-os/lwip.git

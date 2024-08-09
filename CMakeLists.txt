@@ -1,45 +1,69 @@
-﻿cmake_minimum_required (VERSION 3.13)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
-project("chino")
+﻿cmake_minimum_required(VERSION 3.13)
 
+if(NOT DEFINED CHINO_VERSION)
+    set(CHINO_VERSION "0.1.0")
+endif()
+
+if(DEFINED ENV{CHINO_VERSION_SUFFIX})
+    set(CHINO_VERSION_SUFFIX $ENV{CHINO_VERSION_SUFFIX})
+endif()
+
+if(NOT DEFINED CHINO_VERSION_SUFFIX)
+    find_package (Git)
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} describe --always --dirty
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_DESC
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    set(CHINO_VERSION_SUFFIX "-${GIT_DESC}")
+endif()
+
+if (NOT PACKAGE_VERSION)
+    set(PACKAGE_VERSION
+        "${CHINO_VERSION}${CHINO_VERSION_SUFFIX}")
+endif()
+
+project(CHINO
+  VERSION ${CHINO_VERSION}
+  LANGUAGES C CXX ASM)
+
+option(BUILD_TESTING "Build test programs" OFF)
+option(CHINO_BOARD "Board name" "emulator")
+
+include(cmake/configure-conan.cmake)
 include(cmake/conan.cmake)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
+include(cmake/default-toolchain.cmake)
 
-conan_check()
-conan_add_remote(NAME bincrafts URL https://api.bintray.com/conan/bincrafters/public-conan)
+include(conf/boards/${CHINO_BOARD}/cmake/board.cmake)
+include(src/os/hal/chips/${CHINO_CHIP}/cmake/chip.cmake)
+include(cmake/dependencies.cmake)
+
+set(CMAKE_SKIP_RPATH OFF)
+
+set(CHINO_PROJECT_ROOT ${CMAKE_CURRENT_LIST_DIR})
+set(CHINO_SDK_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/include/sdk)
+set(CHINO_DDK_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/include/ddk)
+set(CHINO_CONF_GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen)
+set(CHINO_SDK_GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/include/sdk)
+set(CHINO_THIRD_PARTY_DIR ${CMAKE_CURRENT_LIST_DIR}/third_party)
+set_property(GLOBAL PROPERTY POSITION_INDEPENDENT_CODE ON)
 if (APPLE)
-    conan_add_remote(NAME sunnycase URL https://conan.sunnycase.moe)
-else()
-    conan_add_remote(NAME sunnycase INDEX 0 URL https://conan.sunnycase.moe)
+    set(CMAKE_MACOSX_RPATH TRUE)
+    set(CMAKE_INSTALL_RPATH "@loader_path")
+    set(CMAKE_INSTALL_NAME_DIR "@rpath")
+else ()
+    set(CMAKE_INSTALL_RPATH "$ORIGIN")
 endif()
 
-if (NOT CHINO_BOARD)
-    message(FATAL "Please specify CHINO_BOARD")
-else()
-    add_definitions(-DCHINO_BOARD=${CHINO_BOARD})
-    add_definitions(-DCHINO_BOARD_HEADER=<chino/board/${CHINO_BOARD}/board.h>)
-endif()
+add_compile_definitions(__CHINO__=1)
 
-if ("${CHINO_BOARD}" STREQUAL "win32")
-    conan_cmake_run(CONANFILE conanfile-win32.txt
-                    BASIC_SETUP CMAKE_TARGETS
-                    SETTINGS compiler.cppstd=20
-                    BUILD missing)
-else()
-    conan_cmake_run(CONANFILE conanfile.txt
-                    BASIC_SETUP CMAKE_TARGETS
-                    SETTINGS compiler.cppstd=20
-                    BUILD missing)
-endif()
-
-set(THIRD_PARTY ${CMAKE_CURRENT_LIST_DIR}/third_party)
-set(TOOLS_DIR ${CMAKE_CURRENT_LIST_DIR}/tools)
- 
 if (MSVC)
-    enable_language(ASM_MASM)
-    add_definitions(/D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_CRT_SECURE_NO_WARNINGS /DNOMINMAX /DUNICODE /D_UNICODE)
-    add_compile_options(/Zc:threadSafeInit- /utf-8 /wd4200 /Oi)
+    add_definitions(/D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /D_CRT_SECURE_NO_WARNINGS /DNOMINMAX /DUNICODE)
+    add_definitions(/D_WIN32_WINNT=_WIN32_WINNT_WIN7)
+    add_compile_options(/utf-8 /W3 /WX /wd4273 /guard:cf- -Wno-unused-command-line-argument -Wno-user-defined-literals -Wno-ignored-pragma-intrinsic
+                        -Wno-ignored-attributes -Wno-pragma-pack -Wno-nonportable-include-path -Wno-unknown-pragmas -Wno-unused-function
+                        -Wno-microsoft-anon-tag -Wno-extern-initializer -Wno-extern-c-compat)
+    add_link_options(/NODEFAULTLIB /GUARD:NO)
     # Disable C++ exceptions.
     string(REGEX REPLACE "/EH[a-z]+" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHs-c- /GS-")
@@ -51,32 +75,30 @@ if (MSVC)
     # Disable RTTI.
     string(REGEX REPLACE "/GR" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
+    set(PYBIND11_CPP_STANDARD "/std:c++latest")
+
+    # Disable standard lib.
+    add_compile_options(/X)
+    add_compile_definitions(__STDC__=1)
 else()
-    enable_language(ASM)
-    add_compile_options(-flto -Wno-multichar -fno-common -ffunction-sections -fno-exceptions -fdata-sections -fno-unwind-tables -fno-asynchronous-unwind-tables)
-    add_link_options(-flto)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
+    # Disable C++ exceptions.
+    add_compile_options(-fno-exceptions -fno-rtti -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables)
+    add_compile_options(-fvisibility=hidden)
+    add_compile_options(-Wall -Wextra -pedantic -Werror)
 endif()
 
-set(CHINO_ROOT ${CMAKE_CURRENT_LIST_DIR})
-set(CHINO_BOARD_SRC_DIR ${CMAKE_CURRENT_LIST_DIR}/src/hal/src/board/${CHINO_BOARD})
-include(cmake/toolchain.cmake)
-include(cmake/config.cmake)
-include(cmake/dtc.cmake)
-include(cmake/chinoc.cmake)
-include(cmake/boards/${CHINO_BOARD}.cmake)
-include(cmake/definitions.cmake)
+include_directories(${CHINO_SDK_INCLUDE_DIR})
+include_directories(${CHINO_SDK_GENERATED_INCLUDE_DIR})
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/gen)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/src/crts/picolibc/picolibc/include)
 
-add_subdirectory(src/api)
-add_subdirectory(src/ddk)
-add_subdirectory(src/hal)
-add_subdirectory(src/kernel)
-add_subdirectory(src/components)
-add_subdirectory(src/drivers)
-add_subdirectory(third_party/ulog)
-#add_subdirectory(third_party/lwip)
-add_subdirectory(third_party/incbin)
+add_subdirectory(include/sdk/chino)
 
-if (WIN32)
-    add_subdirectory(tools/win32/win32-term)
+add_subdirectory(src)
+#add_subdirectory(third_party/mimalloc)
+set(LLVM_ENABLE_RUNTIMES "libcxx")
+add_subdirectory(third_party/llvm/runtimes)
+
+
+if(BUILD_TESTING)
 endif()

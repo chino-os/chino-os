@@ -1,0 +1,11 @@
+DEFINE_OBJECT_KIND(thread,          Thread,         0x01)
+DEFINE_OBJECT_KIND(process,         Process,        0x02)
+DEFINE_OBJECT_KIND(device,          Device,         0x03)
+DEFINE_OBJECT_KIND(directory,       Directory,      0x04)
+DEFINE_OBJECT_KIND(file,            File,           0x05)
+DEFINE_OBJECT_KIND(irp,             IRP,            0x06)
+
+// Devices
+DEFINE_OBJECT_KIND(stdio_device,    StdioDevice,    0x1001)
+DEFINE_OBJECT_KIND(socket_device,   SocketDevice,   0x1002)
+DEFINE_OBJECT_KIND(ble_device,      BleDevice,      0x1003)

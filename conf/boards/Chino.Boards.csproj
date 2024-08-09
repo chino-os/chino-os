@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Chino.Boards</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\os\drivers\Chino.Drivers.csproj" />
+    <ProjectReference Include="..\..\src\os\hal\chips\Chino.Chips.csproj" />
+    <ProjectReference Include="..\Chino.Conf\Chino.Conf.csproj" />
+  </ItemGroup>
+
+</Project>

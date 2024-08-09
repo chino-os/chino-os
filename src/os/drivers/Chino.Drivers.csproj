@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Chino.Drivers</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="socket\lwip_socket\lwip\**" />
+    <EmbeddedResource Remove="socket\lwip_socket\lwip\**" />
+    <None Remove="socket\lwip_socket\lwip\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="bus\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\conf\Chino.Conf\Chino.Conf.csproj" />
+    <ProjectReference Include="..\hal\chips\Chino.Chips.csproj" />
+  </ItemGroup>
+
+</Project>

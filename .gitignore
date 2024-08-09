@@ -1,5 +1,6 @@
 autom4te.cache
-build
+/build
+/install
 build_i
 config.log
 config.status
@@ -8,7 +9,9 @@ Makefile
 !/regression/Makefile
 .vs
 .vscode
+.cache
 CMakeSettings.json
+CMakeUserPresets.json
 *.dtb
 /out
 src/hal/src/board/win32/RC*
@@ -16,3 +19,7 @@ obj
 bin
 *.user
 *.deb
+/conan.lock
+/conanbuildinfo.txt
+/conaninfo.txt
+/graph_info.json
