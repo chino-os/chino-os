@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Razor.Templating.Core;
@@ -20,9 +21,9 @@ public class GenerateSettings : CommandSettings
     [CommandArgument(0, "<boardName>")]
     public string BoardName { get; set; } = null!;
 
-    [Description("Project root.")]
-    [CommandArgument(1, "<projectRoot>")]
-    public string ProjectRoot { get; set; } = null!;
+    [Description("Build root.")]
+    [CommandArgument(1, "<buildRoot>")]
+    public string BuildRoot { get; set; } = null!;
 }
 
 public class GenerateCommand : AsyncCommand<GenerateSettings>
@@ -33,10 +34,10 @@ public class GenerateCommand : AsyncCommand<GenerateSettings>
         AnsiConsole.WriteLine($"Generate info:");
         AnsiConsole.WriteLine($"Board: {settings.BoardName}");
 
-        var directory = Path.Combine(settings.ProjectRoot, "build", "gen", "chino", "conf");
-        if (!Directory.Exists(settings.ProjectRoot))
+        var directory = Path.Combine(settings.BuildRoot, "gen", "chino", "conf");
+        if (!Directory.Exists(settings.BuildRoot))
         {
-            AnsiConsole.WriteLine($"{settings.ProjectRoot} doesn't exists.");
+            AnsiConsole.WriteLine($"{settings.BuildRoot} doesn't exists.");
             return -1;
         }
 

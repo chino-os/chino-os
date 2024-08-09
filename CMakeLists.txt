@@ -85,6 +85,12 @@ else()
     add_compile_options(-fno-exceptions -fno-rtti -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables)
     add_compile_options(-fvisibility=hidden)
     add_compile_options(-Wall -Wextra -pedantic -Werror)
+
+    if (APPLE)
+        add_compile_options(-Wno-gnu-include-next -Wno-gcc-compat -Wno-gnu-anonymous-struct
+                            -Wno-zero-length-array -Wno-nested-anon-types -Wno-pre-c++2b-compat
+                            -Wno-undef -Wno-keyword-macro)
+    endif()
 endif()
 
 include_directories(${CHINO_SDK_INCLUDE_DIR})
@@ -96,7 +102,12 @@ add_subdirectory(include/sdk/chino)
 
 add_subdirectory(src)
 #add_subdirectory(third_party/mimalloc)
-set(LLVM_ENABLE_RUNTIMES "libcxx")
+if (MSVC)
+    set(LLVM_ENABLE_RUNTIMES "libcxx")
+else()
+    set(LIBCXX_CXX_ABI "none")
+    set(LLVM_ENABLE_RUNTIMES "libcxx")
+endif()
 add_subdirectory(third_party/llvm/runtimes)
 
 
