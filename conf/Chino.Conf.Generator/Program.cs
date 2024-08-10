@@ -33,7 +33,7 @@ public static class Program
 
     private static IReadOnlyDictionary<string, Type> GetBoardDefinitions()
     {
-        return (from t in typeof(boarddef.Module).Assembly.ExportedTypes
+        return (from t in typeof(Boarddef.Module).Assembly.ExportedTypes
                 where !t.IsAbstract && t.IsClass
                 let attr = t.GetCustomAttribute<BoardAttribute>()
                 where attr != null
