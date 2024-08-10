@@ -77,8 +77,8 @@ enum {
 
 // Define an array of actions corresponding to each rule
 STATIC const uint8_t rule_act_table[] = {
-#define or (n) (RULE_ACT_OR | n)
-#define and (n) (RULE_ACT_AND | n)
+#define or (n)(RULE_ACT_OR | n)
+#define and (n)(RULE_ACT_AND | n)
 #define and_ident(n) (RULE_ACT_AND | n | RULE_ACT_ALLOW_IDENT)
 #define and_blank(n) (RULE_ACT_AND | n | RULE_ACT_ADD_BLANK)
 #define one_or_more (RULE_ACT_LIST | 2)

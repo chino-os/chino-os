@@ -40,23 +40,25 @@
 #define MP_BC_FORMAT(op) ((0x000003a4 >> (2 * ((op) >> 4))) & 3)
 
 // Load, Store, Delete, Import, Make, Build, Unpack, Call, Jump, Exception, For, sTack, Return, Yield, Op
-#define MP_BC_BASE_RESERVED (0x00)              // ----------------
-#define MP_BC_BASE_QSTR_O (0x10)                // LLLLLLSSSDDII---
-#define MP_BC_BASE_VINT_E (0x20)                // MMLLLLSSDDBBBBBB
-#define MP_BC_BASE_VINT_O (0x30)                // UUMMCCCC--------
-#define MP_BC_BASE_JUMP_E (0x40)                // J-JJJJJEEEEF----
-#define MP_BC_BASE_BYTE_O (0x50)                // LLLLSSDTTTTTEEFF
-#define MP_BC_BASE_BYTE_E (0x60)                // --BREEEYYI------
-#define MP_BC_LOAD_CONST_SMALL_INT_MULTI (0x70) // LLLLLLLLLLLLLLLL
-                                                // (0x80) // LLLLLLLLLLLLLLLL
-                                                // (0x90) // LLLLLLLLLLLLLLLL
-                                                // (0xa0) // LLLLLLLLLLLLLLLL
-#define MP_BC_LOAD_FAST_MULTI (0xb0)            // LLLLLLLLLLLLLLLL
-#define MP_BC_STORE_FAST_MULTI (0xc0)           // SSSSSSSSSSSSSSSS
-#define MP_BC_UNARY_OP_MULTI (0xd0)             // OOOOOOO
-#define MP_BC_BINARY_OP_MULTI (0xd7)            //        OOOOOOOOO
-                                                // (0xe0) // OOOOOOOOOOOOOOOO
-                                                // (0xf0) // OOOOOOOOOO------
+#define MP_BC_BASE_RESERVED (0x00) // ----------------
+#define MP_BC_BASE_QSTR_O (0x10)   // LLLLLLSSSDDII---
+#define MP_BC_BASE_VINT_E (0x20)   // MMLLLLSSDDBBBBBB
+#define MP_BC_BASE_VINT_O (0x30)   // UUMMCCCC--------
+#define MP_BC_BASE_JUMP_E (0x40)   // J-JJJJJEEEEF----
+#define MP_BC_BASE_BYTE_O (0x50)   // LLLLSSDTTTTTEEFF
+#define MP_BC_BASE_BYTE_E (0x60)   // --BREEEYYI------
+#define MP_BC_LOAD_CONST_SMALL_INT_MULTI                                                                               \
+    (0x70)                            // LLLLLLLLLLLLLLLL
+                                      // (0x80) // LLLLLLLLLLLLLLLL
+                                      // (0x90) // LLLLLLLLLLLLLLLL
+                                      // (0xa0) // LLLLLLLLLLLLLLLL
+#define MP_BC_LOAD_FAST_MULTI (0xb0)  // LLLLLLLLLLLLLLLL
+#define MP_BC_STORE_FAST_MULTI (0xc0) // SSSSSSSSSSSSSSSS
+#define MP_BC_UNARY_OP_MULTI (0xd0)   // OOOOOOO
+#define MP_BC_BINARY_OP_MULTI                                                                                          \
+    (0xd7) //        OOOOOOOOO
+           // (0xe0) // OOOOOOOOOOOOOOOO
+           // (0xf0) // OOOOOOOOOO------
 
 #define MP_BC_LOAD_CONST_SMALL_INT_MULTI_NUM (64)
 #define MP_BC_LOAD_CONST_SMALL_INT_MULTI_EXCESS (16)
