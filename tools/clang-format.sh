@@ -27,10 +27,9 @@ fi
 
 # Note that we specifically exclude files starting with . in order
 # to avoid finding emacs backup files
-find "${ROOT_DIR}/tests" \
+find "${ROOT_DIR}/conf" \
+     "${ROOT_DIR}/include" \
      "${ROOT_DIR}/src" \
-     "${ROOT_DIR}/modules" \
-     "${ROOT_DIR}/python" \
-     "${ROOT_DIR}/targets" \
+     "${ROOT_DIR}/tools" \
      \( -name "*.h" -o -name "*.c" -o -name "*.cc" -o -name "*.cxx" -o -name "*.cpp" -o -name "*.hpp" -o -name "*.cppm" \) -and -not -wholename "*/.*" | \
      xargs ${CLANG_FORMAT_LLVM_INSTALL_DIR}/bin/clang-format -i -style=file
