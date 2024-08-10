@@ -51,7 +51,7 @@ STATIC mp_obj_t range_it_iternext(mp_obj_t o_in) {
 }
 
 STATIC const mp_obj_type_t range_it_type = {
-    { &mp_type_type },
+    {&mp_type_type},
     .name = MP_QSTR_iterator,
     .getiter = mp_identity_getiter,
     .iternext = range_it_iternext,
@@ -59,7 +59,7 @@ STATIC const mp_obj_type_t range_it_type = {
 
 STATIC mp_obj_t mp_obj_new_range_iterator(mp_int_t cur, mp_int_t stop, mp_int_t step, mp_obj_iter_buf_t *iter_buf) {
     assert(sizeof(mp_obj_range_it_t) <= sizeof(mp_obj_iter_buf_t));
-    mp_obj_range_it_t *o = (mp_obj_range_it_t*)iter_buf;
+    mp_obj_range_it_t *o = (mp_obj_range_it_t *)iter_buf;
     o->base.type = &range_it_type;
     o->cur = cur;
     o->stop = stop;
@@ -132,9 +132,12 @@ STATIC mp_obj_t range_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
     mp_obj_range_t *self = MP_OBJ_TO_PTR(self_in);
     mp_int_t len = range_len(self);
     switch (op) {
-        case MP_UNARY_OP_BOOL: return mp_obj_new_bool(len > 0);
-        case MP_UNARY_OP_LEN: return MP_OBJ_NEW_SMALL_INT(len);
-        default: return MP_OBJ_NULL; // op not supported
+    case MP_UNARY_OP_BOOL:
+        return mp_obj_new_bool(len > 0);
+    case MP_UNARY_OP_LEN:
+        return MP_OBJ_NEW_SMALL_INT(len);
+    default:
+        return MP_OBJ_NULL; // op not supported
     }
 }
 
@@ -147,12 +150,8 @@ STATIC mp_obj_t range_binary_op(mp_binary_op_t op, mp_obj_t lhs_in, mp_obj_t rhs
     mp_obj_range_t *rhs = MP_OBJ_TO_PTR(rhs_in);
     mp_int_t lhs_len = range_len(lhs);
     mp_int_t rhs_len = range_len(rhs);
-    return mp_obj_new_bool(
-        lhs_len == rhs_len
-        && (lhs_len == 0
-            || (lhs->start == rhs->start
-                && (lhs_len == 1 || lhs->step == rhs->step)))
-    );
+    return mp_obj_new_bool(lhs_len == rhs_len &&
+                           (lhs_len == 0 || (lhs->start == rhs->start && (lhs_len == 1 || lhs->step == rhs->step))));
 }
 #endif
 
@@ -189,7 +188,6 @@ STATIC mp_obj_t range_getiter(mp_obj_t o_in, mp_obj_iter_buf_t *iter_buf) {
     return mp_obj_new_range_iterator(o->start, o->stop, o->step, iter_buf);
 }
 
-
 #if MICROPY_PY_BUILTINS_RANGE_ATTRS
 STATIC void range_attr(mp_obj_t o_in, qstr attr, mp_obj_t *dest) {
     if (dest[0] != MP_OBJ_NULL) {
@@ -208,14 +206,14 @@ STATIC void range_attr(mp_obj_t o_in, qstr attr, mp_obj_t *dest) {
 #endif
 
 const mp_obj_type_t mp_type_range = {
-    { &mp_type_type },
+    {&mp_type_type},
     .name = MP_QSTR_range,
     .print = range_print,
     .make_new = range_make_new,
     .unary_op = range_unary_op,
-    #if MICROPY_PY_BUILTINS_RANGE_BINOP
+#if MICROPY_PY_BUILTINS_RANGE_BINOP
     .binary_op = range_binary_op,
-    #endif
+#endif
     .subscr = range_subscr,
     .getiter = range_getiter,
 #if MICROPY_PY_BUILTINS_RANGE_ATTRS

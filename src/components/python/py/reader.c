@@ -24,12 +24,12 @@
  * THE SOFTWARE.
  */
 
-#include <stdio.h>
 #include <assert.h>
+#include <stdio.h>
 
-#include "py/runtime.h"
 #include "py/mperrno.h"
 #include "py/reader.h"
+#include "py/runtime.h"
 
 typedef struct _mp_reader_mem_t {
     size_t free_len; // if >0 mem is freed on close by: m_free(beg, free_len)
@@ -39,7 +39,7 @@ typedef struct _mp_reader_mem_t {
 } mp_reader_mem_t;
 
 STATIC mp_uint_t mp_reader_mem_readbyte(void *data) {
-    mp_reader_mem_t *reader = (mp_reader_mem_t*)data;
+    mp_reader_mem_t *reader = (mp_reader_mem_t *)data;
     if (reader->cur < reader->end) {
         return *reader->cur++;
     } else {
@@ -48,9 +48,9 @@ STATIC mp_uint_t mp_reader_mem_readbyte(void *data) {
 }
 
 STATIC void mp_reader_mem_close(void *data) {
-    mp_reader_mem_t *reader = (mp_reader_mem_t*)data;
+    mp_reader_mem_t *reader = (mp_reader_mem_t *)data;
     if (reader->free_len > 0) {
-        m_del(char, (char*)reader->beg, reader->free_len);
+        m_del(char, (char *)reader->beg, reader->free_len);
     }
     m_del_obj(mp_reader_mem_t, reader);
 }
@@ -68,8 +68,8 @@ void mp_reader_new_mem(mp_reader_t *reader, const byte *buf, size_t len, size_t 
 
 #if MICROPY_READER_POSIX
 
-#include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 typedef struct _mp_reader_posix_t {
@@ -81,7 +81,7 @@ typedef struct _mp_reader_posix_t {
 } mp_reader_posix_t;
 
 STATIC mp_uint_t mp_reader_posix_readbyte(void *data) {
-    mp_reader_posix_t *reader = (mp_reader_posix_t*)data;
+    mp_reader_posix_t *reader = (mp_reader_posix_t *)data;
     if (reader->pos >= reader->len) {
         if (reader->len == 0) {
             return MP_READER_EOF;
@@ -99,7 +99,7 @@ STATIC mp_uint_t mp_reader_posix_readbyte(void *data) {
 }
 
 STATIC void mp_reader_posix_close(void *data) {
-    mp_reader_posix_t *reader = (mp_reader_posix_t*)data;
+    mp_reader_posix_t *reader = (mp_reader_posix_t *)data;
     if (reader->close_fd) {
         close(reader->fd);
     }

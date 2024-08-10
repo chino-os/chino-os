@@ -26,10 +26,10 @@
 
 #include <stdint.h>
 
-#include "py/objfun.h"
-#include "py/compile.h"
-#include "py/runtime.h"
 #include "py/builtin.h"
+#include "py/compile.h"
+#include "py/objfun.h"
+#include "py/runtime.h"
 
 #if MICROPY_PY_BUILTINS_COMPILE
 
@@ -39,7 +39,7 @@ typedef struct _mp_obj_code_t {
 } mp_obj_code_t;
 
 STATIC const mp_obj_type_t mp_type_code = {
-    { &mp_type_type },
+    {&mp_type_type},
     .name = MP_QSTR_code,
 };
 
@@ -90,11 +90,17 @@ STATIC mp_obj_t mp_builtin_compile(size_t n_args, const mp_obj_t *args) {
     qstr mode = mp_obj_str_get_qstr(args[2]);
     mp_parse_input_kind_t parse_input_kind;
     switch (mode) {
-        case MP_QSTR_single: parse_input_kind = MP_PARSE_SINGLE_INPUT; break;
-        case MP_QSTR_exec: parse_input_kind = MP_PARSE_FILE_INPUT; break;
-        case MP_QSTR_eval: parse_input_kind = MP_PARSE_EVAL_INPUT; break;
-        default:
-            mp_raise_ValueError("bad compile mode");
+    case MP_QSTR_single:
+        parse_input_kind = MP_PARSE_SINGLE_INPUT;
+        break;
+    case MP_QSTR_exec:
+        parse_input_kind = MP_PARSE_FILE_INPUT;
+        break;
+    case MP_QSTR_eval:
+        parse_input_kind = MP_PARSE_EVAL_INPUT;
+        break;
+    default:
+        mp_raise_ValueError("bad compile mode");
     }
 
     mp_obj_code_t *code = m_new_obj(mp_obj_code_t);
@@ -124,11 +130,11 @@ STATIC mp_obj_t eval_exec_helper(size_t n_args, const mp_obj_t *args, mp_parse_i
         }
     }
 
-    #if MICROPY_PY_BUILTINS_COMPILE
+#if MICROPY_PY_BUILTINS_COMPILE
     if (mp_obj_is_type(args[0], &mp_type_code)) {
         return code_execute(MP_OBJ_TO_PTR(args[0]), globals, locals);
     }
-    #endif
+#endif
 
     size_t str_len;
     const char *str = mp_obj_str_get_data(args[0], &str_len);

@@ -41,12 +41,12 @@ typedef struct _ringbuf_t {
 // ringbuf_t buf = {buf_array, sizeof(buf_array)};
 
 // Dynamic initialization. This needs to become findable as a root pointer!
-#define ringbuf_alloc(r, sz) \
-{ \
-    (r)->buf = m_new(uint8_t, sz); \
-    (r)->size = sz; \
-    (r)->iget = (r)->iput = 0; \
-}
+#define ringbuf_alloc(r, sz)                                                                                           \
+    {                                                                                                                  \
+        (r)->buf = m_new(uint8_t, sz);                                                                                 \
+        (r)->size = sz;                                                                                                \
+        (r)->iget = (r)->iput = 0;                                                                                     \
+    }
 
 static inline int ringbuf_get(ringbuf_t *r) {
     if (r->iget == r->iput) {
@@ -72,13 +72,9 @@ static inline int ringbuf_put(ringbuf_t *r, uint8_t v) {
     return 0;
 }
 
-static inline size_t ringbuf_free(ringbuf_t *r) {
-    return (r->size + r->iget - r->iput - 1) % r->size;
-}
+static inline size_t ringbuf_free(ringbuf_t *r) { return (r->size + r->iget - r->iput - 1) % r->size; }
 
-static inline size_t ringbuf_avail(ringbuf_t *r) {
-    return (r->size + r->iput - r->iget) % r->size;
-}
+static inline size_t ringbuf_avail(ringbuf_t *r) { return (r->size + r->iput - r->iget) % r->size; }
 
 // Note: big-endian. No-op if not enough room available for both bytes.
 int ringbuf_get16(ringbuf_t *r);

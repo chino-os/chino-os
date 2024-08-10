@@ -24,14 +24,14 @@
  * THE SOFTWARE.
  */
 
+#include <assert.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdarg.h>
-#include <assert.h>
 
-#include "py/emit.h"
 #include "py/asmxtensa.h"
+#include "py/emit.h"
 
 #if MICROPY_EMIT_INLINE_XTENSA
 
@@ -47,9 +47,7 @@ STATIC void emit_inline_xtensa_error_msg(emit_inline_asm_t *emit, const char *ms
     *emit->error_slot = mp_obj_new_exception_msg(&mp_type_SyntaxError, msg);
 }
 
-STATIC void emit_inline_xtensa_error_exc(emit_inline_asm_t *emit, mp_obj_t exc) {
-    *emit->error_slot = exc;
-}
+STATIC void emit_inline_xtensa_error_exc(emit_inline_asm_t *emit, mp_obj_t exc) { *emit->error_slot = exc; }
 
 emit_inline_asm_t *emit_inline_xtensa_new(mp_uint_t max_num_labels) {
     emit_inline_asm_t *emit = m_new_obj(emit_inline_asm_t);
@@ -81,7 +79,8 @@ STATIC void emit_inline_xtensa_end_pass(emit_inline_asm_t *emit, mp_uint_t type_
     asm_xtensa_end_pass(&emit->as);
 }
 
-STATIC mp_uint_t emit_inline_xtensa_count_params(emit_inline_asm_t *emit, mp_uint_t n_params, mp_parse_node_t *pn_params) {
+STATIC mp_uint_t emit_inline_xtensa_count_params(emit_inline_asm_t *emit, mp_uint_t n_params,
+                                                 mp_parse_node_t *pn_params) {
     if (n_params > 4) {
         emit_inline_xtensa_error_msg(emit, "can only have up to 4 parameters to Xtensa assembly");
         return 0;
@@ -115,24 +114,13 @@ STATIC bool emit_inline_xtensa_label(emit_inline_asm_t *emit, mp_uint_t label_nu
     return true;
 }
 
-typedef struct _reg_name_t { byte reg; byte name[3]; } reg_name_t;
+typedef struct _reg_name_t {
+    byte reg;
+    byte name[3];
+} reg_name_t;
 STATIC const reg_name_t reg_name_table[] = {
-    {0, "a0\0"},
-    {1, "a1\0"},
-    {2, "a2\0"},
-    {3, "a3\0"},
-    {4, "a4\0"},
-    {5, "a5\0"},
-    {6, "a6\0"},
-    {7, "a7\0"},
-    {8, "a8\0"},
-    {9, "a9\0"},
-    {10, "a10"},
-    {11, "a11"},
-    {12, "a12"},
-    {13, "a13"},
-    {14, "a14"},
-    {15, "a15"},
+    {0, "a0\0"}, {1, "a1\0"}, {2, "a2\0"}, {3, "a3\0"}, {4, "a4\0"}, {5, "a5\0"}, {6, "a6\0"}, {7, "a7\0"},
+    {8, "a8\0"}, {9, "a9\0"}, {10, "a10"}, {11, "a11"}, {12, "a12"}, {13, "a13"}, {14, "a14"}, {15, "a15"},
 };
 
 // return empty string in case of error, so we can attempt to parse the string
@@ -150,28 +138,28 @@ STATIC mp_uint_t get_arg_reg(emit_inline_asm_t *emit, const char *op, mp_parse_n
     const char *reg_str = get_arg_str(pn);
     for (mp_uint_t i = 0; i < MP_ARRAY_SIZE(reg_name_table); i++) {
         const reg_name_t *r = &reg_name_table[i];
-        if (reg_str[0] == r->name[0]
-            && reg_str[1] == r->name[1]
-            && reg_str[2] == r->name[2]
-            && (reg_str[2] == '\0' || reg_str[3] == '\0')) {
+        if (reg_str[0] == r->name[0] && reg_str[1] == r->name[1] && reg_str[2] == r->name[2] &&
+            (reg_str[2] == '\0' || reg_str[3] == '\0')) {
             return r->reg;
         }
     }
     emit_inline_xtensa_error_exc(emit,
-        mp_obj_new_exception_msg_varg(&mp_type_SyntaxError,
-            "'%s' expects a register", op));
+                                 mp_obj_new_exception_msg_varg(&mp_type_SyntaxError, "'%s' expects a register", op));
     return 0;
 }
 
 STATIC uint32_t get_arg_i(emit_inline_asm_t *emit, const char *op, mp_parse_node_t pn, int min, int max) {
     mp_obj_t o;
     if (!mp_parse_node_get_int_maybe(pn, &o)) {
-        emit_inline_xtensa_error_exc(emit, mp_obj_new_exception_msg_varg(&mp_type_SyntaxError, "'%s' expects an integer", op));
+        emit_inline_xtensa_error_exc(
+            emit, mp_obj_new_exception_msg_varg(&mp_type_SyntaxError, "'%s' expects an integer", op));
         return 0;
     }
     uint32_t i = mp_obj_get_int_truncated(o);
     if (min != max && ((int)i < min || (int)i > max)) {
-        emit_inline_xtensa_error_exc(emit, mp_obj_new_exception_msg_varg(&mp_type_SyntaxError, "'%s' integer %d isn't within range %d..%d", op, i, min, max));
+        emit_inline_xtensa_error_exc(emit, mp_obj_new_exception_msg_varg(&mp_type_SyntaxError,
+                                                                         "'%s' integer %d isn't within range %d..%d",
+                                                                         op, i, min, max));
         return 0;
     }
     return i;
@@ -179,7 +167,8 @@ STATIC uint32_t get_arg_i(emit_inline_asm_t *emit, const char *op, mp_parse_node
 
 STATIC int get_arg_label(emit_inline_asm_t *emit, const char *op, mp_parse_node_t pn) {
     if (!MP_PARSE_NODE_IS_ID(pn)) {
-        emit_inline_xtensa_error_exc(emit, mp_obj_new_exception_msg_varg(&mp_type_SyntaxError, "'%s' expects a label", op));
+        emit_inline_xtensa_error_exc(emit,
+                                     mp_obj_new_exception_msg_varg(&mp_type_SyntaxError, "'%s' expects a label", op));
         return 0;
     }
     qstr label_qstr = MP_PARSE_NODE_LEAF_ARG(pn);
@@ -190,7 +179,8 @@ STATIC int get_arg_label(emit_inline_asm_t *emit, const char *op, mp_parse_node_
     }
     // only need to have the labels on the last pass
     if (emit->pass == MP_PASS_EMIT) {
-        emit_inline_xtensa_error_exc(emit, mp_obj_new_exception_msg_varg(&mp_type_SyntaxError, "label '%q' not defined", label_qstr));
+        emit_inline_xtensa_error_exc(
+            emit, mp_obj_new_exception_msg_varg(&mp_type_SyntaxError, "label '%q' not defined", label_qstr));
     }
     return 0;
 }
@@ -242,7 +232,7 @@ STATIC const opcode_table_3arg_t opcode_table_3arg[] = {
 
 STATIC void emit_inline_xtensa_op(emit_inline_asm_t *emit, qstr op, mp_uint_t n_args, mp_parse_node_t *pn_args) {
     size_t op_len;
-    const char *op_str = (const char*)qstr_data(op, &op_len);
+    const char *op_str = (const char *)qstr_data(op, &op_len);
 
     if (n_args == 0) {
         if (op == MP_QSTR_ret_n) {
@@ -324,7 +314,9 @@ STATIC void emit_inline_xtensa_op(emit_inline_asm_t *emit, qstr op, mp_uint_t n_
     return;
 
 unknown_op:
-    emit_inline_xtensa_error_exc(emit, mp_obj_new_exception_msg_varg(&mp_type_SyntaxError, "unsupported Xtensa instruction '%s' with %d arguments", op_str, n_args));
+    emit_inline_xtensa_error_exc(
+        emit, mp_obj_new_exception_msg_varg(&mp_type_SyntaxError,
+                                            "unsupported Xtensa instruction '%s' with %d arguments", op_str, n_args));
     return;
 
     /*
@@ -335,16 +327,12 @@ branch_not_in_range:
 }
 
 const emit_inline_asm_method_table_t emit_inline_xtensa_method_table = {
-    #if MICROPY_DYNAMIC_COMPILER
-    emit_inline_xtensa_new,
-    emit_inline_xtensa_free,
-    #endif
+#if MICROPY_DYNAMIC_COMPILER
+    emit_inline_xtensa_new,        emit_inline_xtensa_free,
+#endif
 
-    emit_inline_xtensa_start_pass,
-    emit_inline_xtensa_end_pass,
-    emit_inline_xtensa_count_params,
-    emit_inline_xtensa_label,
-    emit_inline_xtensa_op,
+    emit_inline_xtensa_start_pass, emit_inline_xtensa_end_pass, emit_inline_xtensa_count_params,
+    emit_inline_xtensa_label,      emit_inline_xtensa_op,
 };
 
 #endif // MICROPY_EMIT_INLINE_XTENSA

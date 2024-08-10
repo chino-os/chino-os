@@ -27,9 +27,9 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "py/runtime.h"
-#include "py/parsenumbase.h"
 #include "py/parsenum.h"
+#include "py/parsenumbase.h"
+#include "py/runtime.h"
 #include "py/smallint.h"
 
 #if MICROPY_PY_BUILTINS_FLOAT
@@ -40,7 +40,7 @@ STATIC NORETURN void raise_exc(mp_obj_t exc, mp_lexer_t *lex) {
     // if lex!=NULL then the parser called us and we need to convert the
     // exception's type from ValueError to SyntaxError and add traceback info
     if (lex != NULL) {
-        ((mp_obj_base_t*)MP_OBJ_TO_PTR(exc))->type = &mp_type_SyntaxError;
+        ((mp_obj_base_t *)MP_OBJ_TO_PTR(exc))->type = &mp_type_SyntaxError;
         mp_obj_exception_add_traceback(exc, lex->source_name, lex->tok_line, MP_QSTRnull);
     }
     nlr_raise(exc);
@@ -73,7 +73,7 @@ mp_obj_t mp_parse_num_integer(const char *restrict str_, size_t len, int base, m
     }
 
     // parse optional base prefix
-    str += mp_parse_num_base((const char*)str, top - str, &base);
+    str += mp_parse_num_base((const char *)str, top - str, &base);
 
     // string should be an integer number
     mp_int_t int_val = 0;
@@ -137,20 +137,19 @@ have_ret_val:
 overflow:
     // reparse using long int
     {
-        const char *s2 = (const char*)str_val_start;
+        const char *s2 = (const char *)str_val_start;
         ret_val = mp_obj_new_int_from_str_len(&s2, top - str_val_start, neg, base);
-        str = (const byte*)s2;
+        str = (const byte *)s2;
         goto have_ret_val;
     }
 
 value_error:
     if (MICROPY_ERROR_REPORTING == MICROPY_ERROR_REPORTING_TERSE) {
-        mp_obj_t exc = mp_obj_new_exception_msg(&mp_type_ValueError,
-            "invalid syntax for integer");
+        mp_obj_t exc = mp_obj_new_exception_msg(&mp_type_ValueError, "invalid syntax for integer");
         raise_exc(exc, lex);
     } else if (MICROPY_ERROR_REPORTING == MICROPY_ERROR_REPORTING_NORMAL) {
-        mp_obj_t exc = mp_obj_new_exception_msg_varg(&mp_type_ValueError,
-            "invalid syntax for integer with base %d", base);
+        mp_obj_t exc =
+            mp_obj_new_exception_msg_varg(&mp_type_ValueError, "invalid syntax for integer with base %d", base);
         raise_exc(exc, lex);
     } else {
         vstr_t vstr;
@@ -158,8 +157,7 @@ value_error:
         vstr_init_print(&vstr, 50, &print);
         mp_printf(&print, "invalid syntax for integer with base %d: ", base);
         mp_str_print_quoted(&print, str_val_start, top - str_val_start, true);
-        mp_obj_t exc = mp_obj_new_exception_arg1(&mp_type_ValueError,
-            mp_obj_new_str_from_vstr(&mp_type_str, &vstr));
+        mp_obj_t exc = mp_obj_new_exception_arg1(&mp_type_ValueError, mp_obj_new_str_from_vstr(&mp_type_str, &vstr));
         raise_exc(exc, lex);
     }
 }
@@ -219,7 +217,8 @@ mp_obj_t mp_parse_num_decimal(const char *str, size_t len, bool allow_imag, bool
             // inf
             str += 3;
             dec_val = INFINITY;
-            if (str + 4 < top && (str[0] | 0x20) == 'i' && (str[1] | 0x20) == 'n' && (str[2] | 0x20) == 'i' && (str[3] | 0x20) == 't' && (str[4] | 0x20) == 'y') {
+            if (str + 4 < top && (str[0] | 0x20) == 'i' && (str[1] | 0x20) == 'n' && (str[2] | 0x20) == 'i' &&
+                (str[3] | 0x20) == 't' && (str[4] | 0x20) == 'y') {
                 // infinity
                 str += 5;
             }

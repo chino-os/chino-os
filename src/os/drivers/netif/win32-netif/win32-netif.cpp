@@ -27,25 +27,19 @@
 using namespace chino;
 using namespace chino::io;
 
-namespace
-{
-struct win32_netif_file : public file_extension
-{
+namespace {
+struct win32_netif_file : public file_extension {
     pcap_t *pcap;
 };
 
-class win32_netif_dev : public device_extension
-{
-public:
-    win32_netif_dev(pcap_if_t *pcap_if)
-        : pcap_if_(pcap_if) {}
+class win32_netif_dev : public device_extension {
+  public:
+    win32_netif_dev(pcap_if_t *pcap_if) : pcap_if_(pcap_if) {}
 
-    result<file *, error_code> open(std::string_view filename, create_disposition create_disp) noexcept
-    {
+    result<file *, error_code> open(std::string_view filename, create_disposition create_disp) noexcept {
         char errbuf[PCAP_ERRBUF_SIZE];
         auto pcap = pcap_open(pcap_if_->name, 65535, PCAP_OPENFLAG_PROMISCUOUS, -1, nullptr, errbuf);
-        if (!pcap)
-        {
+        if (!pcap) {
             ULOG_WARNING("Cannot open netif %s, reason: %s\n", pcap_if_->name, errbuf);
             return err(error_code::io_error);
         }
@@ -55,24 +49,21 @@ public:
         return ok(f);
     }
 
-    result<size_t, error_code> read(file &file, gsl::span<gsl::byte> buffer) noexcept
-    {
+    result<size_t, error_code> read(file &file, gsl::span<gsl::byte> buffer) noexcept {
         pcap_pkthdr *hdr;
         pcap_next_ex(file.extension<win32_netif_file>().pcap, &hdr, nullptr);
         return err(error_code::io_error);
     }
 
-    result<void, error_code> write(file &file, gsl::span<const gsl::byte> buffer) noexcept
-    {
+    result<void, error_code> write(file &file, gsl::span<const gsl::byte> buffer) noexcept {
         return err(error_code::io_error);
     }
 
-private:
+  private:
     pcap_if_t *pcap_if_;
 };
 
-result<void, error_code> netif_add_device(const driver &drv, const hardware_device_registration &hdr)
-{
+result<void, error_code> netif_add_device(const driver &drv, const hardware_device_registration &hdr) {
     pcap_if_t *alldevs;
     char errbuf[PCAP_ERRBUF_SIZE];
 
@@ -80,8 +71,7 @@ result<void, error_code> netif_add_device(const driver &drv, const hardware_devi
         return err(error_code::unknown);
 
     auto pcap_dev = alldevs;
-    while (pcap_dev)
-    {
+    while (pcap_dev) {
         try_var(netif, create_device(drv, device_type::netif, sizeof(win32_netif_dev)));
         new (&netif->extension()) win32_netif_dev(pcap_dev);
 
@@ -91,30 +81,30 @@ result<void, error_code> netif_add_device(const driver &drv, const hardware_devi
     return ok();
 }
 
-result<file *, error_code> netif_open_device(device &dev, std::string_view filename, create_disposition create_disp)
-{
+result<file *, error_code> netif_open_device(device &dev, std::string_view filename, create_disposition create_disp) {
     return dev.extension<win32_netif_dev>().open(filename, create_disp);
 }
 
-result<void, error_code> netif_close_device(file &file)
-{
+result<void, error_code> netif_close_device(file &file) {
     pcap_close(file.extension<win32_netif_file>().pcap);
     return ok();
 }
 
-result<size_t, error_code> netif_read_device(file &file, gsl::span<gsl::byte> buffer)
-{
+result<size_t, error_code> netif_read_device(file &file, gsl::span<gsl::byte> buffer) {
     return file.dev.extension<win32_netif_dev>().read(file, buffer);
 }
 
-result<void, error_code> netif_write_device(file &file, gsl::span<const gsl::byte> buffer)
-{
+result<void, error_code> netif_write_device(file &file, gsl::span<const gsl::byte> buffer) {
     return file.dev.extension<win32_netif_dev>().write(file, buffer);
 }
 
 const driver netif_drv = {
     .name = "win32-netif",
-    .ops = { .add_device = netif_add_device, .open_device = netif_open_device, .close_device = netif_close_device, .read_device = netif_read_device, .write_device = netif_write_device },
+    .ops = {.add_device = netif_add_device,
+            .open_device = netif_open_device,
+            .close_device = netif_close_device,
+            .read_device = netif_read_device,
+            .write_device = netif_write_device},
 };
 #include <win32-netif.inl>
-}
+} // namespace

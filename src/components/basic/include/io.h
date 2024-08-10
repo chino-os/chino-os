@@ -5,7 +5,7 @@
 
 typedef int (*basic_putchar)(int ch);
 typedef int (*basic_getchar)(void);
-void basic_io_print(char* buffer);
-char* basic_io_readline(char* prompt, char* buffer, size_t buffer_size);
+void basic_io_print(char *buffer);
+char *basic_io_readline(char *prompt, char *buffer, size_t buffer_size);
 
 #endif // __IO_H__

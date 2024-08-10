@@ -51,7 +51,9 @@ class handler
     }
 };
 
-result<void> host_ble_device::scan(ble_scan_callback_t callback, void *callback_arg, uint32_t scan_ms) noexcept {
+result<void>
+host_ble_device::start_watch_advertisement(chino::devices::bluetooth::ble_advertisement_callback_t callback,
+                                           void *callback_arg) noexcept {
     handler h;
     auto bleWatcherClsName =
         HString::MakeReference(RuntimeClass_Windows_Devices_Bluetooth_Advertisement_BluetoothLEAdvertisementWatcher);
@@ -67,6 +69,7 @@ result<void> host_ble_device::scan(ble_scan_callback_t callback, void *callback_
     return ok();
 }
 
+void host_ble_device::stop_watch_advertisement() noexcept {}
 result<void> host_ble_driver::install_device(host_ble_device &device) noexcept {
     try_(device.install());
     try_(io::attach_device(device));

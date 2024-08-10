@@ -16,12 +16,14 @@ jobs:
     runs-on: ${{matrix.config.os}}
     strategy:
       matrix:
-        dotnet-version: ['7.0']
+        dotnet-version: ['8.0']
         config:
-          - {name: x86_64-windows, os: windows-latest, arch: x64, cmakeArgs: -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl, buildType: Release}
+          - {name: x86_64-windows, os: windows-latest, arch: x64, buildType: Release}
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          submodules: true
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v1
@@ -47,30 +49,25 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.10
+          python-version: "3.10"
 
       - name: Install Conan
         shell: bash
         run: |
-          pip install conan==2.4.1
+          pip install conan==2.6.0
 
-      - name: Configure conan
+      - name: Configure
         shell: bash
         run: |
-          conan install . -s build_type=Release --build=missing -s compiler.cppstd=20
-
-      - name: Configure Board
-        shell: bash
-        run: |
-          dotnet run --project conf/Chino.Conf.Generator gen emulator `pwd`/build/Release
-
-      - name: Configure CMake
-        shell: bash
-        run: |
+          conan install . -pr:a=src/os/hal/chips/emulator/cmake/conan-profile.jinja -s build_type=Release --build=missing
+          dotnet run --project conf/Chino.Conf.Generator gen emulator `pwd`
           cmake --preset conan-release
+          cmake --preset conan-release # configure again for llvm
 
       - name: Build & Install
+        shell: cmd
         run: |
+          chcp 65001
           cmake --build build --config ${{matrix.config.buildType}}
           cmake --install build --prefix install
 

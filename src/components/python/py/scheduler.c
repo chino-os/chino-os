@@ -33,15 +33,13 @@
 #define IDX_MASK(i) ((i) & (MICROPY_SCHEDULER_DEPTH - 1))
 
 static inline bool mp_sched_full(void) {
-    MP_STATIC_ASSERT(MICROPY_SCHEDULER_DEPTH <= 255); // MICROPY_SCHEDULER_DEPTH must fit in 8 bits
+    MP_STATIC_ASSERT(MICROPY_SCHEDULER_DEPTH <= 255);           // MICROPY_SCHEDULER_DEPTH must fit in 8 bits
     MP_STATIC_ASSERT((IDX_MASK(MICROPY_SCHEDULER_DEPTH) == 0)); // MICROPY_SCHEDULER_DEPTH must be a power of 2
 
     return mp_sched_num_pending() == MICROPY_SCHEDULER_DEPTH;
 }
 
-static inline bool mp_sched_empty(void) {
-    return mp_sched_num_pending() == 0;
-}
+static inline bool mp_sched_empty(void) { return mp_sched_num_pending() == 0; }
 
 // A variant of this is inlined in the VM at the pending exception check
 void mp_handle_pending(void) {

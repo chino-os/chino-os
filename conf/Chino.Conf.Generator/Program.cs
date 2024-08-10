@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) SunnyCase. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO;
@@ -30,7 +33,7 @@ public static class Program
 
     private static IReadOnlyDictionary<string, Type> GetBoardDefinitions()
     {
-        return (from t in typeof(boarddef.Module).Assembly.ExportedTypes
+        return (from t in typeof(Boarddef.Module).Assembly.ExportedTypes
                 where !t.IsAbstract && t.IsClass
                 let attr = t.GetCustomAttribute<BoardAttribute>()
                 where attr != null

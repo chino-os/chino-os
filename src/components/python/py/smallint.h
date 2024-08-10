@@ -26,8 +26,8 @@
 #ifndef MICROPY_INCLUDED_PY_SMALLINT_H
 #define MICROPY_INCLUDED_PY_SMALLINT_H
 
-#include "py/mpconfig.h"
 #include "py/misc.h"
+#include "py/mpconfig.h"
 
 // Functions for small integer arithmetic
 
@@ -44,7 +44,7 @@
 #elif MICROPY_OBJ_REPR == MICROPY_OBJ_REPR_B
 
 #define MP_SMALL_INT_MIN ((mp_int_t)(((mp_int_t)WORD_MSBIT_HIGH) >> 2))
-#define MP_SMALL_INT_FITS(n) ((((n) & MP_SMALL_INT_MIN) == 0) || (((n) & MP_SMALL_INT_MIN) == MP_SMALL_INT_MIN))
+#define MP_SMALL_INT_FITS(n) ((((n)&MP_SMALL_INT_MIN) == 0) || (((n)&MP_SMALL_INT_MIN) == MP_SMALL_INT_MIN))
 // Mask to truncate mp_int_t to positive value
 #define MP_SMALL_INT_POSITIVE_MASK ~(WORD_MSBIT_HIGH | (WORD_MSBIT_HIGH >> 1) | (WORD_MSBIT_HIGH >> 2))
 

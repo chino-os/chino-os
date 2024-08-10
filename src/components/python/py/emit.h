@@ -98,10 +98,10 @@ typedef struct _mp_emit_method_table_id_ops_t {
 } mp_emit_method_table_id_ops_t;
 
 typedef struct _emit_method_table_t {
-    #if MICROPY_DYNAMIC_COMPILER
+#if MICROPY_DYNAMIC_COMPILER
     emit_t *(*emit_new)(mp_obj_t *error_slot, uint *label_slot, mp_uint_t max_num_labels);
     void (*emit_free)(emit_t *emit);
-    #endif
+#endif
 
     void (*start_pass)(emit_t *emit, pass_kind_t pass, scope_t *scope);
     void (*end_pass)(emit_t *emit);
@@ -148,7 +148,8 @@ typedef struct _emit_method_table_t {
     void (*unpack_sequence)(emit_t *emit, mp_uint_t n_args);
     void (*unpack_ex)(emit_t *emit, mp_uint_t n_left, mp_uint_t n_right);
     void (*make_function)(emit_t *emit, scope_t *scope, mp_uint_t n_pos_defaults, mp_uint_t n_kw_defaults);
-    void (*make_closure)(emit_t *emit, scope_t *scope, mp_uint_t n_closed_over, mp_uint_t n_pos_defaults, mp_uint_t n_kw_defaults);
+    void (*make_closure)(emit_t *emit, scope_t *scope, mp_uint_t n_closed_over, mp_uint_t n_pos_defaults,
+                         mp_uint_t n_kw_defaults);
     void (*call_function)(emit_t *emit, mp_uint_t n_positional, mp_uint_t n_keyword, mp_uint_t star_flags);
     void (*call_method)(emit_t *emit, mp_uint_t n_positional, mp_uint_t n_keyword, mp_uint_t star_flags);
     void (*return_value)(emit_t *emit);
@@ -166,7 +167,8 @@ static inline void mp_emit_common_get_id_for_load(scope_t *scope, qstr qst) {
 }
 
 void mp_emit_common_get_id_for_modification(scope_t *scope, qstr qst);
-void mp_emit_common_id_op(emit_t *emit, const mp_emit_method_table_id_ops_t *emit_method_table, scope_t *scope, qstr qst);
+void mp_emit_common_id_op(emit_t *emit, const mp_emit_method_table_id_ops_t *emit_method_table, scope_t *scope,
+                          qstr qst);
 
 extern const emit_method_table_t emit_bc_method_table;
 extern const emit_method_table_t emit_native_x64_method_table;
@@ -188,7 +190,7 @@ emit_t *emit_native_arm_new(mp_obj_t *error_slot, uint *label_slot, mp_uint_t ma
 emit_t *emit_native_xtensa_new(mp_obj_t *error_slot, uint *label_slot, mp_uint_t max_num_labels);
 emit_t *emit_native_xtensawin_new(mp_obj_t *error_slot, uint *label_slot, mp_uint_t max_num_labels);
 
-void emit_bc_set_max_num_labels(emit_t* emit, mp_uint_t max_num_labels);
+void emit_bc_set_max_num_labels(emit_t *emit, mp_uint_t max_num_labels);
 
 void emit_bc_free(emit_t *emit);
 void emit_native_x64_free(emit_t *emit);
@@ -246,7 +248,8 @@ void mp_emit_bc_store_comp(emit_t *emit, scope_kind_t kind, mp_uint_t list_stack
 void mp_emit_bc_unpack_sequence(emit_t *emit, mp_uint_t n_args);
 void mp_emit_bc_unpack_ex(emit_t *emit, mp_uint_t n_left, mp_uint_t n_right);
 void mp_emit_bc_make_function(emit_t *emit, scope_t *scope, mp_uint_t n_pos_defaults, mp_uint_t n_kw_defaults);
-void mp_emit_bc_make_closure(emit_t *emit, scope_t *scope, mp_uint_t n_closed_over, mp_uint_t n_pos_defaults, mp_uint_t n_kw_defaults);
+void mp_emit_bc_make_closure(emit_t *emit, scope_t *scope, mp_uint_t n_closed_over, mp_uint_t n_pos_defaults,
+                             mp_uint_t n_kw_defaults);
 void mp_emit_bc_call_function(emit_t *emit, mp_uint_t n_positional, mp_uint_t n_keyword, mp_uint_t star_flags);
 void mp_emit_bc_call_method(emit_t *emit, mp_uint_t n_positional, mp_uint_t n_keyword, mp_uint_t star_flags);
 void mp_emit_bc_return_value(emit_t *emit);
@@ -258,10 +261,10 @@ void mp_emit_bc_end_except_handler(emit_t *emit);
 typedef struct _emit_inline_asm_t emit_inline_asm_t;
 
 typedef struct _emit_inline_asm_method_table_t {
-    #if MICROPY_DYNAMIC_COMPILER
+#if MICROPY_DYNAMIC_COMPILER
     emit_inline_asm_t *(*asm_new)(mp_uint_t max_num_labels);
     void (*asm_free)(emit_inline_asm_t *emit);
-    #endif
+#endif
 
     void (*start_pass)(emit_inline_asm_t *emit, pass_kind_t pass, mp_obj_t *error_slot);
     void (*end_pass)(emit_inline_asm_t *emit, mp_uint_t type_sig);

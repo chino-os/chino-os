@@ -28,11 +28,11 @@
 #include <assert.h>
 #include <string.h>
 
-#include "py/runtime.h"
+#include "py/binary.h"
 #include "py/builtin.h"
 #include "py/objtuple.h"
-#include "py/binary.h"
 #include "py/parsenum.h"
+#include "py/runtime.h"
 
 #if MICROPY_PY_STRUCT
 
@@ -55,16 +55,16 @@
 STATIC char get_fmt_type(const char **fmt) {
     char t = **fmt;
     switch (t) {
-        case '!':
-            t = '>';
-            break;
-        case '@':
-        case '=':
-        case '<':
-        case '>':
-            break;
-        default:
-            return '@';
+    case '!':
+        t = '>';
+        break;
+    case '@':
+    case '=':
+    case '<':
+    case '>':
+        break;
+    default:
+        return '@';
     }
     // Skip type char
     (*fmt)++;
@@ -217,7 +217,7 @@ STATIC mp_obj_t struct_pack(size_t n_args, const mp_obj_t *args) {
     mp_int_t size = MP_OBJ_SMALL_INT_VALUE(struct_calcsize(args[0]));
     vstr_t vstr;
     vstr_init_len(&vstr, size);
-    byte *p = (byte*)vstr.buf;
+    byte *p = (byte *)vstr.buf;
     memset(p, 0, size);
     struct_pack_into_internal(args[0], p, n_args - 1, &args[1]);
     return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
@@ -251,19 +251,19 @@ STATIC mp_obj_t struct_pack_into(size_t n_args, const mp_obj_t *args) {
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(struct_pack_into_obj, 3, MP_OBJ_FUN_ARGS_MAX, struct_pack_into);
 
 STATIC const mp_rom_map_elem_t mp_module_struct_globals_table[] = {
-    { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_ustruct) },
-    { MP_ROM_QSTR(MP_QSTR_calcsize), MP_ROM_PTR(&struct_calcsize_obj) },
-    { MP_ROM_QSTR(MP_QSTR_pack), MP_ROM_PTR(&struct_pack_obj) },
-    { MP_ROM_QSTR(MP_QSTR_pack_into), MP_ROM_PTR(&struct_pack_into_obj) },
-    { MP_ROM_QSTR(MP_QSTR_unpack), MP_ROM_PTR(&struct_unpack_from_obj) },
-    { MP_ROM_QSTR(MP_QSTR_unpack_from), MP_ROM_PTR(&struct_unpack_from_obj) },
+    {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_ustruct)},
+    {MP_ROM_QSTR(MP_QSTR_calcsize), MP_ROM_PTR(&struct_calcsize_obj)},
+    {MP_ROM_QSTR(MP_QSTR_pack), MP_ROM_PTR(&struct_pack_obj)},
+    {MP_ROM_QSTR(MP_QSTR_pack_into), MP_ROM_PTR(&struct_pack_into_obj)},
+    {MP_ROM_QSTR(MP_QSTR_unpack), MP_ROM_PTR(&struct_unpack_from_obj)},
+    {MP_ROM_QSTR(MP_QSTR_unpack_from), MP_ROM_PTR(&struct_unpack_from_obj)},
 };
 
 STATIC MP_DEFINE_CONST_DICT(mp_module_struct_globals, mp_module_struct_globals_table);
 
 const mp_obj_module_t mp_module_ustruct = {
-    .base = { &mp_type_module },
-    .globals = (mp_obj_dict_t*)&mp_module_struct_globals,
+    .base = {&mp_type_module},
+    .globals = (mp_obj_dict_t *)&mp_module_struct_globals,
 };
 
 #endif

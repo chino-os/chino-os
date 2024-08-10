@@ -31,8 +31,8 @@
 /** types *******************************************************/
 
 #include <stdbool.h>
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 typedef unsigned char byte;
 typedef unsigned int uint;
@@ -57,28 +57,34 @@ typedef unsigned int uint;
 
 // TODO make a lazy m_renew that can increase by a smaller amount than requested (but by at least 1 more element)
 
-#define m_new(type, num) ((type*)(m_malloc(sizeof(type) * (num))))
-#define m_new_maybe(type, num) ((type*)(m_malloc_maybe(sizeof(type) * (num))))
-#define m_new0(type, num) ((type*)(m_malloc0(sizeof(type) * (num))))
+#define m_new(type, num) ((type *)(m_malloc(sizeof(type) * (num))))
+#define m_new_maybe(type, num) ((type *)(m_malloc_maybe(sizeof(type) * (num))))
+#define m_new0(type, num) ((type *)(m_malloc0(sizeof(type) * (num))))
 #define m_new_obj(type) (m_new(type, 1))
 #define m_new_obj_maybe(type) (m_new_maybe(type, 1))
-#define m_new_obj_var(obj_type, var_type, var_num) ((obj_type*)m_malloc(sizeof(obj_type) + sizeof(var_type) * (var_num)))
-#define m_new_obj_var_maybe(obj_type, var_type, var_num) ((obj_type*)m_malloc_maybe(sizeof(obj_type) + sizeof(var_type) * (var_num)))
+#define m_new_obj_var(obj_type, var_type, var_num)                                                                     \
+    ((obj_type *)m_malloc(sizeof(obj_type) + sizeof(var_type) * (var_num)))
+#define m_new_obj_var_maybe(obj_type, var_type, var_num)                                                               \
+    ((obj_type *)m_malloc_maybe(sizeof(obj_type) + sizeof(var_type) * (var_num)))
 #if MICROPY_ENABLE_FINALISER
-#define m_new_obj_with_finaliser(type) ((type*)(m_malloc_with_finaliser(sizeof(type))))
-#define m_new_obj_var_with_finaliser(type, var_type, var_num) ((type*)m_malloc_with_finaliser(sizeof(type) + sizeof(var_type) * (var_num)))
+#define m_new_obj_with_finaliser(type) ((type *)(m_malloc_with_finaliser(sizeof(type))))
+#define m_new_obj_var_with_finaliser(type, var_type, var_num)                                                          \
+    ((type *)m_malloc_with_finaliser(sizeof(type) + sizeof(var_type) * (var_num)))
 #else
 #define m_new_obj_with_finaliser(type) m_new_obj(type)
 #define m_new_obj_var_with_finaliser(type, var_type, var_num) m_new_obj_var(type, var_type, var_num)
 #endif
 #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
-#define m_renew(type, ptr, old_num, new_num) ((type*)(m_realloc((ptr), sizeof(type) * (old_num), sizeof(type) * (new_num))))
-#define m_renew_maybe(type, ptr, old_num, new_num, allow_move) ((type*)(m_realloc_maybe((ptr), sizeof(type) * (old_num), sizeof(type) * (new_num), (allow_move))))
+#define m_renew(type, ptr, old_num, new_num)                                                                           \
+    ((type *)(m_realloc((ptr), sizeof(type) * (old_num), sizeof(type) * (new_num))))
+#define m_renew_maybe(type, ptr, old_num, new_num, allow_move)                                                         \
+    ((type *)(m_realloc_maybe((ptr), sizeof(type) * (old_num), sizeof(type) * (new_num), (allow_move))))
 #define m_del(type, ptr, num) m_free(ptr, sizeof(type) * (num))
 #define m_del_var(obj_type, var_type, var_num, ptr) (m_free(ptr, sizeof(obj_type) + sizeof(var_type) * (var_num)))
 #else
-#define m_renew(type, ptr, old_num, new_num) ((type*)(m_realloc((ptr), sizeof(type) * (new_num))))
-#define m_renew_maybe(type, ptr, old_num, new_num, allow_move) ((type*)(m_realloc_maybe((ptr), sizeof(type) * (new_num), (allow_move))))
+#define m_renew(type, ptr, old_num, new_num) ((type *)(m_realloc((ptr), sizeof(type) * (new_num))))
+#define m_renew_maybe(type, ptr, old_num, new_num, allow_move)                                                         \
+    ((type *)(m_realloc_maybe((ptr), sizeof(type) * (new_num), (allow_move))))
 #define m_del(type, ptr, num) ((void)(num), m_free(ptr))
 #define m_del_var(obj_type, var_type, var_num, ptr) ((void)(var_num), m_free(ptr))
 #endif
@@ -111,7 +117,7 @@ size_t m_get_peak_bytes_allocated(void);
 #define MP_ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
 // align ptr to the nearest multiple of "alignment"
-#define MP_ALIGN(ptr, alignment) (void*)(((uintptr_t)(ptr) + ((alignment) - 1)) & ~((alignment) - 1))
+#define MP_ALIGN(ptr, alignment) (void *)(((uintptr_t)(ptr) + ((alignment)-1)) & ~((alignment)-1))
 
 /** unichar / UTF-8 *********************************************/
 
@@ -131,7 +137,10 @@ size_t utf8_charlen(const byte *str, size_t len);
 #else
 static inline unichar utf8_get_char(const byte *s) { return *s; }
 static inline const byte *utf8_next_char(const byte *s) { return s + 1; }
-static inline size_t utf8_charlen(const byte *str, size_t len) { (void)str; return len; }
+static inline size_t utf8_charlen(const byte *str, size_t len) {
+    (void)str;
+    return len;
+}
 #endif
 
 bool unichar_isspace(unichar c);
@@ -145,8 +154,8 @@ bool unichar_islower(unichar c);
 unichar unichar_tolower(unichar c);
 unichar unichar_toupper(unichar c);
 mp_uint_t unichar_xdigit_value(unichar c);
-#define UTF8_IS_NONASCII(ch) ((ch) & 0x80)
-#define UTF8_IS_CONT(ch) (((ch) & 0xC0) == 0x80)
+#define UTF8_IS_NONASCII(ch) ((ch)&0x80)
+#define UTF8_IS_CONT(ch) (((ch)&0xC0) == 0x80)
 
 /** variable string *********************************************/
 
@@ -158,7 +167,10 @@ typedef struct _vstr_t {
 } vstr_t;
 
 // convenience macro to declare a vstr with a fixed size buffer on the stack
-#define VSTR_FIXED(vstr, alloc) vstr_t vstr; char vstr##_buf[(alloc)]; vstr_init_fixed_buf(&vstr, (alloc), vstr##_buf);
+#define VSTR_FIXED(vstr, alloc)                                                                                        \
+    vstr_t vstr;                                                                                                       \
+    char vstr##_buf[(alloc)];                                                                                          \
+    vstr_init_fixed_buf(&vstr, (alloc), vstr##_buf);
 
 void vstr_init(vstr_t *vstr, size_t alloc);
 void vstr_init_len(vstr_t *vstr, size_t len);
@@ -188,14 +200,22 @@ void vstr_printf(vstr_t *vstr, const char *fmt, ...);
 
 /** non-dynamic size-bounded variable buffer/string *************/
 
-#define CHECKBUF(buf, max_size) char buf[max_size + 1]; size_t buf##_len = max_size; char *buf##_p = buf;
-#define CHECKBUF_RESET(buf, max_size) buf##_len = max_size; buf##_p = buf;
-#define CHECKBUF_APPEND(buf, src, src_len) \
-        { size_t l = MIN(src_len, buf##_len); \
-        memcpy(buf##_p, src, l); \
-        buf##_len -= l; \
-        buf##_p += l; }
-#define CHECKBUF_APPEND_0(buf) { *buf##_p = 0; }
+#define CHECKBUF(buf, max_size)                                                                                        \
+    char buf[max_size + 1];                                                                                            \
+    size_t buf##_len = max_size;                                                                                       \
+    char *buf##_p = buf;
+#define CHECKBUF_RESET(buf, max_size)                                                                                  \
+    buf##_len = max_size;                                                                                              \
+    buf##_p = buf;
+#define CHECKBUF_APPEND(buf, src, src_len)                                                                             \
+    {                                                                                                                  \
+        size_t l = MIN(src_len, buf##_len);                                                                            \
+        memcpy(buf##_p, src, l);                                                                                       \
+        buf##_len -= l;                                                                                                \
+        buf##_p += l;                                                                                                  \
+    }
+#define CHECKBUF_APPEND_0(buf)                                                                                         \
+    { *buf##_p = 0; }
 #define CHECKBUF_LEN(buf) (buf##_p - buf)
 
 #ifdef va_start

@@ -1,5 +1,5 @@
-#include <unistd.h>
 #include "py/mpconfig.h"
+#include <unistd.h>
 
 /*
  * Core UART functions to implement for a port
@@ -10,7 +10,7 @@ typedef struct {
     volatile uint32_t SR;
     volatile uint32_t DR;
 } periph_uart_t;
-#define USART1 ((periph_uart_t*)0x40011000)
+#define USART1 ((periph_uart_t *)0x40011000)
 #endif
 
 // Receive single character

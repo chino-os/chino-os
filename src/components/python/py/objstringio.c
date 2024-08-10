@@ -55,7 +55,7 @@ STATIC mp_uint_t stringio_read(mp_obj_t o_in, void *buf, mp_uint_t size, int *er
     (void)errcode;
     mp_obj_stringio_t *o = MP_OBJ_TO_PTR(o_in);
     check_stringio_is_open(o);
-    if (o->vstr->len <= o->pos) {  // read to EOF, or seeked to EOF or beyond
+    if (o->vstr->len <= o->pos) { // read to EOF, or seeked to EOF or beyond
         return 0;
     }
     mp_uint_t remaining = o->vstr->len - o->pos;
@@ -113,50 +113,50 @@ STATIC mp_uint_t stringio_ioctl(mp_obj_t o_in, mp_uint_t request, uintptr_t arg,
     (void)errcode;
     mp_obj_stringio_t *o = MP_OBJ_TO_PTR(o_in);
     switch (request) {
-        case MP_STREAM_SEEK: {
-            struct mp_stream_seek_t *s = (struct mp_stream_seek_t*)arg;
-            mp_uint_t ref = 0;
-            switch (s->whence) {
-                case MP_SEEK_CUR:
-                    ref = o->pos;
-                    break;
-                case MP_SEEK_END:
-                    ref = o->vstr->len;
-                    break;
-            }
-            mp_uint_t new_pos = ref + s->offset;
-
-            // For MP_SEEK_SET, offset is unsigned
-            if (s->whence != MP_SEEK_SET && s->offset < 0) {
-                if (new_pos > ref) {
-                    // Negative offset from SEEK_CUR or SEEK_END went past 0.
-                    // CPython sets position to 0, POSIX returns an EINVAL error
-                    new_pos = 0;
-                }
-            } else if (new_pos < ref) {
-                // positive offset went beyond the limit of mp_uint_t
-                *errcode = MP_EINVAL;  // replace with MP_EOVERFLOW when defined
-                return MP_STREAM_ERROR;
-            }
-            s->offset = o->pos = new_pos;
-            return 0;
+    case MP_STREAM_SEEK: {
+        struct mp_stream_seek_t *s = (struct mp_stream_seek_t *)arg;
+        mp_uint_t ref = 0;
+        switch (s->whence) {
+        case MP_SEEK_CUR:
+            ref = o->pos;
+            break;
+        case MP_SEEK_END:
+            ref = o->vstr->len;
+            break;
         }
-        case MP_STREAM_FLUSH:
-            return 0;
-        case MP_STREAM_CLOSE:
-            #if MICROPY_CPYTHON_COMPAT
-            vstr_free(o->vstr);
-            o->vstr = NULL;
-            #else
-            vstr_clear(o->vstr);
-            o->vstr->alloc = 0;
-            o->vstr->len = 0;
-            o->pos = 0;
-            #endif
-            return 0;
-        default:
-            *errcode = MP_EINVAL;
+        mp_uint_t new_pos = ref + s->offset;
+
+        // For MP_SEEK_SET, offset is unsigned
+        if (s->whence != MP_SEEK_SET && s->offset < 0) {
+            if (new_pos > ref) {
+                // Negative offset from SEEK_CUR or SEEK_END went past 0.
+                // CPython sets position to 0, POSIX returns an EINVAL error
+                new_pos = 0;
+            }
+        } else if (new_pos < ref) {
+            // positive offset went beyond the limit of mp_uint_t
+            *errcode = MP_EINVAL; // replace with MP_EOVERFLOW when defined
             return MP_STREAM_ERROR;
+        }
+        s->offset = o->pos = new_pos;
+        return 0;
+    }
+    case MP_STREAM_FLUSH:
+        return 0;
+    case MP_STREAM_CLOSE:
+#if MICROPY_CPYTHON_COMPAT
+        vstr_free(o->vstr);
+        o->vstr = NULL;
+#else
+        vstr_clear(o->vstr);
+        o->vstr->alloc = 0;
+        o->vstr->len = 0;
+        o->pos = 0;
+#endif
+        return 0;
+    default:
+        *errcode = MP_EINVAL;
+        return MP_STREAM_ERROR;
     }
 }
 
@@ -166,7 +166,7 @@ STATIC mp_obj_t stringio_getvalue(mp_obj_t self_in) {
     mp_obj_stringio_t *self = MP_OBJ_TO_PTR(self_in);
     check_stringio_is_open(self);
     // TODO: Try to avoid copying string
-    return mp_obj_new_str_of_type(STREAM_TO_CONTENT_TYPE(self), (byte*)self->vstr->buf, self->vstr->len);
+    return mp_obj_new_str_of_type(STREAM_TO_CONTENT_TYPE(self), (byte *)self->vstr->buf, self->vstr->len);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(stringio_getvalue_obj, stringio_getvalue);
 
@@ -223,16 +223,16 @@ STATIC mp_obj_t stringio_make_new(const mp_obj_type_t *type_in, size_t n_args, s
 }
 
 STATIC const mp_rom_map_elem_t stringio_locals_dict_table[] = {
-    { MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&mp_stream_read_obj) },
-    { MP_ROM_QSTR(MP_QSTR_readinto), MP_ROM_PTR(&mp_stream_readinto_obj) },
-    { MP_ROM_QSTR(MP_QSTR_readline), MP_ROM_PTR(&mp_stream_unbuffered_readline_obj) },
-    { MP_ROM_QSTR(MP_QSTR_write), MP_ROM_PTR(&mp_stream_write_obj) },
-    { MP_ROM_QSTR(MP_QSTR_seek), MP_ROM_PTR(&mp_stream_seek_obj) },
-    { MP_ROM_QSTR(MP_QSTR_flush), MP_ROM_PTR(&mp_stream_flush_obj) },
-    { MP_ROM_QSTR(MP_QSTR_close), MP_ROM_PTR(&mp_stream_close_obj) },
-    { MP_ROM_QSTR(MP_QSTR_getvalue), MP_ROM_PTR(&stringio_getvalue_obj) },
-    { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&mp_identity_obj) },
-    { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&stringio___exit___obj) },
+    {MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&mp_stream_read_obj)},
+    {MP_ROM_QSTR(MP_QSTR_readinto), MP_ROM_PTR(&mp_stream_readinto_obj)},
+    {MP_ROM_QSTR(MP_QSTR_readline), MP_ROM_PTR(&mp_stream_unbuffered_readline_obj)},
+    {MP_ROM_QSTR(MP_QSTR_write), MP_ROM_PTR(&mp_stream_write_obj)},
+    {MP_ROM_QSTR(MP_QSTR_seek), MP_ROM_PTR(&mp_stream_seek_obj)},
+    {MP_ROM_QSTR(MP_QSTR_flush), MP_ROM_PTR(&mp_stream_flush_obj)},
+    {MP_ROM_QSTR(MP_QSTR_close), MP_ROM_PTR(&mp_stream_close_obj)},
+    {MP_ROM_QSTR(MP_QSTR_getvalue), MP_ROM_PTR(&stringio_getvalue_obj)},
+    {MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&mp_identity_obj)},
+    {MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&stringio___exit___obj)},
 };
 
 STATIC MP_DEFINE_CONST_DICT(stringio_locals_dict, stringio_locals_dict_table);
@@ -245,14 +245,14 @@ STATIC const mp_stream_p_t stringio_stream_p = {
 };
 
 const mp_obj_type_t mp_type_stringio = {
-    { &mp_type_type },
+    {&mp_type_type},
     .name = MP_QSTR_StringIO,
     .print = stringio_print,
     .make_new = stringio_make_new,
     .getiter = mp_identity_getiter,
     .iternext = mp_stream_unbuffered_iter,
     .protocol = &stringio_stream_p,
-    .locals_dict = (mp_obj_dict_t*)&stringio_locals_dict,
+    .locals_dict = (mp_obj_dict_t *)&stringio_locals_dict,
 };
 
 #if MICROPY_PY_IO_BYTESIO
@@ -263,14 +263,14 @@ STATIC const mp_stream_p_t bytesio_stream_p = {
 };
 
 const mp_obj_type_t mp_type_bytesio = {
-    { &mp_type_type },
+    {&mp_type_type},
     .name = MP_QSTR_BytesIO,
     .print = stringio_print,
     .make_new = stringio_make_new,
     .getiter = mp_identity_getiter,
     .iternext = mp_stream_unbuffered_iter,
     .protocol = &bytesio_stream_p,
-    .locals_dict = (mp_obj_dict_t*)&stringio_locals_dict,
+    .locals_dict = (mp_obj_dict_t *)&stringio_locals_dict,
 };
 #endif
 

@@ -5,585 +5,537 @@ BUGS and TODO:
 -- rewrite history for use more than 256 byte buffer
 */
 
-#include <string.h>
+#include "microrl.h"
 #include <ctype.h>
 #include <stdlib.h>
-#include "microrl.h"
+#include <string.h>
 #ifdef _USE_LIBC_STDIO
 #include <stdio.h>
 #endif
 
 //#define DBG(...) fprintf(stderr, "\033[33m");fprintf(stderr,__VA_ARGS__);fprintf(stderr,"\033[0m");
 
-char * prompt_default = _PROMPT_DEFAULT;
+char *prompt_default = _PROMPT_DEFAULT;
 
 #ifdef _USE_HISTORY
 
 #ifdef _HISTORY_DEBUG
 //*****************************************************************************
 // print buffer content on screen
-static void print_hist (ring_history_t * pThis)
-{
-	printf ("\n");
-	for (int i = 0; i < _RING_HISTORY_LEN; i++) {
-		if (i == pThis->begin)
-			printf ("b");
-		else 
-			printf (" ");
-	}
-	printf ("\n");
-	for (int i = 0; i < _RING_HISTORY_LEN; i++) {
-		if (isalpha(pThis->ring_buf[i]))
-			printf ("%c", pThis->ring_buf[i]);
-		else 
-			printf ("%d", pThis->ring_buf[i]);
-	}
-	printf ("\n");
-	for (int i = 0; i < _RING_HISTORY_LEN; i++) {
-		if (i == pThis->end)
-			printf ("e");
-		else 
-			printf (" ");
-	}
-	printf ("\n");
+static void print_hist(ring_history_t *pThis) {
+    printf("\n");
+    for (int i = 0; i < _RING_HISTORY_LEN; i++) {
+        if (i == pThis->begin)
+            printf("b");
+        else
+            printf(" ");
+    }
+    printf("\n");
+    for (int i = 0; i < _RING_HISTORY_LEN; i++) {
+        if (isalpha(pThis->ring_buf[i]))
+            printf("%c", pThis->ring_buf[i]);
+        else
+            printf("%d", pThis->ring_buf[i]);
+    }
+    printf("\n");
+    for (int i = 0; i < _RING_HISTORY_LEN; i++) {
+        if (i == pThis->end)
+            printf("e");
+        else
+            printf(" ");
+    }
+    printf("\n");
 }
 #endif
 
 //*****************************************************************************
 // remove older message from ring buffer
-static void hist_erase_older (ring_history_t * pThis)
-{
-	int new_pos = pThis->begin + pThis->ring_buf [pThis->begin] + 1;
-	if (new_pos >= _RING_HISTORY_LEN)
-		new_pos = new_pos - _RING_HISTORY_LEN;
-	
-	pThis->begin = new_pos;
+static void hist_erase_older(ring_history_t *pThis) {
+    int new_pos = pThis->begin + pThis->ring_buf[pThis->begin] + 1;
+    if (new_pos >= _RING_HISTORY_LEN)
+        new_pos = new_pos - _RING_HISTORY_LEN;
+
+    pThis->begin = new_pos;
 }
 
 //*****************************************************************************
 // check space for new line, remove older while not space
-static int hist_is_space_for_new (ring_history_t * pThis, int len)
-{
-	if (pThis->ring_buf [pThis->begin] == 0)
-		return true;
-	if (pThis->end >= pThis->begin) {
-		if (_RING_HISTORY_LEN - pThis->end + pThis->begin - 1 > len)
-			return true;
-	}	else {
-		if (pThis->begin - pThis->end - 1> len)
-			return true;
-	}
-	return false;
+static int hist_is_space_for_new(ring_history_t *pThis, int len) {
+    if (pThis->ring_buf[pThis->begin] == 0)
+        return true;
+    if (pThis->end >= pThis->begin) {
+        if (_RING_HISTORY_LEN - pThis->end + pThis->begin - 1 > len)
+            return true;
+    } else {
+        if (pThis->begin - pThis->end - 1 > len)
+            return true;
+    }
+    return false;
 }
 
 //*****************************************************************************
 // put line to ring buffer
-static void hist_save_line (ring_history_t * pThis, char * line, int len)
-{
-	if (len > _RING_HISTORY_LEN - 2)
-		return;
-	while (!hist_is_space_for_new (pThis, len)) {
-		hist_erase_older (pThis);
-	}
-	// if it's first line
-	if (pThis->ring_buf [pThis->begin] == 0) 
-		pThis->ring_buf [pThis->begin] = len;
-	
-	// store line
-	if (len < _RING_HISTORY_LEN-pThis->end-1)
-		memcpy (pThis->ring_buf + pThis->end + 1, line, len);
-	else {
-		int part_len = _RING_HISTORY_LEN-pThis->end-1;
-		memcpy (pThis->ring_buf + pThis->end + 1, line, part_len);
-		memcpy (pThis->ring_buf, line + part_len, len - part_len);
-	}
-	pThis->ring_buf [pThis->end] = len;
-	pThis->end = pThis->end + len + 1;
-	if (pThis->end >= _RING_HISTORY_LEN)
-		pThis->end -= _RING_HISTORY_LEN;
-	pThis->ring_buf [pThis->end] = 0;
-	pThis->cur = 0;
+static void hist_save_line(ring_history_t *pThis, char *line, int len) {
+    if (len > _RING_HISTORY_LEN - 2)
+        return;
+    while (!hist_is_space_for_new(pThis, len)) {
+        hist_erase_older(pThis);
+    }
+    // if it's first line
+    if (pThis->ring_buf[pThis->begin] == 0)
+        pThis->ring_buf[pThis->begin] = len;
+
+    // store line
+    if (len < _RING_HISTORY_LEN - pThis->end - 1)
+        memcpy(pThis->ring_buf + pThis->end + 1, line, len);
+    else {
+        int part_len = _RING_HISTORY_LEN - pThis->end - 1;
+        memcpy(pThis->ring_buf + pThis->end + 1, line, part_len);
+        memcpy(pThis->ring_buf, line + part_len, len - part_len);
+    }
+    pThis->ring_buf[pThis->end] = len;
+    pThis->end = pThis->end + len + 1;
+    if (pThis->end >= _RING_HISTORY_LEN)
+        pThis->end -= _RING_HISTORY_LEN;
+    pThis->ring_buf[pThis->end] = 0;
+    pThis->cur = 0;
 #ifdef _HISTORY_DEBUG
-	print_hist (pThis);
+    print_hist(pThis);
 #endif
 }
 
 //*****************************************************************************
 // copy saved line to 'line' and return size of line
-static int hist_restore_line (ring_history_t * pThis, char * line, int dir)
-{
-	int cnt = 0;
-	// count history record	
-	int header = pThis->begin;
-	while (pThis->ring_buf [header] != 0) {
-		header += pThis->ring_buf [header] + 1;
-		if (header >= _RING_HISTORY_LEN)
-			header -= _RING_HISTORY_LEN; 
-		cnt++;
-	}
+static int hist_restore_line(ring_history_t *pThis, char *line, int dir) {
+    int cnt = 0;
+    // count history record
+    int header = pThis->begin;
+    while (pThis->ring_buf[header] != 0) {
+        header += pThis->ring_buf[header] + 1;
+        if (header >= _RING_HISTORY_LEN)
+            header -= _RING_HISTORY_LEN;
+        cnt++;
+    }
 
-	if (dir == _HIST_UP) {
-		if (cnt >= pThis->cur) {
-			int header = pThis->begin;
-			int j = 0;
-			// found record for 'pThis->cur' index
-			while ((pThis->ring_buf [header] != 0) && (cnt - j -1 != pThis->cur)) {
-				header += pThis->ring_buf [header] + 1;
-				if (header >= _RING_HISTORY_LEN)
-					header -= _RING_HISTORY_LEN;
-				j++;
-			}
-			if (pThis->ring_buf[header]) {
-					pThis->cur++;
-				// obtain saved line
-				if (pThis->ring_buf [header] + header < _RING_HISTORY_LEN) {
-					memset (line, 0, _COMMAND_LINE_LEN);
-					memcpy (line, pThis->ring_buf + header + 1, pThis->ring_buf[header]);
-				} else {
-					int part0 = _RING_HISTORY_LEN - header - 1;
-					memset (line, 0, _COMMAND_LINE_LEN);
-					memcpy (line, pThis->ring_buf + header + 1, part0);
-					memcpy (line + part0, pThis->ring_buf, pThis->ring_buf[header] - part0);
-				}
-				return pThis->ring_buf[header];
-			}
-		}
-	} else {
-		if (pThis->cur > 0) {
-				pThis->cur--;
-			int header = pThis->begin;
-			int j = 0;
+    if (dir == _HIST_UP) {
+        if (cnt >= pThis->cur) {
+            int header = pThis->begin;
+            int j = 0;
+            // found record for 'pThis->cur' index
+            while ((pThis->ring_buf[header] != 0) && (cnt - j - 1 != pThis->cur)) {
+                header += pThis->ring_buf[header] + 1;
+                if (header >= _RING_HISTORY_LEN)
+                    header -= _RING_HISTORY_LEN;
+                j++;
+            }
+            if (pThis->ring_buf[header]) {
+                pThis->cur++;
+                // obtain saved line
+                if (pThis->ring_buf[header] + header < _RING_HISTORY_LEN) {
+                    memset(line, 0, _COMMAND_LINE_LEN);
+                    memcpy(line, pThis->ring_buf + header + 1, pThis->ring_buf[header]);
+                } else {
+                    int part0 = _RING_HISTORY_LEN - header - 1;
+                    memset(line, 0, _COMMAND_LINE_LEN);
+                    memcpy(line, pThis->ring_buf + header + 1, part0);
+                    memcpy(line + part0, pThis->ring_buf, pThis->ring_buf[header] - part0);
+                }
+                return pThis->ring_buf[header];
+            }
+        }
+    } else {
+        if (pThis->cur > 0) {
+            pThis->cur--;
+            int header = pThis->begin;
+            int j = 0;
 
-			while ((pThis->ring_buf [header] != 0) && (cnt - j != pThis->cur)) {
-				header += pThis->ring_buf [header] + 1;
-				if (header >= _RING_HISTORY_LEN)
-					header -= _RING_HISTORY_LEN;
-				j++;
-			}
-			if (pThis->ring_buf [header] + header < _RING_HISTORY_LEN) {
-				memcpy (line, pThis->ring_buf + header + 1, pThis->ring_buf[header]);
-			} else {
-				int part0 = _RING_HISTORY_LEN - header - 1;
-				memcpy (line, pThis->ring_buf + header + 1, part0);
-				memcpy (line + part0, pThis->ring_buf, pThis->ring_buf[header] - part0);
-			}
-			return pThis->ring_buf[header];
-		} else {
-			/* empty line */
-			return 0;
-		}
-	}
-	return -1;
+            while ((pThis->ring_buf[header] != 0) && (cnt - j != pThis->cur)) {
+                header += pThis->ring_buf[header] + 1;
+                if (header >= _RING_HISTORY_LEN)
+                    header -= _RING_HISTORY_LEN;
+                j++;
+            }
+            if (pThis->ring_buf[header] + header < _RING_HISTORY_LEN) {
+                memcpy(line, pThis->ring_buf + header + 1, pThis->ring_buf[header]);
+            } else {
+                int part0 = _RING_HISTORY_LEN - header - 1;
+                memcpy(line, pThis->ring_buf + header + 1, part0);
+                memcpy(line + part0, pThis->ring_buf, pThis->ring_buf[header] - part0);
+            }
+            return pThis->ring_buf[header];
+        } else {
+            /* empty line */
+            return 0;
+        }
+    }
+    return -1;
 }
 #endif
 
-
-
-
-
-
-
-
 //*****************************************************************************
 // split cmdline to tkn array and return nmb of token
-static int split (microrl_t * pThis, int limit, char const ** tkn_arr)
-{
-	int i = 0;
-	int ind = 0;
-	while (1) {
-		if(ind < limit && pThis->cmdline [ind] == ' ')
-			pThis->cmdline [ind] = '\0';
-		// go to the first whitespace (zerro for us)
-		while ((pThis->cmdline [ind] == '\0') && (ind < limit)) {
-			ind++;
-		}
-		if (!(ind < limit)) return i;
-		tkn_arr[i++] = pThis->cmdline + ind;
-		if (i >= _COMMAND_TOKEN_NMB) {
-			return -1;
-		}
-		// go to the first NOT whitespace (not zerro for us)
-		while ((pThis->cmdline [ind] != '\0') && (ind < limit)) {
-			ind++;
-		}
-		if (!(ind < limit)) return i;
-	}
-	return i;
-}
-
-
-//*****************************************************************************
-inline static void print_prompt (microrl_t * pThis)
-{
-	printf (pThis->prompt_str);
+static int split(microrl_t *pThis, int limit, char const **tkn_arr) {
+    int i = 0;
+    int ind = 0;
+    while (1) {
+        if (ind < limit && pThis->cmdline[ind] == ' ')
+            pThis->cmdline[ind] = '\0';
+        // go to the first whitespace (zerro for us)
+        while ((pThis->cmdline[ind] == '\0') && (ind < limit)) {
+            ind++;
+        }
+        if (!(ind < limit))
+            return i;
+        tkn_arr[i++] = pThis->cmdline + ind;
+        if (i >= _COMMAND_TOKEN_NMB) {
+            return -1;
+        }
+        // go to the first NOT whitespace (not zerro for us)
+        while ((pThis->cmdline[ind] != '\0') && (ind < limit)) {
+            ind++;
+        }
+        if (!(ind < limit))
+            return i;
+    }
+    return i;
 }
 
 //*****************************************************************************
-inline static void terminal_backspace (microrl_t * pThis)
-{
-		printf ("\033[D \033[D");
-}
+inline static void print_prompt(microrl_t *pThis) { printf(pThis->prompt_str); }
 
 //*****************************************************************************
-inline static void terminal_newline (microrl_t * pThis)
-{
-	printf (ENDL);
-}
+inline static void terminal_backspace(microrl_t *pThis) { printf("\033[D \033[D"); }
 
-void microrl_prompt(microrl_t *pThis)
-{
-    print_prompt(pThis);
-}
+//*****************************************************************************
+inline static void terminal_newline(microrl_t *pThis) { printf(ENDL); }
+
+void microrl_prompt(microrl_t *pThis) { print_prompt(pThis); }
 
 #ifndef _USE_LIBC_STDIO
 //*****************************************************************************
 // convert 16 bit value to string
 // 0 value not supported!!! just make empty string
 // Returns pointer to a buffer tail
-static char *u16bit_to_str (unsigned int nmb, char * buf)
-{
-	char tmp_str [6] = {0,};
-	int i = 0, j;
-	if (nmb <= 0xFFFF) {
-		while (nmb > 0) {
-			tmp_str[i++] = (nmb % 10) + '0';
-			nmb /=10;
-		}
-		for (j = 0; j < i; ++j)
-			*(buf++) = tmp_str [i-j-1];
-	}
-	*buf = '\0';
-	return buf;
+static char *u16bit_to_str(unsigned int nmb, char *buf) {
+    char tmp_str[6] = {
+        0,
+    };
+    int i = 0, j;
+    if (nmb <= 0xFFFF) {
+        while (nmb > 0) {
+            tmp_str[i++] = (nmb % 10) + '0';
+            nmb /= 10;
+        }
+        for (j = 0; j < i; ++j)
+            *(buf++) = tmp_str[i - j - 1];
+    }
+    *buf = '\0';
+    return buf;
 }
 #endif
-
 
 //*****************************************************************************
 // set cursor at position from begin cmdline (after prompt) + offset
-static void terminal_move_cursor (microrl_t * pThis, int offset)
-{
-	char str[16] = {0,};
-#ifdef _USE_LIBC_STDIO 
-	if (offset > 0) {
-		snprintf (str, 16, "\033[%dC", offset);
-	} else if (offset < 0) {
-		snprintf (str, 16, "\033[%dD", -(offset));
-	}
-#else 
-	char *endstr;
-	strcpy (str, "\033[");
-	if (offset > 0) {
-		endstr = u16bit_to_str (offset, str+2);
-		strcpy (endstr, "C");
-	} else if (offset < 0) {
-		endstr = u16bit_to_str (-(offset), str+2);
-		strcpy (endstr, "D");
-	} else
-		return;
-#endif	
-	printf (str);
+static void terminal_move_cursor(microrl_t *pThis, int offset) {
+    char str[16] = {
+        0,
+    };
+#ifdef _USE_LIBC_STDIO
+    if (offset > 0) {
+        snprintf(str, 16, "\033[%dC", offset);
+    } else if (offset < 0) {
+        snprintf(str, 16, "\033[%dD", -(offset));
+    }
+#else
+    char *endstr;
+    strcpy(str, "\033[");
+    if (offset > 0) {
+        endstr = u16bit_to_str(offset, str + 2);
+        strcpy(endstr, "C");
+    } else if (offset < 0) {
+        endstr = u16bit_to_str(-(offset), str + 2);
+        strcpy(endstr, "D");
+    } else
+        return;
+#endif
+    printf(str);
 }
 
 //*****************************************************************************
-static void terminal_reset_cursor (microrl_t * pThis)
-{
-	char str[16];
+static void terminal_reset_cursor(microrl_t *pThis) {
+    char str[16];
 #ifdef _USE_LIBC_STDIO
-	snprintf (str, 16, "\033[%dD\033[%dC", \
-						_COMMAND_LINE_LEN + pThis->prompt_len + 2, pThis->prompt_len);
+    snprintf(str, 16, "\033[%dD\033[%dC", _COMMAND_LINE_LEN + pThis->prompt_len + 2, pThis->prompt_len);
 
 #else
-	char *endstr;
-	strcpy (str, "\033[");
-	endstr = u16bit_to_str ( _COMMAND_LINE_LEN + _PROMPT_LEN + 2,str+2);
-	strcpy (endstr, "D\033["); endstr += 3;
-	endstr = u16bit_to_str (_PROMPT_LEN, endstr);
-	strcpy (endstr, "C");
+    char *endstr;
+    strcpy(str, "\033[");
+    endstr = u16bit_to_str(_COMMAND_LINE_LEN + _PROMPT_LEN + 2, str + 2);
+    strcpy(endstr, "D\033[");
+    endstr += 3;
+    endstr = u16bit_to_str(_PROMPT_LEN, endstr);
+    strcpy(endstr, "C");
 #endif
-	printf (str);
+    printf(str);
 }
 
 //*****************************************************************************
-// print cmdline to screen, replace '\0' to wihitespace 
-static void terminal_print_line (microrl_t * pThis, int pos, int cursor)
-{
-	printf ("\033[K");    // delete all from cursor to end
+// print cmdline to screen, replace '\0' to wihitespace
+static void terminal_print_line(microrl_t *pThis, int pos, int cursor) {
+    printf("\033[K"); // delete all from cursor to end
 
-	char nch [] = {0,0};
-	int i;
-	for (i = pos; i < pThis->cmdlen; i++) {
-		nch [0] = pThis->cmdline [i];
-		if (nch[0] == '\0')
-			nch[0] = ' ';
-		printf (nch);
-	}
-	
-	terminal_reset_cursor (pThis);
-	terminal_move_cursor (pThis, cursor);
+    char nch[] = {0, 0};
+    int i;
+    for (i = pos; i < pThis->cmdlen; i++) {
+        nch[0] = pThis->cmdline[i];
+        if (nch[0] == '\0')
+            nch[0] = ' ';
+        printf(nch);
+    }
+
+    terminal_reset_cursor(pThis);
+    terminal_move_cursor(pThis, cursor);
 }
 
 //*****************************************************************************
-void microrl_init (microrl_t * pThis) 
-{
-	memset(pThis->cmdline, 0, _COMMAND_LINE_LEN);
+void microrl_init(microrl_t *pThis) {
+    memset(pThis->cmdline, 0, _COMMAND_LINE_LEN);
 #ifdef _USE_HISTORY
-	memset(pThis->ring_hist.ring_buf, 0, _RING_HISTORY_LEN);
-	pThis->ring_hist.begin = 0;
-	pThis->ring_hist.end = 0;
-	pThis->ring_hist.cur = 0;
+    memset(pThis->ring_hist.ring_buf, 0, _RING_HISTORY_LEN);
+    pThis->ring_hist.begin = 0;
+    pThis->ring_hist.end = 0;
+    pThis->ring_hist.cur = 0;
 #endif
-	pThis->cmdlen =0;
-	pThis->cursor = 0;
-	pThis->execute = NULL;
-	pThis->newline = NULL;
-	pThis->get_completion = NULL;
-	pThis->eot=0;
+    pThis->cmdlen = 0;
+    pThis->cursor = 0;
+    pThis->execute = NULL;
+    pThis->newline = NULL;
+    pThis->get_completion = NULL;
+    pThis->eot = 0;
 #ifdef _USE_CTLR_C
-	pThis->sigint = NULL;
+    pThis->sigint = NULL;
 #endif
-	pThis->prompt_str = prompt_default;
-	pThis->prompt_len = _DEFAULT_PROMPT_LEN;
+    pThis->prompt_str = prompt_default;
+    pThis->prompt_len = _DEFAULT_PROMPT_LEN;
 #ifdef _ENABLE_INIT_PROMPT
-	print_prompt (pThis);
+    print_prompt(pThis);
 #endif
 }
 
 //*****************************************************************************
-void microrl_set_complete_callback (microrl_t * pThis, char ** (*get_completion)(int, const char* const*))
-{
-	pThis->get_completion = get_completion;
+void microrl_set_complete_callback(microrl_t *pThis, char **(*get_completion)(int, const char *const *)) {
+    pThis->get_completion = get_completion;
 }
 
 //*****************************************************************************
-void microrl_set_execute_callback (microrl_t * pThis, int (*execute)(int, const char* const*))
-{
-	pThis->execute = execute;
+void microrl_set_execute_callback(microrl_t *pThis, int (*execute)(int, const char *const *)) {
+    pThis->execute = execute;
 }
 
-void microrl_set_newline_callback(microrl_t *pThis, int (*newline)(const char *))
-{
-    pThis->newline = newline;
-}
+void microrl_set_newline_callback(microrl_t *pThis, int (*newline)(const char *)) { pThis->newline = newline; }
 #ifdef _USE_CTLR_C
 //*****************************************************************************
-void microrl_set_sigint_callback (microrl_t * pThis, void (*sigintf)(void))
-{
-	pThis->sigint = sigintf;
-}
+void microrl_set_sigint_callback(microrl_t *pThis, void (*sigintf)(void)) { pThis->sigint = sigintf; }
 #endif
 
 #ifdef _USE_HISTORY
-static void hist_search (microrl_t * pThis, int dir)
-{
-	int len = hist_restore_line (&pThis->ring_hist, pThis->cmdline, dir);
-	if (len >= 0) {
-		pThis->cmdline[len] = '\0';
-		pThis->cursor = pThis->cmdlen = len;
-		terminal_reset_cursor (pThis);
-		terminal_print_line (pThis, 0, pThis->cursor);
-	}
+static void hist_search(microrl_t *pThis, int dir) {
+    int len = hist_restore_line(&pThis->ring_hist, pThis->cmdline, dir);
+    if (len >= 0) {
+        pThis->cmdline[len] = '\0';
+        pThis->cursor = pThis->cmdlen = len;
+        terminal_reset_cursor(pThis);
+        terminal_print_line(pThis, 0, pThis->cursor);
+    }
 }
 #endif
 
 #ifdef _USE_ESC_SEQ
 //*****************************************************************************
 // handling escape sequences
-static int escape_process (microrl_t * pThis, char ch)
-{
-	if (ch == '[') {
-		pThis->escape_seq = _ESC_BRACKET;
-		return 0;
-	} else if (pThis->escape_seq == _ESC_BRACKET) {
-		if (ch == 'A') {
+static int escape_process(microrl_t *pThis, char ch) {
+    if (ch == '[') {
+        pThis->escape_seq = _ESC_BRACKET;
+        return 0;
+    } else if (pThis->escape_seq == _ESC_BRACKET) {
+        if (ch == 'A') {
 #ifdef _USE_HISTORY
-			hist_search (pThis, _HIST_UP);
+            hist_search(pThis, _HIST_UP);
 #endif
-			return 1;
-		} else if (ch == 'B') {
+            return 1;
+        } else if (ch == 'B') {
 #ifdef _USE_HISTORY
-			hist_search (pThis, _HIST_DOWN);
+            hist_search(pThis, _HIST_DOWN);
 #endif
-			return 1;
-		} else if (ch == 'C') {
-			if (pThis->cursor < pThis->cmdlen) {
-				terminal_move_cursor (pThis, 1);
-				pThis->cursor++;
-			}
-			return 1;
-		} else if (ch == 'D') {
-			if (pThis->cursor > 0) {
-				terminal_move_cursor (pThis, -1);
-				pThis->cursor--;
-			}
-			return 1;
-		} else if (ch == '7') {
-			pThis->escape_seq = _ESC_HOME;
-			return 0;
-		} else if (ch == '8') {
-			pThis->escape_seq = _ESC_END;
-			return 0;
-		} 
-	} else if (ch == '~') {
-		if (pThis->escape_seq == _ESC_HOME) {
-			terminal_reset_cursor (pThis);
-			pThis->cursor = 0;
-			return 1;
-		} else if (pThis->escape_seq == _ESC_END) {
-			terminal_move_cursor (pThis, pThis->cmdlen-pThis->cursor);
-			pThis->cursor = pThis->cmdlen;
-			return 1;
-		}
-	}
+            return 1;
+        } else if (ch == 'C') {
+            if (pThis->cursor < pThis->cmdlen) {
+                terminal_move_cursor(pThis, 1);
+                pThis->cursor++;
+            }
+            return 1;
+        } else if (ch == 'D') {
+            if (pThis->cursor > 0) {
+                terminal_move_cursor(pThis, -1);
+                pThis->cursor--;
+            }
+            return 1;
+        } else if (ch == '7') {
+            pThis->escape_seq = _ESC_HOME;
+            return 0;
+        } else if (ch == '8') {
+            pThis->escape_seq = _ESC_END;
+            return 0;
+        }
+    } else if (ch == '~') {
+        if (pThis->escape_seq == _ESC_HOME) {
+            terminal_reset_cursor(pThis);
+            pThis->cursor = 0;
+            return 1;
+        } else if (pThis->escape_seq == _ESC_END) {
+            terminal_move_cursor(pThis, pThis->cmdlen - pThis->cursor);
+            pThis->cursor = pThis->cmdlen;
+            return 1;
+        }
+    }
 
-	/* unknown escape sequence, stop */
-	return 1;
+    /* unknown escape sequence, stop */
+    return 1;
 }
 #endif
 
 //*****************************************************************************
 // insert len char of text at cursor position
-static int microrl_insert_text (microrl_t * pThis, char * text, int len)
-{
-	int i;
-	if (pThis->cmdlen + len < _COMMAND_LINE_LEN) {
-		memmove (pThis->cmdline + pThis->cursor + len,
-						 pThis->cmdline + pThis->cursor,
-						 pThis->cmdlen - pThis->cursor);
-		for (i = 0; i < len; i++) {
-			pThis->cmdline [pThis->cursor + i] = text [i];
-		}
-		pThis->cursor += len;
-		pThis->cmdlen += len;
-		pThis->cmdline [pThis->cmdlen] = '\0';
-		return true;
-	}
-	return false;
+static int microrl_insert_text(microrl_t *pThis, char *text, int len) {
+    int i;
+    if (pThis->cmdlen + len < _COMMAND_LINE_LEN) {
+        memmove(pThis->cmdline + pThis->cursor + len, pThis->cmdline + pThis->cursor, pThis->cmdlen - pThis->cursor);
+        for (i = 0; i < len; i++) {
+            pThis->cmdline[pThis->cursor + i] = text[i];
+        }
+        pThis->cursor += len;
+        pThis->cmdlen += len;
+        pThis->cmdline[pThis->cmdlen] = '\0';
+        return true;
+    }
+    return false;
 }
 
 //*****************************************************************************
 // remove one char at cursor
-static void microrl_backspace (microrl_t * pThis)
-{
-	if (pThis->cursor > 0) {
-		terminal_backspace (pThis);
-		memmove (pThis->cmdline + pThis->cursor-1,
-						 pThis->cmdline + pThis->cursor,
-						 pThis->cmdlen-pThis->cursor+1);
-		pThis->cursor--;
-		pThis->cmdline [pThis->cmdlen] = '\0';
-		pThis->cmdlen--;
-	}
+static void microrl_backspace(microrl_t *pThis) {
+    if (pThis->cursor > 0) {
+        terminal_backspace(pThis);
+        memmove(pThis->cmdline + pThis->cursor - 1, pThis->cmdline + pThis->cursor, pThis->cmdlen - pThis->cursor + 1);
+        pThis->cursor--;
+        pThis->cmdline[pThis->cmdlen] = '\0';
+        pThis->cmdlen--;
+    }
 }
-
 
 #ifdef _USE_COMPLETE
 
 //*****************************************************************************
-static int common_len (char ** arr)
-{
-	int i;
-	int j;
-	char *shortest = arr[0];
-	int shortlen = strlen(shortest);
+static int common_len(char **arr) {
+    int i;
+    int j;
+    char *shortest = arr[0];
+    int shortlen = strlen(shortest);
 
-	for (i = 0; arr[i] != NULL; ++i)
-		if (strlen(arr[i]) < shortlen) {
-			shortest = arr[i];
-			shortlen = strlen(shortest);
-		}
+    for (i = 0; arr[i] != NULL; ++i)
+        if (strlen(arr[i]) < shortlen) {
+            shortest = arr[i];
+            shortlen = strlen(shortest);
+        }
 
-	for (i = 0; i < shortlen; ++i)
-		for (j = 0; arr[j] != 0; ++j)
-			if (shortest[i] != arr[j][i])
-				return i;
+    for (i = 0; i < shortlen; ++i)
+        for (j = 0; arr[j] != 0; ++j)
+            if (shortest[i] != arr[j][i])
+                return i;
 
-	return i;
+    return i;
 }
 
 //*****************************************************************************
-static void microrl_get_complite (microrl_t * pThis) 
-{
-	char const * tkn_arr[_COMMAND_TOKEN_NMB];
-	char ** compl_token; 
-	
-	if (pThis->get_completion == NULL) // callback was not set
-		return;
-	
-	int status = split (pThis, pThis->cursor, tkn_arr);
-	if (pThis->cmdline[pThis->cursor-1] == '\0')
-		tkn_arr[status++] = "";
-	compl_token = pThis->get_completion (status, tkn_arr);
-	if (compl_token[0] != NULL) {
-		int i = 0;
-		int len;
+static void microrl_get_complite(microrl_t *pThis) {
+    char const *tkn_arr[_COMMAND_TOKEN_NMB];
+    char **compl_token;
 
-		if (compl_token[1] == NULL) {
-			len = strlen (compl_token[0]);
-		} else {
-			len = common_len (compl_token);
-			terminal_newline (pThis);
-			while (compl_token [i] != NULL) {
-				printf (compl_token[i]);
-				printf (" ");
-				i++;
-			}
-			terminal_newline (pThis);
-			print_prompt (pThis);
-		}
-		
-		if (len) {
-			microrl_insert_text (pThis, compl_token[0] + strlen(tkn_arr[status-1]), 
-																	len - strlen(tkn_arr[status-1]));
-			if (compl_token[1] == NULL) 
-				microrl_insert_text (pThis, " ", 1);
-		}
-		terminal_reset_cursor (pThis);
-		terminal_print_line (pThis, 0, pThis->cursor);
-	} 
+    if (pThis->get_completion == NULL) // callback was not set
+        return;
+
+    int status = split(pThis, pThis->cursor, tkn_arr);
+    if (pThis->cmdline[pThis->cursor - 1] == '\0')
+        tkn_arr[status++] = "";
+    compl_token = pThis->get_completion(status, tkn_arr);
+    if (compl_token[0] != NULL) {
+        int i = 0;
+        int len;
+
+        if (compl_token[1] == NULL) {
+            len = strlen(compl_token[0]);
+        } else {
+            len = common_len(compl_token);
+            terminal_newline(pThis);
+            while (compl_token[i] != NULL) {
+                printf(compl_token[i]);
+                printf(" ");
+                i++;
+            }
+            terminal_newline(pThis);
+            print_prompt(pThis);
+        }
+
+        if (len) {
+            microrl_insert_text(pThis, compl_token[0] + strlen(tkn_arr[status - 1]), len - strlen(tkn_arr[status - 1]));
+            if (compl_token[1] == NULL)
+                microrl_insert_text(pThis, " ", 1);
+        }
+        terminal_reset_cursor(pThis);
+        terminal_print_line(pThis, 0, pThis->cursor);
+    }
 }
 #endif
 
 //*****************************************************************************
-int new_line_handler(microrl_t * pThis){
-	char const * tkn_arr [_COMMAND_TOKEN_NMB];
-	int status;
-	int bexit = 0;
+int new_line_handler(microrl_t *pThis) {
+    char const *tkn_arr[_COMMAND_TOKEN_NMB];
+    int status;
+    int bexit = 0;
 
-	terminal_newline (pThis);
+    terminal_newline(pThis);
 #ifdef _USE_HISTORY
-	if (pThis->cmdlen > 0)
-		hist_save_line (&pThis->ring_hist, pThis->cmdline, pThis->cmdlen);
+    if (pThis->cmdlen > 0)
+        hist_save_line(&pThis->ring_hist, pThis->cmdline, pThis->cmdlen);
 #endif
-	if (pThis->wait_newline) {
-		pThis->wait_newline = 0;
-		return 1;
-	}
-	else if (pThis->newline != NULL)
-		bexit = pThis->newline(pThis->cmdline);
-	else {
-	    status = split (pThis, pThis->cmdlen, tkn_arr);
-	    if (status == -1){
-	    	//          printf ("ERROR: Max token amount exseed\n");
-	    	printf ("ERROR:too many tokens");
-	    	printf (ENDL);
-	    }
-	    if ((status > 0) && (pThis->execute != NULL))
-	    	bexit = pThis->execute (status, tkn_arr);
-	}
+    if (pThis->wait_newline) {
+        pThis->wait_newline = 0;
+        return 1;
+    } else if (pThis->newline != NULL)
+        bexit = pThis->newline(pThis->cmdline);
+    else {
+        status = split(pThis, pThis->cmdlen, tkn_arr);
+        if (status == -1) {
+            //          printf ("ERROR: Max token amount exseed\n");
+            printf("ERROR:too many tokens");
+            printf(ENDL);
+        }
+        if ((status > 0) && (pThis->execute != NULL))
+            bexit = pThis->execute(status, tkn_arr);
+    }
 
-	if (!bexit)
-		print_prompt (pThis);
-	pThis->cmdlen = 0;
-	pThis->cursor = 0;
-	memset(pThis->cmdline, 0, _COMMAND_LINE_LEN);
+    if (!bexit)
+        print_prompt(pThis);
+    pThis->cmdlen = 0;
+    pThis->cursor = 0;
+    memset(pThis->cmdline, 0, _COMMAND_LINE_LEN);
 #ifdef _USE_HISTORY
-	pThis->ring_hist.cur = 0;
+    pThis->ring_hist.cur = 0;
 #endif
-	return 0;
+    return 0;
 }
 
-char *microrl_readline(microrl_t *pThis, const char *prompt)
-{
+char *microrl_readline(microrl_t *pThis, const char *prompt) {
     pThis->wait_newline = 1;
 
     printf(prompt);
@@ -592,8 +544,7 @@ char *microrl_readline(microrl_t *pThis, const char *prompt)
     return pThis->eot ? NULL : pThis->cmdline;
 }
 
-void microrl_free(microrl_t *pThis)
-{
+void microrl_free(microrl_t *pThis) {
     pThis->cmdlen = 0;
     pThis->cursor = 0;
     memset(pThis->cmdline, 0, _COMMAND_LINE_LEN);
@@ -604,141 +555,140 @@ void microrl_free(microrl_t *pThis)
 
 //*****************************************************************************
 
-void microrl_insert_char (microrl_t * pThis, int ch)
-{
+void microrl_insert_char(microrl_t *pThis, int ch) {
 #ifdef _USE_ESC_SEQ
-	if (pThis->escape) {
-		if (escape_process(pThis, ch))
-			pThis->escape = 0;
-	} else {
+    if (pThis->escape) {
+        if (escape_process(pThis, ch))
+            pThis->escape = 0;
+    } else {
 #endif
-		switch (ch) {
-			//-----------------------------------------------------
+        switch (ch) {
+            //-----------------------------------------------------
 #ifdef _ENDL_CR
-			case KEY_CR:
-				new_line_handler(pThis);
-			break;
-			case KEY_LF:
-			break;
+        case KEY_CR:
+            new_line_handler(pThis);
+            break;
+        case KEY_LF:
+            break;
 #elif defined(_ENDL_CRLF)
-			case KEY_CR:
-				pThis->tmpch = KEY_CR;
-			break;
-			case KEY_LF:
-			if (pThis->tmpch == KEY_CR)
-				new_line_handler(pThis);
-			break;
+    case KEY_CR:
+        pThis->tmpch = KEY_CR;
+        break;
+    case KEY_LF:
+        if (pThis->tmpch == KEY_CR)
+            new_line_handler(pThis);
+        break;
 #elif defined(_ENDL_LFCR)
-			case KEY_LF:
-				pThis->tmpch = KEY_LF;
-			break;
-			case KEY_CR:
-			if (pThis->tmpch == KEY_LF)
-				new_line_handler(pThis);
-			break;
+    case KEY_LF:
+        pThis->tmpch = KEY_LF;
+        break;
+    case KEY_CR:
+        if (pThis->tmpch == KEY_LF)
+            new_line_handler(pThis);
+        break;
 #else
-			case KEY_CR:
-			break;
-			case KEY_LF:
-				if (new_line_handler(pThis))
-					return;
-			break;
+    case KEY_CR:
+        break;
+    case KEY_LF:
+        if (new_line_handler(pThis))
+            return;
+        break;
 #endif
-			//-----------------------------------------------------
+            //-----------------------------------------------------
 #ifdef _USE_COMPLETE
-			case KEY_HT:
-				microrl_get_complite (pThis);
-			break;
+        case KEY_HT:
+            microrl_get_complite(pThis);
+            break;
 #endif
-			//-----------------------------------------------------
-			case KEY_ESC:
+        //-----------------------------------------------------
+        case KEY_ESC:
 #ifdef _USE_ESC_SEQ
-				pThis->escape = 1;
+            pThis->escape = 1;
 #endif
-			break;
-			//-----------------------------------------------------
-			case KEY_NAK: // ^U
-					while (pThis->cursor > 0) {
-					microrl_backspace (pThis);
-				}
-				terminal_print_line (pThis, 0, pThis->cursor);
-			break;
-			//-----------------------------------------------------
-			case KEY_VT:  // ^K
-				printf ("\033[K");
-				pThis->cmdlen = pThis->cursor;
-			break;
-			//-----------------------------------------------------
-			case KEY_ENQ: // ^E
-				terminal_move_cursor (pThis, pThis->cmdlen-pThis->cursor);
-				pThis->cursor = pThis->cmdlen;
-			break;
-			//-----------------------------------------------------
-			case KEY_SOH: // ^A
-				terminal_reset_cursor (pThis);
-				pThis->cursor = 0;
-			break;
-			//-----------------------------------------------------
-			case KEY_ACK: // ^F
-			if (pThis->cursor < pThis->cmdlen) {
-				terminal_move_cursor (pThis, 1);
-				pThis->cursor++;
-			}
-			break;
-			//-----------------------------------------------------
-			case KEY_STX: // ^B
-			if (pThis->cursor) {
-				terminal_move_cursor (pThis, -1);
-				pThis->cursor--;
-			}
-			break;
-			//-----------------------------------------------------
-			case KEY_DLE: //^P
+            break;
+        //-----------------------------------------------------
+        case KEY_NAK: // ^U
+            while (pThis->cursor > 0) {
+                microrl_backspace(pThis);
+            }
+            terminal_print_line(pThis, 0, pThis->cursor);
+            break;
+        //-----------------------------------------------------
+        case KEY_VT: // ^K
+            printf("\033[K");
+            pThis->cmdlen = pThis->cursor;
+            break;
+        //-----------------------------------------------------
+        case KEY_ENQ: // ^E
+            terminal_move_cursor(pThis, pThis->cmdlen - pThis->cursor);
+            pThis->cursor = pThis->cmdlen;
+            break;
+        //-----------------------------------------------------
+        case KEY_SOH: // ^A
+            terminal_reset_cursor(pThis);
+            pThis->cursor = 0;
+            break;
+        //-----------------------------------------------------
+        case KEY_ACK: // ^F
+            if (pThis->cursor < pThis->cmdlen) {
+                terminal_move_cursor(pThis, 1);
+                pThis->cursor++;
+            }
+            break;
+        //-----------------------------------------------------
+        case KEY_STX: // ^B
+            if (pThis->cursor) {
+                terminal_move_cursor(pThis, -1);
+                pThis->cursor--;
+            }
+            break;
+        //-----------------------------------------------------
+        case KEY_DLE: //^P
 #ifdef _USE_HISTORY
-			hist_search (pThis, _HIST_UP);
+            hist_search(pThis, _HIST_UP);
 #endif
-			break;
-			//-----------------------------------------------------
-			case KEY_SO: //^N
+            break;
+        //-----------------------------------------------------
+        case KEY_SO: //^N
 #ifdef _USE_HISTORY
-			hist_search (pThis, _HIST_DOWN);
+            hist_search(pThis, _HIST_DOWN);
 #endif
-			break;
-			//-----------------------------------------------------
-			case KEY_DEL: // Backspace
-			case KEY_BS: // ^U
-				microrl_backspace (pThis);
-				terminal_print_line (pThis, pThis->cursor, pThis->cursor);
-			break;
-			//-----------------------------------------------------
-			case KEY_DC2: // ^R
-				terminal_newline (pThis);
-				print_prompt (pThis);
-				terminal_reset_cursor (pThis);
-				terminal_print_line (pThis, 0, pThis->cursor);
-			break;
-			//-----------------------------------------------------
+            break;
+        //-----------------------------------------------------
+        case KEY_DEL: // Backspace
+        case KEY_BS:  // ^U
+            microrl_backspace(pThis);
+            terminal_print_line(pThis, pThis->cursor, pThis->cursor);
+            break;
+        //-----------------------------------------------------
+        case KEY_DC2: // ^R
+            terminal_newline(pThis);
+            print_prompt(pThis);
+            terminal_reset_cursor(pThis);
+            terminal_print_line(pThis, 0, pThis->cursor);
+            break;
+            //-----------------------------------------------------
 #ifdef _USE_CTLR_C
-			case KEY_ETX:
-			if (pThis->sigint != NULL)
-				pThis->sigint();
-			break;
+        case KEY_ETX:
+            if (pThis->sigint != NULL)
+                pThis->sigint();
+            break;
 #endif
-			case KEY_EOT:
-				pThis->eot = 1;
-				new_line_handler(pThis);
-				return;
+        case KEY_EOT:
+            pThis->eot = 1;
+            new_line_handler(pThis);
+            return;
 
-			//-----------------------------------------------------
-			default:
-			if (((ch == ' ') && (pThis->cmdlen == 0)) || IS_CONTROL_CHAR(ch))
-				break;
-			if (microrl_insert_text (pThis, (char*)&ch, 1))
-				terminal_print_line (pThis, pThis->cursor-1, pThis->cursor);
-			
-			break;
-		}
+        //-----------------------------------------------------
+        default:
+            if (((ch == ' ') && (pThis->cmdlen == 0)) || IS_CONTROL_CHAR(ch))
+                break;
+            if (microrl_insert_text(pThis, (char *)&ch, 1))
+                terminal_print_line(pThis, pThis->cursor - 1, pThis->cursor);
+
+            break;
+        }
 #ifdef _USE_ESC_SEQ
-	}
+    }
 #endif
 }

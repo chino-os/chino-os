@@ -11,19 +11,14 @@
 static microrl_t rl;
 static bool quit = false;
 
-static int repl_line(const char *line)
-{
-    if (strcmp(line, "QUIT") == 0)
-    {
+static int repl_line(const char *line) {
+    if (strcmp(line, "QUIT") == 0) {
         quit = true;
         return 1;
-    }
-    else
-    {
+    } else {
         basic_eval(line);
 
-        if (evaluate_last_error())
-        {
+        if (evaluate_last_error()) {
             printf("ERROR: %s\n", evaluate_last_error());
             clear_last_error();
         }
@@ -32,8 +27,7 @@ static int repl_line(const char *line)
     }
 }
 
-static void repl(void)
-{
+static void repl(void) {
     microrl_init(&rl);
     microrl_set_newline_callback(&rl, repl_line);
     rl.prompt_str = "\033[32m>\033[0m ";
@@ -49,27 +43,22 @@ static void repl(void)
     puts("READY.");
 
     microrl_prompt(&rl);
-    while (!quit)
-    {
+    while (!quit) {
         microrl_insert_char(&rl, toupper(getchar()));
     }
 }
 
-void run(char *file_name)
-{
+void run(char *file_name) {
     FILE *file = fopen(file_name, "r");
 
-    if (file == NULL)
-    {
+    if (file == NULL) {
         fprintf(stderr, "Can't open %s\n", file_name);
         return;
     }
 
     char line[tokenizer_string_length];
-    while (fgets(line, sizeof(line), file))
-    {
-        if (line[strlen(line) - 1] != '\n')
-        {
+    while (fgets(line, sizeof(line), file)) {
+        if (line[strlen(line) - 1] != '\n') {
             printf("ERROR: NO EOL\n");
             return;
         }
@@ -80,8 +69,7 @@ void run(char *file_name)
     basic_run();
 }
 
-int basic_main(int argc, char *argv[])
-{
+int basic_main(int argc, char *argv[]) {
     basic_init(1024 * 8, 2048);
 
     if (argc > 1)

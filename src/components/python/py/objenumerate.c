@@ -24,8 +24,8 @@
  * THE SOFTWARE.
  */
 
-#include <stdlib.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include "py/runtime.h"
 
@@ -42,16 +42,15 @@ STATIC mp_obj_t enumerate_iternext(mp_obj_t self_in);
 STATIC mp_obj_t enumerate_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
 #if MICROPY_CPYTHON_COMPAT
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_iterable, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-        { MP_QSTR_start, MP_ARG_INT, {.u_int = 0} },
+        {MP_QSTR_iterable, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL}},
+        {MP_QSTR_start, MP_ARG_INT, {.u_int = 0}},
     };
 
     // parse args
     struct {
         mp_arg_val_t iterable, start;
     } arg_vals;
-    mp_arg_parse_all_kw_array(n_args, n_kw, args,
-        MP_ARRAY_SIZE(allowed_args), allowed_args, (mp_arg_val_t*)&arg_vals);
+    mp_arg_parse_all_kw_array(n_args, n_kw, args, MP_ARRAY_SIZE(allowed_args), allowed_args, (mp_arg_val_t *)&arg_vals);
 
     // create enumerate object
     mp_obj_enumerate_t *o = m_new_obj(mp_obj_enumerate_t);
@@ -70,7 +69,7 @@ STATIC mp_obj_t enumerate_make_new(const mp_obj_type_t *type, size_t n_args, siz
 }
 
 const mp_obj_type_t mp_type_enumerate = {
-    { &mp_type_type },
+    {&mp_type_type},
     .name = MP_QSTR_enumerate,
     .make_new = enumerate_make_new,
     .iternext = enumerate_iternext,

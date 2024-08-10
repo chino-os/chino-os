@@ -26,8 +26,8 @@
 #ifndef MICROPY_INCLUDED_PY_REPL_H
 #define MICROPY_INCLUDED_PY_REPL_H
 
-#include "py/mpconfig.h"
 #include "py/misc.h"
+#include "py/mpconfig.h"
 #include "py/mpprint.h"
 
 #if MICROPY_HELPER_REPL

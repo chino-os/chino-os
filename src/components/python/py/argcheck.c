@@ -24,8 +24,8 @@
  * THE SOFTWARE.
  */
 
-#include <stdlib.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include "py/runtime.h"
 
@@ -51,8 +51,8 @@ void mp_arg_check_num_sig(size_t n_args, size_t n_kw, uint32_t sig) {
                 mp_arg_error_terse_mismatch();
             } else {
                 nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_TypeError,
-                    "function takes %d positional arguments but %d were given",
-                    n_args_min, n_args));
+                                                        "function takes %d positional arguments but %d were given",
+                                                        n_args_min, n_args));
             }
         }
     } else {
@@ -60,23 +60,22 @@ void mp_arg_check_num_sig(size_t n_args, size_t n_kw, uint32_t sig) {
             if (MICROPY_ERROR_REPORTING == MICROPY_ERROR_REPORTING_TERSE) {
                 mp_arg_error_terse_mismatch();
             } else {
-                nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_TypeError,
-                    "function missing %d required positional arguments",
-                    n_args_min - n_args));
+                nlr_raise(mp_obj_new_exception_msg_varg(
+                    &mp_type_TypeError, "function missing %d required positional arguments", n_args_min - n_args));
             }
         } else if (n_args > n_args_max) {
             if (MICROPY_ERROR_REPORTING == MICROPY_ERROR_REPORTING_TERSE) {
                 mp_arg_error_terse_mismatch();
             } else {
-                nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_TypeError,
-                    "function expected at most %d arguments, got %d",
-                    n_args_max, n_args));
+                nlr_raise(mp_obj_new_exception_msg_varg(
+                    &mp_type_TypeError, "function expected at most %d arguments, got %d", n_args_max, n_args));
             }
         }
     }
 }
 
-void mp_arg_parse_all(size_t n_pos, const mp_obj_t *pos, mp_map_t *kws, size_t n_allowed, const mp_arg_t *allowed, mp_arg_val_t *out_vals) {
+void mp_arg_parse_all(size_t n_pos, const mp_obj_t *pos, mp_map_t *kws, size_t n_allowed, const mp_arg_t *allowed,
+                      mp_arg_val_t *out_vals) {
     size_t pos_found = 0, kws_found = 0;
     for (size_t i = 0; i < n_allowed; i++) {
         mp_obj_t given_arg;
@@ -93,8 +92,8 @@ void mp_arg_parse_all(size_t n_pos, const mp_obj_t *pos, mp_map_t *kws, size_t n
                     if (MICROPY_ERROR_REPORTING == MICROPY_ERROR_REPORTING_TERSE) {
                         mp_arg_error_terse_mismatch();
                     } else {
-                        nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_TypeError,
-                            "'%q' argument required", allowed[i].qst));
+                        nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_TypeError, "'%q' argument required",
+                                                                allowed[i].qst));
                     }
                 }
                 out_vals[i] = allowed[i].defval;
@@ -114,7 +113,7 @@ void mp_arg_parse_all(size_t n_pos, const mp_obj_t *pos, mp_map_t *kws, size_t n
         }
     }
     if (pos_found < n_pos) {
-        extra_positional:
+    extra_positional:
         if (MICROPY_ERROR_REPORTING == MICROPY_ERROR_REPORTING_TERSE) {
             mp_arg_error_terse_mismatch();
         } else {
@@ -132,15 +131,14 @@ void mp_arg_parse_all(size_t n_pos, const mp_obj_t *pos, mp_map_t *kws, size_t n
     }
 }
 
-void mp_arg_parse_all_kw_array(size_t n_pos, size_t n_kw, const mp_obj_t *args, size_t n_allowed, const mp_arg_t *allowed, mp_arg_val_t *out_vals) {
+void mp_arg_parse_all_kw_array(size_t n_pos, size_t n_kw, const mp_obj_t *args, size_t n_allowed,
+                               const mp_arg_t *allowed, mp_arg_val_t *out_vals) {
     mp_map_t kw_args;
     mp_map_init_fixed_table(&kw_args, n_kw, args + n_pos);
     mp_arg_parse_all(n_pos, args, &kw_args, n_allowed, allowed, out_vals);
 }
 
-NORETURN void mp_arg_error_terse_mismatch(void) {
-    mp_raise_TypeError("argument num/types mismatch");
-}
+NORETURN void mp_arg_error_terse_mismatch(void) { mp_raise_TypeError("argument num/types mismatch"); }
 
 #if MICROPY_CPYTHON_COMPAT
 NORETURN void mp_arg_error_unimpl_kw(void) {

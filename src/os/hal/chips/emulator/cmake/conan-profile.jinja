@@ -1,0 +1,14 @@
+[conf]
+tools.cmake.cmaketoolchain:user_toolchain+={{ os.path.join(profile_dir, "toolchain.cmake") }}
+
+[settings]
+arch=x86_64
+build_type=Release
+compiler=msvc
+compiler.cppstd=20
+compiler.runtime=static
+compiler.version=194
+os=Windows
+
+[options]
+board=emulator

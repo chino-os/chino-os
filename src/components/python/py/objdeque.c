@@ -24,8 +24,8 @@
  * THE SOFTWARE.
  */
 
-#include <unistd.h> // for ssize_t
 #include <string.h>
+#include <unistd.h> // for ssize_t
 
 #include "py/mpconfig.h"
 #if MICROPY_PY_COLLECTIONS_DEQUE
@@ -39,7 +39,7 @@ typedef struct _mp_obj_deque_t {
     size_t i_put;
     mp_obj_t *items;
     uint32_t flags;
-    #define FLAG_CHECK_OVERFLOW 1
+#define FLAG_CHECK_OVERFLOW 1
 } mp_obj_deque_t;
 
 STATIC mp_obj_t deque_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
@@ -73,23 +73,23 @@ STATIC mp_obj_t deque_make_new(const mp_obj_type_t *type, size_t n_args, size_t 
 STATIC mp_obj_t deque_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
     mp_obj_deque_t *self = MP_OBJ_TO_PTR(self_in);
     switch (op) {
-        case MP_UNARY_OP_BOOL:
-            return mp_obj_new_bool(self->i_get != self->i_put);
-        case MP_UNARY_OP_LEN: {
-            ssize_t len = self->i_put - self->i_get;
-            if (len < 0) {
-                len += self->alloc;
-            }
-            return MP_OBJ_NEW_SMALL_INT(len);
+    case MP_UNARY_OP_BOOL:
+        return mp_obj_new_bool(self->i_get != self->i_put);
+    case MP_UNARY_OP_LEN: {
+        ssize_t len = self->i_put - self->i_get;
+        if (len < 0) {
+            len += self->alloc;
         }
-        #if MICROPY_PY_SYS_GETSIZEOF
-        case MP_UNARY_OP_SIZEOF: {
-            size_t sz = sizeof(*self) + sizeof(mp_obj_t) * self->alloc;
-            return MP_OBJ_NEW_SMALL_INT(sz);
-        }
-        #endif
-        default:
-            return MP_OBJ_NULL; // op not supported
+        return MP_OBJ_NEW_SMALL_INT(len);
+    }
+#if MICROPY_PY_SYS_GETSIZEOF
+    case MP_UNARY_OP_SIZEOF: {
+        size_t sz = sizeof(*self) + sizeof(mp_obj_t) * self->alloc;
+        return MP_OBJ_NEW_SMALL_INT(sz);
+    }
+#endif
+    default:
+        return MP_OBJ_NULL; // op not supported
     }
 }
 
@@ -147,21 +147,21 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(deque_clear_obj, deque_clear);
 #endif
 
 STATIC const mp_rom_map_elem_t deque_locals_dict_table[] = {
-    { MP_ROM_QSTR(MP_QSTR_append), MP_ROM_PTR(&deque_append_obj) },
-    #if 0
+    {MP_ROM_QSTR(MP_QSTR_append), MP_ROM_PTR(&deque_append_obj)},
+#if 0
     { MP_ROM_QSTR(MP_QSTR_clear), MP_ROM_PTR(&deque_clear_obj) },
-    #endif
-    { MP_ROM_QSTR(MP_QSTR_popleft), MP_ROM_PTR(&deque_popleft_obj) },
+#endif
+    {MP_ROM_QSTR(MP_QSTR_popleft), MP_ROM_PTR(&deque_popleft_obj)},
 };
 
 STATIC MP_DEFINE_CONST_DICT(deque_locals_dict, deque_locals_dict_table);
 
 const mp_obj_type_t mp_type_deque = {
-    { &mp_type_type },
+    {&mp_type_type},
     .name = MP_QSTR_deque,
     .make_new = deque_make_new,
     .unary_op = deque_unary_op,
-    .locals_dict = (mp_obj_dict_t*)&deque_locals_dict,
+    .locals_dict = (mp_obj_dict_t *)&deque_locals_dict,
 };
 
 #endif // MICROPY_PY_COLLECTIONS_DEQUE

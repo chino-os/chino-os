@@ -39,7 +39,8 @@ void mp_emit_common_get_id_for_modification(scope_t *scope, qstr qst) {
     }
 }
 
-void mp_emit_common_id_op(emit_t *emit, const mp_emit_method_table_id_ops_t *emit_method_table, scope_t *scope, qstr qst) {
+void mp_emit_common_id_op(emit_t *emit, const mp_emit_method_table_id_ops_t *emit_method_table, scope_t *scope,
+                          qstr qst) {
     // assumes pass is greater than 1, ie that all identifiers are defined in the scope
 
     id_info_t *id = scope_find(scope, qst);

@@ -79,7 +79,7 @@ extern "C" {
 
 #if defined(_AMD64_) || defined(_ARM_) || defined(_ARM64_)
 #pragma warning(push)
-#pragma warning(disable:4127)
+#pragma warning(disable : 4127)
 #endif
 
 #if defined(_X86_)
@@ -91,32 +91,25 @@ extern "C" {
 #define WSTR_ALIGNED(s) TRUE
 
 #define ua_CharUpperW CharUpperW
-#define ua_lstrcmpiW  lstrcmpiW
-#define ua_lstrcmpW   lstrcmpW
-#define ua_lstrlenW   lstrlenW
-#define ua_wcschr     wcschr
-#define ua_wcsicmp    wcsicmp
-#define ua_wcslen     wcslen
-#define ua_wcsrchr    wcsrchr
+#define ua_lstrcmpiW lstrcmpiW
+#define ua_lstrcmpW lstrcmpW
+#define ua_lstrlenW lstrlenW
+#define ua_wcschr wcschr
+#define ua_wcsicmp wcsicmp
+#define ua_wcslen wcslen
+#define ua_wcsrchr wcsrchr
 #if _STRALIGN_USE_SECURE_CRT
-#define ua_wcscpy_s   wcscpy_s
+#define ua_wcscpy_s wcscpy_s
 #endif
 
-__inline
-PUWSTR
-static
-_WINDOWS_INSECURE_DEPRECATE
-ua_wcscpy(
-    _Out_writes_(_Inexpressible_("Sufficient length")) PUWSTR  Destination,
-    _In_ PCUWSTR Source
-    )
-{
+__inline PUWSTR static _WINDOWS_INSECURE_DEPRECATE
+ua_wcscpy(_Out_writes_(_Inexpressible_("Sufficient length")) PUWSTR Destination, _In_ PCUWSTR Source) {
 #pragma warning(push)
-#pragma warning(disable:4995)
-#pragma warning(disable:4996)
+#pragma warning(disable : 4995)
+#pragma warning(disable : 4996)
 #ifdef _PREFAST_
-#pragma warning(disable:28719) // This function (ua_wcscpy) is also tagged as insecure and deprecated
-#endif // _PREFAST_
+#pragma warning(disable : 28719) // This function (ua_wcscpy) is also tagged as insecure and deprecated
+#endif                           // _PREFAST_
     return wcscpy(Destination, Source);
 #pragma warning(pop)
 }
@@ -138,7 +131,7 @@ ua_wcscpy(
 
 #else
 
-#define WSTR_ALIGNED(s) (((DWORD_PTR)(s) & (sizeof(WCHAR)-1)) == 0)
+#define WSTR_ALIGNED(s) (((DWORD_PTR)(s) & (sizeof(WCHAR) - 1)) == 0)
 
 #endif
 
@@ -150,63 +143,26 @@ ua_wcscpy(
 
 LPUWSTR
 WINAPI
-uaw_CharUpperW(
-    _Inout_ LPUWSTR String
-    );
+uaw_CharUpperW(_Inout_ LPUWSTR String);
 
-int
-APIENTRY
-uaw_lstrcmpW(
-    _In_ PCUWSTR String1,
-    _In_ PCUWSTR String2
-    );
+int APIENTRY uaw_lstrcmpW(_In_ PCUWSTR String1, _In_ PCUWSTR String2);
 
-int
-APIENTRY
-uaw_lstrcmpiW(
-    _In_ PCUWSTR String1,
-    _In_ PCUWSTR String2
-    );
+int APIENTRY uaw_lstrcmpiW(_In_ PCUWSTR String1, _In_ PCUWSTR String2);
 
-int
-WINAPI
-uaw_lstrlenW(
-    _In_ LPCUWSTR String
-    );
+int WINAPI uaw_lstrlenW(_In_ LPCUWSTR String);
 
 PUWSTR
-__cdecl
-uaw_wcschr(
-    _In_ PCUWSTR String,
-    _In_ WCHAR   Character
-    );
+__cdecl uaw_wcschr(_In_ PCUWSTR String, _In_ WCHAR Character);
 
 PUWSTR
-__cdecl
-uaw_wcscpy(
-    _Out_writes_(_Inexpressible_("Sufficient length")) PUWSTR  Destination,
-    _In_  PCUWSTR Source
-    );
+__cdecl uaw_wcscpy(_Out_writes_(_Inexpressible_("Sufficient length")) PUWSTR Destination, _In_ PCUWSTR Source);
 
-int
-__cdecl
-uaw_wcsicmp(
-    _In_ PCUWSTR String1,
-    _In_ PCUWSTR String2
-    );
+int __cdecl uaw_wcsicmp(_In_ PCUWSTR String1, _In_ PCUWSTR String2);
 
-size_t
-__cdecl
-uaw_wcslen(
-    _In_ PCUWSTR String
-    );
+size_t __cdecl uaw_wcslen(_In_ PCUWSTR String);
 
 PUWSTR
-__cdecl
-uaw_wcsrchr(
-    _In_ PCUWSTR String,
-    _In_ WCHAR   Character
-    );
+__cdecl uaw_wcsrchr(_In_ PCUWSTR String, _In_ WCHAR Character);
 
 //
 // Following are the inline wrappers that determine the optimal worker function
@@ -216,68 +172,42 @@ uaw_wcsrchr(
 //
 
 #if defined(CharUpper)
-__inline
-LPUWSTR
-static
-ua_CharUpperW(
-    _Inout_ LPUWSTR String
-    )
-{
+__inline LPUWSTR static ua_CharUpperW(_Inout_ LPUWSTR String) {
     if (WSTR_ALIGNED(String)) {
-        return CharUpperW( (PWSTR)String );
+        return CharUpperW((PWSTR)String);
     } else {
-        return uaw_CharUpperW( String );
+        return uaw_CharUpperW(String);
     }
 }
 #endif
 
 #if defined(lstrcmp)
-__inline
-int
-static
-ua_lstrcmpW(
-    _In_ LPCUWSTR String1,
-    _In_ LPCUWSTR String2
-    )
-{
+__inline int static ua_lstrcmpW(_In_ LPCUWSTR String1, _In_ LPCUWSTR String2) {
     if (WSTR_ALIGNED(String1) && WSTR_ALIGNED(String2)) {
-        return lstrcmpW( (LPCWSTR)String1, (LPCWSTR)String2);
+        return lstrcmpW((LPCWSTR)String1, (LPCWSTR)String2);
     } else {
-        return uaw_lstrcmpW( String1, String2 );
+        return uaw_lstrcmpW(String1, String2);
     }
 }
 #endif
 
 #if defined(lstrcmpi)
-__inline
-int
-static
-ua_lstrcmpiW(
-    _In_ LPCUWSTR String1,
-    _In_ LPCUWSTR String2
-    )
-{
+__inline int static ua_lstrcmpiW(_In_ LPCUWSTR String1, _In_ LPCUWSTR String2) {
     if (WSTR_ALIGNED(String1) && WSTR_ALIGNED(String2)) {
-        return lstrcmpiW( (LPCWSTR)String1, (LPCWSTR)String2 );
+        return lstrcmpiW((LPCWSTR)String1, (LPCWSTR)String2);
     } else {
-        return uaw_lstrcmpiW( String1, String2 );
+        return uaw_lstrcmpiW(String1, String2);
     }
 }
 #endif
 
 #if defined(lstrlen)
-__inline
-int
-static
-ua_lstrlenW(
-    _In_ LPCUWSTR String
-    )
-{
+__inline int static ua_lstrlenW(_In_ LPCUWSTR String) {
     if (WSTR_ALIGNED(String)) {
-#pragma warning(suppress: 28750) // use of deprecated API
-        return lstrlenW( (PCWSTR)String );
+#pragma warning(suppress : 28750) // use of deprecated API
+        return lstrlenW((PCWSTR)String);
     } else {
-        return uaw_lstrlenW( String );
+        return uaw_lstrlenW(String);
     }
 }
 #endif
@@ -322,14 +252,7 @@ typedef WCHAR UNALIGNED *PUWSTR_C;
 // Here is flavor 1 or 2
 //
 
-__inline
-PUWSTR_C
-static
-ua_wcschr(
-    _In_ PCUWSTR String,
-    _In_ WCHAR   Character
-    )
-{
+__inline PUWSTR_C static ua_wcschr(_In_ PCUWSTR String, _In_ WCHAR Character) {
     if (WSTR_ALIGNED(String)) {
         return wcschr((PCWSTR)String, Character);
     } else {
@@ -337,14 +260,7 @@ ua_wcschr(
     }
 }
 
-__inline
-PUWSTR_C
-static
-ua_wcsrchr(
-    _In_ PCUWSTR String,
-    _In_ WCHAR   Character
-    )
-{
+__inline PUWSTR_C static ua_wcsrchr(_In_ PCUWSTR String, _In_ WCHAR Character) {
     if (WSTR_ALIGNED(String)) {
         return wcsrchr((PCWSTR)String, Character);
     } else {
@@ -358,51 +274,29 @@ ua_wcsrchr(
 // Here is flavor 3
 //
 
-__inline
-PUWSTR
-static
-_WINDOWS_INSECURE_DEPRECATE
-ua_wcschr(
-    _In_ PUWSTR String,
-    _In_ WCHAR  Character
-    )
-{
+__inline PUWSTR static _WINDOWS_INSECURE_DEPRECATE ua_wcschr(_In_ PUWSTR String, _In_ WCHAR Character) {
     if (WSTR_ALIGNED(String)) {
 #pragma warning(push)
-#pragma warning(disable:4995)
-#pragma warning(disable:4996)
-        return wcscpy( (PWSTR)Destination, (PCWSTR)Source );
+#pragma warning(disable : 4995)
+#pragma warning(disable : 4996)
+        return wcscpy((PWSTR)Destination, (PCWSTR)Source);
 #pragma warning(pop)
     } else {
-        return uaw_wcscpy( Destination, Source );
+        return uaw_wcscpy(Destination, Source);
     }
 }
 
-__inline
-PUWSTR
-static
-ua_wcscpy_s(
-    _Out_writes_(DestinationSize) PUWSTR  Destination,
-    _In_ size_t  DestinationSize,
-    _In_ PCUWSTR Source
-    )
-{
+__inline PUWSTR static ua_wcscpy_s(_Out_writes_(DestinationSize) PUWSTR Destination, _In_ size_t DestinationSize,
+                                   _In_ PCUWSTR Source) {
     if (WSTR_ALIGNED(Source) && WSTR_ALIGNED(Destination)) {
-        return (wcscpy_s( (PWSTR)Destination, DestinationSize, (PCWSTR)Source ) == 0 ? Destination : NULL);
+        return (wcscpy_s((PWSTR)Destination, DestinationSize, (PCWSTR)Source) == 0 ? Destination : NULL);
     } else {
         /* TODO : Need to reference uaw_wcscpy_s */
         return uaw_wcscpy((PCUWSTR)String, Character);
     }
 }
 
-__inline
-PUWSTR
-static
-ua_wcsrchr(
-    _In_ PUWSTR String,
-    _In_ WCHAR  Character
-    )
-{
+__inline PUWSTR static ua_wcsrchr(_In_ PUWSTR String, _In_ WCHAR Character) {
     if (WSTR_ALIGNED(String)) {
         return wcsrchr(String, Character);
     } else {
@@ -410,83 +304,55 @@ ua_wcsrchr(
     }
 }
 
-#endif  // __cplusplus && _WConst_Return
+#endif // __cplusplus && _WConst_Return
 
-__inline
-PUWSTR
-static
-_WINDOWS_INSECURE_DEPRECATE
-ua_wcscpy(
-    _Out_writes_(_Inexpressible_("Sufficient length")) PUWSTR  Destination,
-    _In_ PCUWSTR Source
-    )
-{
+__inline PUWSTR static _WINDOWS_INSECURE_DEPRECATE
+ua_wcscpy(_Out_writes_(_Inexpressible_("Sufficient length")) PUWSTR Destination, _In_ PCUWSTR Source) {
     if (WSTR_ALIGNED(Source) && WSTR_ALIGNED(Destination)) {
 #pragma warning(push)
-#pragma warning(disable:4995)
-#pragma warning(disable:4996)
+#pragma warning(disable : 4995)
+#pragma warning(disable : 4996)
 #ifdef _PREFAST_
-#pragma warning(disable:28719) // This function (ua_wcscpy) is also tagged as insecure and deprecated
-#endif // _PREFAST_
-        return wcscpy( (PWSTR)Destination, (PCWSTR)Source );
+#pragma warning(disable : 28719) // This function (ua_wcscpy) is also tagged as insecure and deprecated
+#endif                           // _PREFAST_
+        return wcscpy((PWSTR)Destination, (PCWSTR)Source);
 #pragma warning(pop)
     } else {
-        return uaw_wcscpy( Destination, Source );
+        return uaw_wcscpy(Destination, Source);
     }
 }
 
-
 #if _STRALIGN_USE_SECURE_CRT
-__inline
-PUWSTR
-static
-ua_wcscpy_s(
-    _Out_writes_(DestinationSize) PUWSTR Destination,
-    _In_ size_t  DestinationSize,
-    _In_ PCUWSTR Source
-    )
-{
+__inline PUWSTR static ua_wcscpy_s(_Out_writes_(DestinationSize) PUWSTR Destination, _In_ size_t DestinationSize,
+                                   _In_ PCUWSTR Source) {
     if (WSTR_ALIGNED(Source) && WSTR_ALIGNED(Destination)) {
-        return (wcscpy_s( (PWSTR)Destination, DestinationSize, (PCWSTR)Source ) == 0 ? Destination : NULL);
+        return (wcscpy_s((PWSTR)Destination, DestinationSize, (PCWSTR)Source) == 0 ? Destination : NULL);
     } else {
         /* TODO: Need to reference uaw_wcscpy_s */
-        return uaw_wcscpy( Destination, Source );
+        return uaw_wcscpy(Destination, Source);
     }
 }
 #endif
 
-__inline
-size_t
-static
-ua_wcslen(
-    _In_ PCUWSTR String
-    )
-{
+__inline size_t static ua_wcslen(_In_ PCUWSTR String) {
     if (WSTR_ALIGNED(String)) {
-        return wcslen( (PCWSTR)String );
+        return wcslen((PCWSTR)String);
     } else {
-        return uaw_wcslen( String );
+        return uaw_wcslen(String);
     }
 }
 
-#endif  // defined(_INC_STRING) || defined(_INC_WCHAR)
+#endif // defined(_INC_STRING) || defined(_INC_WCHAR)
 
-__inline
-int
-static
-ua_wcsicmp(
-    _In_ PCUWSTR String1,
-    _In_ PCUWSTR String2
-    )
-{
+__inline int static ua_wcsicmp(_In_ PCUWSTR String1, _In_ PCUWSTR String2) {
     if (WSTR_ALIGNED(String1) && WSTR_ALIGNED(String2)) {
         return lstrcmpiW((LPCWSTR)String1, (LPCWSTR)String2);
     } else {
-        return uaw_wcsicmp( String1, String2 );
+        return uaw_wcsicmp(String1, String2);
     }
 }
 
-#endif  // _X86_
+#endif // _X86_
 
 //++
 //
@@ -559,8 +425,8 @@ ua_wcsicmp(
 #define __UA_WCSLEN ua_wcslen
 #endif
 
-#define __UA_WSTRSIZE(s)    ((__UA_WCSLEN(s)+1)*sizeof(WCHAR))
-#define __UA_STACKCOPY(p,s) memcpy_s(_alloca(s),s,p,s)
+#define __UA_WSTRSIZE(s) ((__UA_WCSLEN(s) + 1) * sizeof(WCHAR))
+#define __UA_STACKCOPY(p, s) memcpy_s(_alloca(s), s, p, s)
 
 //
 // Note that NULL is aligned.
@@ -568,7 +434,7 @@ ua_wcsicmp(
 
 #if defined(_AMD64_) || defined(_ARM_) || defined(_ARM64_) || defined(_X86_)
 
-#define WSTR_ALIGNED_STACK_COPY(d,s) (*(d) = (PCWSTR)(s))
+#define WSTR_ALIGNED_STACK_COPY(d, s) (*(d) = (PCWSTR)(s))
 
 #else
 
@@ -577,26 +443,26 @@ ua_wcsicmp(
 // the _alloca() will not be preserved upon return from the function.
 //
 
-#define WSTR_ALIGNED_STACK_COPY(d,s)                                \
-    {                                                               \
-        PCUWSTR __ua_src;                                           \
-        size_t  __ua_size;                                          \
-        PWSTR  __ua_dst;                                            \
-                                                                    \
-        __ua_src = (s);                                             \
-        if (WSTR_ALIGNED(__ua_src)) {                               \
-            __ua_dst = (PWSTR)__ua_src;                             \
-        } else {                                                    \
-            __ua_size = __UA_WSTRSIZE(__ua_src);                    \
-            __ua_dst = (PWSTR)_alloca(__ua_size);                   \
-            memcpy_s(__ua_dst,__ua_size,__ua_src,__ua_size);          \
-        }                                                           \
-        *(d) = (PCWSTR)__ua_dst;                                    \
+#define WSTR_ALIGNED_STACK_COPY(d, s)                                                                                  \
+    {                                                                                                                  \
+        PCUWSTR __ua_src;                                                                                              \
+        size_t __ua_size;                                                                                              \
+        PWSTR __ua_dst;                                                                                                \
+                                                                                                                       \
+        __ua_src = (s);                                                                                                \
+        if (WSTR_ALIGNED(__ua_src)) {                                                                                  \
+            __ua_dst = (PWSTR)__ua_src;                                                                                \
+        } else {                                                                                                       \
+            __ua_size = __UA_WSTRSIZE(__ua_src);                                                                       \
+            __ua_dst = (PWSTR)_alloca(__ua_size);                                                                      \
+            memcpy_s(__ua_dst, __ua_size, __ua_src, __ua_size);                                                        \
+        }                                                                                                              \
+        *(d) = (PCWSTR)__ua_dst;                                                                                       \
     }
 
 #endif
 
-#define ASTR_ALIGNED_STACK_COPY(d,s) (*(d) = (PCSTR)(s))
+#define ASTR_ALIGNED_STACK_COPY(d, s) (*(d) = (PCSTR)(s))
 
 //++
 //
@@ -630,47 +496,44 @@ ua_wcsicmp(
 
 #if !defined(_AMD64_) && !defined(_ARM_) && !defined(_ARM64_) && !defined(_X86_)
 
-#define __UA_STRUC_ALIGNED(t,s) \
-    (((DWORD_PTR)(s) & (TYPE_ALIGNMENT(t)-1)) == 0)
+#define __UA_STRUC_ALIGNED(t, s) (((DWORD_PTR)(s) & (TYPE_ALIGNMENT(t) - 1)) == 0)
 
-#define STRUC_ALIGNED_STACK_COPY(t,s) \
-    __UA_STRUC_ALIGNED(t,s) ?   \
-        ((t const *)(s)) :      \
-        ((t const *)__UA_STACKCOPY((s),sizeof(t)))
+#define STRUC_ALIGNED_STACK_COPY(t, s)                                                                                 \
+    __UA_STRUC_ALIGNED(t, s) ? ((t const *)(s)) : ((t const *)__UA_STACKCOPY((s), sizeof(t)))
 
 #else
 
-#define STRUC_ALIGNED_STACK_COPY(t,s) ((CONST t *)(s))
+#define STRUC_ALIGNED_STACK_COPY(t, s) ((CONST t *)(s))
 
 #endif
 
 #if defined(UNICODE)
 
-#define TSTR_ALIGNED_STACK_COPY(d,s)    WSTR_ALIGNED_STACK_COPY(d,s)
-#define TSTR_ALIGNED(x)                 WSTR_ALIGNED(x)
-#define ua_CharUpper                    ua_CharUpperW
-#define ua_lstrcmp                      ua_lstrcmpW
-#define ua_lstrcmpi                     ua_lstrcmpiW
-#define ua_lstrlen                      ua_lstrlenW
-#define ua_tcscpy                       ua_wcscpy
+#define TSTR_ALIGNED_STACK_COPY(d, s) WSTR_ALIGNED_STACK_COPY(d, s)
+#define TSTR_ALIGNED(x) WSTR_ALIGNED(x)
+#define ua_CharUpper ua_CharUpperW
+#define ua_lstrcmp ua_lstrcmpW
+#define ua_lstrcmpi ua_lstrcmpiW
+#define ua_lstrlen ua_lstrlenW
+#define ua_tcscpy ua_wcscpy
 #if _STRALIGN_USE_SECURE_CRT
-#define ua_tcscpy_s                     ua_wcscpy_s
+#define ua_tcscpy_s ua_wcscpy_s
 #endif
 
 #else
 
-#define TSTR_ALIGNED_STACK_COPY(d,s)    ASTR_ALIGNED_STACK_COPY(d,s)
-#define TSTR_ALIGNED(x)                 TRUE
-#define ua_CharUpper                    CharUpperA
-#define ua_lstrcmp                      lstrcmpA
-#define ua_lstrcmpi                     lstrcmpiA
-#define ua_lstrlen                      lstrlenA
-#define ua_tcscpy                       strcpy
+#define TSTR_ALIGNED_STACK_COPY(d, s) ASTR_ALIGNED_STACK_COPY(d, s)
+#define TSTR_ALIGNED(x) TRUE
+#define ua_CharUpper CharUpperA
+#define ua_lstrcmp lstrcmpA
+#define ua_lstrcmpi lstrcmpiA
+#define ua_lstrlen lstrlenA
+#define ua_tcscpy strcpy
 #if _STRALIGN_USE_SECURE_CRT
-#define ua_tcscpy_s                     strcpy_s
+#define ua_tcscpy_s strcpy_s
 #endif
 
-#endif  // UNICODE
+#endif // UNICODE
 
 #if defined(_AMD64_) || defined(_ARM_) || defined(_ARM64_)
 #pragma warning(pop)
@@ -683,12 +546,4 @@ ua_wcsicmp(
 }
 #endif
 
-#endif  // __STRALIGN_H_
-
-
-
-
-
-
-
-
+#endif // __STRALIGN_H_

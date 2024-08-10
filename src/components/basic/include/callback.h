@@ -3,12 +3,10 @@
 
 #include <stdbool.h>
 
-typedef struct
-error
-{
-  int error;
+typedef struct error {
+    int error;
 };
 
-typedef bool (*callback)(error err, void* data);
+typedef bool (*callback)(error err, void *data);
 
 #endif // __CALLBACK_H__

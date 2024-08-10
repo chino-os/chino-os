@@ -49,29 +49,21 @@
 
 // table of attributes for ascii characters
 STATIC const uint8_t attr[] = {
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, AT_SP, AT_SP, AT_SP, AT_SP, AT_SP, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    AT_SP, AT_PR, AT_PR, AT_PR, AT_PR, AT_PR, AT_PR, AT_PR,
-    AT_PR, AT_PR, AT_PR, AT_PR, AT_PR, AT_PR, AT_PR, AT_PR,
-    AT_DI, AT_DI, AT_DI, AT_DI, AT_DI, AT_DI, AT_DI, AT_DI,
-    AT_DI, AT_DI, AT_PR, AT_PR, AT_PR, AT_PR, AT_PR, AT_PR,
-    AT_PR, AT_UX, AT_UX, AT_UX, AT_UX, AT_UX, AT_UX, AT_UP,
-    AT_UP, AT_UP, AT_UP, AT_UP, AT_UP, AT_UP, AT_UP, AT_UP,
-    AT_UP, AT_UP, AT_UP, AT_UP, AT_UP, AT_UP, AT_UP, AT_UP,
-    AT_UP, AT_UP, AT_UP, AT_PR, AT_PR, AT_PR, AT_PR, AT_PR,
-    AT_PR, AT_LX, AT_LX, AT_LX, AT_LX, AT_LX, AT_LX, AT_LO,
-    AT_LO, AT_LO, AT_LO, AT_LO, AT_LO, AT_LO, AT_LO, AT_LO,
-    AT_LO, AT_LO, AT_LO, AT_LO, AT_LO, AT_LO, AT_LO, AT_LO,
-    AT_LO, AT_LO, AT_LO, AT_PR, AT_PR, AT_PR, AT_PR, 0
-};
+    0,     0,     0,     0,     0,     0,     0,     0,     0,     AT_SP, AT_SP, AT_SP, AT_SP, AT_SP, 0,     0,
+    0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+    AT_SP, AT_PR, AT_PR, AT_PR, AT_PR, AT_PR, AT_PR, AT_PR, AT_PR, AT_PR, AT_PR, AT_PR, AT_PR, AT_PR, AT_PR, AT_PR,
+    AT_DI, AT_DI, AT_DI, AT_DI, AT_DI, AT_DI, AT_DI, AT_DI, AT_DI, AT_DI, AT_PR, AT_PR, AT_PR, AT_PR, AT_PR, AT_PR,
+    AT_PR, AT_UX, AT_UX, AT_UX, AT_UX, AT_UX, AT_UX, AT_UP, AT_UP, AT_UP, AT_UP, AT_UP, AT_UP, AT_UP, AT_UP, AT_UP,
+    AT_UP, AT_UP, AT_UP, AT_UP, AT_UP, AT_UP, AT_UP, AT_UP, AT_UP, AT_UP, AT_UP, AT_PR, AT_PR, AT_PR, AT_PR, AT_PR,
+    AT_PR, AT_LX, AT_LX, AT_LX, AT_LX, AT_LX, AT_LX, AT_LO, AT_LO, AT_LO, AT_LO, AT_LO, AT_LO, AT_LO, AT_LO, AT_LO,
+    AT_LO, AT_LO, AT_LO, AT_LO, AT_LO, AT_LO, AT_LO, AT_LO, AT_LO, AT_LO, AT_LO, AT_PR, AT_PR, AT_PR, AT_PR, 0};
 
 #if MICROPY_PY_BUILTINS_STR_UNICODE
 
 unichar utf8_get_char(const byte *s) {
     unichar ord = *s++;
-    if (!UTF8_IS_NONASCII(ord)) return ord;
+    if (!UTF8_IS_NONASCII(ord))
+        return ord;
     ord &= 0x7F;
     for (unichar mask = 0x40; ord & mask; mask >>= 1) {
         ord &= ~mask;
@@ -114,13 +106,9 @@ size_t utf8_charlen(const byte *str, size_t len) {
 #endif
 
 // Be aware: These unichar_is* functions are actually ASCII-only!
-bool unichar_isspace(unichar c) {
-    return c < 128 && (attr[c] & FL_SPACE) != 0;
-}
+bool unichar_isspace(unichar c) { return c < 128 && (attr[c] & FL_SPACE) != 0; }
 
-bool unichar_isalpha(unichar c) {
-    return c < 128 && (attr[c] & FL_ALPHA) != 0;
-}
+bool unichar_isalpha(unichar c) { return c < 128 && (attr[c] & FL_ALPHA) != 0; }
 
 /* unused
 bool unichar_isprint(unichar c) {
@@ -128,25 +116,15 @@ bool unichar_isprint(unichar c) {
 }
 */
 
-bool unichar_isdigit(unichar c) {
-    return c < 128 && (attr[c] & FL_DIGIT) != 0;
-}
+bool unichar_isdigit(unichar c) { return c < 128 && (attr[c] & FL_DIGIT) != 0; }
 
-bool unichar_isxdigit(unichar c) {
-    return c < 128 && (attr[c] & FL_XDIGIT) != 0;
-}
+bool unichar_isxdigit(unichar c) { return c < 128 && (attr[c] & FL_XDIGIT) != 0; }
 
-bool unichar_isident(unichar c) {
-    return c < 128 && ((attr[c] & (FL_ALPHA | FL_DIGIT)) != 0 || c == '_');
-}
+bool unichar_isident(unichar c) { return c < 128 && ((attr[c] & (FL_ALPHA | FL_DIGIT)) != 0 || c == '_'); }
 
-bool unichar_isupper(unichar c) {
-    return c < 128 && (attr[c] & FL_UPPER) != 0;
-}
+bool unichar_isupper(unichar c) { return c < 128 && (attr[c] & FL_UPPER) != 0; }
 
-bool unichar_islower(unichar c) {
-    return c < 128 && (attr[c] & FL_LOWER) != 0;
-}
+bool unichar_islower(unichar c) { return c < 128 && (attr[c] & FL_LOWER) != 0; }
 
 unichar unichar_tolower(unichar c) {
     if (unichar_isupper(c)) {
