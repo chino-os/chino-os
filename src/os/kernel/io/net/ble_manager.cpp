@@ -10,6 +10,7 @@
 #include <chino/os/kernel/ob.h>
 
 using namespace chino;
+using namespace chino::devices::bluetooth;
 using namespace chino::os;
 using namespace chino::os::kernel;
 using namespace chino::os::kernel::io;
@@ -20,6 +21,7 @@ constinit static object_ptr<ble_device> default_ble_device_;
 result<void> io::initialize_ble_manager(device &ble_device) noexcept {
     kassert(default_ble_device_.empty());
     default_ble_device_ = static_cast<io::ble_device *>(&ble_device);
-    try_(default_ble_device_->scan([](void *) { return true; }, nullptr, 1000));
+    try_(default_ble_device_->start_watch_advertisement([](ble_advertisement_received *, void *) { return ok(true); },
+                                                        nullptr));
     return ok();
 }

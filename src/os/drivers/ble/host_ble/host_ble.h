@@ -21,7 +21,9 @@ class host_ble_device : public kernel::io::ble_device {
 
     result<void> close(kernel::io::file &file) noexcept override;
 
-    result<void> scan(kernel::io::ble_scan_callback_t callback, void *callback_arg, uint32_t scan_ms) noexcept override;
+    result<void> start_watch_advertisement(chino::devices::bluetooth::ble_advertisement_callback_t callback,
+                                           void *callback_arg) noexcept override;
+    void stop_watch_advertisement() noexcept override;
 };
 
 class host_ble_driver {
