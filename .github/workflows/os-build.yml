@@ -65,8 +65,9 @@ jobs:
           cmake --preset conan-release # configure again for llvm
 
       - name: Build & Install
-        shell: bash
+        shell: cmd
         run: |
+          chcp 65001
           cmake --build build --config ${{matrix.config.buildType}}
           cmake --install build --prefix install
 
