@@ -62,6 +62,7 @@ jobs:
           conan install . -pr:a=src/os/hal/chips/emulator/cmake/conan-profile.jinja -s build_type=Release --build=missing
           dotnet run --project conf/Chino.Conf.Generator gen emulator `pwd`
           cmake --preset conan-release
+          cmake --preset conan-release # configure again for llvm
 
       - name: Build & Install
         run: |
