@@ -26,8 +26,8 @@
 #ifndef MICROPY_INCLUDED_PY_QSTR_H
 #define MICROPY_INCLUDED_PY_QSTR_H
 
-#include "py/mpconfig.h"
 #include "py/misc.h"
+#include "py/mpconfig.h"
 
 // See qstrdefs.h for a list of qstr's that are available as constants.
 // Reference them as MP_QSTR_xxxx.

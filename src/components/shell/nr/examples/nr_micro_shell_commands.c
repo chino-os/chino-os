@@ -5,21 +5,21 @@
  * @date      28 Oct 2019
  * *****************************************************************************
  * @attention
- * 
+ *
  * MIT License
- * 
+ *
  * Copyright (C) 2019 Nrush. or its affiliates.  All Rights Reserved.
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -38,35 +38,25 @@
 /**
  * @brief ls command
  */
-void shell_ls_cmd(char argc, char **argv)
-{
+void shell_ls_cmd(char argc, char **argv) {
     unsigned int i = 0;
-    if (argc > 1)
-    {
-        if (!strcmp("cmd", argv[1]))
-        {
+    if (argc > 1) {
+        if (!strcmp("cmd", argv[1])) {
 
-            for (i = 0; nr_shell.static_cmd[i].fp != NULL; i++)
-            {
+            for (i = 0; nr_shell.static_cmd[i].fp != NULL; i++) {
                 shell_printf(nr_shell.static_cmd[i].cmd);
                 shell_printf("\r\n");
             }
-        }
-        else if (!strcmp("-v", argv[1]))
-        {
+        } else if (!strcmp("-v", argv[1])) {
             shell_printf("ls version 1.0.\r\n");
-        }
-        else if (!strcmp("-h", argv[1]))
-        {
+        } else if (!strcmp("-h", argv[1])) {
             shell_printf("useage: ls [options]\r\n");
             shell_printf("options: \r\n");
             shell_printf("\t -h \t: show help\r\n");
             shell_printf("\t -v \t: show version\r\n");
             shell_printf("\t cmd \t: show all commands\r\n");
         }
-    }
-    else
-    {
+    } else {
         shell_printf("ls need more arguments!\r\n");
     }
 }
@@ -74,12 +64,10 @@ void shell_ls_cmd(char argc, char **argv)
 /**
  * @brief test command
  */
-void shell_test_cmd(char argc, char **argv)
-{
+void shell_test_cmd(char argc, char **argv) {
     unsigned int i;
     shell_printf("test command:\r\n");
-    for (i = 0; i < argc; i++)
-    {
+    for (i = 0; i < argc; i++) {
         shell_printf("paras %d: %s\r\n", i, argv[i]);
     }
 }
@@ -88,11 +76,7 @@ void shell_test_cmd(char argc, char **argv)
 NR_SHELL_CMD_EXPORT(ls, shell_ls_cmd);
 NR_SHELL_CMD_EXPORT(test, shell_test_cmd);
 #else
-const static_cmd_st static_cmd[] = {
-    { "ls", shell_ls_cmd },
-    { "test", shell_test_cmd },
-    { "\0", NULL }
-};
+const static_cmd_st static_cmd[] = {{"ls", shell_ls_cmd}, {"test", shell_test_cmd}, {"\0", NULL}};
 #endif
 
 /******************* (C) COPYRIGHT 2019 Nrush *****END OF FILE*****************/

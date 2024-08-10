@@ -108,19 +108,19 @@ STATIC mp_obj_t thread_lock___exit__(size_t n_args, const mp_obj_t *args) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(thread_lock___exit___obj, 4, 4, thread_lock___exit__);
 
 STATIC const mp_rom_map_elem_t thread_lock_locals_dict_table[] = {
-    { MP_ROM_QSTR(MP_QSTR_acquire), MP_ROM_PTR(&thread_lock_acquire_obj) },
-    { MP_ROM_QSTR(MP_QSTR_release), MP_ROM_PTR(&thread_lock_release_obj) },
-    { MP_ROM_QSTR(MP_QSTR_locked), MP_ROM_PTR(&thread_lock_locked_obj) },
-    { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&thread_lock_acquire_obj) },
-    { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&thread_lock___exit___obj) },
+    {MP_ROM_QSTR(MP_QSTR_acquire), MP_ROM_PTR(&thread_lock_acquire_obj)},
+    {MP_ROM_QSTR(MP_QSTR_release), MP_ROM_PTR(&thread_lock_release_obj)},
+    {MP_ROM_QSTR(MP_QSTR_locked), MP_ROM_PTR(&thread_lock_locked_obj)},
+    {MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&thread_lock_acquire_obj)},
+    {MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&thread_lock___exit___obj)},
 };
 
 STATIC MP_DEFINE_CONST_DICT(thread_lock_locals_dict, thread_lock_locals_dict_table);
 
 STATIC const mp_obj_type_t mp_type_thread_lock = {
-    { &mp_type_type },
+    {&mp_type_type},
     .name = MP_QSTR_lock,
-    .locals_dict = (mp_obj_dict_t*)&thread_lock_locals_dict,
+    .locals_dict = (mp_obj_dict_t *)&thread_lock_locals_dict,
 };
 
 /****************************************************************/
@@ -128,9 +128,7 @@ STATIC const mp_obj_type_t mp_type_thread_lock = {
 
 STATIC size_t thread_stack_size = 0;
 
-STATIC mp_obj_t mod_thread_get_ident(void) {
-    return mp_obj_new_int_from_uint((uintptr_t)mp_thread_get_state());
-}
+STATIC mp_obj_t mod_thread_get_ident(void) { return mp_obj_new_int_from_uint((uintptr_t)mp_thread_get_state()); }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_thread_get_ident_obj, mod_thread_get_ident);
 
 STATIC mp_obj_t mod_thread_stack_size(size_t n_args, const mp_obj_t *args) {
@@ -157,7 +155,7 @@ typedef struct _thread_entry_args_t {
 STATIC void *thread_entry(void *args_in) {
     // Execution begins here for a new thread.  We do not have the GIL.
 
-    thread_entry_args_t *args = (thread_entry_args_t*)args_in;
+    thread_entry_args_t *args = (thread_entry_args_t *)args_in;
 
     mp_state_thread_t ts;
     mp_thread_set_state(&ts);
@@ -165,11 +163,11 @@ STATIC void *thread_entry(void *args_in) {
     mp_stack_set_top(&ts + 1); // need to include ts in root-pointer scan
     mp_stack_set_limit(args->stack_size);
 
-    #if MICROPY_ENABLE_PYSTACK
+#if MICROPY_ENABLE_PYSTACK
     // TODO threading and pystack is not fully supported, for now just make a small stack
     mp_obj_t mini_pystack[128];
     mp_pystack_init(mini_pystack, &mini_pystack[128]);
-    #endif
+#endif
 
     // set locals and globals from the calling context
     mp_locals_set(args->dict_locals);
@@ -193,7 +191,7 @@ STATIC void *thread_entry(void *args_in) {
     } else {
         // uncaught exception
         // check for SystemExit
-        mp_obj_base_t *exc = (mp_obj_base_t*)nlr.ret_val;
+        mp_obj_base_t *exc = (mp_obj_base_t *)nlr.ret_val;
         if (mp_obj_is_subclass_fast(MP_OBJ_FROM_PTR(exc->type), MP_OBJ_FROM_PTR(&mp_type_SystemExit))) {
             // swallow exception silently
         } else {
@@ -237,7 +235,7 @@ STATIC mp_obj_t mod_thread_start_new_thread(size_t n_args, const mp_obj_t *args)
         if (mp_obj_get_type(args[2]) != &mp_type_dict) {
             mp_raise_TypeError("expecting a dict for keyword args");
         }
-        mp_map_t *map = &((mp_obj_dict_t*)MP_OBJ_TO_PTR(args[2]))->map;
+        mp_map_t *map = &((mp_obj_dict_t *)MP_OBJ_TO_PTR(args[2]))->map;
         th_args = m_new_obj_var(thread_entry_args_t, mp_obj_t, pos_args_len + 2 * map->used);
         th_args->n_kw = map->used;
         // copy across the keyword arguments
@@ -270,31 +268,27 @@ STATIC mp_obj_t mod_thread_start_new_thread(size_t n_args, const mp_obj_t *args)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_thread_start_new_thread_obj, 2, 3, mod_thread_start_new_thread);
 
-STATIC mp_obj_t mod_thread_exit(void) {
-    nlr_raise(mp_obj_new_exception(&mp_type_SystemExit));
-}
+STATIC mp_obj_t mod_thread_exit(void) { nlr_raise(mp_obj_new_exception(&mp_type_SystemExit)); }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_thread_exit_obj, mod_thread_exit);
 
-STATIC mp_obj_t mod_thread_allocate_lock(void) {
-    return MP_OBJ_FROM_PTR(mp_obj_new_thread_lock());
-}
+STATIC mp_obj_t mod_thread_allocate_lock(void) { return MP_OBJ_FROM_PTR(mp_obj_new_thread_lock()); }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_thread_allocate_lock_obj, mod_thread_allocate_lock);
 
 STATIC const mp_rom_map_elem_t mp_module_thread_globals_table[] = {
-    { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR__thread) },
-    { MP_ROM_QSTR(MP_QSTR_LockType), MP_ROM_PTR(&mp_type_thread_lock) },
-    { MP_ROM_QSTR(MP_QSTR_get_ident), MP_ROM_PTR(&mod_thread_get_ident_obj) },
-    { MP_ROM_QSTR(MP_QSTR_stack_size), MP_ROM_PTR(&mod_thread_stack_size_obj) },
-    { MP_ROM_QSTR(MP_QSTR_start_new_thread), MP_ROM_PTR(&mod_thread_start_new_thread_obj) },
-    { MP_ROM_QSTR(MP_QSTR_exit), MP_ROM_PTR(&mod_thread_exit_obj) },
-    { MP_ROM_QSTR(MP_QSTR_allocate_lock), MP_ROM_PTR(&mod_thread_allocate_lock_obj) },
+    {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR__thread)},
+    {MP_ROM_QSTR(MP_QSTR_LockType), MP_ROM_PTR(&mp_type_thread_lock)},
+    {MP_ROM_QSTR(MP_QSTR_get_ident), MP_ROM_PTR(&mod_thread_get_ident_obj)},
+    {MP_ROM_QSTR(MP_QSTR_stack_size), MP_ROM_PTR(&mod_thread_stack_size_obj)},
+    {MP_ROM_QSTR(MP_QSTR_start_new_thread), MP_ROM_PTR(&mod_thread_start_new_thread_obj)},
+    {MP_ROM_QSTR(MP_QSTR_exit), MP_ROM_PTR(&mod_thread_exit_obj)},
+    {MP_ROM_QSTR(MP_QSTR_allocate_lock), MP_ROM_PTR(&mod_thread_allocate_lock_obj)},
 };
 
 STATIC MP_DEFINE_CONST_DICT(mp_module_thread_globals, mp_module_thread_globals_table);
 
 const mp_obj_module_t mp_module_thread = {
-    .base = { &mp_type_module },
-    .globals = (mp_obj_dict_t*)&mp_module_thread_globals,
+    .base = {&mp_type_module},
+    .globals = (mp_obj_dict_t *)&mp_module_thread_globals,
 };
 
 #endif // MICROPY_PY_THREAD

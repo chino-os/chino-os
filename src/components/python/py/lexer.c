@@ -24,12 +24,12 @@
  * THE SOFTWARE.
  */
 
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
 
-#include "py/reader.h"
 #include "py/lexer.h"
+#include "py/reader.h"
 #include "py/runtime.h"
 
 #if MICROPY_ENABLE_COMPILER
@@ -42,82 +42,53 @@
 #define MP_LEXER_EOF ((unichar)MP_READER_EOF)
 #define CUR_CHAR(lex) ((lex)->chr0)
 
-STATIC bool is_end(mp_lexer_t *lex) {
-    return lex->chr0 == MP_LEXER_EOF;
-}
+STATIC bool is_end(mp_lexer_t *lex) { return lex->chr0 == MP_LEXER_EOF; }
 
-STATIC bool is_physical_newline(mp_lexer_t *lex) {
-    return lex->chr0 == '\n';
-}
+STATIC bool is_physical_newline(mp_lexer_t *lex) { return lex->chr0 == '\n'; }
 
-STATIC bool is_char(mp_lexer_t *lex, byte c) {
-    return lex->chr0 == c;
-}
+STATIC bool is_char(mp_lexer_t *lex, byte c) { return lex->chr0 == c; }
 
-STATIC bool is_char_or(mp_lexer_t *lex, byte c1, byte c2) {
-    return lex->chr0 == c1 || lex->chr0 == c2;
-}
+STATIC bool is_char_or(mp_lexer_t *lex, byte c1, byte c2) { return lex->chr0 == c1 || lex->chr0 == c2; }
 
 STATIC bool is_char_or3(mp_lexer_t *lex, byte c1, byte c2, byte c3) {
     return lex->chr0 == c1 || lex->chr0 == c2 || lex->chr0 == c3;
 }
 
-STATIC bool is_char_following(mp_lexer_t *lex, byte c) {
-    return lex->chr1 == c;
-}
+STATIC bool is_char_following(mp_lexer_t *lex, byte c) { return lex->chr1 == c; }
 
-STATIC bool is_char_following_or(mp_lexer_t *lex, byte c1, byte c2) {
-    return lex->chr1 == c1 || lex->chr1 == c2;
-}
+STATIC bool is_char_following_or(mp_lexer_t *lex, byte c1, byte c2) { return lex->chr1 == c1 || lex->chr1 == c2; }
 
 STATIC bool is_char_following_following_or(mp_lexer_t *lex, byte c1, byte c2) {
     return lex->chr2 == c1 || lex->chr2 == c2;
 }
 
-STATIC bool is_char_and(mp_lexer_t *lex, byte c1, byte c2) {
-    return lex->chr0 == c1 && lex->chr1 == c2;
-}
+STATIC bool is_char_and(mp_lexer_t *lex, byte c1, byte c2) { return lex->chr0 == c1 && lex->chr1 == c2; }
 
-STATIC bool is_whitespace(mp_lexer_t *lex) {
-    return unichar_isspace(lex->chr0);
-}
+STATIC bool is_whitespace(mp_lexer_t *lex) { return unichar_isspace(lex->chr0); }
 
-STATIC bool is_letter(mp_lexer_t *lex) {
-    return unichar_isalpha(lex->chr0);
-}
+STATIC bool is_letter(mp_lexer_t *lex) { return unichar_isalpha(lex->chr0); }
 
-STATIC bool is_digit(mp_lexer_t *lex) {
-    return unichar_isdigit(lex->chr0);
-}
+STATIC bool is_digit(mp_lexer_t *lex) { return unichar_isdigit(lex->chr0); }
 
-STATIC bool is_following_digit(mp_lexer_t *lex) {
-    return unichar_isdigit(lex->chr1);
-}
+STATIC bool is_following_digit(mp_lexer_t *lex) { return unichar_isdigit(lex->chr1); }
 
 STATIC bool is_following_base_char(mp_lexer_t *lex) {
     const unichar chr1 = lex->chr1 | 0x20;
     return chr1 == 'b' || chr1 == 'o' || chr1 == 'x';
 }
 
-STATIC bool is_following_odigit(mp_lexer_t *lex) {
-    return lex->chr1 >= '0' && lex->chr1 <= '7';
-}
+STATIC bool is_following_odigit(mp_lexer_t *lex) { return lex->chr1 >= '0' && lex->chr1 <= '7'; }
 
 STATIC bool is_string_or_bytes(mp_lexer_t *lex) {
-    return is_char_or(lex, '\'', '\"')
-        || (is_char_or3(lex, 'r', 'u', 'b') && is_char_following_or(lex, '\'', '\"'))
-        || ((is_char_and(lex, 'r', 'b') || is_char_and(lex, 'b', 'r'))
-            && is_char_following_following_or(lex, '\'', '\"'));
+    return is_char_or(lex, '\'', '\"') || (is_char_or3(lex, 'r', 'u', 'b') && is_char_following_or(lex, '\'', '\"')) ||
+           ((is_char_and(lex, 'r', 'b') || is_char_and(lex, 'b', 'r')) &&
+            is_char_following_following_or(lex, '\'', '\"'));
 }
 
 // to easily parse utf-8 identifiers we allow any raw byte with high bit set
-STATIC bool is_head_of_identifier(mp_lexer_t *lex) {
-    return is_letter(lex) || lex->chr0 == '_' || lex->chr0 >= 0x80;
-}
+STATIC bool is_head_of_identifier(mp_lexer_t *lex) { return is_letter(lex) || lex->chr0 == '_' || lex->chr0 >= 0x80; }
 
-STATIC bool is_tail_of_identifier(mp_lexer_t *lex) {
-    return is_head_of_identifier(lex) || is_digit(lex);
-}
+STATIC bool is_tail_of_identifier(mp_lexer_t *lex) { return is_head_of_identifier(lex) || is_digit(lex); }
 
 STATIC void next_char(mp_lexer_t *lex) {
     if (lex->chr0 == '\n') {
@@ -153,19 +124,16 @@ STATIC void next_char(mp_lexer_t *lex) {
 
 STATIC void indent_push(mp_lexer_t *lex, size_t indent) {
     if (lex->num_indent_level >= lex->alloc_indent_level) {
-        lex->indent_level = m_renew(uint16_t, lex->indent_level, lex->alloc_indent_level, lex->alloc_indent_level + MICROPY_ALLOC_LEXEL_INDENT_INC);
+        lex->indent_level = m_renew(uint16_t, lex->indent_level, lex->alloc_indent_level,
+                                    lex->alloc_indent_level + MICROPY_ALLOC_LEXEL_INDENT_INC);
         lex->alloc_indent_level += MICROPY_ALLOC_LEXEL_INDENT_INC;
     }
     lex->indent_level[lex->num_indent_level++] = indent;
 }
 
-STATIC size_t indent_top(mp_lexer_t *lex) {
-    return lex->indent_level[lex->num_indent_level - 1];
-}
+STATIC size_t indent_top(mp_lexer_t *lex) { return lex->indent_level[lex->num_indent_level - 1]; }
 
-STATIC void indent_pop(mp_lexer_t *lex) {
-    lex->num_indent_level -= 1;
-}
+STATIC void indent_pop(mp_lexer_t *lex) { lex->num_indent_level -= 1; }
 
 // some tricky operator encoding:
 //     <op>  = begin with <op>, if this opchar matches then begin here
@@ -173,84 +141,79 @@ STATIC void indent_pop(mp_lexer_t *lex) {
 //     c<op> = continue with <op>, if this opchar matches then continue matching
 // this means if the start of two ops are the same then they are equal til the last char
 
-STATIC const char *const tok_enc =
-    "()[]{},:;~" // singles
-    "<e=c<e="     // < <= << <<=
-    ">e=c>e="     // > >= >> >>=
-    "*e=c*e="     // * *= ** **=
-    "+e="         // + +=
-    "-e=e>"       // - -= ->
-    "&e="         // & &=
-    "|e="         // | |=
-    "/e=c/e="     // / /= // //=
-    "%e="         // % %=
-    "^e="         // ^ ^=
-    "@e="         // @ @=
-    "=e="         // = ==
-    "!.";         // start of special cases: != . ...
+STATIC const char *const tok_enc = "()[]{},:;~" // singles
+                                   "<e=c<e="    // < <= << <<=
+                                   ">e=c>e="    // > >= >> >>=
+                                   "*e=c*e="    // * *= ** **=
+                                   "+e="        // + +=
+                                   "-e=e>"      // - -= ->
+                                   "&e="        // & &=
+                                   "|e="        // | |=
+                                   "/e=c/e="    // / /= // //=
+                                   "%e="        // % %=
+                                   "^e="        // ^ ^=
+                                   "@e="        // @ @=
+                                   "=e="        // = ==
+                                   "!.";        // start of special cases: != . ...
 
 // TODO static assert that number of tokens is less than 256 so we can safely make this table with byte sized entries
 STATIC const uint8_t tok_enc_kind[] = {
-    MP_TOKEN_DEL_PAREN_OPEN, MP_TOKEN_DEL_PAREN_CLOSE,
-    MP_TOKEN_DEL_BRACKET_OPEN, MP_TOKEN_DEL_BRACKET_CLOSE,
-    MP_TOKEN_DEL_BRACE_OPEN, MP_TOKEN_DEL_BRACE_CLOSE,
-    MP_TOKEN_DEL_COMMA, MP_TOKEN_DEL_COLON, MP_TOKEN_DEL_SEMICOLON, MP_TOKEN_OP_TILDE,
+    MP_TOKEN_DEL_PAREN_OPEN,
+    MP_TOKEN_DEL_PAREN_CLOSE,
+    MP_TOKEN_DEL_BRACKET_OPEN,
+    MP_TOKEN_DEL_BRACKET_CLOSE,
+    MP_TOKEN_DEL_BRACE_OPEN,
+    MP_TOKEN_DEL_BRACE_CLOSE,
+    MP_TOKEN_DEL_COMMA,
+    MP_TOKEN_DEL_COLON,
+    MP_TOKEN_DEL_SEMICOLON,
+    MP_TOKEN_OP_TILDE,
 
-    MP_TOKEN_OP_LESS, MP_TOKEN_OP_LESS_EQUAL, MP_TOKEN_OP_DBL_LESS, MP_TOKEN_DEL_DBL_LESS_EQUAL,
-    MP_TOKEN_OP_MORE, MP_TOKEN_OP_MORE_EQUAL, MP_TOKEN_OP_DBL_MORE, MP_TOKEN_DEL_DBL_MORE_EQUAL,
-    MP_TOKEN_OP_STAR, MP_TOKEN_DEL_STAR_EQUAL, MP_TOKEN_OP_DBL_STAR, MP_TOKEN_DEL_DBL_STAR_EQUAL,
-    MP_TOKEN_OP_PLUS, MP_TOKEN_DEL_PLUS_EQUAL,
-    MP_TOKEN_OP_MINUS, MP_TOKEN_DEL_MINUS_EQUAL, MP_TOKEN_DEL_MINUS_MORE,
-    MP_TOKEN_OP_AMPERSAND, MP_TOKEN_DEL_AMPERSAND_EQUAL,
-    MP_TOKEN_OP_PIPE, MP_TOKEN_DEL_PIPE_EQUAL,
-    MP_TOKEN_OP_SLASH, MP_TOKEN_DEL_SLASH_EQUAL, MP_TOKEN_OP_DBL_SLASH, MP_TOKEN_DEL_DBL_SLASH_EQUAL,
-    MP_TOKEN_OP_PERCENT, MP_TOKEN_DEL_PERCENT_EQUAL,
-    MP_TOKEN_OP_CARET, MP_TOKEN_DEL_CARET_EQUAL,
-    MP_TOKEN_OP_AT, MP_TOKEN_DEL_AT_EQUAL,
-    MP_TOKEN_DEL_EQUAL, MP_TOKEN_OP_DBL_EQUAL,
+    MP_TOKEN_OP_LESS,
+    MP_TOKEN_OP_LESS_EQUAL,
+    MP_TOKEN_OP_DBL_LESS,
+    MP_TOKEN_DEL_DBL_LESS_EQUAL,
+    MP_TOKEN_OP_MORE,
+    MP_TOKEN_OP_MORE_EQUAL,
+    MP_TOKEN_OP_DBL_MORE,
+    MP_TOKEN_DEL_DBL_MORE_EQUAL,
+    MP_TOKEN_OP_STAR,
+    MP_TOKEN_DEL_STAR_EQUAL,
+    MP_TOKEN_OP_DBL_STAR,
+    MP_TOKEN_DEL_DBL_STAR_EQUAL,
+    MP_TOKEN_OP_PLUS,
+    MP_TOKEN_DEL_PLUS_EQUAL,
+    MP_TOKEN_OP_MINUS,
+    MP_TOKEN_DEL_MINUS_EQUAL,
+    MP_TOKEN_DEL_MINUS_MORE,
+    MP_TOKEN_OP_AMPERSAND,
+    MP_TOKEN_DEL_AMPERSAND_EQUAL,
+    MP_TOKEN_OP_PIPE,
+    MP_TOKEN_DEL_PIPE_EQUAL,
+    MP_TOKEN_OP_SLASH,
+    MP_TOKEN_DEL_SLASH_EQUAL,
+    MP_TOKEN_OP_DBL_SLASH,
+    MP_TOKEN_DEL_DBL_SLASH_EQUAL,
+    MP_TOKEN_OP_PERCENT,
+    MP_TOKEN_DEL_PERCENT_EQUAL,
+    MP_TOKEN_OP_CARET,
+    MP_TOKEN_DEL_CARET_EQUAL,
+    MP_TOKEN_OP_AT,
+    MP_TOKEN_DEL_AT_EQUAL,
+    MP_TOKEN_DEL_EQUAL,
+    MP_TOKEN_OP_DBL_EQUAL,
 };
 
 // must have the same order as enum in lexer.h
 // must be sorted according to strcmp
 STATIC const char *const tok_kw[] = {
-    "False",
-    "None",
-    "True",
-    "__debug__",
-    "and",
-    "as",
-    "assert",
-    #if MICROPY_PY_ASYNC_AWAIT
-    "async",
-    "await",
-    #endif
-    "break",
-    "class",
-    "continue",
-    "def",
-    "del",
-    "elif",
-    "else",
-    "except",
-    "finally",
-    "for",
-    "from",
-    "global",
-    "if",
-    "import",
-    "in",
-    "is",
-    "lambda",
-    "nonlocal",
-    "not",
-    "or",
-    "pass",
-    "raise",
-    "return",
-    "try",
-    "while",
-    "with",
-    "yield",
+    "False", "None",  "True",     "__debug__", "and",    "as",   "assert",
+#if MICROPY_PY_ASYNC_AWAIT
+    "async", "await",
+#endif
+    "break", "class", "continue", "def",       "del",    "elif", "else",   "except", "finally",
+    "for",   "from",  "global",   "if",        "import", "in",   "is",     "lambda", "nonlocal",
+    "not",   "or",    "pass",     "raise",     "return", "try",  "while",  "with",   "yield",
 };
 
 // This is called with CUR_CHAR() before first hex digit, and should return with
@@ -305,60 +268,79 @@ STATIC void parse_string_literal(mp_lexer_t *lex, bool is_raw) {
                     vstr_add_char(&lex->vstr, '\\');
                 } else {
                     switch (c) {
-                        // note: "c" can never be MP_LEXER_EOF because next_char
-                        // always inserts a newline at the end of the input stream
-                        case '\n': c = MP_LEXER_EOF; break; // backslash escape the newline, just ignore it
-                        case '\\': break;
-                        case '\'': break;
-                        case '"': break;
-                        case 'a': c = 0x07; break;
-                        case 'b': c = 0x08; break;
-                        case 't': c = 0x09; break;
-                        case 'n': c = 0x0a; break;
-                        case 'v': c = 0x0b; break;
-                        case 'f': c = 0x0c; break;
-                        case 'r': c = 0x0d; break;
-                        case 'u':
-                        case 'U':
-                            if (lex->tok_kind == MP_TOKEN_BYTES) {
-                                // b'\u1234' == b'\\u1234'
-                                vstr_add_char(&lex->vstr, '\\');
-                                break;
-                            }
-                            // Otherwise fall through.
-                        case 'x':
-                        {
-                            mp_uint_t num = 0;
-                            if (!get_hex(lex, (c == 'x' ? 2 : c == 'u' ? 4 : 8), &num)) {
-                                // not enough hex chars for escape sequence
-                                lex->tok_kind = MP_TOKEN_INVALID;
-                            }
-                            c = num;
+                    // note: "c" can never be MP_LEXER_EOF because next_char
+                    // always inserts a newline at the end of the input stream
+                    case '\n':
+                        c = MP_LEXER_EOF;
+                        break; // backslash escape the newline, just ignore it
+                    case '\\':
+                        break;
+                    case '\'':
+                        break;
+                    case '"':
+                        break;
+                    case 'a':
+                        c = 0x07;
+                        break;
+                    case 'b':
+                        c = 0x08;
+                        break;
+                    case 't':
+                        c = 0x09;
+                        break;
+                    case 'n':
+                        c = 0x0a;
+                        break;
+                    case 'v':
+                        c = 0x0b;
+                        break;
+                    case 'f':
+                        c = 0x0c;
+                        break;
+                    case 'r':
+                        c = 0x0d;
+                        break;
+                    case 'u':
+                    case 'U':
+                        if (lex->tok_kind == MP_TOKEN_BYTES) {
+                            // b'\u1234' == b'\\u1234'
+                            vstr_add_char(&lex->vstr, '\\');
                             break;
                         }
-                        case 'N':
-                            // Supporting '\N{LATIN SMALL LETTER A}' == 'a' would require keeping the
-                            // entire Unicode name table in the core. As of Unicode 6.3.0, that's nearly
-                            // 3MB of text; even gzip-compressed and with minimal structure, it'll take
-                            // roughly half a meg of storage. This form of Unicode escape may be added
-                            // later on, but it's definitely not a priority right now. -- CJA 20140607
-                            mp_raise_NotImplementedError("unicode name escapes");
-                            break;
-                        default:
-                            if (c >= '0' && c <= '7') {
-                                // Octal sequence, 1-3 chars
-                                size_t digits = 3;
-                                mp_uint_t num = c - '0';
-                                while (is_following_odigit(lex) && --digits != 0) {
-                                    next_char(lex);
-                                    num = num * 8 + (CUR_CHAR(lex) - '0');
-                                }
-                                c = num;
-                            } else {
-                                // unrecognised escape character; CPython lets this through verbatim as '\' and then the character
-                                vstr_add_char(&lex->vstr, '\\');
+                        // Otherwise fall through.
+                    case 'x': {
+                        mp_uint_t num = 0;
+                        if (!get_hex(lex, (c == 'x' ? 2 : c == 'u' ? 4 : 8), &num)) {
+                            // not enough hex chars for escape sequence
+                            lex->tok_kind = MP_TOKEN_INVALID;
+                        }
+                        c = num;
+                        break;
+                    }
+                    case 'N':
+                        // Supporting '\N{LATIN SMALL LETTER A}' == 'a' would require keeping the
+                        // entire Unicode name table in the core. As of Unicode 6.3.0, that's nearly
+                        // 3MB of text; even gzip-compressed and with minimal structure, it'll take
+                        // roughly half a meg of storage. This form of Unicode escape may be added
+                        // later on, but it's definitely not a priority right now. -- CJA 20140607
+                        mp_raise_NotImplementedError("unicode name escapes");
+                        break;
+                    default:
+                        if (c >= '0' && c <= '7') {
+                            // Octal sequence, 1-3 chars
+                            size_t digits = 3;
+                            mp_uint_t num = c - '0';
+                            while (is_following_odigit(lex) && --digits != 0) {
+                                next_char(lex);
+                                num = num * 8 + (CUR_CHAR(lex) - '0');
                             }
-                            break;
+                            c = num;
+                        } else {
+                            // unrecognised escape character; CPython lets this through verbatim as '\' and then the
+                            // character
+                            vstr_add_char(&lex->vstr, '\\');
+                        }
+                        break;
                     }
                 }
                 if (c != MP_LEXER_EOF) {
@@ -660,9 +642,11 @@ void mp_lexer_to_next(mp_lexer_t *lex) {
             lex->tok_kind = tok_enc_kind[tok_enc_index];
 
             // compute bracket level for implicit line joining
-            if (lex->tok_kind == MP_TOKEN_DEL_PAREN_OPEN || lex->tok_kind == MP_TOKEN_DEL_BRACKET_OPEN || lex->tok_kind == MP_TOKEN_DEL_BRACE_OPEN) {
+            if (lex->tok_kind == MP_TOKEN_DEL_PAREN_OPEN || lex->tok_kind == MP_TOKEN_DEL_BRACKET_OPEN ||
+                lex->tok_kind == MP_TOKEN_DEL_BRACE_OPEN) {
                 lex->nested_bracket_level += 1;
-            } else if (lex->tok_kind == MP_TOKEN_DEL_PAREN_CLOSE || lex->tok_kind == MP_TOKEN_DEL_BRACKET_CLOSE || lex->tok_kind == MP_TOKEN_DEL_BRACE_CLOSE) {
+            } else if (lex->tok_kind == MP_TOKEN_DEL_PAREN_CLOSE || lex->tok_kind == MP_TOKEN_DEL_BRACKET_CLOSE ||
+                       lex->tok_kind == MP_TOKEN_DEL_BRACE_CLOSE) {
                 lex->nested_bracket_level -= 1;
             }
         }
@@ -707,7 +691,7 @@ mp_lexer_t *mp_lexer_new(qstr src_name, mp_reader_t reader) {
 
 mp_lexer_t *mp_lexer_new_from_str_len(qstr src_name, const char *str, size_t len, size_t free_len) {
     mp_reader_t reader;
-    mp_reader_new_mem(&reader, (const byte*)str, len, free_len);
+    mp_reader_new_mem(&reader, (const byte *)str, len, free_len);
     return mp_lexer_new(src_name, reader);
 }
 

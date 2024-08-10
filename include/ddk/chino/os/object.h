@@ -17,8 +17,7 @@ namespace chino::os {
 
 class object;
 
-template <class T>
-concept Object = std::is_same_v<T, object> || std::is_base_of_v<object, T>;
+template <class T> concept Object = std::is_same_v<T, object> || std::is_base_of_v<object, T>;
 
 class object {
   public:

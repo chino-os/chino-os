@@ -26,8 +26,8 @@
 #ifndef MICROPY_INCLUDED_PY_PARSENUM_H
 #define MICROPY_INCLUDED_PY_PARSENUM_H
 
-#include "py/mpconfig.h"
 #include "py/lexer.h"
+#include "py/mpconfig.h"
 #include "py/obj.h"
 
 // these functions raise a SyntaxError if lex!=NULL, else a ValueError

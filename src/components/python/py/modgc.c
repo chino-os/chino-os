@@ -24,9 +24,9 @@
  * THE SOFTWARE.
  */
 
+#include "py/gc.h"
 #include "py/mpstate.h"
 #include "py/obj.h"
-#include "py/gc.h"
 
 #if MICROPY_PY_GC && MICROPY_ENABLE_GC
 
@@ -55,9 +55,7 @@ STATIC mp_obj_t gc_enable(void) {
 }
 MP_DEFINE_CONST_FUN_OBJ_0(gc_enable_obj, gc_enable);
 
-STATIC mp_obj_t gc_isenabled(void) {
-    return mp_obj_new_bool(MP_STATE_MEM(gc_auto_collect_enabled));
-}
+STATIC mp_obj_t gc_isenabled(void) { return mp_obj_new_bool(MP_STATE_MEM(gc_auto_collect_enabled)); }
 MP_DEFINE_CONST_FUN_OBJ_0(gc_isenabled_obj, gc_isenabled);
 
 // mem_free(): return the number of bytes of available heap RAM
@@ -96,23 +94,23 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(gc_threshold_obj, 0, 1, gc_threshold);
 #endif
 
 STATIC const mp_rom_map_elem_t mp_module_gc_globals_table[] = {
-    { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_gc) },
-    { MP_ROM_QSTR(MP_QSTR_collect), MP_ROM_PTR(&gc_collect_obj) },
-    { MP_ROM_QSTR(MP_QSTR_disable), MP_ROM_PTR(&gc_disable_obj) },
-    { MP_ROM_QSTR(MP_QSTR_enable), MP_ROM_PTR(&gc_enable_obj) },
-    { MP_ROM_QSTR(MP_QSTR_isenabled), MP_ROM_PTR(&gc_isenabled_obj) },
-    { MP_ROM_QSTR(MP_QSTR_mem_free), MP_ROM_PTR(&gc_mem_free_obj) },
-    { MP_ROM_QSTR(MP_QSTR_mem_alloc), MP_ROM_PTR(&gc_mem_alloc_obj) },
-    #if MICROPY_GC_ALLOC_THRESHOLD
-    { MP_ROM_QSTR(MP_QSTR_threshold), MP_ROM_PTR(&gc_threshold_obj) },
-    #endif
+    {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_gc)},
+    {MP_ROM_QSTR(MP_QSTR_collect), MP_ROM_PTR(&gc_collect_obj)},
+    {MP_ROM_QSTR(MP_QSTR_disable), MP_ROM_PTR(&gc_disable_obj)},
+    {MP_ROM_QSTR(MP_QSTR_enable), MP_ROM_PTR(&gc_enable_obj)},
+    {MP_ROM_QSTR(MP_QSTR_isenabled), MP_ROM_PTR(&gc_isenabled_obj)},
+    {MP_ROM_QSTR(MP_QSTR_mem_free), MP_ROM_PTR(&gc_mem_free_obj)},
+    {MP_ROM_QSTR(MP_QSTR_mem_alloc), MP_ROM_PTR(&gc_mem_alloc_obj)},
+#if MICROPY_GC_ALLOC_THRESHOLD
+    {MP_ROM_QSTR(MP_QSTR_threshold), MP_ROM_PTR(&gc_threshold_obj)},
+#endif
 };
 
 STATIC MP_DEFINE_CONST_DICT(mp_module_gc_globals, mp_module_gc_globals_table);
 
 const mp_obj_module_t mp_module_gc = {
-    .base = { &mp_type_module },
-    .globals = (mp_obj_dict_t*)&mp_module_gc_globals,
+    .base = {&mp_type_module},
+    .globals = (mp_obj_dict_t *)&mp_module_gc_globals,
 };
 
 #endif

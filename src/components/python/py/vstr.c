@@ -25,14 +25,14 @@
  * THE SOFTWARE.
  */
 
-#include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
 #include <assert.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "py/mpconfig.h"
-#include "py/runtime.h"
 #include "py/mpprint.h"
+#include "py/runtime.h"
 
 // returned value is always at least 1 greater than argument
 #define ROUND_ALLOC(a) (((a) & ((~0U) - 7)) + 8)
@@ -118,9 +118,7 @@ STATIC void vstr_ensure_extra(vstr_t *vstr, size_t size) {
     }
 }
 
-void vstr_hint_size(vstr_t *vstr, size_t size) {
-    vstr_ensure_extra(vstr, size);
-}
+void vstr_hint_size(vstr_t *vstr, size_t size) { vstr_ensure_extra(vstr, size); }
 
 char *vstr_add_len(vstr_t *vstr, size_t len) {
     vstr_ensure_extra(vstr, len);
@@ -140,7 +138,7 @@ char *vstr_null_terminated_str(vstr_t *vstr) {
 }
 
 void vstr_add_byte(vstr_t *vstr, byte b) {
-    byte *buf = (byte*)vstr_add_len(vstr, 1);
+    byte *buf = (byte *)vstr_add_len(vstr, 1);
     buf[0] = b;
 }
 
@@ -149,20 +147,20 @@ void vstr_add_char(vstr_t *vstr, unichar c) {
     // TODO: Can this be simplified and deduplicated?
     // Is it worth just calling vstr_add_len(vstr, 4)?
     if (c < 0x80) {
-        byte *buf = (byte*)vstr_add_len(vstr, 1);
+        byte *buf = (byte *)vstr_add_len(vstr, 1);
         *buf = (byte)c;
     } else if (c < 0x800) {
-        byte *buf = (byte*)vstr_add_len(vstr, 2);
+        byte *buf = (byte *)vstr_add_len(vstr, 2);
         buf[0] = (c >> 6) | 0xC0;
         buf[1] = (c & 0x3F) | 0x80;
     } else if (c < 0x10000) {
-        byte *buf = (byte*)vstr_add_len(vstr, 3);
+        byte *buf = (byte *)vstr_add_len(vstr, 3);
         buf[0] = (c >> 12) | 0xE0;
         buf[1] = ((c >> 6) & 0x3F) | 0x80;
         buf[2] = (c & 0x3F) | 0x80;
     } else {
         assert(c < 0x110000);
-        byte *buf = (byte*)vstr_add_len(vstr, 4);
+        byte *buf = (byte *)vstr_add_len(vstr, 4);
         buf[0] = (c >> 18) | 0xF0;
         buf[1] = ((c >> 12) & 0x3F) | 0x80;
         buf[2] = ((c >> 6) & 0x3F) | 0x80;
@@ -173,9 +171,7 @@ void vstr_add_char(vstr_t *vstr, unichar c) {
 #endif
 }
 
-void vstr_add_str(vstr_t *vstr, const char *str) {
-    vstr_add_strn(vstr, str, strlen(str));
-}
+void vstr_add_str(vstr_t *vstr, const char *str) { vstr_add_strn(vstr, str, strlen(str)); }
 
 void vstr_add_strn(vstr_t *vstr, const char *str, size_t len) {
     vstr_ensure_extra(vstr, len);
@@ -210,9 +206,7 @@ void vstr_ins_char(vstr_t *vstr, size_t char_pos, unichar chr) {
     *s = chr;
 }
 
-void vstr_cut_head_bytes(vstr_t *vstr, size_t bytes_to_cut) {
-    vstr_cut_out_bytes(vstr, 0, bytes_to_cut);
-}
+void vstr_cut_head_bytes(vstr_t *vstr, size_t bytes_to_cut) { vstr_cut_out_bytes(vstr, 0, bytes_to_cut); }
 
 void vstr_cut_tail_bytes(vstr_t *vstr, size_t len) {
     if (len > vstr->len) {

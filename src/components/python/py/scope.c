@@ -32,12 +32,9 @@
 
 // these low numbered qstrs should fit in 8 bits
 STATIC const uint8_t scope_simple_name_table[] = {
-    [SCOPE_MODULE] = MP_QSTR__lt_module_gt_,
-    [SCOPE_LAMBDA] = MP_QSTR__lt_lambda_gt_,
-    [SCOPE_LIST_COMP] = MP_QSTR__lt_listcomp_gt_,
-    [SCOPE_DICT_COMP] = MP_QSTR__lt_dictcomp_gt_,
-    [SCOPE_SET_COMP] = MP_QSTR__lt_setcomp_gt_,
-    [SCOPE_GEN_EXPR] = MP_QSTR__lt_genexpr_gt_,
+    [SCOPE_MODULE] = MP_QSTR__lt_module_gt_,      [SCOPE_LAMBDA] = MP_QSTR__lt_lambda_gt_,
+    [SCOPE_LIST_COMP] = MP_QSTR__lt_listcomp_gt_, [SCOPE_DICT_COMP] = MP_QSTR__lt_dictcomp_gt_,
+    [SCOPE_SET_COMP] = MP_QSTR__lt_setcomp_gt_,   [SCOPE_GEN_EXPR] = MP_QSTR__lt_genexpr_gt_,
 };
 
 scope_t *scope_new(scope_kind_t kind, mp_parse_node_t pn, qstr source_file, mp_uint_t emit_options) {
@@ -47,7 +44,7 @@ scope_t *scope_new(scope_kind_t kind, mp_parse_node_t pn, qstr source_file, mp_u
     scope->source_file = source_file;
     if (kind == SCOPE_FUNCTION || kind == SCOPE_CLASS) {
         assert(MP_PARSE_NODE_IS_STRUCT(pn));
-        scope->simple_name = MP_PARSE_NODE_LEAF_ARG(((mp_parse_node_struct_t*)pn)->nodes[0]);
+        scope->simple_name = MP_PARSE_NODE_LEAF_ARG(((mp_parse_node_struct_t *)pn)->nodes[0]);
     } else {
         scope->simple_name = scope_simple_name_table[kind];
     }
@@ -72,7 +69,8 @@ id_info_t *scope_find_or_add_id(scope_t *scope, qstr qst, scope_kind_t kind) {
 
     // make sure we have enough memory
     if (scope->id_info_len >= scope->id_info_alloc) {
-        scope->id_info = m_renew(id_info_t, scope->id_info, scope->id_info_alloc, scope->id_info_alloc + MICROPY_ALLOC_SCOPE_ID_INC);
+        scope->id_info =
+            m_renew(id_info_t, scope->id_info, scope->id_info_alloc, scope->id_info_alloc + MICROPY_ALLOC_SCOPE_ID_INC);
         scope->id_info_alloc += MICROPY_ALLOC_SCOPE_ID_INC;
     }
 
@@ -132,7 +130,8 @@ void scope_check_to_close_over(scope_t *scope, id_info_t *id) {
         for (scope_t *s = scope->parent; s->parent != NULL; s = s->parent) {
             id_info_t *id2 = scope_find(s, id->qst);
             if (id2 != NULL) {
-                if (id2->kind == ID_INFO_KIND_LOCAL || id2->kind == ID_INFO_KIND_CELL || id2->kind == ID_INFO_KIND_FREE) {
+                if (id2->kind == ID_INFO_KIND_LOCAL || id2->kind == ID_INFO_KIND_CELL ||
+                    id2->kind == ID_INFO_KIND_FREE) {
                     id->kind = ID_INFO_KIND_FREE;
                     scope_close_over_in_parents(scope, id->qst);
                 }

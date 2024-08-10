@@ -24,8 +24,8 @@
  * THE SOFTWARE.
  */
 
-#include "py/obj.h"
 #include "py/builtin.h"
+#include "py/obj.h"
 
 STATIC mp_obj_t op_getitem(mp_obj_t self_in, mp_obj_t key_in) {
     mp_obj_type_t *type = mp_obj_get_type(self_in);

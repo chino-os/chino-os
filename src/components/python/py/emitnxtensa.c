@@ -9,8 +9,8 @@
 #include "py/asmxtensa.h"
 
 // Word indices of REG_LOCAL_x in nlr_buf_t
-#define NLR_BUF_IDX_LOCAL_1 (8) // a12
-#define NLR_BUF_IDX_LOCAL_2 (9) // a13
+#define NLR_BUF_IDX_LOCAL_1 (8)  // a12
+#define NLR_BUF_IDX_LOCAL_2 (9)  // a13
 #define NLR_BUF_IDX_LOCAL_3 (10) // a14
 
 #define N_XTENSA (1)

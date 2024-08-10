@@ -24,15 +24,15 @@
  * THE SOFTWARE.
  */
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
 
-#include "py/mpstate.h"
-#include "py/emit.h"
 #include "py/bc0.h"
+#include "py/emit.h"
+#include "py/mpstate.h"
 
 #if MICROPY_ENABLE_COMPILER
 
@@ -67,11 +67,11 @@ struct _emit_t {
     size_t n_info;
     size_t n_cell;
 
-    #if MICROPY_PERSISTENT_CODE
+#if MICROPY_PERSISTENT_CODE
     uint16_t ct_cur_obj;
     uint16_t ct_num_obj;
     uint16_t ct_cur_raw_code;
-    #endif
+#endif
     mp_uint_t *const_table;
 };
 
@@ -110,7 +110,7 @@ STATIC void emit_write_uint(emit_t *emit, emit_allocator_t allocator, mp_uint_t 
 
 // all functions must go through this one to emit code info
 STATIC byte *emit_get_cur_to_write_code_info(emit_t *emit, int num_bytes_to_write) {
-    //printf("emit %d\n", num_bytes_to_write);
+    // printf("emit %d\n", num_bytes_to_write);
     if (emit->pass < MP_PASS_EMIT) {
         emit->code_info_offset += num_bytes_to_write;
         return emit->dummy_data;
@@ -122,25 +122,23 @@ STATIC byte *emit_get_cur_to_write_code_info(emit_t *emit, int num_bytes_to_writ
     }
 }
 
-STATIC void emit_write_code_info_byte(emit_t* emit, byte val) {
-    *emit_get_cur_to_write_code_info(emit, 1) = val;
-}
+STATIC void emit_write_code_info_byte(emit_t *emit, byte val) { *emit_get_cur_to_write_code_info(emit, 1) = val; }
 
 STATIC void emit_write_code_info_qstr(emit_t *emit, qstr qst) {
-    #if MICROPY_PERSISTENT_CODE
+#if MICROPY_PERSISTENT_CODE
     assert((qst >> 16) == 0);
     byte *c = emit_get_cur_to_write_code_info(emit, 2);
     c[0] = qst;
     c[1] = qst >> 8;
-    #else
+#else
     emit_write_uint(emit, emit_get_cur_to_write_code_info, qst);
-    #endif
+#endif
 }
 
 #if MICROPY_ENABLE_SOURCE_LINE
 STATIC void emit_write_code_info_bytes_lines(emit_t *emit, mp_uint_t bytes_to_skip, mp_uint_t lines_to_skip) {
     assert(bytes_to_skip > 0 || lines_to_skip > 0);
-    //printf("  %d %d\n", bytes_to_skip, lines_to_skip);
+    // printf("  %d %d\n", bytes_to_skip, lines_to_skip);
     while (bytes_to_skip > 0 || lines_to_skip > 0) {
         mp_uint_t b, l;
         if (lines_to_skip <= 6 || bytes_to_skip > 0xf) {
@@ -169,7 +167,7 @@ STATIC void emit_write_code_info_bytes_lines(emit_t *emit, mp_uint_t bytes_to_sk
 
 // all functions must go through this one to emit byte code
 STATIC byte *emit_get_cur_to_write_bytecode(emit_t *emit, int num_bytes_to_write) {
-    //printf("emit %d\n", num_bytes_to_write);
+    // printf("emit %d\n", num_bytes_to_write);
     if (emit->pass < MP_PASS_EMIT) {
         emit->bytecode_offset += num_bytes_to_write;
         return emit->dummy_data;
@@ -233,52 +231,53 @@ STATIC void emit_write_bytecode_byte_const(emit_t *emit, int stack_adj, byte b, 
 }
 #endif
 
-STATIC void emit_write_bytecode_byte_qstr(emit_t* emit, int stack_adj, byte b, qstr qst) {
-    #if MICROPY_PERSISTENT_CODE
+STATIC void emit_write_bytecode_byte_qstr(emit_t *emit, int stack_adj, byte b, qstr qst) {
+#if MICROPY_PERSISTENT_CODE
     assert((qst >> 16) == 0);
     mp_emit_bc_adjust_stack_size(emit, stack_adj);
     byte *c = emit_get_cur_to_write_bytecode(emit, 3);
     c[0] = b;
     c[1] = qst;
     c[2] = qst >> 8;
-    #else
+#else
     emit_write_bytecode_byte_uint(emit, stack_adj, b, qst);
-    #endif
+#endif
 }
 
 STATIC void emit_write_bytecode_byte_obj(emit_t *emit, int stack_adj, byte b, mp_obj_t obj) {
-    #if MICROPY_PERSISTENT_CODE
+#if MICROPY_PERSISTENT_CODE
     emit_write_bytecode_byte_const(emit, stack_adj, b,
-        emit->scope->num_pos_args + emit->scope->num_kwonly_args
-        + emit->ct_cur_obj++, (mp_uint_t)obj);
-    #else
+                                   emit->scope->num_pos_args + emit->scope->num_kwonly_args + emit->ct_cur_obj++,
+                                   (mp_uint_t)obj);
+#else
     // aligns the pointer so it is friendly to GC
     emit_write_bytecode_byte(emit, stack_adj, b);
     emit->bytecode_offset = (size_t)MP_ALIGN(emit->bytecode_offset, sizeof(mp_obj_t));
-    mp_obj_t *c = (mp_obj_t*)emit_get_cur_to_write_bytecode(emit, sizeof(mp_obj_t));
+    mp_obj_t *c = (mp_obj_t *)emit_get_cur_to_write_bytecode(emit, sizeof(mp_obj_t));
     // Verify thar c is already uint-aligned
     assert(c == MP_ALIGN(c, sizeof(mp_obj_t)));
     *c = obj;
-    #endif
+#endif
 }
 
 STATIC void emit_write_bytecode_byte_raw_code(emit_t *emit, int stack_adj, byte b, mp_raw_code_t *rc) {
-    #if MICROPY_PERSISTENT_CODE
+#if MICROPY_PERSISTENT_CODE
     emit_write_bytecode_byte_const(emit, stack_adj, b,
-        emit->scope->num_pos_args + emit->scope->num_kwonly_args
-        + emit->ct_num_obj + emit->ct_cur_raw_code++, (mp_uint_t)(uintptr_t)rc);
-    #else
+                                   emit->scope->num_pos_args + emit->scope->num_kwonly_args + emit->ct_num_obj +
+                                       emit->ct_cur_raw_code++,
+                                   (mp_uint_t)(uintptr_t)rc);
+#else
     // aligns the pointer so it is friendly to GC
     emit_write_bytecode_byte(emit, stack_adj, b);
-    emit->bytecode_offset = (size_t)MP_ALIGN(emit->bytecode_offset, sizeof(void*));
-    void **c = (void**)emit_get_cur_to_write_bytecode(emit, sizeof(void*));
+    emit->bytecode_offset = (size_t)MP_ALIGN(emit->bytecode_offset, sizeof(void *));
+    void **c = (void **)emit_get_cur_to_write_bytecode(emit, sizeof(void *));
     // Verify thar c is already uint-aligned
-    assert(c == MP_ALIGN(c, sizeof(void*)));
+    assert(c == MP_ALIGN(c, sizeof(void *)));
     *c = rc;
-    #endif
-    #if MICROPY_PY_SYS_SETTRACE
+#endif
+#if MICROPY_PY_SYS_SETTRACE
     rc->line_of_definition = emit->last_source_line;
-    #endif
+#endif
 }
 
 // unsigned labels are relative to ip following this instruction, stored as 16 bits
@@ -318,12 +317,12 @@ void mp_emit_bc_start_pass(emit_t *emit, pass_kind_t pass, scope_t *scope) {
     emit->scope = scope;
     emit->last_source_line_offset = 0;
     emit->last_source_line = 1;
-    #ifndef NDEBUG
+#ifndef NDEBUG
     // With debugging enabled labels are checked for unique assignment
     if (pass < MP_PASS_EMIT && emit->label_offsets != NULL) {
         memset(emit->label_offsets, -1, emit->max_num_labels * sizeof(mp_uint_t));
     }
-    #endif
+#endif
     emit->bytecode_offset = 0;
     emit->code_info_offset = 0;
 
@@ -336,10 +335,10 @@ void mp_emit_bc_start_pass(emit_t *emit, pass_kind_t pass, scope_t *scope) {
             // the highest slot in the state (fastn[0], see vm.c).
             n_state = 1;
         }
-        #if MICROPY_DEBUG_VM_STACK_OVERFLOW
+#if MICROPY_DEBUG_VM_STACK_OVERFLOW
         // An extra slot in the stack is needed to detect VM stack overflow
         n_state += 1;
-        #endif
+#endif
 
         size_t n_exc_stack = scope->exc_stack_size;
         MP_BC_PRELUDE_SIG_ENCODE(n_state, n_exc_stack, scope, emit_write_code_info_byte, emit);
@@ -356,10 +355,10 @@ void mp_emit_bc_start_pass(emit_t *emit, pass_kind_t pass, scope_t *scope) {
     emit_write_code_info_qstr(emit, scope->simple_name);
     emit_write_code_info_qstr(emit, scope->source_file);
 
-    #if MICROPY_PERSISTENT_CODE
+#if MICROPY_PERSISTENT_CODE
     emit->ct_cur_obj = 0;
     emit->ct_cur_raw_code = 0;
-    #endif
+#endif
 
     if (pass == MP_PASS_EMIT) {
         // Write argument names (needed to resolve positional args passed as
@@ -415,47 +414,43 @@ void mp_emit_bc_end_pass(emit_t *emit) {
         }
     }
 
-    #if MICROPY_PERSISTENT_CODE
+#if MICROPY_PERSISTENT_CODE
     assert(emit->pass <= MP_PASS_STACK_SIZE || (emit->ct_num_obj == emit->ct_cur_obj));
     emit->ct_num_obj = emit->ct_cur_obj;
-    #endif
+#endif
 
     if (emit->pass == MP_PASS_CODE_SIZE) {
-        #if !MICROPY_PERSISTENT_CODE
+#if !MICROPY_PERSISTENT_CODE
         // so bytecode is aligned
         emit->code_info_offset = (size_t)MP_ALIGN(emit->code_info_offset, sizeof(mp_uint_t));
-        #endif
+#endif
 
         // calculate size of total code-info + bytecode, in bytes
         emit->code_info_size = emit->code_info_offset;
         emit->bytecode_size = emit->bytecode_offset;
         emit->code_base = m_new0(byte, emit->code_info_size + emit->bytecode_size);
 
-        #if MICROPY_PERSISTENT_CODE
-        emit->const_table = m_new0(mp_uint_t,
-            emit->scope->num_pos_args + emit->scope->num_kwonly_args
-            + emit->ct_cur_obj + emit->ct_cur_raw_code);
-        #else
-        emit->const_table = m_new0(mp_uint_t,
-            emit->scope->num_pos_args + emit->scope->num_kwonly_args);
-        #endif
+#if MICROPY_PERSISTENT_CODE
+        emit->const_table = m_new0(mp_uint_t, emit->scope->num_pos_args + emit->scope->num_kwonly_args +
+                                                  emit->ct_cur_obj + emit->ct_cur_raw_code);
+#else
+        emit->const_table = m_new0(mp_uint_t, emit->scope->num_pos_args + emit->scope->num_kwonly_args);
+#endif
 
     } else if (emit->pass == MP_PASS_EMIT) {
         mp_emit_glue_assign_bytecode(emit->scope->raw_code, emit->code_base,
-            #if MICROPY_PERSISTENT_CODE_SAVE || MICROPY_DEBUG_PRINTERS
-            emit->code_info_size + emit->bytecode_size,
-            #endif
-            emit->const_table,
-            #if MICROPY_PERSISTENT_CODE_SAVE
-            emit->ct_cur_obj, emit->ct_cur_raw_code,
-            #endif
-            emit->scope->scope_flags);
+#if MICROPY_PERSISTENT_CODE_SAVE || MICROPY_DEBUG_PRINTERS
+                                     emit->code_info_size + emit->bytecode_size,
+#endif
+                                     emit->const_table,
+#if MICROPY_PERSISTENT_CODE_SAVE
+                                     emit->ct_cur_obj, emit->ct_cur_raw_code,
+#endif
+                                     emit->scope->scope_flags);
     }
 }
 
-bool mp_emit_bc_last_emit_was_return_value(emit_t *emit) {
-    return emit->last_emit_was_return_value;
-}
+bool mp_emit_bc_last_emit_was_return_value(emit_t *emit) { return emit->last_emit_was_return_value; }
 
 void mp_emit_bc_adjust_stack_size(emit_t *emit, mp_int_t delta) {
     if (emit->pass == MP_PASS_SCOPE) {
@@ -470,7 +465,8 @@ void mp_emit_bc_adjust_stack_size(emit_t *emit, mp_int_t delta) {
 }
 
 void mp_emit_bc_set_source_line(emit_t *emit, mp_uint_t source_line) {
-    //printf("source: line %d -> %d  offset %d -> %d\n", emit->last_source_line, source_line, emit->last_source_line_offset, emit->bytecode_offset);
+    // printf("source: line %d -> %d  offset %d -> %d\n", emit->last_source_line, source_line,
+    // emit->last_source_line_offset, emit->bytecode_offset);
 #if MICROPY_ENABLE_SOURCE_LINE
     if (MP_STATE_VM(mp_optimise_value) >= 3) {
         // If we compile with -O3, don't store line numbers.
@@ -527,10 +523,10 @@ void mp_emit_bc_load_const_tok(emit_t *emit, mp_token_kind_t tok) {
 }
 
 void mp_emit_bc_load_const_small_int(emit_t *emit, mp_int_t arg) {
-    if (-MP_BC_LOAD_CONST_SMALL_INT_MULTI_EXCESS <= arg
-        && arg < MP_BC_LOAD_CONST_SMALL_INT_MULTI_NUM - MP_BC_LOAD_CONST_SMALL_INT_MULTI_EXCESS) {
+    if (-MP_BC_LOAD_CONST_SMALL_INT_MULTI_EXCESS <= arg &&
+        arg < MP_BC_LOAD_CONST_SMALL_INT_MULTI_NUM - MP_BC_LOAD_CONST_SMALL_INT_MULTI_EXCESS) {
         emit_write_bytecode_byte(emit, 1,
-            MP_BC_LOAD_CONST_SMALL_INT_MULTI + MP_BC_LOAD_CONST_SMALL_INT_MULTI_EXCESS + arg);
+                                 MP_BC_LOAD_CONST_SMALL_INT_MULTI + MP_BC_LOAD_CONST_SMALL_INT_MULTI_EXCESS + arg);
     } else {
         emit_write_bytecode_byte_int(emit, 1, MP_BC_LOAD_CONST_SMALL_INT, arg);
     }
@@ -544,9 +540,7 @@ void mp_emit_bc_load_const_obj(emit_t *emit, mp_obj_t obj) {
     emit_write_bytecode_byte_obj(emit, 1, MP_BC_LOAD_CONST_OBJ, obj);
 }
 
-void mp_emit_bc_load_null(emit_t *emit) {
-    emit_write_bytecode_byte(emit, 1, MP_BC_LOAD_NULL);
-}
+void mp_emit_bc_load_null(emit_t *emit) { emit_write_bytecode_byte(emit, 1, MP_BC_LOAD_NULL); }
 
 void mp_emit_bc_load_local(emit_t *emit, qstr qst, mp_uint_t local_num, int kind) {
     MP_STATIC_ASSERT(MP_BC_LOAD_FAST_N + MP_EMIT_IDOP_LOCAL_FAST == MP_BC_LOAD_FAST_N);
@@ -574,9 +568,7 @@ void mp_emit_bc_load_method(emit_t *emit, qstr qst, bool is_super) {
     emit_write_bytecode_byte_qstr(emit, stack_adj, is_super ? MP_BC_LOAD_SUPER_METHOD : MP_BC_LOAD_METHOD, qst);
 }
 
-void mp_emit_bc_load_build_class(emit_t *emit) {
-    emit_write_bytecode_byte(emit, 1, MP_BC_LOAD_BUILD_CLASS);
-}
+void mp_emit_bc_load_build_class(emit_t *emit) { emit_write_bytecode_byte(emit, 1, MP_BC_LOAD_BUILD_CLASS); }
 
 void mp_emit_bc_subscr(emit_t *emit, int kind) {
     if (kind == MP_EMIT_SUBSCR_LOAD) {
@@ -635,25 +627,15 @@ void mp_emit_bc_delete_global(emit_t *emit, qstr qst, int kind) {
     emit_write_bytecode_byte_qstr(emit, 0, MP_BC_DELETE_NAME + kind, qst);
 }
 
-void mp_emit_bc_dup_top(emit_t *emit) {
-    emit_write_bytecode_byte(emit, 1, MP_BC_DUP_TOP);
-}
+void mp_emit_bc_dup_top(emit_t *emit) { emit_write_bytecode_byte(emit, 1, MP_BC_DUP_TOP); }
 
-void mp_emit_bc_dup_top_two(emit_t *emit) {
-    emit_write_bytecode_byte(emit, 2, MP_BC_DUP_TOP_TWO);
-}
+void mp_emit_bc_dup_top_two(emit_t *emit) { emit_write_bytecode_byte(emit, 2, MP_BC_DUP_TOP_TWO); }
 
-void mp_emit_bc_pop_top(emit_t *emit) {
-    emit_write_bytecode_byte(emit, -1, MP_BC_POP_TOP);
-}
+void mp_emit_bc_pop_top(emit_t *emit) { emit_write_bytecode_byte(emit, -1, MP_BC_POP_TOP); }
 
-void mp_emit_bc_rot_two(emit_t *emit) {
-    emit_write_bytecode_byte(emit, 0, MP_BC_ROT_TWO);
-}
+void mp_emit_bc_rot_two(emit_t *emit) { emit_write_bytecode_byte(emit, 0, MP_BC_ROT_TWO); }
 
-void mp_emit_bc_rot_three(emit_t *emit) {
-    emit_write_bytecode_byte(emit, 0, MP_BC_ROT_THREE);
-}
+void mp_emit_bc_rot_three(emit_t *emit) { emit_write_bytecode_byte(emit, 0, MP_BC_ROT_THREE); }
 
 void mp_emit_bc_jump(emit_t *emit, mp_uint_t label) {
     emit_write_bytecode_byte_signed_label(emit, 0, MP_BC_JUMP, label);
@@ -711,9 +693,7 @@ void mp_emit_bc_with_cleanup(emit_t *emit, mp_uint_t label) {
     mp_emit_bc_adjust_stack_size(emit, -4);
 }
 
-void mp_emit_bc_end_finally(emit_t *emit) {
-    emit_write_bytecode_byte(emit, -1, MP_BC_END_FINALLY);
-}
+void mp_emit_bc_end_finally(emit_t *emit) { emit_write_bytecode_byte(emit, -1, MP_BC_END_FINALLY); }
 
 void mp_emit_bc_get_iter(emit_t *emit, bool use_stack) {
     int stack_adj = use_stack ? MP_OBJ_ITER_BUF_NSLOTS - 1 : 0;
@@ -724,9 +704,7 @@ void mp_emit_bc_for_iter(emit_t *emit, mp_uint_t label) {
     emit_write_bytecode_byte_unsigned_label(emit, 1, MP_BC_FOR_ITER, label);
 }
 
-void mp_emit_bc_for_iter_end(emit_t *emit) {
-    mp_emit_bc_adjust_stack_size(emit, -MP_OBJ_ITER_BUF_NSLOTS);
-}
+void mp_emit_bc_for_iter_end(emit_t *emit) { mp_emit_bc_adjust_stack_size(emit, -MP_OBJ_ITER_BUF_NSLOTS); }
 
 void mp_emit_bc_pop_except_jump(emit_t *emit, mp_uint_t label, bool within_exc_handler) {
     (void)within_exc_handler;
@@ -762,9 +740,7 @@ void mp_emit_bc_build(emit_t *emit, mp_uint_t n_args, int kind) {
     emit_write_bytecode_byte_uint(emit, stack_adj, MP_BC_BUILD_TUPLE + kind, n_args);
 }
 
-void mp_emit_bc_store_map(emit_t *emit) {
-    emit_write_bytecode_byte(emit, -2, MP_BC_STORE_MAP);
-}
+void mp_emit_bc_store_map(emit_t *emit) { emit_write_bytecode_byte(emit, -2, MP_BC_STORE_MAP); }
 
 void mp_emit_bc_store_comp(emit_t *emit, scope_kind_t kind, mp_uint_t collection_stack_index) {
     int t;
@@ -799,7 +775,8 @@ void mp_emit_bc_make_function(emit_t *emit, scope_t *scope, mp_uint_t n_pos_defa
     }
 }
 
-void mp_emit_bc_make_closure(emit_t *emit, scope_t *scope, mp_uint_t n_closed_over, mp_uint_t n_pos_defaults, mp_uint_t n_kw_defaults) {
+void mp_emit_bc_make_closure(emit_t *emit, scope_t *scope, mp_uint_t n_closed_over, mp_uint_t n_pos_defaults,
+                             mp_uint_t n_kw_defaults) {
     if (n_pos_defaults == 0 && n_kw_defaults == 0) {
         int stack_adj = -n_closed_over + 1;
         emit_write_bytecode_byte_raw_code(emit, stack_adj, MP_BC_MAKE_CLOSURE, scope->raw_code);
@@ -812,13 +789,16 @@ void mp_emit_bc_make_closure(emit_t *emit, scope_t *scope, mp_uint_t n_closed_ov
     }
 }
 
-STATIC void emit_bc_call_function_method_helper(emit_t *emit, int stack_adj, mp_uint_t bytecode_base, mp_uint_t n_positional, mp_uint_t n_keyword, mp_uint_t star_flags) {
+STATIC void emit_bc_call_function_method_helper(emit_t *emit, int stack_adj, mp_uint_t bytecode_base,
+                                                mp_uint_t n_positional, mp_uint_t n_keyword, mp_uint_t star_flags) {
     if (star_flags) {
         stack_adj -= (int)n_positional + 2 * (int)n_keyword + 2;
-        emit_write_bytecode_byte_uint(emit, stack_adj, bytecode_base + 1, (n_keyword << 8) | n_positional); // TODO make it 2 separate uints?
+        emit_write_bytecode_byte_uint(emit, stack_adj, bytecode_base + 1,
+                                      (n_keyword << 8) | n_positional); // TODO make it 2 separate uints?
     } else {
         stack_adj -= (int)n_positional + 2 * (int)n_keyword;
-        emit_write_bytecode_byte_uint(emit, stack_adj, bytecode_base, (n_keyword << 8) | n_positional); // TODO make it 2 separate uints?
+        emit_write_bytecode_byte_uint(emit, stack_adj, bytecode_base,
+                                      (n_keyword << 8) | n_positional); // TODO make it 2 separate uints?
     }
 }
 
@@ -858,10 +838,10 @@ void mp_emit_bc_end_except_handler(emit_t *emit) {
 
 #if MICROPY_EMIT_NATIVE
 const emit_method_table_t emit_bc_method_table = {
-    #if MICROPY_DYNAMIC_COMPILER
+#if MICROPY_DYNAMIC_COMPILER
     NULL,
     NULL,
-    #endif
+#endif
 
     mp_emit_bc_start_pass,
     mp_emit_bc_end_pass,
@@ -944,4 +924,4 @@ const mp_emit_method_table_id_ops_t mp_emit_bc_method_table_delete_id_ops = {
 };
 #endif
 
-#endif //MICROPY_ENABLE_COMPILER
+#endif // MICROPY_ENABLE_COMPILER

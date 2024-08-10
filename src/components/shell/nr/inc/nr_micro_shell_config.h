@@ -6,21 +6,21 @@
  * @brief     [brief]
  * *****************************************************************************
  * @attention
- * 
+ *
  * MIT License
- * 
+ *
  * Copyright (C) 2019 Ji Youzhou. or its affiliates.  All Rights Reserved.
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -35,8 +35,7 @@
 #define __nr_micro_shell_config_h
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 /* ANSI command line buffer size. */
@@ -54,7 +53,8 @@ extern "C"
 /* The maximum number of parameters in the command. */
 #define NR_SHELL_CMD_PARAS_MAX_NUM 10
 
-/* Command stores the most history commands (the maximum number here refers to the maximum number of commands that can be stored. When the history command line cache is full, it will automatically release the earliest command record) */
+/* Command stores the most history commands (the maximum number here refers to the maximum number of commands that can
+ * be stored. When the history command line cache is full, it will automatically release the earliest command record) */
 #define NR_SHELL_MAX_CMD_HISTORY_NUM 3
 
 /* History command cache length */
@@ -92,4 +92,4 @@ extern "C"
 #endif
 
 #endif
-    /******************* (C) COPYRIGHT 2019 Ji Youzhou *****END OF FILE*****************/
+/******************* (C) COPYRIGHT 2019 Ji Youzhou *****END OF FILE*****************/

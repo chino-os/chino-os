@@ -26,8 +26,8 @@
 #ifndef MICROPY_INCLUDED_PY_SCOPE_H
 #define MICROPY_INCLUDED_PY_SCOPE_H
 
-#include "py/parse.h"
 #include "py/emitglue.h"
+#include "py/parse.h"
 
 enum {
     ID_INFO_KIND_UNDECIDED,
@@ -74,8 +74,8 @@ typedef struct _scope_t {
     struct _scope_t *next;
     mp_parse_node_t pn;
     mp_raw_code_t *raw_code;
-    uint16_t source_file; // a qstr
-    uint16_t simple_name; // a qstr
+    uint16_t source_file;  // a qstr
+    uint16_t simple_name;  // a qstr
     uint16_t scope_flags;  // see runtime0.h
     uint16_t emit_options; // see emitglue.h
     uint16_t num_pos_args;

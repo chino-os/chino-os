@@ -28,8 +28,8 @@
 
 #include <stdint.h>
 
-#include "py/mpconfig.h"
 #include "py/misc.h"
+#include "py/mpconfig.h"
 
 void gc_init(void *start, void *end);
 

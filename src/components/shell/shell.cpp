@@ -20,8 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #include <chino/io.h>
-#include <chino/ps.h>
 #include <chino/memory.h>
+#include <chino/ps.h>
 #include <nr_micro_shell.h>
 
 using namespace chino;
@@ -29,16 +29,13 @@ using namespace chino;
 extern int lua_main(int argc, char **argv);
 extern "C" int basic_main(int argc, char *argv[]);
 
-namespace
-{
-uint32_t shell_main()
-{
+namespace {
+uint32_t shell_main() {
     io::alloc_console().unwrap();
     setbuf(stdout, nullptr);
     shell_init();
 
-    while (1)
-    {
+    while (1) {
         auto ch = getchar();
         shell(ch);
     }
@@ -46,23 +43,14 @@ uint32_t shell_main()
     return 0;
 }
 
-void lua_cmd(char argc, char **argv)
-{
-    lua_main(argc, argv);
-}
+void lua_cmd(char argc, char **argv) { lua_main(argc, argv); }
 
-void basic_cmd(char argc, char **argv)
-{
-    basic_main(argc, argv);
-}
+void basic_cmd(char argc, char **argv) { basic_main(argc, argv); }
 
-void cat_cmd(char argc, char **argv)
-{
-    if (argc == 2)
-    {
+void cat_cmd(char argc, char **argv) {
+    if (argc == 2) {
         FILE *fp = fopen(argv[1], "r");
-        if (!fp)
-        {
+        if (!fp) {
             printf("Cannot open %s\n", argv[1]);
             return;
         }
@@ -71,34 +59,29 @@ void cat_cmd(char argc, char **argv)
         while (fgets(buffer, 64, fp))
             printf(buffer);
         fclose(fp);
-    }
-    else
-    {
+    } else {
         printf("Usage cat <filename>\n");
     }
 }
 
-void free_cmd(char argc, char **argv)
-{
+void free_cmd(char argc, char **argv) {
     auto info = memory::get_system_memory_info();
     printf("\ttotal\tused\tfree\n");
-    printf("Mem:\t%d\t%d\t%d\n", (info.used_pages + info.free_pages) * info.page_size, info.used_pages * info.page_size, info.free_pages * info.page_size);
+    printf("Mem:\t%d\t%d\t%d\n", (info.used_pages + info.free_pages) * info.page_size, info.used_pages * info.page_size,
+           info.free_pages * info.page_size);
 }
+} // namespace
+
+extern "C" {
+const static_cmd_st static_cmd[] = {
+    //{ "basic", basic_cmd },
+    {"free", free_cmd},
+    {"lua", lua_cmd},
+    {"cat", cat_cmd},
+    {"\0", NULL}};
 }
 
-extern "C"
-{
-    const static_cmd_st static_cmd[] = {
-        //{ "basic", basic_cmd },
-        { "free", free_cmd },
-        { "lua", lua_cmd },
-        { "cat", cat_cmd },
-        { "\0", NULL }
-    };
-}
-
-result<void, error_code> chino_start_shell()
-{
+result<void, error_code> chino_start_shell() {
     try_(threading::create_process(shell_main, {}, threading::thread_priority::normal, 1024 * 3 * sizeof(uintptr_t)));
     return ok();
 }

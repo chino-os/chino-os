@@ -32,16 +32,11 @@
 #define MICROPY_VERSION_MICRO 0
 
 // Combined version as a 32-bit number for convenience
-#define MICROPY_VERSION ( \
-    MICROPY_VERSION_MAJOR << 16 \
-    | MICROPY_VERSION_MINOR << 8 \
-    | MICROPY_VERSION_MICRO)
+#define MICROPY_VERSION (MICROPY_VERSION_MAJOR << 16 | MICROPY_VERSION_MINOR << 8 | MICROPY_VERSION_MICRO)
 
 // String version
-#define MICROPY_VERSION_STRING \
-    MP_STRINGIFY(MICROPY_VERSION_MAJOR) "." \
-    MP_STRINGIFY(MICROPY_VERSION_MINOR) "." \
-    MP_STRINGIFY(MICROPY_VERSION_MICRO)
+#define MICROPY_VERSION_STRING                                                                                         \
+    MP_STRINGIFY(MICROPY_VERSION_MAJOR) "." MP_STRINGIFY(MICROPY_VERSION_MINOR) "." MP_STRINGIFY(MICROPY_VERSION_MICRO)
 
 // This file contains default configuration settings for MicroPython.
 // You can override any of the options below using mpconfigport.h file
@@ -275,7 +270,8 @@
 // Whether generated code can persist independently of the VM/runtime instance
 // This is enabled automatically when needed by other features
 #ifndef MICROPY_PERSISTENT_CODE
-#define MICROPY_PERSISTENT_CODE (MICROPY_PERSISTENT_CODE_LOAD || MICROPY_PERSISTENT_CODE_SAVE || MICROPY_MODULE_FROZEN_MPY)
+#define MICROPY_PERSISTENT_CODE                                                                                        \
+    (MICROPY_PERSISTENT_CODE_LOAD || MICROPY_PERSISTENT_CODE_SAVE || MICROPY_MODULE_FROZEN_MPY)
 #endif
 
 // Whether to emit x64 native code
@@ -329,7 +325,9 @@
 #endif
 
 // Convenience definition for whether any native emitter is enabled
-#define MICROPY_EMIT_NATIVE (MICROPY_EMIT_X64 || MICROPY_EMIT_X86 || MICROPY_EMIT_THUMB || MICROPY_EMIT_ARM || MICROPY_EMIT_XTENSA || MICROPY_EMIT_XTENSAWIN)
+#define MICROPY_EMIT_NATIVE                                                                                            \
+    (MICROPY_EMIT_X64 || MICROPY_EMIT_X86 || MICROPY_EMIT_THUMB || MICROPY_EMIT_ARM || MICROPY_EMIT_XTENSA ||          \
+     MICROPY_EMIT_XTENSAWIN)
 
 // Select prelude-as-bytes-object for certain emitters
 #define MICROPY_EMIT_NATIVE_PRELUDE_AS_BYTES_OBJ (MICROPY_EMIT_XTENSAWIN)
@@ -460,7 +458,6 @@
 #define MICROPY_OPT_MPZ_BITWISE (0)
 #endif
 
-
 // Whether math.factorial is large, fast and recursive (1) or small and slow (0).
 #ifndef MICROPY_OPT_MATH_FACTORIAL
 #define MICROPY_OPT_MATH_FACTORIAL (0)
@@ -539,9 +536,9 @@
 #define MICROPY_ENABLE_EMERGENCY_EXCEPTION_BUF (0)
 #endif
 #if MICROPY_ENABLE_EMERGENCY_EXCEPTION_BUF
-#   ifndef MICROPY_EMERGENCY_EXCEPTION_BUF_SIZE
-#   define MICROPY_EMERGENCY_EXCEPTION_BUF_SIZE (0)   // 0 - implies dynamic allocation
-#   endif
+#ifndef MICROPY_EMERGENCY_EXCEPTION_BUF_SIZE
+#define MICROPY_EMERGENCY_EXCEPTION_BUF_SIZE (0) // 0 - implies dynamic allocation
+#endif
 #endif
 
 // Whether to provide the mp_kbd_exception object, and micropython.kbd_intr function
@@ -605,9 +602,9 @@ typedef long long mp_longint_impl_t;
 #endif
 
 // Exception messages are short static strings
-#define MICROPY_ERROR_REPORTING_TERSE    (1)
+#define MICROPY_ERROR_REPORTING_TERSE (1)
 // Exception messages provide basic error details
-#define MICROPY_ERROR_REPORTING_NORMAL   (2)
+#define MICROPY_ERROR_REPORTING_NORMAL (2)
 // Exception messages provide full info, e.g. object names
 #define MICROPY_ERROR_REPORTING_DETAILED (3)
 
@@ -1306,7 +1303,7 @@ typedef double mp_float_t;
 #endif
 
 #ifndef MICROPY_PY_UHASHLIB_SHA1
-#define MICROPY_PY_UHASHLIB_SHA1  (0)
+#define MICROPY_PY_UHASHLIB_SHA1 (0)
 #endif
 
 #ifndef MICROPY_PY_UHASHLIB_SHA256
@@ -1444,27 +1441,27 @@ typedef double mp_float_t;
 #elif defined(MP_ENDIANNESS_BIG)
 #define MP_ENDIANNESS_LITTLE (!MP_ENDIANNESS_BIG)
 #else
-  // Endianness not defined by port so try to autodetect it.
-  #if defined(__BYTE_ORDER__)
-    #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-      #define MP_ENDIANNESS_LITTLE (1)
-    #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-      #define MP_ENDIANNESS_LITTLE (0)
-    #endif
-  #else
-    #include <endian.h>
-      #if defined(__BYTE_ORDER)
-        #if __BYTE_ORDER == __LITTLE_ENDIAN
-          #define MP_ENDIANNESS_LITTLE (1)
-        #elif __BYTE_ORDER == __BIG_ENDIAN
-          #define MP_ENDIANNESS_LITTLE (0)
-        #endif
-      #endif
-  #endif
-  #ifndef MP_ENDIANNESS_LITTLE
-    #error endianness not defined and cannot detect it
-  #endif
-  #define MP_ENDIANNESS_BIG (!MP_ENDIANNESS_LITTLE)
+// Endianness not defined by port so try to autodetect it.
+#if defined(__BYTE_ORDER__)
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#define MP_ENDIANNESS_LITTLE (1)
+#elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define MP_ENDIANNESS_LITTLE (0)
+#endif
+#else
+#include <endian.h>
+#if defined(__BYTE_ORDER)
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+#define MP_ENDIANNESS_LITTLE (1)
+#elif __BYTE_ORDER == __BIG_ENDIAN
+#define MP_ENDIANNESS_LITTLE (0)
+#endif
+#endif
+#endif
+#ifndef MP_ENDIANNESS_LITTLE
+#error endianness not defined and cannot detect it
+#endif
+#define MP_ENDIANNESS_BIG (!MP_ENDIANNESS_LITTLE)
 #endif
 
 // Make a pointer to RAM callable (eg set lower bit for Thumb code)
@@ -1477,7 +1474,11 @@ typedef double mp_float_t;
 // must be somehow reachable for marking by the GC, since the native code
 // generators store pointers to GC managed memory in the code.
 #ifndef MP_PLAT_ALLOC_EXEC
-#define MP_PLAT_ALLOC_EXEC(min_size, ptr, size) do { *ptr = m_new(byte, min_size); *size = min_size; } while (0)
+#define MP_PLAT_ALLOC_EXEC(min_size, ptr, size)                                                                        \
+    do {                                                                                                               \
+        *ptr = m_new(byte, min_size);                                                                                  \
+        *size = min_size;                                                                                              \
+    } while (0)
 #endif
 
 #ifndef MP_PLAT_FREE_EXEC
@@ -1507,7 +1508,7 @@ typedef double mp_float_t;
 #define UINT_FMT "%u"
 #define INT_FMT "%d"
 #endif
-#endif //INT_FMT
+#endif // INT_FMT
 
 // Modifier for function which doesn't return
 #ifndef NORETURN
@@ -1544,39 +1545,42 @@ typedef double mp_float_t;
 #if defined(__GNUC__)
 #define MP_UNREACHABLE __builtin_unreachable();
 #else
-#define MP_UNREACHABLE for (;;);
+#define MP_UNREACHABLE                                                                                                 \
+    for (;;)                                                                                                           \
+        ;
 #endif
 #endif
 
 #ifndef MP_HTOBE16
 #if MP_ENDIANNESS_LITTLE
-# define MP_HTOBE16(x) ((uint16_t)( (((x) & 0xff) << 8) | (((x) >> 8) & 0xff) ))
-# define MP_BE16TOH(x) MP_HTOBE16(x)
+#define MP_HTOBE16(x) ((uint16_t)((((x)&0xff) << 8) | (((x) >> 8) & 0xff)))
+#define MP_BE16TOH(x) MP_HTOBE16(x)
 #else
-# define MP_HTOBE16(x) (x)
-# define MP_BE16TOH(x) (x)
+#define MP_HTOBE16(x) (x)
+#define MP_BE16TOH(x) (x)
 #endif
 #endif
 
 #ifndef MP_HTOBE32
 #if MP_ENDIANNESS_LITTLE
-# define MP_HTOBE32(x) ((uint32_t)( (((x) & 0xff) << 24) | (((x) & 0xff00) << 8) | (((x) >> 8)  & 0xff00) | (((x) >> 24) & 0xff) ))
-# define MP_BE32TOH(x) MP_HTOBE32(x)
+#define MP_HTOBE32(x)                                                                                                  \
+    ((uint32_t)((((x)&0xff) << 24) | (((x)&0xff00) << 8) | (((x) >> 8) & 0xff00) | (((x) >> 24) & 0xff)))
+#define MP_BE32TOH(x) MP_HTOBE32(x)
 #else
-# define MP_HTOBE32(x) (x)
-# define MP_BE32TOH(x) (x)
+#define MP_HTOBE32(x) (x)
+#define MP_BE32TOH(x) (x)
 #endif
 #endif
 
 // Warning categories are by default implemented as strings, though
 // hook is left for a port to define them as something else.
 #if MICROPY_WARNINGS_CATEGORY
-# ifndef MP_WARN_CAT
-# define MP_WARN_CAT(x) #x
-# endif
+#ifndef MP_WARN_CAT
+#define MP_WARN_CAT(x) #x
+#endif
 #else
-# undef MP_WARN_CAT
-# define MP_WARN_CAT(x) (NULL)
+#undef MP_WARN_CAT
+#define MP_WARN_CAT(x) (NULL)
 #endif
 
 // Feature dependency check.

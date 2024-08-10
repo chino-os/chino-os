@@ -28,8 +28,8 @@
 
 #include <stdint.h>
 
-#include "py/mpconfig.h"
 #include "py/misc.h"
+#include "py/mpconfig.h"
 
 // This mpz module implements arbitrary precision integers.
 //
@@ -45,13 +45,13 @@
 // changed so long as the constraints mentioned above are met).
 
 #ifndef MPZ_DIG_SIZE
-  #if defined(__x86_64__) || defined(_WIN64)
-    // 64-bit machine, using 32-bit storage for digits
-    #define MPZ_DIG_SIZE (32)
-  #else
-    // default: 32-bit machine, using 16-bit storage for digits
-    #define MPZ_DIG_SIZE (16)
-  #endif
+#if defined(__x86_64__) || defined(_WIN64)
+// 64-bit machine, using 32-bit storage for digits
+#define MPZ_DIG_SIZE (32)
+#else
+// default: 32-bit machine, using 16-bit storage for digits
+#define MPZ_DIG_SIZE (16)
+#endif
 #endif
 
 #if MPZ_DIG_SIZE > 16
@@ -77,13 +77,13 @@ typedef int8_t mpz_dbl_dig_signed_t;
 #endif
 
 #ifdef _WIN64
-  #ifdef __MINGW32__
-    #define MPZ_LONG_1 1LL
-  #else
-    #define MPZ_LONG_1 1i64
-  #endif
+#ifdef __MINGW32__
+#define MPZ_LONG_1 1LL
 #else
-  #define MPZ_LONG_1 1L
+#define MPZ_LONG_1 1i64
+#endif
+#else
+#define MPZ_LONG_1 1L
 #endif
 
 // these define the maximum storage needed to hold an int or long long
@@ -99,7 +99,10 @@ typedef struct _mpz_t {
 } mpz_t;
 
 // convenience macro to declare an mpz with a digit array from the stack, initialised by an integer
-#define MPZ_CONST_INT(z, val) mpz_t z; mpz_dig_t z ## _digits[MPZ_NUM_DIG_FOR_INT]; mpz_init_fixed_from_int(&z, z_digits, MPZ_NUM_DIG_FOR_INT, val);
+#define MPZ_CONST_INT(z, val)                                                                                          \
+    mpz_t z;                                                                                                           \
+    mpz_dig_t z##_digits[MPZ_NUM_DIG_FOR_INT];                                                                         \
+    mpz_init_fixed_from_int(&z, z_digits, MPZ_NUM_DIG_FOR_INT, val);
 
 void mpz_init_zero(mpz_t *z);
 void mpz_init_from_int(mpz_t *z, mp_int_t val);

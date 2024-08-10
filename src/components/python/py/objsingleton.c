@@ -24,8 +24,8 @@
  * THE SOFTWARE.
  */
 
-#include <stdlib.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include "py/obj.h"
 
@@ -44,7 +44,7 @@ STATIC void singleton_print(const mp_print_t *print, mp_obj_t self_in, mp_print_
 }
 
 const mp_obj_type_t mp_type_singleton = {
-    { &mp_type_type },
+    {&mp_type_type},
     .name = MP_QSTR_,
     .print = singleton_print,
 };

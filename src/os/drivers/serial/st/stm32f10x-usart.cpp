@@ -19,47 +19,44 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include <chino/ddk/io.h>
 #include <chino/chip/st/stm32f1xx_hd/usart.h>
+#include <chino/ddk/io.h>
 
 using namespace chino;
 using namespace chino::chip;
 using namespace chino::io;
 
-namespace
-{
-class stm32f10x_usart_dev : public device_extension
-{
-public:
-    stm32f10x_usart_dev(uintptr_t base)
-        : base_(base) {}
+namespace {
+class stm32f10x_usart_dev : public device_extension {
+  public:
+    stm32f10x_usart_dev(uintptr_t base) : base_(base) {}
 
     void enable() noexcept;
     result<size_t, error_code> read(gsl::span<gsl::byte> buffer) noexcept;
     result<void, error_code> write(gsl::span<const gsl::byte> buffer) noexcept;
 
-private:
+  private:
     uintptr_t base_;
 };
 
 result<void, error_code> con_add_device(const driver &drv, const device_id &dev_id);
-result<file *, error_code> con_open_device(const driver &drv, device &dev, std::string_view filename, create_disposition create_disp);
+result<file *, error_code> con_open_device(const driver &drv, device &dev, std::string_view filename,
+                                           create_disposition create_disp);
 result<size_t, error_code> con_read_device(const driver &drv, device &dev, file &file, gsl::span<gsl::byte> buffer);
-result<void, error_code> con_write_device(const driver &drv, device &dev, file &file, gsl::span<const gsl::byte> buffer);
+result<void, error_code> con_write_device(const driver &drv, device &dev, file &file,
+                                          gsl::span<const gsl::byte> buffer);
 
-const driver_id match_table[] = {
-    { .compatible = "st,stm32f10x-usart" }
-};
+const driver_id match_table[] = {{.compatible = "st,stm32f10x-usart"}};
 
-const driver con_drv = {
-    .name = "stm32f10x-usart",
-    .ops = { .add_device = con_add_device, .open_device = con_open_device, .read_device = con_read_device, .write_device = con_write_device },
-    .match_table = match_table
-};
+const driver con_drv = {.name = "stm32f10x-usart",
+                        .ops = {.add_device = con_add_device,
+                                .open_device = con_open_device,
+                                .read_device = con_read_device,
+                                .write_device = con_write_device},
+                        .match_table = match_table};
 EXPORT_DRIVER(con_drv);
 
-result<void, error_code> con_add_device(const driver &drv, const device_id &dev_id)
-{
+result<void, error_code> con_add_device(const driver &drv, const device_id &dev_id) {
     device_descriptor desc(dev_id.node());
     try_var(reg, desc.reg());
     try_var(con, create_device(dev_id, device_type::serial, sizeof(stm32f10x_usart_dev)));
@@ -67,10 +64,9 @@ result<void, error_code> con_add_device(const driver &drv, const device_id &dev_
     return ok();
 }
 
-result<file *, error_code> con_open_device(const driver &drv, device &dev, std::string_view filename, create_disposition create_disp)
-{
-    if (filename.empty())
-    {
+result<file *, error_code> con_open_device(const driver &drv, device &dev, std::string_view filename,
+                                           create_disposition create_disp) {
+    if (filename.empty()) {
         try_var(file, create_file(dev, 0));
         dev.extension<stm32f10x_usart_dev>().enable();
         return ok(file);
@@ -79,30 +75,27 @@ result<file *, error_code> con_open_device(const driver &drv, device &dev, std::
     return err(error_code::invalid_path);
 }
 
-result<size_t, error_code> con_read_device(const driver &drv, device &dev, file &file, gsl::span<gsl::byte> buffer)
-{
+result<size_t, error_code> con_read_device(const driver &drv, device &dev, file &file, gsl::span<gsl::byte> buffer) {
     return dev.extension<stm32f10x_usart_dev>().read(buffer);
 }
 
-result<void, error_code> con_write_device(const driver &drv, device &dev, file &file, gsl::span<const gsl::byte> buffer)
-{
+result<void, error_code> con_write_device(const driver &drv, device &dev, file &file,
+                                          gsl::span<const gsl::byte> buffer) {
     return dev.extension<stm32f10x_usart_dev>().write(buffer);
 }
-}
+} // namespace
 
-void stm32f10x_usart_dev::enable() noexcept
-{
+void stm32f10x_usart_dev::enable() noexcept {
     usart::rx_enable(base_);
     usart::tx_enable(base_);
     usart::enable(base_);
 }
 
-result<size_t, error_code> stm32f10x_usart_dev::read(gsl::span<gsl::byte> buffer) noexcept
-{
+result<size_t, error_code> stm32f10x_usart_dev::read(gsl::span<gsl::byte> buffer) noexcept {
     size_t read = 0;
-    if (buffer.length())
-    {
-        while (!usart::rx_is_not_empty(base_));
+    if (buffer.length()) {
+        while (!usart::rx_is_not_empty(base_))
+            ;
         while (read < buffer.length() && usart::rx_is_not_empty(base_))
             buffer[read++] = (gsl::byte)usart::rx_recv(base_);
     }
@@ -110,12 +103,11 @@ result<size_t, error_code> stm32f10x_usart_dev::read(gsl::span<gsl::byte> buffer
     return ok(read);
 }
 
-result<void, error_code> stm32f10x_usart_dev::write(gsl::span<const gsl::byte> buffer) noexcept
-{
+result<void, error_code> stm32f10x_usart_dev::write(gsl::span<const gsl::byte> buffer) noexcept {
     size_t written = 0;
-    while (written < buffer.length())
-    {
-        while (!usart::tx_is_empty(base_));
+    while (written < buffer.length()) {
+        while (!usart::tx_is_empty(base_))
+            ;
         usart::tx_send(base_, (uint8_t)buffer[written++]);
     }
 
