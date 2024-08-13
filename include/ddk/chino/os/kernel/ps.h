@@ -6,9 +6,8 @@
 #include <chino/intrusive_list.h>
 #include <chino/os/hal/arch.h>
 #include <chino/os/processapi.h>
-#include <chrono>
 #include <mutex>
-#include <optional>
+#include <span>
 
 namespace chino::os::kernel::ps {
 class process;

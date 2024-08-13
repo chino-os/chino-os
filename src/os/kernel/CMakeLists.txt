@@ -8,10 +8,7 @@ if (BUILD_EMULATOR)
     add_library(chino.kernel SHARED ${SRCS})
 else()
     add_executable(chino.kernel ${SRCS})
-
-    if (APPLE)
-        target_link_options(chino.kernel PRIVATE -e _kernel_entry)
-    endif()
+    target_link_options(chino.kernel PRIVATE -e ke_startup)    
 endif()
 
 add_subdirectory(de)

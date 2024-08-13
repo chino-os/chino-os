@@ -1,0 +1,18 @@
+{% set download=os.path.join(profile_dir, '..', '..', '..', '..', '..', '..', 'download') %}
+{% set toolchain=os.path.join(download, 'xpack-riscv-none-elf-gcc-12.2.0-3') %}
+{% set target_host='riscv-none-elf' %}
+
+[buildenv]
+CONAN_CMAKE_FIND_ROOT_PATH={{ toolchain }}/{{ target_host }}
+CONAN_CMAKE_SYSTEM_PROCESSOR=riscv
+CC={{ toolchain }}/bin/{{ target_host }}-gcc
+CXX={{ toolchain }}/bin/{{ target_host }}-g++
+
+[settings]
+os=Linux
+arch=riscv32
+compiler=gcc
+build_type=Release
+compiler.cppstd=20
+compiler.libcxx=libstdc++11
+compiler.version=12

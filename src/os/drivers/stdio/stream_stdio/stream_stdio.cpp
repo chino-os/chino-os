@@ -14,12 +14,12 @@ result<void> stream_stdio_device::install(device &stream_device) noexcept {
     return ok();
 }
 
-result<size_t> stream_stdio_device::fast_read(file &file, std::span<std::byte> buffer,
+result<size_t> stream_stdio_device::fast_read([[maybe_unused]] file &file, std::span<std::byte> buffer,
                                               std::optional<size_t> /*offset*/) noexcept {
     return stream_file_.device().fast_read(stream_file_, buffer);
 }
 
-result<size_t> stream_stdio_device::fast_write(file &file, std::span<const std::byte> buffer,
+result<size_t> stream_stdio_device::fast_write([[maybe_unused]] file &file, std::span<const std::byte> buffer,
                                                std::optional<size_t> /*offset*/) noexcept {
     return stream_file_.device().fast_write(stream_file_, buffer);
 }

@@ -12,11 +12,14 @@
 
 #define CHINO_MAKE_RELATIVE_HEADER(prefix, target, name) CHINO_STRINGFY(CHINO_CONCAT_3(prefix, target, name))
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
 #define CHINO_ASSUME(...)
 #define CHINO_UNREACHABLE() __assume(0)
-#else
+#elif defined(__clang__)
 #define CHINO_ASSUME(...) __builtin_assume(__VA_ARGS__)
+#define CHINO_UNREACHABLE() __builtin_unreachable()
+#else
+#define CHINO_ASSUME(...) do { if (!(__VA_ARGS__)) __builtin_unreachable(); } while (0)
 #define CHINO_UNREACHABLE() __builtin_unreachable()
 #endif
 

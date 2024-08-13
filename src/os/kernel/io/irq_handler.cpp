@@ -23,6 +23,7 @@ result<void> io::register_irq_handler(hal::arch_irq_number_t irq_number, irq_han
 }
 
 static void io_handle_syscall(syscall_number number, void *arg) noexcept {
+    (void)arg;
     switch (number) {
     case syscall_number::yield:
         ps::scheduler::current().switch_task();

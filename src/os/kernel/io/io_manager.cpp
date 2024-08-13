@@ -3,8 +3,8 @@
 #include "io_manager.h"
 #include "../ke/ke_services.h"
 #include "../ob/directory.h"
-#include "../ps/task/process.h"
 #include <chino/conf/board_init.inl>
+#include <chino/os/hal/chip.h>
 #include <chino/os/kernel/kd.h>
 #include <chino/os/kernel/ob.h>
 
@@ -76,7 +76,7 @@ template <> void object_pool<io::file>::object_pool_object::internal_release() n
     (void)file_table_.free(this);
 }
 
-result<void> io::initialize_phase1(const boot_options &options) noexcept {
+result<void> io::initialize_phase1([[maybe_unused]] const boot_options &options) noexcept {
     try_(ob::insert_object(dev_directory_, "/dev"));
     try_(hal::hal_install_devices());
     return ok();
@@ -145,8 +145,8 @@ result<object_ptr<file>> io::open_file(access_mask desired_access, std::string_v
     return open_file(desired_access, *d.first, d.second, disposition);
 }
 
-result<void> io::open_file(file &file, access_mask desired_access, device &device, std::string_view path,
-                           create_disposition disposition) noexcept {
+result<void> io::open_file(file &file, [[maybe_unused]] access_mask desired_access, device &device,
+                           std::string_view path, create_disposition disposition) noexcept {
     file.prepare_to_open(device);
     return dispatch_io_fast_slow<io_frame_generic_kind::open, &device::fast_open>(file, nullptr, path, disposition)
         .map_err([&](error_code e) {
@@ -185,7 +185,8 @@ result<int> io::control_file(file &file, control_code_t code, void *arg) noexcep
 
 result<void> io::allocate_console() noexcept { return ok(); }
 
-int kernel_ke_service_mt::open(const char *pathname, int flags, mode_t mode) noexcept {
+int kernel_ke_service_mt::open(const char *pathname, [[maybe_unused]] int flags,
+                               [[maybe_unused]] mode_t mode) noexcept {
     return wrap_posix<ssize_t>([=]() -> result<int> {
         try_var(file, io::open_file(access_mask::generic_all, pathname, create_disposition::open_existing));
         try_var(handle, ob::alloc_handle(*file, access_mask::generic_all));

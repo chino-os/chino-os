@@ -12,4 +12,5 @@ namespace Chino;
 public static class Vendors
 {
     public static readonly string Chino = "Chino";
+    public static readonly string WCH = "WCH";
 }

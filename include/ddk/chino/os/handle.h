@@ -9,7 +9,7 @@ class handle_entry {
   public:
     CHINO_NONCOPYABLE(handle_entry);
 
-    handle_entry(object &object, access_mask granted_access) noexcept
+    handle_entry(os::object &object, access_mask granted_access) noexcept
         : object_(&object), granted_access_(granted_access) {}
 
     os::object &object() const noexcept { return *object_; }

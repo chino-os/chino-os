@@ -33,7 +33,7 @@ public class GenerateCommand : AsyncCommand<GenerateSettings>
         AnsiConsole.WriteLine($"Generate info:");
         AnsiConsole.WriteLine($"Board: {settings.BoardName}");
 
-        var directory = Path.Combine(settings.ProjectRoot, "build", "gen", "chino", "conf");
+        var directory = Path.Combine(settings.ProjectRoot, "gen", "chino", "conf");
         if (!Directory.Exists(settings.ProjectRoot))
         {
             AnsiConsole.WriteLine($"{settings.ProjectRoot} doesn't exists.");

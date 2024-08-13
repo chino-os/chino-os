@@ -17,6 +17,7 @@ int kernel_ke_service_mt::nanosleep(const struct timespec *rqtp, struct timespec
 }
 
 int kernel_ke_service_mt::clock_gettime(clockid_t clock_id, struct timespec *tp) noexcept {
+    (void)clock_id;
     auto now = hal::arch_t::current_cpu_time().count();
     tp->tv_sec = now / 1000000000;
     tp->tv_nsec = now % 1000000000;

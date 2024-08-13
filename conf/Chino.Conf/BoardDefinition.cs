@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Chino;
 
@@ -27,4 +28,9 @@ public abstract class BoardDefinition
     public Dictionary<string, string> SelectedPinGroups { get; set; }
 
     public List<DriverDefinition> Drivers { get; set; } = new();
+
+    public virtual Task PrepareEnviromentAsync()
+    {
+        return Task.CompletedTask;
+    }
 }

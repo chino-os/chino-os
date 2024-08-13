@@ -27,8 +27,6 @@ struct io_frame_ble_params {
     template <io_frame_ble_kind Minor> auto &by_minor() noexcept {
         if constexpr (Minor == io_frame_ble_kind::dummy) {
             return dummy;
-        } else {
-            return;
         }
     }
 };

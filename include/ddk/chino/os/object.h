@@ -3,6 +3,7 @@
 #pragma once
 #include "chino/error.h"
 #include "object_kind.h"
+#include <atomic>
 #include <chino/compiler.h>
 #include <chino/intrusive_list.h>
 #include <chino/result.h>
@@ -17,7 +18,8 @@ namespace chino::os {
 
 class object;
 
-template <class T> concept Object = std::is_same_v<T, object> || std::is_base_of_v<object, T>;
+template <class T>
+concept Object = std::is_same_v<T, object> || std::is_base_of_v<object, T>;
 
 class object {
   public:

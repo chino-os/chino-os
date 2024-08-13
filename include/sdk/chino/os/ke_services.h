@@ -4,6 +4,9 @@
 #include "ioapi.h"
 #include <sys/socket.h>
 #include <sys/unistd.h>
+#include <atomic>
+#include <optional>
+#include <chrono>
 
 namespace chino::os {
 struct i_ke_services {
@@ -33,8 +36,6 @@ struct i_ke_services {
     virtual int nanosleep(const timespec *rqtp, timespec *rmtp) noexcept = 0;
     virtual int clock_gettime(clockid_t clock_id, timespec *tp) noexcept = 0;
 };
-
-inline static uintptr_t ke_services_address = 0x800000000;
 
 i_ke_services &ke_services() noexcept;
 } // namespace chino::os

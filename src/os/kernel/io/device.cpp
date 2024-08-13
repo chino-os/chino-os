@@ -9,25 +9,28 @@ using namespace chino::os::kernel;
 using namespace chino::os::kernel::io;
 using namespace chino::os::kernel::ps;
 
-result<void> device::close(file &file) noexcept { return ok(); }
+result<void> device::close([[maybe_unused]] file &file) noexcept { return ok(); }
 
-result<void> device::fast_open(file &file, std::string_view path, create_disposition create_disposition) noexcept {
+result<void> device::fast_open([[maybe_unused]] file &file, std::string_view path,
+                               [[maybe_unused]] create_disposition create_disposition) noexcept {
     if (path.empty()) {
         return ok();
     }
     return err(error_code::invalid_path);
 }
 
-result<size_t> device::fast_read(file &file, std::span<std::byte> buffer, std::optional<size_t> offset) noexcept {
+result<size_t> device::fast_read([[maybe_unused]] file &file, [[maybe_unused]] std::span<std::byte> buffer,
+                                 [[maybe_unused]] std::optional<size_t> offset) noexcept {
     return err(error_code::slow_io);
 }
 
-result<size_t> device::fast_write(file &file, std::span<const std::byte> buffer,
-                                  std::optional<size_t> offset) noexcept {
+result<size_t> device::fast_write([[maybe_unused]] file &file, [[maybe_unused]] std::span<const std::byte> buffer,
+                                  [[maybe_unused]] std::optional<size_t> offset) noexcept {
     return err(error_code::slow_io);
 }
 
-result<size_t> device::fast_control(file &file, control_code_t code, void *arg) noexcept {
+result<size_t> device::fast_control([[maybe_unused]] file &file, [[maybe_unused]] control_code_t code,
+                                    [[maybe_unused]] void *arg) noexcept {
     return err(error_code::slow_io);
 }
 
@@ -108,7 +111,7 @@ result<void> device::process_io(io_request &irp) noexcept {
     return err(error_code::not_supported);
 }
 
-result<void> device::cancel_io(io_request &irp) noexcept { return err(error_code::not_supported); }
+result<void> device::cancel_io([[maybe_unused]] io_request &irp) noexcept { return err(error_code::not_supported); }
 
 void device::on_io_completion(io_request &irp) noexcept { irp.complete(); }
 

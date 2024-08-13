@@ -8,7 +8,7 @@
 namespace chino::os::drivers {
 class stream_stdio_device : public kernel::io::stdio_device {
   public:
-    constexpr stream_stdio_device(hal::meta::board_desc::chip::machine::devices::stream_console) noexcept {}
+    template <class TDeviceMeta> constexpr stream_stdio_device(TDeviceMeta &&) noexcept {}
 
     std::string_view name() const noexcept override {
         using namespace std::string_view_literals;

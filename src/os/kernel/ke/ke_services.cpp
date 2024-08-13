@@ -2,13 +2,15 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #include "ke_services.h"
 #include "../io/io_manager.h"
-#include "../ps/sched/scheduler.h"
 #include <chino/os/hal/chip.h>
 #include <chino/os/kernel/io.h>
 #include <chino/os/kernel/ob.h>
 #include <chino/os/kernel/ps.h>
+
+#ifdef CHINO_EMULATOR
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#endif
 
 using namespace chino;
 using namespace chino::os;

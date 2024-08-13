@@ -18,7 +18,7 @@ struct io_status {
 
 class async_io_block {
   public:
-    static result<async_io_block *> allocate(async_io_result &result) noexcept;
+    static chino::result<async_io_block *> allocate(async_io_result &result) noexcept;
 
     constexpr async_io_block(ps::process &process, async_io_result &result) noexcept
         : process(process), result(result) {}

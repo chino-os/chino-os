@@ -2,7 +2,9 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 #include "thread.h"
 #include "../sched/scheduler.h"
+#include "chino/os/processapi.h"
 #include "process.h"
+#include <cstdint>
 
 using namespace chino::os::kernel;
 using namespace chino::os::kernel::ps;
@@ -13,7 +15,9 @@ thread::thread(const thread_create_options &create_options) noexcept
 #ifdef CHINO_EMULATOR
       emulator_handle(hal::arch_t::initialize_thread_handle(*this)),
 #endif
-      flags_{.not_owned_stack = create_options.not_owned_stack, .priority = (uint32_t)create_options.priority},
+      flags_{.not_owned_stack = create_options.not_owned_stack,
+             .priority = (uint32_t)create_options.priority,
+             .status = (uint32_t)thread_status::ready},
       process_(create_options.process) {
     process_->attach_thread(*this);
     scheduler::current().attach_thread(*this);

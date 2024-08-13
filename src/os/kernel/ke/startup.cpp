@@ -64,15 +64,18 @@ int ke_init_system(void *pv_options) noexcept {
     initialize_ke_services().expect("Initialize Ke Services failed.");
 
     // 3. Launch shell
-    ps::thread_create_options sh_create_options{
-        .process = &sh_process_, .priority = thread_priority::normal, .not_owned_stack = true, .stack = sh_stack_};
+    ps::thread_create_options sh_create_options{.process = &sh_process_,
+                                                .priority = thread_priority::normal,
+                                                .not_owned_stack = true,
+                                                .stack = sh_stack_,
+                                                .entry_point = nullptr};
     ps::create_process("/bin/" SHELL_NAME ".exe", sh_thread_, sh_create_options).expect("Launch shell failed.");
 
     // 4. Run IO worker
     io::io_worker_main(nullptr);
 }
 
-int ke_idle_loop(void *arg) noexcept {
+int ke_idle_loop(void *) noexcept {
     while (true) {
         hal::arch_t::yield_cpu();
     }

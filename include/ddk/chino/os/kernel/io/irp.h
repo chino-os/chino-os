@@ -44,7 +44,7 @@ struct io_frame_params_generic {
     union {
         struct {
             std::string_view path;
-            create_disposition create_disposition;
+            os::create_disposition create_disposition;
         } open;
 
         struct {
@@ -72,8 +72,6 @@ struct io_frame_params_generic {
             return write;
         } else if constexpr (Minor == io_frame_generic_kind::control) {
             return control;
-        } else {
-            return;
         }
     }
 };
